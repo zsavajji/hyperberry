@@ -18,7 +18,13 @@ import (
 )
 
 func main() {
-	data := flag.String("data", ".", "data directory: session.db, chats.db, engine.json, logs/")
+	// Started as the headless service the engine gets no arguments; BB10 sets HOME to the
+	// app's data/, which the UI reads too.
+	home := os.Getenv("HOME")
+	if home == "" {
+		home = "."
+	}
+	data := flag.String("data", home, "data directory: session.db, chats.db, engine.json, logs/")
 	logTo := flag.String("log", "", `log file (default <data>/logs/hyperberryd.log; "-" for stderr)`)
 	debug := flag.Bool("debug", false, "log the protocol")
 	osName := flag.String("os", "Windows", "OS name the phone shows for this device (fixed at linking)")

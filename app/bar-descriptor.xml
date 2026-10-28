@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<qnx xmlns="http://www.qnx.com/schemas/application/1.0">
+    <!-- Fixed for good: a new id is a different app beside this one, and uninstalling deletes
+         data/ (session.db holds the link, chats.db the only copy of the history). -->
+    <id>com.zsavajji.hyperberry</id>
+    <name>HyperBerry</name>
+    <versionNumber>0.0.1</versionNumber>
+    <!-- Overwritten at packaging by -buildIdFile (scripts/build-app.sh): the installer keeps
+         the old app when Package-Version (versionNumber.buildId) didn't change. -->
+    <buildId>1</buildId>
+    <description>WhatsApp for BlackBerry 10.</description>
+    <author>zsavajji</author>
+
+    <initialWindow>
+        <autoOrients>false</autoOrients>
+        <aspectRatio>portrait</aspectRatio>
+        <systemChrome>none</systemChrome>
+    </initialWindow>
+
+    <configuration name="Device-Release">
+        <platformArchitecture>armle-v7</platformArchitecture>
+        <asset entryPointId="HyperBerry" path="../build/ui/app/hyperberry" entry="true" type="Qnx/Elf">hyperberry</asset>
+        <asset entryPointId="HyperBerryService" path="../build/hyperberryd" type="Qnx/Elf">hyperberryd</asset>
+    </configuration>
+
+    <entryPoint id="HyperBerry">
+        <name>HyperBerry</name>
+    </entryPoint>
+    <!-- The engine (PLAN.md §3): headless, started at boot or by the UI, and kept running. -->
+    <entryPoint id="HyperBerryService">
+        <name>HyperBerry Service</name>
+        <entryPointType>Qnx/Elf</entryPointType>
+        <permission system="true">_sys_run_headless</permission>
+        <permission system="true">_sys_headless_nostop</permission>
+    </entryPoint>
+
+    <invoke-target id="com.zsavajji.hyperberry.service">
+        <invoke-target-type>application.headless</invoke-target-type>
+        <entry-point-id>HyperBerryService</entry-point-id>
+        <filter>
+            <action>bb.action.system.STARTED</action>
+            <mime-type>application/vnd.blackberry.system.event.STARTED</mime-type>
+            <property var="uris" value="data://local"/>
+        </filter>
+        <filter>
+            <action>com.zsavajji.hyperberry.START</action>
+            <mime-type>*</mime-type>
+            <property var="uris" value="data://local"/>
+        </filter>
+    </invoke-target>
+
+    <asset path="assets">assets</asset>
+
+    <permission system="true">run_native</permission>
+    <permission>access_internet</permission>
+    <permission>run_when_backgrounded</permission>
+    <env var="LD_LIBRARY_PATH" value="app/native/lib:/usr/lib/qt4/lib"/>
+    <env var="CASCADES_THEME" value="dark?primaryColor=0x1BD862&amp;primaryBase=0x14A249"/>
+</qnx>
