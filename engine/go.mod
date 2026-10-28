@@ -8,6 +8,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.52
 	github.com/polymorfa/hypermeow v0.0.0-20261026020717-7852ff1c1718
 	github.com/rs/zerolog v1.35.1
+	golang.org/x/crypto/x509roots/fallback v0.0.0-20261027005312-1da6254a58cf
 	google.golang.org/protobuf v1.36.12
 )
 
