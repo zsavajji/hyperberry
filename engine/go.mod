@@ -1,0 +1,29 @@
+module hyperberry/engine
+
+go 1.27.2
+
+replace golang.org/x/sys => github.com/XIAZY/go-sys-qnx v0.0.0-20261016215730-6348336c2429
+
+require (
+	github.com/mattn/go-sqlite3 v1.14.52
+	github.com/polymorfa/hypermeow v0.0.0-20261026020717-7852ff1c1718
+	google.golang.org/protobuf v1.36.12
+)
+
+require (
+	filippo.io/edwards25519 v1.2.0 // indirect
+	github.com/coder/websocket v1.8.15 // indirect
+	github.com/google/uuid v1.6.0 // indirect
+	github.com/mattn/go-colorable v0.1.14 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/petermattis/goid v0.0.0-20260820044319-269ab09b5261 // indirect
+	github.com/polymorfa/libsignal-protocol-go v0.2.3-0.20260806162910-a2adef2e8a11 // indirect
+	github.com/rs/zerolog v1.35.1 // indirect
+	go.mau.fi/util v0.10.1 // indirect
+	golang.org/x/crypto v0.57.0 // indirect
+	golang.org/x/exp v0.0.0-20260908205506-85c1c2202aba // indirect
+	golang.org/x/net v0.59.0 // indirect
+	golang.org/x/sync v0.23.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
+)
