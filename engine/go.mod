@@ -7,6 +7,7 @@ replace golang.org/x/sys => github.com/XIAZY/go-sys-qnx v0.0.0-20261016215730-63
 require (
 	github.com/mattn/go-sqlite3 v1.14.52
 	github.com/polymorfa/hypermeow v0.0.0-20261026020717-7852ff1c1718
+	github.com/rs/zerolog v1.35.1
 	google.golang.org/protobuf v1.36.12
 )
 
@@ -18,7 +19,6 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/petermattis/goid v0.0.0-20260820044319-269ab09b5261 // indirect
 	github.com/polymorfa/libsignal-protocol-go v0.2.3-0.20260806162910-a2adef2e8a11 // indirect
-	github.com/rs/zerolog v1.35.1 // indirect
 	go.mau.fi/util v0.10.1 // indirect
 	golang.org/x/crypto v0.57.0 // indirect
 	golang.org/x/exp v0.0.0-20260908205506-85c1c2202aba // indirect

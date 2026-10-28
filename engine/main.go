@@ -42,7 +42,7 @@ func main() {
 	log := waLog.Stdout("wa", level, false)
 	ctx := context.Background()
 
-	// sup (baileys, 2026-09) found that a web identity gets only the latest few chats, and
+	// A baileys client found (2026-09) that a web identity gets only the latest few chats, and
 	// Windows as Desktop with full sync gets the whole history; macOS as Desktop was refused.
 	store.SetOSInfo(*osName, [3]uint32{0, 1, 0})
 	store.DeviceProps.PlatformType = waCompanionReg.DeviceProps_DESKTOP.Enum()
