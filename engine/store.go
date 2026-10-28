@@ -81,7 +81,8 @@ func (st *Store) handle(cli *whatsmeow.Client, evt any) {
 		go st.syncGroups(cli)
 		return
 	case *events.HistorySync, *events.Message, *events.Contact, *events.PushName, *events.GroupInfo,
-		*events.JoinedGroup, *events.Mute, *events.Pin, *events.Archive:
+		*events.JoinedGroup, *events.Mute, *events.Pin, *events.Archive,
+		*events.Receipt, *events.ChatPresence, *events.Presence:
 		st.ops <- func(t *storeTx) { st.dispatch(t, cli, evt) }
 	}
 }
@@ -126,6 +127,12 @@ func (st *Store) dispatch(t *storeTx, cli *whatsmeow.Client, evt any) {
 	case *events.JoinedGroup:
 		t.ensureChat(e.JID.String(), chatGroup)
 		t.setName(e.JID.String(), e.Name)
+	case *events.Receipt:
+		st.receipt(ctx, t, cli, e)
+	case *events.ChatPresence:
+		st.typing(ctx, t, cli, e)
+	case *events.Presence:
+		st.presence(ctx, t, cli, e)
 	case *events.Mute:
 		until := int64(0)
 		if e.Action.GetMuted() {

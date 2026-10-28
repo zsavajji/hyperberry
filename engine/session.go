@@ -40,6 +40,7 @@ type Session struct {
 	code   string        // the pairing code, in state code
 	stopQR func()        // ends the running QR channel
 	qrSeen chan struct{} // closed when the QR channel's first code arrives
+	open   string        // the chat on screen, for the notifier
 }
 
 func newSession(container *sqlstore.Container, srv *Server, store *Store, log waLog.Logger) (*Session, error) {
@@ -58,6 +59,8 @@ func newSession(container *sqlstore.Container, srv *Server, store *Store, log wa
 	srv.Handle("link.qr", s.handleQR)
 	srv.Handle("link.code", s.handleCode)
 	srv.Handle("link.logout", s.handleLogout)
+	registerSend(srv, s)
+	registerPresence(srv, s)
 	return s, nil
 }
 
@@ -66,6 +69,20 @@ func (s *Session) newClient(device *store.Device) *whatsmeow.Client {
 	cli.AddEventHandler(func(evt any) { s.onEvent(cli, evt) })
 	cli.AddEventHandler(func(evt any) { s.store.handle(cli, evt) })
 	return cli
+}
+
+// client returns the current client; a logout replaces it, so take it once per request.
+func (s *Session) client() *whatsmeow.Client {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.cli
+}
+
+// openChat is the chat key on screen, or "" (step 5.1's notifier skips it).
+func (s *Session) openChat() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.open
 }
 
 // hello is the link part of the hello reply.
