@@ -3,7 +3,7 @@
 TEMPLATE = app
 TARGET = hyperberry
 CONFIG += qt warn_on release
-QT += declarative network
+QT += declarative network sql
 # No QtGui: bb::ImageData and bb::utility::ImageConverter instead of QImage.
 QT -= gui
 LIBS += -lbbcascades -lbbdata -lbbsystem -lbb

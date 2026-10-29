@@ -17,6 +17,11 @@ Page {
             title: qsTr("Refresh")
             ActionBar.placement: ActionBarPlacement.OnBar
             onTriggered: gates.refresh()
+        },
+        ActionItem {
+            title: qsTr("SQLite test")
+            ActionBar.placement: ActionBarPlacement.OnBar
+            onTriggered: gates.startSqlTest()
         }
     ]
 
@@ -29,6 +34,12 @@ Page {
             Label {
                 text: gates.status
                 multiline: true
+            }
+            Label {
+                topMargin: ui.du(2)
+                text: gates.sql
+                multiline: true
+                visible: text != ""
             }
             Label {
                 topMargin: ui.du(2)

@@ -45,6 +45,8 @@
         <entry-point-id>HyperBerryService</entry-point-id>
         <filter>
             <action>com.zsavajji.hyperberry.START</action>
+            <!-- Step 0.4's writer (engine/sqltest.go), until Phase 2 replaces the gates. -->
+            <action>com.zsavajji.hyperberry.SQLTEST</action>
             <mime-type>*</mime-type>
             <property var="uris" value="data://local"/>
         </filter>
