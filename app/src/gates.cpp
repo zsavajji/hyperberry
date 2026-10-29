@@ -42,6 +42,13 @@ void Gates::opened(const InvokeRequest &request)
     emit changed();
 }
 
+QString Gates::voiceUrl(const QString &name)
+{
+    const QString dir = QDir::homePath() + "/voice";
+    QDir().mkpath(dir);
+    return "file://" + dir + "/" + name;
+}
+
 void Gates::startEngine()
 {
     invoke("com.zsavajji.hyperberry.START");

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"path/filepath"
 	"time"
 
@@ -27,6 +28,8 @@ func gateInvoked(action, dataDir string, log waLog.Logger) {
 				log.Infof("notification posted")
 			}
 		}()
+	case "com.zsavajji.hyperberry.VOICETEST":
+		go voiceTest(filepath.Join(dataDir, "voice"), log.Sub("voice"))
 	case "com.zsavajji.hyperberry.WITHDRAWTEST":
 		go func() {
 			if err := withdraw("test"); err != nil {
@@ -64,4 +67,47 @@ func sqlTest(path string, log waLog.Logger) {
 		}
 	}
 	log.Infof("%d rows written, %d failed", rows-failed, failed)
+}
+
+// voiceTest is step 0.8's: the UI records voice/test.wav; this encodes it as a voice note
+// (voice/test.ogg) and decodes that back (voice/decoded.wav) for the UI to play, logging the
+// recorder's format and the times.
+func voiceTest(dir string, log waLog.Logger) {
+	wav, err := os.ReadFile(filepath.Join(dir, "test.wav"))
+	if err != nil {
+		log.Errorf("%v", err)
+		return
+	}
+	pcm, info, err := readWAV(wav)
+	if err != nil {
+		log.Errorf("%v", err)
+		return
+	}
+	secs := float64(len(pcm)) / float64(info.rate)
+	log.Infof("recorded %.1f s: %v", secs, info)
+	pcm, rate := opusRate(pcm, info.rate)
+	start := time.Now()
+	ogg, err := encodeOpus(pcm, rate)
+	if err != nil {
+		log.Errorf("%v", err)
+		return
+	}
+	encoded := time.Since(start)
+	start = time.Now()
+	out, err := decodeOpus(ogg)
+	if err != nil {
+		log.Errorf("%v", err)
+		return
+	}
+	decoded := time.Since(start)
+	if err := os.WriteFile(filepath.Join(dir, "test.ogg"), ogg, 0o644); err != nil {
+		log.Errorf("%v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "decoded.wav"), writeWAV(out, 48000), 0o644); err != nil {
+		log.Errorf("%v", err)
+	}
+	log.Infof("encoded at %d Hz in %v (%.3f of real time): %d bytes, %.1f kbps; decoded in %v",
+		rate, encoded.Round(time.Millisecond), encoded.Seconds()/secs, len(ogg),
+		float64(len(ogg))*8/secs/1000, decoded.Round(time.Millisecond))
+	log.Infof("waveform %v", waveform(pcm))
 }

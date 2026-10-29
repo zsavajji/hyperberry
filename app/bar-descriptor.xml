@@ -49,6 +49,7 @@
             <action>com.zsavajji.hyperberry.SQLTEST</action>
             <action>com.zsavajji.hyperberry.NOTIFYTEST</action>
             <action>com.zsavajji.hyperberry.WITHDRAWTEST</action>
+            <action>com.zsavajji.hyperberry.VOICETEST</action>
             <mime-type>*</mime-type>
             <property var="uris" value="data://local"/>
         </filter>
@@ -70,6 +71,8 @@
     <permission>access_internet</permission>
     <permission>run_when_backgrounded</permission>
     <permission>post_notification</permission>
+    <permission>record_audio</permission>
+    <permission>play_audio</permission>
     <env var="LD_LIBRARY_PATH" value="app/native/lib:/usr/lib/qt4/lib"/>
     <env var="CASCADES_THEME" value="dark?primaryColor=0x1BD862&amp;primaryBase=0x14A249"/>
 </qnx>

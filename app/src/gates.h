@@ -32,6 +32,8 @@ public:
     // Step 0.4: the engine writes a row to data/sqltest.db every 50 ms; this reads the newest
     // one every 100 ms through QSQLITE for 5 min, counting errors.
     Q_INVOKABLE void startSqlTest();
+    // Step 0.8: the file URL of data/voice/<name>, where the recorder and the engine meet.
+    Q_INVOKABLE QString voiceUrl(const QString &name);
 
 signals:
     void changed();

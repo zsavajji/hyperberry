@@ -28,6 +28,10 @@ Page {
             onTriggered: emojiChat.open()
         },
         ActionItem {
+            title: qsTr("Voice test")
+            onTriggered: voiceTest.open()
+        },
+        ActionItem {
             title: qsTr("SQLite test")
             onTriggered: gates.startSqlTest()
         },
@@ -47,6 +51,9 @@ Page {
         },
         EmojiChat {
             id: emojiChat
+        },
+        VoiceTest {
+            id: voiceTest
         }
     ]
 
