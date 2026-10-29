@@ -16,9 +16,7 @@ func runEngine(container *sqlstore.Container, dataDir string, log waLog.Logger) 
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	// First, before anything slow: the navigator gives a headless app 6 s.
 	connectNavigator(stop, func(action string) {
-		if action == "com.zsavajji.hyperberry.SQLTEST" {
-			go sqlTest(filepath.Join(dataDir, "sqltest.db"), log.Sub("sqltest"))
-		}
+		gateInvoked(action, dataDir, log.Sub("gate"))
 	}, log.Sub("nav"))
 	var sess *Session
 	db, err := openChats(filepath.Join(dataDir, "chats.db"))

@@ -22,6 +22,14 @@ Page {
             title: qsTr("SQLite test")
             ActionBar.placement: ActionBarPlacement.OnBar
             onTriggered: gates.startSqlTest()
+        },
+        ActionItem {
+            title: qsTr("Notify in 10 s")
+            onTriggered: gates.invoke("com.zsavajji.hyperberry.NOTIFYTEST")
+        },
+        ActionItem {
+            title: qsTr("Withdraw")
+            onTriggered: gates.invoke("com.zsavajji.hyperberry.WITHDRAWTEST")
         }
     ]
 
@@ -37,7 +45,7 @@ Page {
             }
             Label {
                 topMargin: ui.du(2)
-                text: gates.sql
+                text: gates.test
                 multiline: true
                 visible: text != ""
             }

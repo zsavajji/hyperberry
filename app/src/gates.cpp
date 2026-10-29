@@ -27,7 +27,19 @@ Gates::Gates(QObject *parent)
 {
     m_sqlTimer.setInterval(100);
     connect(&m_sqlTimer, SIGNAL(timeout()), this, SLOT(readSql()));
+    // Made before the event loop runs, so an invoke that launched the app isn't missed.
+    InvokeManager *manager = new InvokeManager(this);
+    connect(manager, SIGNAL(invoked(const bb::system::InvokeRequest &)),
+            this, SLOT(opened(const bb::system::InvokeRequest &)));
     refresh();
+}
+
+void Gates::opened(const InvokeRequest &request)
+{
+    m_test = tr("Opened from a notification at %1: %2, payload \"%3\".")
+                 .arg(QDateTime::currentDateTime().toString("hh:mm:ss"), request.action(),
+                      QString::fromUtf8(request.data()));
+    emit changed();
 }
 
 void Gates::startEngine()
@@ -98,7 +110,7 @@ void Gates::startSqlTest()
     m_sqlFirst = m_newest = m_maxLag = 0;
     m_reads = m_errors = m_busy = 0;
     m_sqlError.clear();
-    m_sql = tr("SQLite test: waiting for the engine's first row.");
+    m_test = tr("SQLite test: waiting for the engine's first row.");
     invoke("com.zsavajji.hyperberry.SQLTEST");
     m_sqlTimer.start();
     emit changed();
@@ -133,7 +145,7 @@ void Gates::readSql()
 
     // Before the first row the engine may not have made the file or the table yet.
     if (!m_sqlFirst) {
-        m_sql = tr("SQLite test: waiting for the engine's first row. %1").arg(error.text());
+        m_test = tr("SQLite test: waiting for the engine's first row. %1").arg(error.text());
         emit changed();
         return;
     }
@@ -146,7 +158,7 @@ void Gates::readSql()
     const int seconds = (now - m_sqlFirst) / 1000;
     if (seconds >= 300)
         m_sqlTimer.stop();
-    m_sql = tr("SQLite %1%2: %3 reads in %4 s, newest row %5, longest lag %6 ms. "
+    m_test = tr("SQLite %1%2: %3 reads in %4 s, newest row %5, longest lag %6 ms. "
                "Errors: %7 (busy or locked: %8). %9")
                 .arg(m_sqlVersion, m_sqlTimer.isActive() ? QString() : tr(", done"))
                 .arg(m_reads).arg(seconds).arg(m_newest).arg(m_maxLag)

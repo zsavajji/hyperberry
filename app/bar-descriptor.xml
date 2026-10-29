@@ -45,9 +45,21 @@
         <entry-point-id>HyperBerryService</entry-point-id>
         <filter>
             <action>com.zsavajji.hyperberry.START</action>
-            <!-- Step 0.4's writer (engine/sqltest.go), until Phase 2 replaces the gates. -->
+            <!-- The gate checks of engine/gates.go, until Phase 2 replaces the gates. -->
             <action>com.zsavajji.hyperberry.SQLTEST</action>
+            <action>com.zsavajji.hyperberry.NOTIFYTEST</action>
+            <action>com.zsavajji.hyperberry.WITHDRAWTEST</action>
             <mime-type>*</mime-type>
+            <property var="uris" value="data://local"/>
+        </filter>
+    </invoke-target>
+    <!-- The UI, opened by a tap on the engine's notification (engine/notify_qnx.go). -->
+    <invoke-target id="com.zsavajji.hyperberry">
+        <invoke-target-type>application</invoke-target-type>
+        <entry-point-id>HyperBerry</entry-point-id>
+        <filter>
+            <action>com.zsavajji.hyperberry.OPEN</action>
+            <mime-type>text/plain</mime-type>
             <property var="uris" value="data://local"/>
         </filter>
     </invoke-target>
@@ -57,6 +69,7 @@
     <permission system="true">run_native</permission>
     <permission>access_internet</permission>
     <permission>run_when_backgrounded</permission>
+    <permission>post_notification</permission>
     <env var="LD_LIBRARY_PATH" value="app/native/lib:/usr/lib/qt4/lib"/>
     <env var="CASCADES_THEME" value="dark?primaryColor=0x1BD862&amp;primaryBase=0x14A249"/>
 </qnx>
