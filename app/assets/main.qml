@@ -19,8 +19,16 @@ Page {
             onTriggered: gates.refresh()
         },
         ActionItem {
-            title: qsTr("SQLite test")
+            title: qsTr("Emoji test")
             ActionBar.placement: ActionBarPlacement.OnBar
+            onTriggered: emojiTest.open()
+        },
+        ActionItem {
+            title: qsTr("Emoji chat")
+            onTriggered: emojiChat.open()
+        },
+        ActionItem {
+            title: qsTr("SQLite test")
             onTriggered: gates.startSqlTest()
         },
         ActionItem {
@@ -30,6 +38,15 @@ Page {
         ActionItem {
             title: qsTr("Withdraw")
             onTriggered: gates.invoke("com.zsavajji.hyperberry.WITHDRAWTEST")
+        }
+    ]
+
+    attachedObjects: [
+        EmojiTest {
+            id: emojiTest
+        },
+        EmojiChat {
+            id: emojiChat
         }
     ]
 

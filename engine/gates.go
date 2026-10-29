@@ -18,7 +18,9 @@ func gateInvoked(action, dataDir string, log waLog.Logger) {
 			// Time to lock the phone first: posted while the phone was in use, the LED was
 			// cancelled by the system 2 s later and never blinked (Q10, 2026-10-29).
 			time.Sleep(10 * time.Second)
-			body := "Notification test, " + time.Now().Format("15:04:05")
+			// Emoji of E0.6, E14.0, E16.0 and E18.0, a ZWJ family and a flag: the Hub draws them
+			// itself, outside the app's font config (step 0.7).
+			body := "Notification test 😃 🫠 🫩 🫫 👨‍👩‍👧‍👦 🇮🇹, " + time.Now().Format("15:04:05")
 			if err := notify("test", "HyperBerry", body, "test-chat"); err != nil {
 				log.Errorf("notify: %v", err)
 			} else {
