@@ -1,85 +1,43 @@
 import bb.cascades 1.4
 
-// Phase 0's gate page (PLAN.md §9): start the engine as a headless service and read what it
-// says. Phase 2 replaces it with the real chat list.
-Page {
-    titleBar: TitleBar {
-        title: qsTr("HyperBerry")
+// The app's root (PLAN.md §7): a NavigationPane that holds no page of its own. It shows the
+// chat list when linked, else the linking page: not linked, the root is the linking page, not a sheet.
+NavigationPane {
+    id: nav
+    property bool linked: engine.linked
+    Menu.definition: MenuDefinition {
+        // Settings, far right in the application menu, come in step 5.4.
+        settingsAction: SettingsActionItem {
+            enabled: false
+        }
     }
-
-    actions: [
-        ActionItem {
-            title: qsTr("Start engine")
-            ActionBar.placement: ActionBarPlacement.Signature
-            onTriggered: gates.startEngine()
-        },
-        ActionItem {
-            title: qsTr("Refresh")
-            ActionBar.placement: ActionBarPlacement.OnBar
-            onTriggered: gates.refresh()
-        },
-        ActionItem {
-            title: qsTr("Emoji test")
-            ActionBar.placement: ActionBarPlacement.OnBar
-            onTriggered: emojiTest.open()
-        },
-        ActionItem {
-            title: qsTr("Emoji chat")
-            onTriggered: emojiChat.open()
-        },
-        ActionItem {
-            title: qsTr("Voice test")
-            onTriggered: voiceTest.open()
-        },
-        ActionItem {
-            title: qsTr("SQLite test")
-            onTriggered: gates.startSqlTest()
-        },
-        ActionItem {
-            title: qsTr("Notify in 10 s")
-            onTriggered: gates.invoke("com.zsavajji.hyperberry.NOTIFYTEST")
-        },
-        ActionItem {
-            title: qsTr("Withdraw")
-            onTriggered: gates.invoke("com.zsavajji.hyperberry.WITHDRAWTEST")
-        }
-    ]
-
     attachedObjects: [
-        EmojiTest {
-            id: emojiTest
+        ComponentDefinition {
+            id: chatsDef
+            source: "ChatsPage.qml"
         },
-        EmojiChat {
-            id: emojiChat
-        },
-        VoiceTest {
-            id: voiceTest
+        ComponentDefinition {
+            id: linkDef
+            source: "LinkPage.qml"
         }
     ]
+    onPopTransitionEnded: page.destroy()
+    onLinkedChanged: show()
+    onCreationCompleted: show()
 
-    ScrollView {
-        Container {
-            topPadding: ui.du(2)
-            leftPadding: ui.du(2)
-            rightPadding: ui.du(2)
-
-            Label {
-                text: gates.status
-                multiline: true
-            }
-            Label {
-                topMargin: ui.du(2)
-                text: gates.test
-                multiline: true
-                visible: text != ""
-            }
-            Label {
-                topMargin: ui.du(2)
-                text: gates.log
-                multiline: true
-                textStyle.base: SystemDefaults.TextStyles.SmallText
-                textStyle.fontFamily: "Courier"
-            }
+    // A page swap, so there's no Back to the other root: the new page goes in at the bottom
+    // and every page above it (link number page, a chat) goes out.
+    function show() {
+        var page = (linked ? chatsDef : linkDef).createObject()
+        if (count() == 0) {
+            push(page)
+            return
+        }
+        insert(0, page)
+        while (count() > 1) {
+            var old = at(1)
+            remove(old)
+            old.destroy()
         }
     }
 }

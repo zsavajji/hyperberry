@@ -45,11 +45,6 @@
         <entry-point-id>HyperBerryService</entry-point-id>
         <filter>
             <action>com.zsavajji.hyperberry.START</action>
-            <!-- The gate checks of engine/gates.go, until Phase 2 replaces the gates. -->
-            <action>com.zsavajji.hyperberry.SQLTEST</action>
-            <action>com.zsavajji.hyperberry.NOTIFYTEST</action>
-            <action>com.zsavajji.hyperberry.WITHDRAWTEST</action>
-            <action>com.zsavajji.hyperberry.VOICETEST</action>
             <mime-type>*</mime-type>
             <property var="uris" value="data://local"/>
         </filter>

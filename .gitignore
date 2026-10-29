@@ -1,3 +1,4 @@
 build/
 debug/
 app/assets/fonts/
+lib/qrcodegen/

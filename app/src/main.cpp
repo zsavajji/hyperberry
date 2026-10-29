@@ -6,7 +6,8 @@
 #include <QFileInfo>
 #include <QtDeclarative>
 
-#include "gates.h"
+#include "EngineLink.h"
+#include "QrImage.h"
 
 using namespace bb::cascades;
 
@@ -29,18 +30,20 @@ static bool loaded(QmlDocument *document, const char *name)
 Q_DECL_EXPORT int main(int argc, char **argv)
 {
     Application app(argc, argv);
-    Gates gates(&app);
+    EngineLink engine(&app);
+    QrImage qr(&app);
 
     QmlDocument *document = QmlDocument::create("asset:///main.qml").parent(&app);
     if (!loaded(document, "main.qml"))
         return 1;
-    document->setContextProperty("gates", &gates);
+    document->setContextProperty("engine", &engine);
+    document->setContextProperty("qr", &qr);
     AbstractPane *root = document->createRootObject<AbstractPane>();
     if (!root)
         return 1;
     app.setScene(root);
-    // Nothing else starts the engine (no boot start, user 2026-10-29). Invoking a running
-    // engine only delivers it an invoke it ignores.
-    gates.startEngine();
+    // Nothing else starts the engine (no boot start, user 2026-10-29), so the UI starts it on
+    // open, and again whenever the link drops.
+    engine.start();
     return Application::exec();
 }

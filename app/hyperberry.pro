@@ -10,9 +10,13 @@ LIBS += -lbbcascades -lbbdata -lbbsystem -lbb
 QMAKE_LFLAGS += -Wl,-rpath-link,$${QNX_DIR}/$${QNX_CPUDIR}/usr/lib/qt4/lib
 QMAKE_CXXFLAGS += -Wno-psabi
 
-SOURCES += src/main.cpp src/gates.cpp
-HEADERS += src/gates.h
+SOURCES += src/main.cpp src/EngineLink.cpp src/QrImage.cpp $$PWD/../lib/qrcodegen/qrcodegen.c
+HEADERS += src/EngineLink.h src/QrImage.h
 
 DESTDIR = app
 OBJECTS_DIR = obj
 MOC_DIR = moc
+
+# qrcodegen is C99, fetched by scripts/fetch-qrcodegen.sh.
+INCLUDEPATH += $$PWD/../lib/qrcodegen
+QMAKE_CFLAGS += -std=c99

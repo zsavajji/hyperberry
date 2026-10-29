@@ -15,9 +15,8 @@ func runEngine(container *sqlstore.Container, dataDir string, log waLog.Logger) 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	// First, before anything slow: the navigator gives a headless app 6 s.
-	connectNavigator(stop, func(action string) {
-		gateInvoked(action, dataDir, log.Sub("gate"))
-	}, log.Sub("nav"))
+	// The launch itself is the start; a START sent to a running engine needs nothing.
+	connectNavigator(stop, func(string) {}, log.Sub("nav"))
 	var sess *Session
 	db, err := openChats(filepath.Join(dataDir, "chats.db"))
 	if err != nil {
