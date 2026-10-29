@@ -26,22 +26,23 @@
     <entryPoint id="HyperBerry">
         <name>HyperBerry</name>
     </entryPoint>
-    <!-- The engine (PLAN.md §3): headless, started at boot or by the UI, and kept running. -->
+    <!-- The engine (PLAN.md §3): headless, started by the UI and kept running. Not at boot
+         (user, 2026-10-29): an unsigned app can't run until root is up, and the boot event
+         also fires on every install. -->
     <entryPoint id="HyperBerryService">
         <name>HyperBerry Service</name>
         <entryPointType>Qnx/Elf</entryPointType>
         <permission system="true">_sys_run_headless</permission>
         <permission system="true">_sys_headless_nostop</permission>
+        <!-- Without a memory class the launcher caps a headless heap at 3 MB
+             (headless_heapsize_limit_mb in /etc/system/config/launcher.cfg), and the Go
+             runtime exits within 47 ms, before main (Q10, 2026-10-29). -->
+        <permission system="true">_sys_headless_xlarge</permission>
     </entryPoint>
 
     <invoke-target id="com.zsavajji.hyperberry.service">
         <invoke-target-type>application.headless</invoke-target-type>
         <entry-point-id>HyperBerryService</entry-point-id>
-        <filter>
-            <action>bb.action.system.STARTED</action>
-            <mime-type>application/vnd.blackberry.system.event.STARTED</mime-type>
-            <property var="uris" value="data://local"/>
-        </filter>
         <filter>
             <action>com.zsavajji.hyperberry.START</action>
             <mime-type>*</mime-type>

@@ -12,6 +12,10 @@ import (
 
 // runEngine is hyperberryd's normal mode: the session, served to the UI until a signal.
 func runEngine(container *sqlstore.Container, dataDir string, log waLog.Logger) {
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	// First, before anything slow: the navigator gives a headless app 6 s.
+	connectNavigator(stop, log.Sub("nav"))
 	var sess *Session
 	db, err := openChats(filepath.Join(dataDir, "chats.db"))
 	if err != nil {
@@ -34,8 +38,6 @@ func runEngine(container *sqlstore.Container, dataDir string, log waLog.Logger) 
 		}
 	}()
 	log.Infof("serving the UI")
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	<-stop
 	srv.Close()
 	sess.close()

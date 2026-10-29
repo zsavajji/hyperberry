@@ -13,7 +13,7 @@ docker run --rm -v "$ROOT:/src" -v "$CACHE:/cache" -w /src/engine \
 	hyperberry-build sh -euc '
 		go build -trimpath -ldflags="-s -w" -o /src/build/hyperberryd .
 		L=$QNX_TARGET/armle-v7/lib
-		for l in $L/libc.so.3 $L/libm.so.2 $L/libsocket.so.3; do
+		for l in $L/libc.so.3 $L/libm.so.2 $L/libsocket.so.3 $L/../usr/lib/libbps.so.3; do
 			nm -D --defined-only $l | awk "{ print \$3 }"
 		done | sed "s/@.*//" | sort -u >/tmp/defined
 		missing=$(nm -D --undefined-only /src/build/hyperberryd | awk "\$1 == \"U\" { print \$2 }" |

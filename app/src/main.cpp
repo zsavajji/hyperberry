@@ -39,5 +39,8 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     if (!root)
         return 1;
     app.setScene(root);
+    // Nothing else starts the engine (no boot start, user 2026-10-29). Invoking a running
+    // engine only delivers it an invoke it ignores.
+    gates.startEngine();
     return Application::exec();
 }
