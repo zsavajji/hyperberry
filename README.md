@@ -19,12 +19,6 @@ Calls are planned for later, through [meowcaller](https://github.com/purpshell/m
 > HyperBerry is an independent project, not affiliated with or endorsed by WhatsApp or Meta.
 > Using an unofficial client may be against WhatsApp's terms of service; use it at your own risk.
 
-## Status
-
-Early work. The engine links, syncs, sends and receives on the PC and reaches WhatsApp from the
-Q10; the UI is still a test page. What is done and what comes next is in
-[docs/plan/steps.md](docs/plan/steps.md).
-
 ## Building
 
 You need Docker and the local images `bb10-cxx20` and `yamsergey/bb10-ndk:0.6`.
