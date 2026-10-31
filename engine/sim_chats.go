@@ -48,7 +48,7 @@ var simChats = append([]simChat{
 	{jid: "393330000011@s.whatsapp.net", name: "Roberto", kind: msgSticker, ago: 5 * day},
 	{jid: "393330000012@s.whatsapp.net", name: "Old friend", text: "Pinned, from a while ago", ago: 40 * day, pinned: true},
 	{jid: "393330000013@s.whatsapp.net", name: "Archived chat", text: "This one never shows in the list", ago: 2 * day, archived: true},
-	{jid: "393330000014@s.whatsapp.net", name: "Emoji 🫨🪿🫎", text: "New emoji: 🫨 🪿 🫎 🪼 🫚 and old ones: 😀 👍", ago: 10 * day},
+	{jid: "393330000014@s.whatsapp.net", name: "Emoji 🫨🪿🫎", text: "New emoji: 🫫 🫪 🫩 🫨 🪿 and old ones: 😀 👍", ago: 10 * day},
 	{jid: "393330000015@s.whatsapp.net", name: "Last year", text: "Happy new year!", out: true, state: stateRead, ago: 300 * day},
 }, simFiller()...)
 

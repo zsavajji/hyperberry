@@ -1,4 +1,5 @@
 build/
 debug/
 app/assets/fonts/
+app/assets/emoji/
 lib/qrcodegen/

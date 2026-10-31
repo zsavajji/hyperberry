@@ -107,7 +107,8 @@ Container {
                         topMargin: 0
                         multiline: true
                         autoSize.maxLineCount: 2
-                        text: item.msg.quote
+                        // Without U+20E3, as the body below.
+                        text: item.msg.quote.replace(/\u20E3/g, "")
                         textFormat: TextFormat.Plain
                         textStyle.base: item.ListItem.view.emojiStyle
                         textStyle.fontSize: FontSize.PercentageValue
@@ -132,7 +133,10 @@ Container {
                 visible: item.msg.text != ""
                 topMargin: 0
                 multiline: true
-                text: item.msg.text
+                // Without U+20E3, a keycap's frame. The renderer draws a digit and its marks from one
+                // font, and none has both: ours has no digits, the system's no frame. So a keycap one
+                // lost its "1" (Q10, 2026-10-31). Only the shown text: the message and Copy keep it.
+                text: item.msg.text.replace(/\u20E3/g, "")
                 textFormat: TextFormat.Plain
                 textStyle.base: item.ListItem.view.emojiStyle
                 textStyle.fontSize: FontSize.PercentageValue

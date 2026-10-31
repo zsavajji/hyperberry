@@ -49,6 +49,10 @@ Page {
     }
     titleBar: TitleBar {
         title: engine.connected && engine.conn == "ready" ? qsTr("Chats") : qsTr("Connecting…")
+        // Sticky: a bar that scrolls away resizes the list on every frame, and laying out rows
+        // that hold several of our font's emoji again each frame made scrolling lag (Q10,
+        // 2026-10-31).
+        scrollBehavior: TitleBarScrollBehavior.Sticky
     }
     Container {
         layout: DockLayout {}

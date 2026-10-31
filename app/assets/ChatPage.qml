@@ -9,6 +9,8 @@ Page {
     property variant chat
     // Set by a send until our row goes in at the bottom.
     property bool followOwn: false
+    // The emoji picker is open, in the keyboard's place; only the Emoji action closes it.
+    property bool picking: false
     property string failedCmd: engine.failure.cmd || ""
     onFailedCmdChanged: {
         if (failedCmd == "msg.delete") {
@@ -90,6 +92,12 @@ Page {
             }
             onTextChanging: ctl.composing(text)
         },
+        ActionItem {
+            title: qsTr("Emoji")
+            imageSource: "asset:///images/emoji.png"
+            ActionBar.placement: ActionBarPlacement.OnBar
+            onTriggered: page.picking = !page.picking
+        },
         // The touch path to sending (the Q10 has no on-screen submit key). The phone's own icon, read
         // at run time, not shipped.
         ActionItem {
@@ -101,6 +109,25 @@ Page {
     ]
     keyListeners: KeyListener {
         onKeyPressed: page.typeKey(event)
+    }
+    // The first open creates the picker (about 1,400 cells' worth of model, none of them controls);
+    // the time is logged for the 300 ms check (step 4.2).
+    onPickingChanged: {
+        if (!picking) {
+            return
+        }
+        if (!pickerSlot.delegateActive) {
+            var t = Date.now()
+            pickerSlot.delegateActive = true
+            console.log("emoji picker: created in " + (Date.now() - t) + " ms")
+        }
+        emojis.refresh()
+    }
+    // Inserts at the cursor and keeps the field focused, so the Q10 keyboard still types into it.
+    function picked(emoji) {
+        composer.editor.insertPlainText(emoji)
+        emojis.use(emoji)
+        composer.requestFocus()
     }
     function send() {
         if (!/\S/.test(composer.text)) {
@@ -377,7 +404,8 @@ Page {
                     topMargin: 0
                     bottomMargin: 0
                     multiline: false
-                    text: ctl.replyText
+                    // Without U+20E3, a keycap's frame, as MessageItem's body.
+                    text: ctl.replyText.replace(/\u20E3/g, "")
                     textFormat: TextFormat.Plain
                     textStyle.base: nav.emojiStyle
                     textStyle.fontSize: FontSize.PercentageValue
@@ -392,6 +420,19 @@ Page {
                 textFormat: TextFormat.Plain
                 textStyle.base: nav.emojiStyle
                 textStyle.color: ui.palette.secondaryTextOnPlain
+            }
+        }
+        // Created at the first open and kept (delegateActive stays true).
+        ControlDelegate {
+            id: pickerSlot
+            source: "EmojiPicker.qml"
+            delegateActive: false
+            visible: page.picking
+            horizontalAlignment: HorizontalAlignment.Fill
+            onControlChanged: {
+                if (control) {
+                    control.picked.connect(page.picked)
+                }
             }
         }
     }

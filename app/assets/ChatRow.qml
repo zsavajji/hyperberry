@@ -100,7 +100,8 @@ Container {
                     layoutProperties: StackLayoutProperties {
                         spaceQuota: 1
                     }
-                    text: row.chat.preview
+                    // Without U+20E3, a keycap's frame, as MessageItem's body.
+                    text: row.chat.preview.replace(/\u20E3/g, "")
                     textStyle.base: row.ListItem.view.emojiStyle
                     textStyle.fontSize: FontSize.PercentageValue
                     textStyle.fontSizeValue: row.ListItem.view.smallSize

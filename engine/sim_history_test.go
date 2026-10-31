@@ -46,6 +46,14 @@ func TestSimHistory(t *testing.T) {
 	if n := rows(st, "SELECT count(DISTINCT sender) FROM messages WHERE chat = ?", g); n != 5 {
 		t.Errorf("%d senders, want 5", n)
 	}
+	// The emoji chat (4.1): its script and the seeded last message, a 1:1 chat with no senders.
+	e := "393330000014@s.whatsapp.net"
+	if n := rows(st, "SELECT count(*) FROM messages WHERE chat = ?", e); n != len(simEmoji)+1 {
+		t.Errorf("emoji chat: %d rows, want %d", n, len(simEmoji)+1)
+	}
+	if n := rows(st, "SELECT count(*) FROM messages WHERE chat = ? AND (text = 'E18.0 🫫' OR COALESCE(sender, '') != '')", e); n != 1 {
+		t.Errorf("emoji chat: %d rows that are E18.0 or have a sender, want 1", n)
+	}
 	for i, c := range simChats {
 		var id string
 		st.db.QueryRow("SELECT id FROM messages WHERE chat = ? ORDER BY ts DESC LIMIT 1", c.jid).Scan(&id)

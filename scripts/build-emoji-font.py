@@ -5,22 +5,26 @@ applies none of its GSUB. On the Q10 the original took 15 s and 177 MB to draw. 
   - keep only the glyphs the cmap reaches: the sequence glyphs need GSUB (user, 2026-10-29:
     no substitutions), and so does nothing else
   - drop the cmap below U+0100 (digits, #, *, space, (c), (R)), so text never takes them from
-    here instead of Slate Pro
+    here instead of Slate Pro; the keycap's combining frame U+20E3 draws nothing
+  - write each code point's bitmap as a CELL px PNG for the picker, from the original size
   - scale every colour bitmap from the font's 109 ppem down to PPEM, near the drawn size
 
-    build-emoji-font.py <NotoColorEmoji.ttf> <HyperBerryEmoji.ttf>
+    build-emoji-font.py <NotoColorEmoji.ttf> <HyperBerryEmoji.ttf> <png folder>
 """
 import io
+import os
 import sys
 
 from fontTools import subset
 from fontTools.ttLib import TTFont
 from PIL import Image
 
+CELL = 54  # the picker's cell image: 6 du on the Q10
+
 PPEM = 32  # the size Cascades draws emoji in body text on the Q10 (measured 2026-10-29)
 
 
-def main(src, dst):
+def main(src, dst, pngs):
     font = TTFont(src)
     options = subset.Options()
     options.layout_features = []
@@ -29,6 +33,23 @@ def main(src, dst):
     sub = subset.Subsetter(options)
     sub.populate(unicodes=[u for u in font.getBestCmap() if u >= 0x100])
     sub.subset(font)
+    # U+20E3, the keycap's frame, is a combining mark: with no GSUB to join it to its digit it
+    # drew over the text before it, and the system has no glyph for it (a "?" box; Q10,
+    # 2026-10-31). It takes ZWJ's glyph instead, empty and zero-wide, so "1️⃣" draws as "1".
+    for table in font["cmap"].tables:
+        table.cmap[0x20E3] = table.cmap[0x200D]
+
+    os.makedirs(pngs, exist_ok=True)
+    glyphs = font["CBDT"].strikeData[0]
+    for cp, name in font.getBestCmap().items():
+        if name not in glyphs:
+            continue
+        img = Image.open(io.BytesIO(glyphs[name].imageData)).convert("RGBA")
+        k = min(CELL / img.width, CELL / img.height)
+        img = img.resize((max(1, round(img.width * k)), max(1, round(img.height * k))), Image.LANCZOS)
+        cell = Image.new("RGBA", (CELL, CELL), (0, 0, 0, 0))
+        cell.paste(img, ((CELL - img.width) // 2, (CELL - img.height) // 2))
+        cell.save(os.path.join(pngs, "%x.png" % cp), optimize=True)
 
     (strike,) = font["CBLC"].strikes
     size = strike.bitmapSizeTable

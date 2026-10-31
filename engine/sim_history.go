@@ -37,7 +37,8 @@ var simPhrases = []string{
 // simPeople are the group members besides the one who sent the chat's last message.
 var simPeople = []string{"Giorgia Conti", "Luca Verdi", "Marco Gallo", "Sofia Greco", "Paolo Fabbri"}
 
-// simStep is one message of the Family script. who "" is us; kind msgService has no sender.
+// simStep is one message of a hand-written script. who "" is us; kind msgService has no sender;
+// in a 1:1 chat any other who is them.
 type simStep struct {
 	who         string
 	kind        int
@@ -76,6 +77,38 @@ var simFamily = []simStep{
 	{who: "Mum", text: "Don't forget the dessert 🍰"},
 }
 
+// simEmoji is the emoji chat's talk, for step 4.1's check: one emoji per emoji version, E0.6 to
+// E18.0, as 0.7's test sheet had them (the first fully-qualified one in emoji-test.txt 18.0, or
+// a sequence for the versions that added only sequences). Sequences draw as their parts: the
+// font has no GSUB (user, 2026-10-29).
+var simEmoji = []simStep{
+	{who: "them", text: "E0.6 😃"},
+	{text: "E0.7 😐"},
+	{who: "them", text: "E1.0 😀"},
+	{text: "E2.0 👁️‍🗨️"},
+	{who: "them", text: "E3.0 🤣"},
+	{text: "E4.0 👱‍♀️"},
+	{who: "them", text: "E5.0 🤩"},
+	{text: "E11.0 🥰"},
+	{who: "them", text: "E12.0 🥱"},
+	{text: "E12.1 🧑‍🦰"},
+	{who: "them", text: "E13.0 🥲"},
+	{text: "E13.1 😶‍🌫️"},
+	{who: "them", text: "E14.0 🫠"},
+	{text: "E15.0 🫨"},
+	{who: "them", text: "E15.1 🙂‍↔️"},
+	{text: "E16.0 🫩"},
+	{who: "them", text: "E17.0 🫪"},
+	{text: "E18.0 🫫"},
+	{who: "them", text: "Flags 🇮🇹 🇯🇵 🇧🇷, a family 👨‍👩‍👧‍👦, a skin tone 👍🏽 and a keycap 1️⃣"},
+}
+
+// simScripts are the chats whose history is hand-written, by jid.
+var simScripts = map[string][]simStep{
+	"120363000000000001@g.us":     simFamily,
+	"393330000014@s.whatsapp.net": simEmoji,
+}
+
 // simHistory is chat i's messages before its last one (which seed writes), oldest first. A
 // generator of its own per chat means adding a chat leaves the others' history as it was; only
 // the times depend on now.
@@ -91,14 +124,14 @@ func simHistory(i int, now time.Time) []msgRow {
 		q := rows[k]
 		r.QuoteID, r.QuotePreview = q.ID, clip(preview(q.Kind, q.Text), 80)
 	}
-	if i == 1 {
-		for k, s := range simFamily {
-			r := msgRow{Chat: c.jid, ID: id(k), TS: end - int64(len(simFamily)-1-k)*9000, State: stateRead,
+	if script := simScripts[c.jid]; script != nil {
+		for k, s := range script {
+			r := msgRow{Chat: c.jid, ID: id(k), TS: end - int64(len(script)-1-k)*9000, State: stateRead,
 				Kind: s.kind, Text: s.text, Edited: s.edited, Deleted: s.del}
-			switch s.who {
-			case "":
+			switch {
+			case s.who == "":
 				r.Out = s.kind != msgService
-			default:
+			case group:
 				r.Sender, r.SenderName = simMember(s.who), s.who
 			}
 			if s.quote > 0 {
