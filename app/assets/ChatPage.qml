@@ -106,7 +106,8 @@ Page {
             input {
                 submitKey: SubmitKey.Send
                 submitKeyFocusBehavior: SubmitKeyFocusBehavior.Keep
-                onSubmitted: page.send()
+                // Off, Enter is a new line: the key still submits, so the field keeps its focus.
+                onSubmitted: settings.enterSends ? page.send() : composer.editor.insertPlainText("\n")
             }
             // Typing while recording leaves the recording alone: the text stays for later, and
             // Send finishes the recording first.
@@ -312,6 +313,7 @@ Page {
             property variant emojiStyle: nav.emojiStyle
             property int bodySize: nav.bodySize
             property int smallSize: nav.smallSize
+            property real textScale: settings.textScale
             dataModel: ctl.messages
             // Bottom to top: the model is newest first, so the list opens at the newest message
             // with no scroll call, and an older page is appended at the visual top without

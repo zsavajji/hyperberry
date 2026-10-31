@@ -159,12 +159,12 @@ Container {
         // The time ("edited" before it) and our message's state, as in ChatRow: sending, sent,
         // delivered, read, or a red "!" when it failed. Top-aligned boxes put the time's baseline
         // above the first line's: 7 px under a name or quote (small), 12 px under body text,
-        // measured at 85 % and 105 % on the Q10. ponytail: fixed pixels; the font size setting
-        // (5.4) has to scale them with the sizes.
+        // measured at 85 % and 105 % on the Q10, then scaled with the text size setting.
+        // ponytail: linear in the scale, not measured at 90-140 %.
         Container {
             verticalAlignment: VerticalAlignment.Top
             leftMargin: ui.du(1)
-            topPadding: item.msg.sender != "" || item.msg.quote != "" ? ui.px(7) : ui.px(12)
+            topPadding: item.msg.sender != "" || item.msg.quote != "" ? ui.px(7 * item.ListItem.view.textScale) : ui.px(12 * item.ListItem.view.textScale)
             layout: StackLayout {
                 orientation: LayoutOrientation.LeftToRight
             }
