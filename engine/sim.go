@@ -61,7 +61,7 @@ func newSim(srv *Server, st *Store, log waLog.Logger) *Sim {
 	srv.Handle("msg.send", s.handleSend)
 	srv.Handle("chat.read", s.handleRead)
 	srv.Handle("chat.open", s.handleOpen)
-	srv.Handle("chat.typing", accepted)
+	srv.Handle("chat.typing", s.handleChatTyping)
 	srv.Handle("chat.close", accepted)
 	srv.Handle("ui.state", accepted)
 	return s
@@ -363,6 +363,12 @@ func (s *Sim) handleOpen(req json.RawMessage) (any, error) {
 		}
 		s.srv.Emit("presence", map[string]any{"chat": r.Chat, "online": online, "lastSeen": seen})
 	}()
+	return nil, nil
+}
+
+// handleChatTyping logs the raw request so the Q10 check can see the UI's typing rhythm (step 3.2).
+func (s *Sim) handleChatTyping(req json.RawMessage) (any, error) {
+	s.log.Infof("sim: chat.typing %s", req)
 	return nil, nil
 }
 

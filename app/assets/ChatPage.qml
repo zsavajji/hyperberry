@@ -1,4 +1,5 @@
 import bb.cascades 1.4
+import bb.system 1.2
 import hyperberry 1.0
 
 // One chat (PLAN.md §7, step 3.1): a FreeForm title bar with the tile, name and status line, and
@@ -6,13 +7,88 @@ import hyperberry 1.0
 Page {
     id: page
     property variant chat
-    onChatChanged: ctl.open(chat)
+    // Set by a send until our row goes in at the bottom.
+    property bool followOwn: false
+    onChatChanged: {
+        ctl.open(chat)
+        ctl.messages.itemAdded.connect(page.added)
+    }
     attachedObjects: [
         ChatController {
             id: ctl
             link: engine
+        },
+        SystemToast {
+            id: notSent
+            body: qsTr("Not sent: HyperBerry is reconnecting. Try again in a moment.")
         }
     ]
+    actions: [
+        // The system composer (PLAN.md §7, step 3.2; user's choice A): Enter sends and the field keeps
+        // the focus, so the next message can be typed at once. It takes no text style, so emoji past
+        // Unicode 6 show as boxes until sent.
+        TextInputActionItem {
+            id: composer
+            hintText: qsTr("Message")
+            textFormat: TextFormat.Plain
+            input {
+                submitKey: SubmitKey.Send
+                submitKeyFocusBehavior: SubmitKeyFocusBehavior.Keep
+                onSubmitted: page.send()
+            }
+            onTextChanging: ctl.composing(text)
+        },
+        // The touch path to sending (the Q10 has no on-screen submit key). The phone's own icon, read
+        // at run time, not shipped.
+        ActionItem {
+            title: qsTr("Send")
+            imageSource: "file:///usr/share/icons/bb_action_sendtextmessage.png"
+            ActionBar.placement: ActionBarPlacement.OnBar
+            onTriggered: page.send()
+        }
+    ]
+    keyListeners: KeyListener {
+        onKeyPressed: page.typeKey(event)
+    }
+    function send() {
+        if (!/\S/.test(composer.text)) {
+            return
+        }
+        // Cleared only once the engine has it: it writes the row before it replies, so nothing typed is lost.
+        if (!ctl.send(composer.text)) {
+            notSent.show()
+            return
+        }
+        composer.text = ""
+        page.followOwn = true
+    }
+    // Our own message is followed even when the list was scrolled up. Scrolling once the row is in:
+    // a scroll before it, at send, left the new card below the screen, while an incoming one at the
+    // bottom was followed by the stick-to-edge policy (Q10, 2026-10-31).
+    function added(indexPath) {
+        if (followOwn && indexPath[0] == 0) {
+            followOwn = false
+            list.scrollToPosition(ScrollPosition.Beginning, ScrollAnimation.None)
+        }
+    }
+    // Called by ChatsPage once the page is pushed: every key, the first included, goes through the
+    // input method (auto-capitals, Alt and Shift), which a KeyListener bypasses (bb10-pitfalls).
+    function focusComposer() {
+        composer.requestFocus()
+    }
+    // On the Q10, typing anywhere on the page goes to the field (step 3.2). A key reaches the page only
+    // when the field doesn't have the focus: it goes in at the end, and the field takes over from the
+    // next key. Modifiers, Sym and Delete arrive cut to their low byte with a keycap of 0xE000 or more
+    // (bb10-pitfalls); control characters (Enter, Backspace) and Ctrl shortcuts aren't text.
+    function typeKey(event) {
+        var c = event.unicode
+        if (event.keycap >= 0xE000 || event.ctrlPressed || c.length == 0 || c < " " || c == "\u007f") {
+            return
+        }
+        composer.text = composer.text + c
+        composer.requestFocus()
+        composer.editor.cursorPosition = composer.text.length
+    }
     titleBar: TitleBar {
         kind: TitleBarKind.FreeForm
         // The status line must stay; the default let the bar scroll away with the list (Q10).
@@ -83,6 +159,7 @@ Page {
         horizontalAlignment: HorizontalAlignment.Fill
         verticalAlignment: VerticalAlignment.Fill
         ListView {
+            id: list
             // The cards reach the shared emoji style (main.qml) through ListItem.view.
             property variant emojiStyle: nav.emojiStyle
             property int bodySize: nav.bodySize

@@ -13,8 +13,9 @@ class EngineLink;
 class MessageModel;
 
 // One open chat page (PLAN.md §7, step 3.1), made by QML in the page's attachedObjects so it
-// dies with the page. It owns the page's MessageModel, tells the engine the chat is open, and
-// turns typing and presence events into the title bar's status line.
+// dies with the page. It owns the page's MessageModel, tells the engine the chat is open, turns
+// typing and presence events into the title bar's status line, and (step 3.2) sends messages and
+// our own typing state.
 class ChatController : public QObject
 {
     Q_OBJECT
@@ -36,6 +37,10 @@ public:
     // chat is a ChatListModel row (jid, kind). Once; later calls do nothing.
     Q_INVOKABLE void open(const QVariantMap &chat);
     Q_INVOKABLE void nearTop(const QVariantList &firstVisible);
+    // False when the engine isn't connected: nothing was sent, so QML keeps the text.
+    Q_INVOKABLE bool send(const QString &text);
+    // Called on every change of the composer's text; sends our typing on and off.
+    Q_INVOKABLE void composing(const QString &text);
 
 signals:
     void messagesChanged();
@@ -46,10 +51,12 @@ private slots:
     void onPresence(const QString &chat, bool online, qint64 lastSeen);
     void onConnected();
     void typingIdle();
+    void composePaused();
 
 private:
     void sendOpen();
     void setTyping(const QString &text);
+    void setComposing(bool on);
 
     QPointer<EngineLink> m_engine;
     MessageModel *m_messages;
@@ -58,6 +65,10 @@ private:
     QString m_typing;
     QString m_presence;
     QTimer m_idle;
+    // Our own typing state, apart from the other person's above.
+    bool m_composing;
+    QTimer m_composeRepeat;
+    QTimer m_composePause;
     bb::system::LocaleHandler m_region;
 };
 

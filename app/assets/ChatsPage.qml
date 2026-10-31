@@ -29,6 +29,7 @@ Page {
                 var page = chatDef.createObject()
                 page.chat = dataModel.data(indexPath)
                 nav.push(page)
+                page.focusComposer()
             }
             listItemComponents: [
                 ListItemComponent {

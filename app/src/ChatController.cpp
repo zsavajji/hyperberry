@@ -14,12 +14,21 @@ ChatController::ChatController(QObject *parent)
     : QObject(parent)
     , m_messages(0)
     , m_group(false)
+    , m_composing(false)
     , m_region(bb::system::LocaleType::Region)
 {
     // WhatsApp's typing has no guaranteed end: clear it after 25 s without an update.
     m_idle.setSingleShot(true);
     m_idle.setInterval(25000);
     connect(&m_idle, SIGNAL(timeout()), this, SLOT(typingIdle()));
+    // WhatsApp's typing state times out on the other side: re-send "on" at most every 5 s while
+    // typing continues (step 3.2).
+    m_composeRepeat.setSingleShot(true);
+    m_composeRepeat.setInterval(5000);
+    // After 5 s without a key, send "off" so the other side never shows a stale "typing…".
+    m_composePause.setSingleShot(true);
+    m_composePause.setInterval(5000);
+    connect(&m_composePause, SIGNAL(timeout()), this, SLOT(composePaused()));
 }
 
 ChatController::~ChatController()
@@ -27,6 +36,11 @@ ChatController::~ChatController()
     if (m_engine && m_engine->connected() && !m_jid.isEmpty()) {
         QVariantMap args;
         args["chat"] = m_jid;
+        if (m_composing) {
+            QVariantMap off = args;
+            off["on"] = false;
+            m_engine->request("chat.typing", off);
+        }
         m_engine->request("chat.close", args);
     }
 }
@@ -72,6 +86,55 @@ void ChatController::nearTop(const QVariantList &firstVisible)
 {
     if (m_messages)
         m_messages->nearTop(firstVisible);
+}
+
+bool ChatController::send(const QString &text)
+{
+    if (!m_engine || !m_engine->connected())
+        return false;
+    setComposing(false);
+    QVariantMap args;
+    args["chat"] = m_jid;
+    args["text"] = text;
+    m_engine->request("msg.send", args);
+    return true;
+}
+
+void ChatController::composing(const QString &text)
+{
+    if (text.isEmpty()) {
+        setComposing(false);
+        return;
+    }
+    if (!m_composing || !m_composeRepeat.isActive())
+        setComposing(true);
+    m_composePause.start();
+}
+
+void ChatController::composePaused()
+{
+    setComposing(false);
+}
+
+void ChatController::setComposing(bool on)
+{
+    QVariantMap args;
+    args["chat"] = m_jid;
+    args["on"] = on;
+    if (on) {
+        if (m_engine && m_engine->connected())
+            m_engine->request("chat.typing", args);
+        m_composing = true;
+        m_composeRepeat.start();
+        return;
+    }
+    if (!m_composing)
+        return;
+    m_composing = false;
+    m_composeRepeat.stop();
+    m_composePause.stop();
+    if (m_engine && m_engine->connected())
+        m_engine->request("chat.typing", args);
 }
 
 void ChatController::sendOpen()
