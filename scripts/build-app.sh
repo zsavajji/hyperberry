@@ -12,7 +12,8 @@ IMAGE=${BB10_NDK_IMAGE:-yamsergey/bb10-ndk:0.6}
 docker run --rm -v "$ROOT:/src" -w /src "$IMAGE" bash -c '
 	source /root/bbndk/bbndk-env_10_3_1_995.sh >/dev/null
 	set -eu
-	mkdir -p build/ui
+	mkdir -p build/ui app/assets/translations
+	lrelease app/translations/hyperberry_it.ts -qm app/assets/translations/hyperberry_it.qm >/dev/null
 	(cd build/ui && qmake -spec blackberry-armv7le-qcc CONFIG+=device ../../app/hyperberry.pro >/dev/null &&
 		make -j"$(nproc)" >/dev/null)
 	cd app && blackberry-nativepackager -package ../build/hyperberry.bar -buildIdFile ../build/buildid.txt \

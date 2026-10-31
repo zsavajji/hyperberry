@@ -6,6 +6,9 @@ Page {
     id: page
     // The new chat page while it's open, so picking can remove it from the stack.
     property variant picker
+    // The filter field is over the list. The letter shortcuts are off meanwhile, or they would
+    // eat the letters typed into it (bb10-pitfalls).
+    property bool searching: false
     attachedObjects: [
         ComponentDefinition {
             id: chatDef
@@ -26,7 +29,41 @@ Page {
             // The stock Phone app's text message bubble; /usr/share/icons only has BBM's.
             imageSource: "asset:///images/message.png"
             ActionBar.placement: ActionBarPlacement.Signature
+            shortcuts: SystemShortcut {
+                type: SystemShortcuts.CreateNew
+                enabled: !page.searching
+            }
             onTriggered: page.newChat()
+        },
+        ActionItem {
+            title: qsTr("Top")
+            imageSource: "asset:///images/top.png"
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            shortcuts: SystemShortcut {
+                type: SystemShortcuts.JumpToTop
+                enabled: !page.searching
+            }
+            onTriggered: list.scrollToPosition(ScrollPosition.Beginning, ScrollAnimation.None)
+        },
+        ActionItem {
+            title: qsTr("Bottom")
+            imageSource: "asset:///images/bottom.png"
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            shortcuts: SystemShortcut {
+                type: SystemShortcuts.JumpToBottom
+                enabled: !page.searching
+            }
+            onTriggered: list.scrollToPosition(ScrollPosition.End, ScrollAnimation.None)
+        },
+        ActionItem {
+            title: qsTr("Search")
+            imageSource: "asset:///images/search.png"
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            shortcuts: SystemShortcut {
+                type: SystemShortcuts.Search
+                enabled: !page.searching
+            }
+            onTriggered: page.toggleSearch()
         },
         ActionItem {
             title: qsTr("Archived")
@@ -40,6 +77,22 @@ Page {
         chatPage.chat = chat
         nav.push(chatPage)
         chatPage.focusComposer()
+    }
+    // Search again with text in the field goes back to typing; with none, it closes.
+    function toggleSearch() {
+        if (!searching) {
+            searching = true
+            search.requestFocus()
+        } else if (search.text == "") {
+            closeSearch()
+        } else {
+            search.requestFocus()
+        }
+    }
+    function closeSearch() {
+        search.text = ""
+        chats.setFilter("")
+        searching = false
     }
     function newChat() {
         picker = newChatDef.createObject()
@@ -65,26 +118,46 @@ Page {
         scrollBehavior: TitleBarScrollBehavior.Sticky
     }
     Container {
-        layout: DockLayout {}
         horizontalAlignment: HorizontalAlignment.Fill
         verticalAlignment: VerticalAlignment.Fill
-        ChatList {
-            dataModel: chats
-            emojiStyle: nav.emojiStyle
-            bodySize: nav.bodySize
-            smallSize: nav.smallSize
-            onChatTapped: page.openChat(chat)
+        TextField {
+            id: search
+            visible: page.searching
+            hintText: qsTr("Search chats")
+            input.submitKey: SubmitKey.Search
+            onTextChanging: chats.setFilter(text)
+            keyListeners: KeyListener {
+                onKeyPressed: {
+                    if (event.key == 27) {
+                        page.closeSearch()
+                    }
+                }
+            }
         }
-        // The engine doesn't say when a history sync starts, so an empty list says what's
-        // coming rather than spinning.
-        Label {
-            visible: chats.empty
-            horizontalAlignment: HorizontalAlignment.Center
-            verticalAlignment: VerticalAlignment.Center
-            multiline: true
-            textStyle.textAlign: TextAlign.Center
-            textStyle.color: ui.palette.secondaryTextOnPlain
-            text: qsTr("No chats yet.\nYour phone sends your recent chats shortly after linking.")
+        Container {
+            layout: DockLayout {}
+            horizontalAlignment: HorizontalAlignment.Fill
+            verticalAlignment: VerticalAlignment.Fill
+            ChatList {
+                id: list
+                dataModel: chats
+                emojiStyle: nav.emojiStyle
+                bodySize: nav.bodySize
+                smallSize: nav.smallSize
+                onChatTapped: page.openChat(chat)
+            }
+            // The engine doesn't say when a history sync starts, so an empty list says what's
+            // coming rather than spinning.
+            Label {
+                visible: chats.empty
+                horizontalAlignment: HorizontalAlignment.Center
+                verticalAlignment: VerticalAlignment.Center
+                multiline: true
+                textStyle.textAlign: TextAlign.Center
+                textStyle.color: ui.palette.secondaryTextOnPlain
+                text: page.searching ? qsTr("No chat matches.")
+                    : qsTr("No chats yet.\nYour phone sends your recent chats shortly after linking.")
+            }
         }
     }
 }

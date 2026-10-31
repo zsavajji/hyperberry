@@ -80,6 +80,24 @@ def main(out):
     d.line(m((0.34, 1.0), (0.66, 1.0)), white, round(0.07 * 0.6 * B * S))
     img.resize((B, B), Image.LANCZOS).save(f"{out}/record.png")
 
+    # The chat list's ⋮ Search, Top and Bottom, in the same box: /usr/share/icons has none of
+    # them, and an action with no icon shows a cog (Q10, 2026-10-31).
+    w = round(0.09 * 0.6 * B * S)
+    for name in ("search", "top", "bottom"):
+        img = Image.new("RGBA", (B * S, B * S), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        if name == "search":
+            d.ellipse(m((0.0, 0.0), (0.66, 0.66)), None, white, w)
+            d.line(m((0.58, 0.58), (1.0, 1.0)), white, round(1.4 * w))
+        else:
+            bar, tip, tail = (0.04, 0.16, 0.96) if name == "top" else (0.96, 0.84, 0.04)
+            d.line(m((0.1, bar), (0.9, bar)), white, w)
+            d.line(m((0.5, tip), (0.5, tail)), white, w)
+            wing = 0.3 if name == "top" else -0.3
+            d.line(m((0.5, tip), (0.22, tip + wing)), white, w)
+            d.line(m((0.5, tip), (0.78, tip + wing)), white, w)
+        img.resize((B, B), Image.LANCZOS).save(f"{out}/{name}.png")
+
     # The bubble's buttons: a white disc 72 px across (8 du), a dark glyph. Not tinted.
     dark = (0x1a, 0x1a, 0x1a, 255)
     for name in ("play", "pause", "retry"):

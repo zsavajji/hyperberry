@@ -150,6 +150,27 @@ void ChatListModel::reloadSoon()
         m_soon.start();
 }
 
+// By the start of any word of the name, ignoring case, as ContactPicker::filter does.
+bool ChatListModel::matches(const QString &name) const
+{
+    if (m_filter.isEmpty())
+        return true;
+    foreach (const QString &w, name.split(' ', QString::SkipEmptyParts)) {
+        if (w.startsWith(m_filter, Qt::CaseInsensitive))
+            return true;
+    }
+    return false;
+}
+
+void ChatListModel::setFilter(const QString &text)
+{
+    const QString t = text.trimmed();
+    if (t == m_filter)
+        return;
+    m_filter = t;
+    reload();
+}
+
 // ponytail: re-reads every chat on each change, a few ms for hundreds of chats; read only the
 // changed jids if accounts with thousands of chats make it show.
 void ChatListModel::reload()
@@ -195,13 +216,15 @@ void ChatListModel::reload()
                 header += " " + QString::number(date.year());
         }
 
+        QVariantMap row = baseRow(q, now);
+        if (!matches(row["name"].toString()))
+            continue;
         const QString title = pinned ? tr("Pinned") : hasTime ? header : tr("No messages");
         if (groups.isEmpty() || groups.last().title != title) {
             groups.append(Group());
             groups.last().title = title;
             moves->groups.insert(title, groups.size() - 1);
         }
-        QVariantMap row = baseRow(q, now);
         // The time under a day's header; the day, or the date, where no header says it.
         if (hasTime)
             row["time"] = age == 0 || (age < 7 && !pinned) ? locale.toString(when.time(), clock)

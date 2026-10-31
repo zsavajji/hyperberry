@@ -1,5 +1,3 @@
-.pragma library
-
 // The English-for-people text of a failed request (EngineLink.failure), by the engine's code.
 function errorText(f) {
     switch (f.code) {

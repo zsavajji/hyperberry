@@ -6,6 +6,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QTextCodec>
+#include <QTranslator>
 #include <QtDeclarative>
 #include <sys/slog2.h>
 
@@ -65,6 +66,12 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     // "typing…" showed as "typingà|" (Q10, 2026-10-31).
     QTextCodec::setCodecForTr(QTextCodec::codecForName("UTF-8"));
     QTextCodec::setCodecForCStrings(QTextCodec::codecForName("UTF-8"));
+    // The phone's language, once at start (no live switching): the .qm is in the bar's assets, and
+    // English, the source text, has none. Before the QML loads, whose qsTr reads it then.
+    QTranslator translator;
+    const QString language = bb::system::LocaleHandler(bb::system::LocaleType::Messages).locale().name().section('_', 0, 0);
+    if (translator.load("hyperberry_" + language, QCoreApplication::applicationDirPath() + "/assets/translations"))
+        app.installTranslator(&translator);
     EngineLink engine(&app);
     ChatListModel chats(&engine, false, &app);
     ChatListModel archivedChats(&engine, true, &app);

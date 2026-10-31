@@ -37,6 +37,8 @@ public:
     QString lastLine() const { return m_lastLine; }
     // The chat's map as the rows have it, archived chats included; empty when there is none.
     Q_INVOKABLE QVariantMap chat(const QString &jid);
+    // Shows only the chats whose name has a word starting with text; "" shows all.
+    Q_INVOKABLE void setFilter(const QString &text);
 
 signals:
     void emptyChanged();
@@ -48,6 +50,7 @@ private slots:
     void updateFrame();
 
 private:
+    bool matches(const QString &name) const;
     struct Group
     {
         QString title;
@@ -59,6 +62,7 @@ private:
     QList<Group> m_groups;
     int m_unreadTotal;
     QString m_lastLine;
+    QString m_filter;
     QTimer m_soon;
     bb::utility::i18n::RelativeDateFormatter m_days;
     bb::system::LocaleHandler m_region;

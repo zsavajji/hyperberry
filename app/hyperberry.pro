@@ -20,3 +20,11 @@ MOC_DIR = moc
 # qrcodegen is C99, fetched by scripts/fetch-qrcodegen.sh.
 INCLUDEPATH += $$PWD/../lib/qrcodegen
 QMAKE_CFLAGS += -std=c99
+
+# lupdate reads the QML too; scripts/build-app.sh turns the .ts into the .qm the bar ships.
+CODECFORTR = UTF-8
+CODECFORSRC = UTF-8
+TRANSLATIONS = translations/hyperberry_it.ts
+lupdate_only {
+    SOURCES += assets/*.qml assets/errors.js
+}
