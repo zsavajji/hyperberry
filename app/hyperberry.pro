@@ -6,12 +6,12 @@ CONFIG += qt warn_on release
 QT += declarative network sql
 # No QtGui: bb::ImageData and bb::utility::ImageConverter instead of QImage.
 QT -= gui
-LIBS += -lbbcascades -lbbdata -lbbsystem -lbb
+LIBS += -lbbcascades -lbbdata -lbbsystem -lbb -lbbutilityi18n -lslog2
 QMAKE_LFLAGS += -Wl,-rpath-link,$${QNX_DIR}/$${QNX_CPUDIR}/usr/lib/qt4/lib
 QMAKE_CXXFLAGS += -Wno-psabi
 
-SOURCES += src/main.cpp src/EngineLink.cpp src/QrImage.cpp $$PWD/../lib/qrcodegen/qrcodegen.c
-HEADERS += src/EngineLink.h src/QrImage.h
+SOURCES += src/main.cpp src/EngineLink.cpp src/ChatListModel.cpp src/QrImage.cpp $$PWD/../lib/qrcodegen/qrcodegen.c
+HEADERS += src/EngineLink.h src/ChatListModel.h src/QrImage.h
 
 DESTDIR = app
 OBJECTS_DIR = obj

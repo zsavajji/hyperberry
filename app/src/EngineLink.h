@@ -13,7 +13,7 @@
 #include <QVariantMap>
 
 // The UI's side of the engine link, following docs/protocol.md. It reconnects and restarts the
-// engine by itself: it retries every 500 ms and sends START at most every 3 s.
+// engine by itself: it retries every 500 ms and sends START at most every 1 s.
 class EngineLink : public QObject
 {
     Q_OBJECT
@@ -43,6 +43,7 @@ public:
 
     // Connects, starting the engine first when it isn't running. Call once, from main().
     void start();
+
 
     // Sends a request (docs/protocol.md "Requests"); a failure shows in failure.
     Q_INVOKABLE void request(const QString &cmd, const QVariantMap &args);

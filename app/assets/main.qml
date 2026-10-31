@@ -5,6 +5,10 @@ import bb.cascades 1.4
 NavigationPane {
     id: nav
     property bool linked: engine.linked
+    // The one shared emoji style (PLAN.md §7): a FontFaceRule's font reaches only the styles
+    // built on it, and each rule loads the font again. Pages take it as nav.emojiStyle, list
+    // items through a property on their ListView.
+    property variant emojiStyle: emoji.style
     Menu.definition: MenuDefinition {
         // Settings, far right in the application menu, come in step 5.4.
         settingsAction: SettingsActionItem {
@@ -19,6 +23,14 @@ NavigationPane {
         ComponentDefinition {
             id: linkDef
             source: "LinkPage.qml"
+        },
+        TextStyleDefinition {
+            id: emoji
+            fontFamily: "sans-serif, HBEmoji"
+            rules: FontFaceRule {
+                source: "asset:///fonts/HyperBerryEmoji.ttf"
+                fontFamily: "HBEmoji"
+            }
         }
     ]
     onPopTransitionEnded: page.destroy()

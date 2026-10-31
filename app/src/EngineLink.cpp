@@ -19,6 +19,10 @@ EngineLink::EngineLink(QObject *parent)
     , m_connected(false)
     , m_conn("offline")
 {
+    // Qt 4.8's QElapsedTimer has no constructor: left alone it holds stack garbage, which can
+    // read as "a START went out just now" on every retry, and the engine never starts (Q10,
+    // 2026-10-31: stuck on "Starting…" until the app was reopened).
+    m_invokedAt.invalidate();
     m_linked = QSettings(QDir::homePath() + "/settings.ini", QSettings::IniFormat).value("linked").toBool();
     m_retry.setSingleShot(true);
     m_retry.setInterval(500);
@@ -84,13 +88,16 @@ void EngineLink::socketConnected()
 
 void EngineLink::startEngine()
 {
-    if (m_invokedAt.isValid() && m_invokedAt.elapsed() < 3000)
+    // A START that reaches an engine still exiting is lost (2.2: about 0.5 s), so another goes
+    // soon; a spare one is harmless.
+    if (m_invokedAt.isValid() && m_invokedAt.elapsed() < 1000)
         return;
     InvokeRequest request;
     request.setTarget("com.zsavajji.hyperberry.service");
     request.setAction("com.zsavajji.hyperberry.START");
     InvokeTargetReply *reply = m_invoker->invoke(request);
     m_invokedAt.start();
+    qDebug() << "engine: START sent";
     if (!reply) {
         qWarning() << "engine: no reply from the system to START";
         return;

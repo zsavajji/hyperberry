@@ -49,89 +49,69 @@ Page {
         ask()
     }
 
-    ScrollView {
-        Container {
-            topPadding: ui.du(2)
-            bottomPadding: ui.du(2)
-            leftPadding: ui.du(2)
-            rightPadding: ui.du(2)
+    Container {
+        layout: DockLayout {}
+        ScrollView {
             horizontalAlignment: HorizontalAlignment.Fill
+            verticalAlignment: VerticalAlignment.Fill
+            Container {
+                topPadding: ui.du(2)
+                bottomPadding: ui.du(2)
+                leftPadding: ui.du(2)
+                rightPadding: ui.du(2)
+                horizontalAlignment: HorizontalAlignment.Fill
 
-            Container {
-                visible: !page.up
-                layout: StackLayout {
-                    orientation: LayoutOrientation.LeftToRight
+                Container {
+                    visible: page.up && page.linkState == "qr"
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    Label {
+                        multiline: true
+                        text: qsTr("On your phone, open WhatsApp, go to Linked devices, tap Link a device, and scan this code.")
+                    }
+                    ImageView {
+                        horizontalAlignment: HorizontalAlignment.Center
+                        image: qr.image(engine.link.qr || "", 360)
+                        scalingMethod: ScalingMethod.None
+                        loadEffect: ImageViewLoadEffect.None
+                    }
                 }
-                ActivityIndicator {
-                    running: !page.up
-                    preferredWidth: ui.du(6)
-                    preferredHeight: ui.du(6)
+                Container {
+                    visible: page.up && page.linkState == "code"
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    Label {
+                        multiline: true
+                        text: qsTr("On your phone, open WhatsApp, go to Linked devices, tap Link a device, then Link with phone number instead, and type this code:")
+                    }
+                    Label {
+                        horizontalAlignment: HorizontalAlignment.Center
+                        textStyle.base: SystemDefaults.TextStyles.BigText
+                        text: engine.link.code || ""
+                    }
+                }
+                Container {
+                    visible: page.up && page.linkState == "unlinked"
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    Label {
+                        visible: page.shown
+                        multiline: true
+                        text: qsTr("The code expired.")
+                    }
+                    Button {
+                        horizontalAlignment: HorizontalAlignment.Center
+                        text: page.shown ? qsTr("Show a new code") : qsTr("Show the code")
+                        onClicked: engine.request("link.qr", {})
+                    }
                 }
                 Label {
-                    text: qsTr("Starting…")
-                }
-            }
-            Container {
-                visible: page.up && page.linkState == "qr"
-                horizontalAlignment: HorizontalAlignment.Fill
-                Label {
+                    visible: engine.failure.cmd == "link.qr"
                     multiline: true
-                    text: qsTr("On your phone, open WhatsApp, go to Linked devices, tap Link a device, and scan this code.")
-                }
-                ImageView {
-                    horizontalAlignment: HorizontalAlignment.Center
-                    image: qr.image(engine.link.qr || "", 360)
-                    scalingMethod: ScalingMethod.None
-                    loadEffect: ImageViewLoadEffect.None
+                    text: Errors.errorText(engine.failure)
                 }
             }
-            Container {
-                visible: page.up && page.linkState == "code"
-                horizontalAlignment: HorizontalAlignment.Fill
-                Label {
-                    multiline: true
-                    text: qsTr("On your phone, open WhatsApp, go to Linked devices, tap Link a device, then Link with phone number instead, and type this code:")
-                }
-                Label {
-                    horizontalAlignment: HorizontalAlignment.Center
-                    textStyle.base: SystemDefaults.TextStyles.BigText
-                    text: engine.link.code || ""
-                }
-            }
-            Container {
-                visible: page.up && page.linkState == "linking"
-                layout: StackLayout {
-                    orientation: LayoutOrientation.LeftToRight
-                }
-                ActivityIndicator {
-                    running: page.up && page.linkState == "linking"
-                    preferredWidth: ui.du(6)
-                    preferredHeight: ui.du(6)
-                }
-                Label {
-                    multiline: true
-                    text: qsTr("Linking… Keep WhatsApp open on your phone.")
-                }
-            }
-            Container {
-                visible: page.up && page.linkState == "unlinked"
-                horizontalAlignment: HorizontalAlignment.Fill
-                Label {
-                    visible: page.shown
-                    multiline: true
-                    text: qsTr("The code expired.")
-                }
-                Button {
-                    horizontalAlignment: HorizontalAlignment.Center
-                    text: page.shown ? qsTr("Show a new code") : qsTr("Show the code")
-                    onClicked: engine.request("link.qr", {})
-                }
-            }
-            Label {
-                visible: engine.failure.cmd == "link.qr"
-                multiline: true
-                text: Errors.errorText(engine.failure)
-            }
+        }
+        Busy {
+            running: !page.up || page.linkState == "linking"
+            text: !page.up ? qsTr("Starting…") : qsTr("Linking… Keep WhatsApp open on your phone.")
         }
     }
 }
