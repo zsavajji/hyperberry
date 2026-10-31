@@ -35,6 +35,7 @@ The `.bar` installs on a rooted BB10 phone in Development Mode.
 
 - [PLAN.md](PLAN.md): the plan, its decisions and rules
 - [docs/protocol.md](docs/protocol.md): the contract between the UI and the engine
+- [.claude/skills/](.claude/skills/): BB10 skills for Claude Code (Cascades, build and deploy, pitfalls, UX, devices, the C++20 toolchain)
 
 ## License
 
