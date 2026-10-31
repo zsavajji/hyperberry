@@ -41,6 +41,7 @@ type Session struct {
 	stopQR func()        // ends the running QR channel
 	qrSeen chan struct{} // closed when the QR channel's first code arrives
 	open   string        // the chat on screen, for the notifier
+	rec    voiceRec      // the voice note being recorded
 }
 
 func newSession(container *sqlstore.Container, srv *Server, store *Store, log waLog.Logger) (*Session, error) {
@@ -64,6 +65,7 @@ func newSession(container *sqlstore.Container, srv *Server, store *Store, log wa
 	registerGroup(srv, s)
 	registerContacts(srv, s)
 	registerMedia(srv, s)
+	registerVoiceSend(srv, s)
 	return s, nil
 }
 

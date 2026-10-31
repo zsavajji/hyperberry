@@ -27,57 +27,115 @@ import (
 	"unsafe"
 )
 
-// encodeOpus makes an OGG Opus voice note from mono PCM at rate, one of libopus's rates
-// (8, 12, 16, 24 or 48 kHz), in 20 ms frames.
-func encodeOpus(pcm []int16, rate int) ([]byte, error) {
+// opusEncoder makes an OGG Opus voice note from mono PCM at rate, one of libopus's rates
+// (8, 12, 16, 24 or 48 kHz), in 20 ms frames. PCM goes in at any chunk size; a page is
+// written when the next packet wouldn't fit, never when a chunk ends, so the bytes depend on
+// the PCM alone.
+type opusEncoder struct {
+	enc     *C.OpusEncoder
+	rate    int
+	frame   int     // samples in 20 ms
+	preSkip int64   // at 48 kHz
+	pending []int16 // under one frame, for the next Write
+	total   int64   // samples in
+	packets int
+	o       oggWriter
+	page    [][]byte
+	lacing  int
+	out     [1500]byte
+}
+
+func newOpusEncoder(rate int) (*opusEncoder, error) {
 	var lookahead, cerr C.int
 	enc := C.hb_encoder(C.int(rate), &lookahead, &cerr)
 	if enc == nil {
 		return nil, fmt.Errorf("opus encoder: %s", C.GoString(C.opus_strerror(cerr)))
 	}
-	defer C.opus_encoder_destroy(enc)
-
 	// Granules count at 48 kHz whatever the input rate (RFC 7845). The decoder drops the
 	// encoder's lookahead (pre-skip) at the start and everything past the last page's granule
-	// at the end, so the input runs on in zeros until the lookahead is flushed.
-	preSkip := int64(lookahead) * 48000 / int64(rate)
-	end := preSkip + int64(len(pcm))*48000/int64(rate)
-	frame := rate / 50
-	frames := int((end + 959) / 960)
-	in := make([]int16, frames*frame)
-	copy(in, pcm)
-
-	var o oggWriter
+	// at the end, so Close runs the input on in zeros until the lookahead is flushed.
+	e := &opusEncoder{enc: enc, rate: rate, frame: rate / 50, preSkip: int64(lookahead) * 48000 / int64(rate)}
 	head := []byte("OpusHead\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00")
-	binary.LittleEndian.PutUint16(head[10:], uint16(preSkip))
+	binary.LittleEndian.PutUint16(head[10:], uint16(e.preSkip))
 	binary.LittleEndian.PutUint32(head[12:], uint32(rate))
-	o.page([][]byte{head}, 0, oggFirst)
+	e.o.page([][]byte{head}, 0, oggFirst)
 	vendor := "HyperBerry, " + C.GoString(C.opus_get_version_string())
 	tags := binary.LittleEndian.AppendUint32([]byte("OpusTags"), uint32(len(vendor)))
 	tags = binary.LittleEndian.AppendUint32(append(tags, vendor...), 0)
-	o.page([][]byte{tags}, 0, 0)
+	e.o.page([][]byte{tags}, 0, 0)
+	return e, nil
+}
 
-	// About a second of packets to a page.
-	var page [][]byte
-	lacing := 0
-	out := make([]byte, 1500)
-	for i := 0; i < frames; i++ {
-		n := C.opus_encode(enc, (*C.opus_int16)(unsafe.Pointer(&in[i*frame])), C.int(frame),
-			(*C.uchar)(unsafe.Pointer(&out[0])), C.opus_int32(len(out)))
-		if n < 0 {
-			return nil, fmt.Errorf("opus encode: %s", C.GoString(C.opus_strerror(n)))
-		}
-		packet := append([]byte(nil), out[:n]...)
-		page = append(page, packet)
-		lacing += lacingSize(packet)
-		if i == frames-1 {
-			o.page(page, end, oggLast)
-		} else if len(page) == 50 || lacing > 255-6 { // 6: an Opus packet's most (1275 bytes)
-			o.page(page, int64(i+1)*960, 0)
-			page, lacing = nil, 0
+// destroy frees libopus's encoder; Close does it too, so a cancelled note calls only this.
+func (e *opusEncoder) destroy() {
+	if e.enc != nil {
+		C.opus_encoder_destroy(e.enc)
+		e.enc = nil
+	}
+}
+
+// Write encodes whole frames and keeps the rest.
+func (e *opusEncoder) Write(pcm []int16) error {
+	e.total += int64(len(pcm))
+	buf := append(e.pending, pcm...)
+	n := len(buf) / e.frame * e.frame
+	for i := 0; i < n; i += e.frame {
+		if err := e.encode(buf[i : i+e.frame]); err != nil {
+			return err
 		}
 	}
-	return o.buf, nil
+	e.pending = append(e.pending[:0], buf[n:]...)
+	return nil
+}
+
+func (e *opusEncoder) encode(frame []int16) error {
+	n := C.opus_encode(e.enc, (*C.opus_int16)(unsafe.Pointer(&frame[0])), C.int(e.frame),
+		(*C.uchar)(unsafe.Pointer(&e.out[0])), C.opus_int32(len(e.out)))
+	if n < 0 {
+		return fmt.Errorf("opus encode: %s", C.GoString(C.opus_strerror(n)))
+	}
+	packet := append([]byte(nil), e.out[:n]...)
+	// About a second of packets to a page; the lacing values of a page are 255 at most.
+	if len(e.page) == 50 || e.lacing+lacingSize(packet) > 255 {
+		e.o.page(e.page, int64(e.packets)*960, 0)
+		e.page, e.lacing = nil, 0
+	}
+	e.page = append(e.page, packet)
+	e.lacing += lacingSize(packet)
+	e.packets++
+	return nil
+}
+
+// Close flushes the lookahead and returns the whole OGG.
+func (e *opusEncoder) Close() ([]byte, error) {
+	defer e.destroy()
+	end := e.preSkip + e.total*48000/int64(e.rate)
+	frames := int((end + 959) / 960)
+	zeros := make([]int16, e.frame)
+	if len(e.pending) > 0 {
+		if err := e.encode(append(e.pending, zeros[:e.frame-len(e.pending)]...)); err != nil {
+			return nil, err
+		}
+	}
+	for e.packets < frames {
+		if err := e.encode(zeros); err != nil {
+			return nil, err
+		}
+	}
+	e.o.page(e.page, end, oggLast)
+	return e.o.buf, nil
+}
+
+func encodeOpus(pcm []int16, rate int) ([]byte, error) {
+	e, err := newOpusEncoder(rate)
+	if err != nil {
+		return nil, err
+	}
+	if err := e.Write(pcm); err != nil {
+		e.destroy()
+		return nil, err
+	}
+	return e.Close()
 }
 
 // decodeOpus decodes an OGG Opus stream to mono PCM at 48 kHz, the format's own rate.

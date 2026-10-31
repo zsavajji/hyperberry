@@ -55,21 +55,29 @@ func (s *Session) handleRead(req json.RawMessage) (any, error) {
 
 func (s *Session) handleTyping(req json.RawMessage) (any, error) {
 	var r struct {
-		Chat string
-		On   bool
+		Chat      string
+		On, Voice bool
 	}
 	json.Unmarshal(req, &r)
 	cli, jid, err := s.linked(r.Chat)
 	if err != nil {
 		return nil, err
 	}
-	state := types.ChatPresencePaused
-	if r.On {
+	return nil, chatState(cli, jid, r.On, r.Voice)
+}
+
+// chatState sends our "typing" or "recording…" state to a chat; on false it is paused.
+func chatState(cli *whatsmeow.Client, jid types.JID, on, voice bool) error {
+	state, media := types.ChatPresencePaused, types.ChatPresenceMediaText
+	if on {
 		state = types.ChatPresenceComposing
+	}
+	if voice {
+		media = types.ChatPresenceMediaAudio
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), netTimeout)
 	defer cancel()
-	return nil, cli.SendChatPresence(ctx, jid, state, types.ChatPresenceMediaText)
+	return cli.SendChatPresence(ctx, jid, state, media)
 }
 
 func (s *Session) handleOpen(req json.RawMessage) (any, error) {

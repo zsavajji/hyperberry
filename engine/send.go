@@ -46,25 +46,11 @@ func (s *Session) handleSend(req json.RawMessage) (any, error) {
 	id, now := cli.GenerateMessageID(), time.Now().Unix()
 
 	q, created := s.store.queueOutgoing(jid, r.Chat, id, r.Text, r.Quote, now)
-	if created && chatKind(jid) == chatUser {
-		// The first message to someone with no chat names the chat.
-		nctx, ncancel := context.WithTimeout(context.Background(), netTimeout)
-		name := displayName(nctx, cli, jid, types.EmptyJID)
-		ncancel()
-		s.store.ops <- func(t *storeTx) { t.setName(r.Chat, name) }
-	}
+	s.nameNew(cli, jid, r.Chat, created)
 	msg := &waE2E.Message{Conversation: &r.Text}
 	if q.ID != "" {
-		who := r.Chat // a 1:1 message from them was sent by the chat itself
-		switch {
-		case q.Out:
-			who = cli.Store.ID.ToNonAD().String()
-		case q.Sender != "":
-			who = q.Sender
-		}
 		msg = &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: &r.Text,
-			ContextInfo: &waE2E.ContextInfo{StanzaID: &q.ID, Participant: &who,
-				QuotedMessage: &waE2E.Message{Conversation: &q.Text}}}}
+			ContextInfo: quoteInfo(cli, r.Chat, q)}}
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
@@ -77,6 +63,28 @@ func (s *Session) handleSend(req json.RawMessage) (any, error) {
 	// The server's clock, not the phone's: it drifts.
 	s.store.ops <- func(t *storeTx) { t.sentAs(r.Chat, id, resp.Timestamp.Unix(), stateSent) }
 	return map[string]string{"id": id}, nil
+}
+
+// nameNew: the first message to someone with no chat names the chat.
+func (s *Session) nameNew(cli *whatsmeow.Client, jid types.JID, chat string, created bool) {
+	if created && chatKind(jid) == chatUser {
+		nctx, ncancel := context.WithTimeout(context.Background(), netTimeout)
+		name := displayName(nctx, cli, jid, types.EmptyJID)
+		ncancel()
+		s.store.ops <- func(t *storeTx) { t.setName(chat, name) }
+	}
+}
+
+// quoteInfo is the ContextInfo that quotes q.
+func quoteInfo(cli *whatsmeow.Client, chat string, q msgRow) *waE2E.ContextInfo {
+	who := chat // a 1:1 message from them was sent by the chat itself
+	switch {
+	case q.Out:
+		who = cli.Store.ID.ToNonAD().String()
+	case q.Sender != "":
+		who = q.Sender
+	}
+	return &waE2E.ContextInfo{StanzaID: &q.ID, Participant: &who, QuotedMessage: &waE2E.Message{Conversation: &q.Text}}
 }
 
 type deleteReq struct {
@@ -180,10 +188,14 @@ func deleteForMePatch(chat types.JID, rows []msgRow) appstate.PatchInfo {
 	return p
 }
 
-// queueOutgoing puts our message in as sending, so the UI shows the bubble while the send is in
+func (st *Store) queueOutgoing(jid types.JID, chat, id, text, quote string, now int64) (msgRow, bool) {
+	return st.queueRow(jid, chat, quote, msgRow{Chat: chat, ID: id, TS: now, Out: true, State: stateSending, Kind: msgText, Text: text})
+}
+
+// queueRow puts our message in as sending, so the UI shows the bubble while the send is in
 // flight, and returns the message it quotes (empty when there is none) and whether the chat
 // was new.
-func (st *Store) queueOutgoing(jid types.JID, chat, id, text, quote string, now int64) (msgRow, bool) {
+func (st *Store) queueRow(jid types.JID, chat, quote string, row msgRow) (msgRow, bool) {
 	quoted := make(chan msgRow, 1)
 	made := make(chan bool, 1)
 	st.ops <- func(t *storeTx) {
@@ -193,13 +205,12 @@ func (st *Store) queueOutgoing(jid types.JID, chat, id, text, quote string, now 
 			q, _ = t.messageByID(chat, quote)
 		}
 		quoted <- q
-		row := msgRow{Chat: chat, ID: id, TS: now, Out: true, State: stateSending, Kind: msgText, Text: text}
 		if q.ID != "" {
 			row.QuoteID, row.QuotePreview = q.ID, preview(q.Kind, q.Text, q.Duration)
 		}
 		t.ensureChat(chat, chatKind(jid))
 		t.insertMessage(row)
-		t.setLast(chat, now, chatPreview(row), true, stateSending)
+		t.setLast(chat, row.TS, chatPreview(row), true, stateSending)
 	}
 	return <-quoted, <-made
 }

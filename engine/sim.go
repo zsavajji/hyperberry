@@ -27,6 +27,7 @@ type Sim struct {
 	qr   string
 	code string
 	run  int // counts the QR runs, so a stale one stops
+	rec  voiceRec
 }
 
 // simCodes are how long each made-up QR code lasts, as WhatsApp's: 60 s, then five of 20 s,
@@ -60,6 +61,7 @@ func newSim(srv *Server, st *Store, log waLog.Logger) *Sim {
 	srv.Handle("sim.typing", s.handleTyping)
 	srv.Handle("sim.voice", s.handleVoice)
 	srv.Handle("voice.play", s.handleVoicePlay)
+	s.registerVoiceSend()
 	srv.Handle("msg.send", s.handleSend)
 	srv.Handle("msg.delete", s.handleDelete)
 	srv.Handle("chat.read", s.handleRead)

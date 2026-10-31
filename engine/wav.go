@@ -35,31 +35,42 @@ func readWAV(b []byte) ([]int16, wavInfo, error) {
 			if size < 16 {
 				return nil, info, errors.New("wav: short fmt chunk")
 			}
-			info.format = int(binary.LittleEndian.Uint16(b))
-			info.channels = int(binary.LittleEndian.Uint16(b[2:]))
-			info.rate = int(binary.LittleEndian.Uint32(b[4:]))
-			info.bits = int(binary.LittleEndian.Uint16(b[14:]))
-			if info.format == 0xfffe && size >= 26 { // extensible: the real format is the subformat's
-				info.format = int(binary.LittleEndian.Uint16(b[24:]))
-			}
+			info = parseFmt(b[:size])
 		case "data":
 			if info.format != 1 || info.bits != 16 || info.channels < 1 {
 				return nil, info, fmt.Errorf("wav: unsupported %v", info)
 			}
-			frames := size / (2 * info.channels)
-			pcm := make([]int16, frames)
-			for i := range pcm {
-				sum := 0
-				for c := 0; c < info.channels; c++ {
-					sum += int(int16(binary.LittleEndian.Uint16(b[2*(i*info.channels+c):])))
-				}
-				pcm[i] = int16(sum / info.channels)
-			}
+			pcm := mixMono(b[:size], info.channels)
 			return pcm, info, nil
 		}
 		b = b[min(size+size&1, len(b)):] // chunks are padded to an even size
 	}
 	return nil, info, errors.New("wav: no data chunk")
+}
+
+// parseFmt reads a fmt chunk's body of 16 bytes or more.
+func parseFmt(b []byte) (info wavInfo) {
+	info.format = int(binary.LittleEndian.Uint16(b))
+	info.channels = int(binary.LittleEndian.Uint16(b[2:]))
+	info.rate = int(binary.LittleEndian.Uint32(b[4:]))
+	info.bits = int(binary.LittleEndian.Uint16(b[14:]))
+	if info.format == 0xfffe && len(b) >= 26 { // extensible: the real format is the subformat's
+		info.format = int(binary.LittleEndian.Uint16(b[24:]))
+	}
+	return
+}
+
+// mixMono mixes whole 16-bit frames of PCM down to mono; a partial frame at the end is ignored.
+func mixMono(b []byte, channels int) []int16 {
+	pcm := make([]int16, len(b)/(2*channels))
+	for i := range pcm {
+		sum := 0
+		for c := 0; c < channels; c++ {
+			sum += int(int16(binary.LittleEndian.Uint16(b[2*(i*channels+c):])))
+		}
+		pcm[i] = int16(sum / channels)
+	}
+	return pcm
 }
 
 // writeWAV makes a mono 16-bit PCM WAV.
@@ -108,23 +119,56 @@ func opusRate(pcm []int16, rate int) ([]int16, int) {
 	return out, 48000
 }
 
-// waveform is the 64 peaks of a voice note, 0 to 100 against the loudest (to verify against
-// the main phone's bubble in step 4.3).
-func waveform(pcm []int16) []byte {
-	peaks := make([]int, 64)
-	most := 1
-	for i, s := range pcm {
-		v := int(s)
-		if v < 0 {
-			v = -v
+// waveFrame is the peak window: 10 ms at 48 kHz.
+const waveFrame = 480
+
+// waveTracker keeps the peak of each frame as PCM goes by, so a long note isn't held as PCM.
+// ponytail: 6,000 ints a minute at 48 kHz (an hour is 3 MB); fold the frames into fewer
+// buckets as they come if notes ever run that long.
+type waveTracker struct {
+	peaks []int
+	n     int // samples in the last frame
+}
+
+func (w *waveTracker) Add(pcm []int16) {
+	for _, s := range pcm {
+		if w.n == 0 {
+			w.peaks = append(w.peaks, 0)
 		}
-		k := i * 64 / len(pcm)
-		peaks[k] = max(peaks[k], v)
-		most = max(most, v)
+		last := len(w.peaks) - 1
+		w.peaks[last] = max(w.peaks[last], abs(int(s)))
+		w.n = (w.n + 1) % waveFrame
+	}
+}
+
+func abs(v int) int {
+	if v < 0 {
+		return -v
+	}
+	return v
+}
+
+// Result is the 64 values of a voice note, 0 to 100 against the loudest (to verify against the
+// main phone's bubble in step 4.3). Fewer than 64 frames are stretched over them.
+func (w *waveTracker) Result() []byte {
+	most, n := 1, len(w.peaks)
+	for _, p := range w.peaks {
+		most = max(most, p)
 	}
 	out := make([]byte, 64)
-	for i, p := range peaks {
-		out[i] = byte(p * 100 / most)
+	for k := range out {
+		lo := k * n / 64
+		peak := 0
+		for _, p := range w.peaks[lo:min(max((k+1)*n/64, lo+1), n)] {
+			peak = max(peak, p)
+		}
+		out[k] = byte(peak * 100 / most)
 	}
 	return out
+}
+
+func waveform(pcm []int16) []byte {
+	var w waveTracker
+	w.Add(pcm)
+	return w.Result()
 }
