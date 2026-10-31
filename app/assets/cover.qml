@@ -14,22 +14,33 @@ SceneCover {
         topPadding: 12
         layout: StackLayout {
         }
-        Label {
-            visible: chats.unreadTotal > 0
-            text: chats.unreadTotal
-            textStyle.base: SystemDefaults.TextStyles.BodyText
-            textStyle.fontSize: FontSize.PercentageValue
-            textStyle.fontSizeValue: 200
-            textStyle.color: Color.White
+        // The count and its word side by side: the count's line alone is about 86 px tall, and
+        // the word under it left the second message line touching the strip (0.0.1.78).
+        Container {
             topMargin: 0
             bottomMargin: 0
-        }
-        Label {
-            text: chats.unreadTotal > 0 ? qsTr("unread") : qsTr("No new messages")
-            textStyle.base: SystemDefaults.TextStyles.SmallText
-            textStyle.color: Color.Gray
-            topMargin: 0
-            bottomMargin: 0
+            layout: StackLayout {
+                orientation: LayoutOrientation.LeftToRight
+            }
+            Label {
+                visible: chats.unreadTotal > 0
+                text: chats.unreadTotal
+                textStyle.base: SystemDefaults.TextStyles.BodyText
+                textStyle.fontSize: FontSize.PercentageValue
+                textStyle.fontSizeValue: 200
+                textStyle.color: Color.White
+                topMargin: 0
+                bottomMargin: 0
+            }
+            Label {
+                verticalAlignment: VerticalAlignment.Bottom
+                leftMargin: 12
+                text: chats.unreadTotal > 0 ? qsTr("unread") : qsTr("No new messages")
+                textStyle.base: SystemDefaults.TextStyles.SmallText
+                textStyle.color: Color.Gray
+                topMargin: 0
+                bottomMargin: 0
+            }
         }
         // The emoji style, so a preview's emoji draw (they do, in a cover: 0.0.1.76). Two lines,
         // ending in an ellipsis where it's cut.
