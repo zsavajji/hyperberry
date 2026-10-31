@@ -14,8 +14,9 @@ SceneCover {
         topPadding: 12
         layout: StackLayout {
         }
-        // The count and its word side by side: the count's line alone is about 86 px tall, and
-        // the word under it left the second message line touching the strip (0.0.1.78).
+        // The count and its word side by side: the count's line alone is about 86 px tall at 200 %,
+        // and the word under it left the second message line touching the strip (0.0.1.78). Sizes
+        // follow the stock frames' small type (0.0.1.80 looked oversized beside Settings').
         Container {
             topMargin: 0
             bottomMargin: 0
@@ -27,7 +28,7 @@ SceneCover {
                 text: chats.unreadTotal
                 textStyle.base: SystemDefaults.TextStyles.BodyText
                 textStyle.fontSize: FontSize.PercentageValue
-                textStyle.fontSizeValue: 200
+                textStyle.fontSizeValue: 130
                 textStyle.color: Color.White
                 topMargin: 0
                 bottomMargin: 0
@@ -37,20 +38,24 @@ SceneCover {
                 leftMargin: 12
                 text: chats.unreadTotal > 0 ? qsTr("unread") : qsTr("No new messages")
                 textStyle.base: SystemDefaults.TextStyles.SmallText
+                textStyle.fontSize: FontSize.PercentageValue
+                textStyle.fontSizeValue: 85
                 textStyle.color: Color.Gray
                 topMargin: 0
                 bottomMargin: 0
             }
         }
-        // The emoji style, so a preview's emoji draw (they do, in a cover: 0.0.1.76). Two lines,
-        // ending in an ellipsis where it's cut.
+        // The emoji style, so a preview's emoji draw (they do, in a cover: 0.0.1.76), at the chat
+        // list's preview size. Up to three lines, ending in an ellipsis where it's cut.
         Label {
             text: chats.lastLine
             textStyle.base: nav.emojiStyle
+            textStyle.fontSize: FontSize.PercentageValue
+            textStyle.fontSizeValue: 74
             textStyle.color: Color.White
             multiline: true
-            autoSize.maxLineCount: 2
-            topMargin: 6
+            autoSize.maxLineCount: 3
+            topMargin: 8
             bottomMargin: 0
         }
     }
