@@ -14,6 +14,10 @@ Page {
         ComponentDefinition {
             id: newChatDef
             source: "NewChatPage.qml"
+        },
+        ComponentDefinition {
+            id: archivedDef
+            source: "ArchivedPage.qml"
         }
     ]
     actions: [
@@ -23,6 +27,12 @@ Page {
             imageSource: "asset:///images/message.png"
             ActionBar.placement: ActionBarPlacement.Signature
             onTriggered: page.newChat()
+        },
+        ActionItem {
+            title: qsTr("Archived")
+            imageSource: "file:///usr/share/icons/bb_action_archive.png"
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            onTriggered: nav.push(archivedDef.createObject())
         }
     ]
     function openChat(chat) {
@@ -58,32 +68,12 @@ Page {
         layout: DockLayout {}
         horizontalAlignment: HorizontalAlignment.Fill
         verticalAlignment: VerticalAlignment.Fill
-        ListView {
-            // The rows reach the shared emoji style (main.qml) through ListItem.view.
-            property variant emojiStyle: nav.emojiStyle
-            property int bodySize: nav.bodySize
-            property int smallSize: nav.smallSize
+        ChatList {
             dataModel: chats
-            onTriggered: {
-                if (indexPath.length < 2) {
-                    return
-                }
-                page.openChat(dataModel.data(indexPath))
-            }
-            listItemComponents: [
-                ListItemComponent {
-                    type: "header"
-                    Header {
-                        title: ListItemData
-                    }
-                },
-                ListItemComponent {
-                    type: "item"
-                    ChatRow {
-                        chat: ListItemData
-                    }
-                }
-            ]
+            emojiStyle: nav.emojiStyle
+            bodySize: nav.bodySize
+            smallSize: nav.smallSize
+            onChatTapped: page.openChat(chat)
         }
         // The engine doesn't say when a history sync starts, so an empty list says what's
         // coming rather than spinning.

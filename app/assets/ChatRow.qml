@@ -9,8 +9,35 @@ import bb.cascades 1.4
 Container {
     id: row
     property variant chat
-    property bool unread: chat.unread > 0
+    property bool unread: chat.unread != 0
     horizontalAlignment: HorizontalAlignment.Fill
+    // The long-press menu (step 5.3): the work is the list's (ListItem.view). ActionItem has no
+    // visible, so each title follows the row's state.
+    contextActions: [
+        ActionSet {
+            title: row.chat.name
+            ActionItem {
+                title: row.unread ? qsTr("Mark as read") : qsTr("Mark as unread")
+                imageSource: row.unread ? "file:///usr/share/icons/bb_action_markread.png" : "file:///usr/share/icons/bb_action_markunread.png"
+                onTriggered: row.ListItem.view.toggleUnread(row.chat)
+            }
+            ActionItem {
+                title: row.chat.pinned ? qsTr("Unpin") : qsTr("Pin")
+                imageSource: "asset:///images/pin.png"
+                onTriggered: row.ListItem.view.togglePin(row.chat)
+            }
+            ActionItem {
+                title: row.chat.muted ? qsTr("Unmute") : qsTr("Mute…")
+                imageSource: "asset:///images/mute.png"
+                onTriggered: row.ListItem.view.toggleMute(row.chat)
+            }
+            ActionItem {
+                title: row.ListItem.view.archivedList ? qsTr("Unarchive") : qsTr("Archive")
+                imageSource: "file:///usr/share/icons/bb_action_archive.png"
+                onTriggered: row.ListItem.view.toggleArchive(row.chat)
+            }
+        }
+    ]
 
     Container {
         horizontalAlignment: HorizontalAlignment.Fill
@@ -109,7 +136,7 @@ Container {
                 }
                 // The unread count, grey while muted, as WhatsApp does.
                 Container {
-                    visible: row.unread
+                    visible: row.chat.unread > 0
                     verticalAlignment: VerticalAlignment.Center
                     leftPadding: ui.du(0.8)
                     rightPadding: ui.du(0.8)
@@ -120,6 +147,15 @@ Container {
                         textStyle.fontWeight: FontWeight.Bold
                         textStyle.color: row.chat.muted ? ui.palette.textOnPlain : ui.palette.textOnPrimary
                     }
+                }
+                // Marked unread (-1): a dot in the badge's place, no number.
+                Container {
+                    visible: row.chat.unread < 0
+                    verticalAlignment: VerticalAlignment.Center
+                    leftMargin: ui.du(0.8)
+                    preferredWidth: ui.du(1.6)
+                    preferredHeight: ui.du(1.6)
+                    background: row.chat.muted ? ui.palette.plain : ui.palette.primary
                 }
             }
         }

@@ -86,7 +86,7 @@ func (st *Store) handle(cli *whatsmeow.Client, evt any) {
 		go st.syncGroups(cli)
 		return
 	case *events.HistorySync, *events.Message, *events.Contact, *events.PushName, *events.GroupInfo,
-		*events.JoinedGroup, *events.Mute, *events.Pin, *events.Archive,
+		*events.JoinedGroup, *events.Mute, *events.Pin, *events.Archive, *events.MarkChatAsRead,
 		*events.Receipt, *events.ChatPresence, *events.Presence, *events.DeleteForMe:
 		st.ops <- func(t *storeTx) { st.dispatch(t, cli, evt) }
 	}
@@ -148,6 +148,12 @@ func (st *Store) dispatch(t *storeTx, cli *whatsmeow.Client, evt any) {
 		t.setPinned(chatKey(ctx, t, lids, e.JID, types.EmptyJID), e.Action.GetPinned())
 	case *events.Archive:
 		t.setArchived(chatKey(ctx, t, lids, e.JID, types.EmptyJID), e.Action.GetArchived())
+	case *events.MarkChatAsRead:
+		n := 0
+		if !e.Action.GetRead() {
+			n = -1
+		}
+		t.setUnread(chatKey(ctx, t, lids, e.JID, types.EmptyJID), n)
 	case *events.DeleteForMe:
 		// A delete on one of our other devices.
 		t.deleteMessage(chatKey(ctx, t, lids, e.ChatJID, types.EmptyJID), e.MessageID)
@@ -266,7 +272,7 @@ func (t *storeTx) setFlags(jid string, unread int, mutedUntil int64, pinned, arc
 }
 
 func (t *storeTx) addUnread(jid string, n int) {
-	t.touch(jid, "UPDATE chats SET unread = unread + ? WHERE jid = ?", n)
+	t.touch(jid, "UPDATE chats SET unread = MAX(unread, 0) + ? WHERE jid = ?", n)
 }
 
 func (t *storeTx) setMuted(jid string, until int64) {

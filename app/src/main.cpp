@@ -65,7 +65,8 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     QTextCodec::setCodecForTr(QTextCodec::codecForName("UTF-8"));
     QTextCodec::setCodecForCStrings(QTextCodec::codecForName("UTF-8"));
     EngineLink engine(&app);
-    ChatListModel chats(&engine, &app);
+    ChatListModel chats(&engine, false, &app);
+    ChatListModel archivedChats(&engine, true, &app);
     // One for the run: the picker's table is built once, not per chat.
     EmojiModel emojis(&app);
     QrImage qr(&app);
@@ -78,6 +79,7 @@ Q_DECL_EXPORT int main(int argc, char **argv)
         return 1;
     document->setContextProperty("engine", &engine);
     document->setContextProperty("chats", &chats);
+    document->setContextProperty("archivedChats", &archivedChats);
     document->setContextProperty("emojis", &emojis);
     document->setContextProperty("qr", &qr);
     document->setContextProperty("openRequests", &openRequests);

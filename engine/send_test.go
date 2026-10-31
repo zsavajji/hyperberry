@@ -86,3 +86,21 @@ func TestDeleteForMePatch(t *testing.T) {
 		t.Errorf("theirs, group: %v, want %v", p.Mutations[0].Index, want)
 	}
 }
+
+func TestChatSetRejects(t *testing.T) {
+	s := newUnlinked(t)
+	for body, want := range map[string]string{
+		`{"chat":"a@s.whatsapp.net"}`:            "bad_request",
+		`{"chat":"a@s.whatsapp.net","mute":-2}`:  "bad_request",
+		`{"chat":"a@s.whatsapp.net","pin":true}`: "unlinked",
+	} {
+		if _, err := s.handleChatSet(json.RawMessage(body)); code(err) != want {
+			t.Errorf("%s: %v, want %s", body, err, want)
+		}
+	}
+	me := types.NewJID("4915700000009", types.DefaultUserServer)
+	s.cli.Store.ID = &me
+	if _, err := s.handleChatSet(json.RawMessage(`{"chat":"not a jid@@@","pin":true}`)); code(err) != "bad_chat" {
+		t.Errorf("bad chat: %v", err)
+	}
+}

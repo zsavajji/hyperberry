@@ -63,15 +63,17 @@ static QVariantMap baseRow(const QSqlQuery &q, qint64 now)
     return row;
 }
 
-ChatListModel::ChatListModel(EngineLink *engine, QObject *parent)
+ChatListModel::ChatListModel(EngineLink *engine, bool archived, QObject *parent)
     : DataModel(parent)
     , m_engine(engine)
+    , m_archived(archived)
+    , m_dbName(archived ? "chats-archived" : kDb)
     , m_unreadTotal(0)
     , m_days(RelativeDateFormat::NonTimeCritical)
     , m_region(bb::system::LocaleType::Region)
 {
     m_days.applyUserRegionLocale();
-    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", kDb);
+    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", m_dbName);
     db.setDatabaseName(QDir::homePath() + "/chats.db");
     db.setConnectOptions("QSQLITE_OPEN_READONLY");
 
@@ -84,7 +86,8 @@ ChatListModel::ChatListModel(EngineLink *engine, QObject *parent)
     // Events sent while the link was down are lost; the database has what they said.
     connect(engine, SIGNAL(connectedChanged()), this, SLOT(reloadSoon()));
     // Nobody sees the frame while the app is fullscreen: it's computed when the app leaves it.
-    connect(engine, SIGNAL(fullscreenChanged()), this, SLOT(updateFrame()));
+    if (!m_archived)
+        connect(engine, SIGNAL(fullscreenChanged()), this, SLOT(updateFrame()));
     // A cold start draws what chats.db already has, before the engine answers (PLAN.md §12).
     reload();
 }
@@ -125,7 +128,7 @@ QVariantMap ChatListModel::chat(const QString &jid)
                 return row;
         }
     }
-    QSqlDatabase db = QSqlDatabase::database(kDb, false);
+    QSqlDatabase db = QSqlDatabase::database(m_dbName, false);
     if (!db.isOpen() && !db.open())
         return QVariantMap();
     QSqlQuery q(db);
@@ -151,13 +154,13 @@ void ChatListModel::reloadSoon()
 // changed jids if accounts with thousands of chats make it show.
 void ChatListModel::reload()
 {
-    QSqlDatabase db = QSqlDatabase::database(kDb, false);
+    QSqlDatabase db = QSqlDatabase::database(m_dbName, false);
     // Before the first link the engine hasn't made chats.db: try again at the next event.
     if (!db.isOpen() && !db.open())
         return;
     QSqlQuery q(db);
-    if (!q.exec(QString("SELECT %1 FROM chats WHERE archived = 0 ORDER BY pinned DESC, last_ts DESC")
-                    .arg(kRowColumns))) {
+    if (!q.exec(QString("SELECT %1 FROM chats WHERE archived = %2 ORDER BY pinned DESC, last_ts DESC")
+                    .arg(kRowColumns).arg(m_archived ? 1 : 0))) {
         qWarning() << "chats:" << q.lastError().text();
         return;
     }
@@ -226,7 +229,8 @@ void ChatListModel::reload()
     }
     if (wasEmpty != m_groups.isEmpty())
         emit emptyChanged();
-    updateFrame();
+    if (!m_archived)
+        updateFrame();
 }
 
 // A chat marked unread (unread < 0, step 5.3) counts as 1. 2^40 in muted_until is forever.
@@ -234,7 +238,7 @@ void ChatListModel::updateFrame()
 {
     if (m_engine->fullscreen())
         return;
-    QSqlDatabase db = QSqlDatabase::database(kDb, false);
+    QSqlDatabase db = QSqlDatabase::database(m_dbName, false);
     if (!db.isOpen() && !db.open())
         return;
     const qint64 now = QDateTime::currentMSecsSinceEpoch() / 1000;

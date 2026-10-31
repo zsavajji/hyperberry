@@ -32,6 +32,7 @@ func (s *Session) linked(chat string) (*whatsmeow.Client, types.JID, error) {
 func registerSend(srv *Server, s *Session) {
 	srv.Handle("msg.send", s.handleSend)
 	srv.Handle("msg.delete", s.handleDelete)
+	srv.Handle("chat.set", s.handleChatSet)
 }
 
 func (s *Session) handleSend(req json.RawMessage) (any, error) {
