@@ -8,9 +8,10 @@ URL=https://raw.githubusercontent.com/nayuki/QR-Code-generator/720f62bddb7226106
 DIR=$ROOT/lib/qrcodegen
 mkdir -p "$DIR"
 fetch() { # <name in the repo> <sha256>
-	[ -f "$DIR/$1" ] && echo "$2  $DIR/$1" | sha256sum -c --status && return
+	# The hash is compared here, not by sha256sum -c: macOS's takes no --status, and fails -c on stdin.
+	[ -f "$DIR/$1" ] && [ "$(sha256sum "$DIR/$1" | cut -d" " -f1)" = "$2" ] && return
 	curl -fsSL -o "$DIR/$1.part" "$URL/$1"
-	echo "$2  $DIR/$1.part" | sha256sum -c --status || { rm -f "$DIR/$1.part"; echo "$1: sha256 mismatch" >&2; exit 1; }
+	[ "$(sha256sum "$DIR/$1.part" | cut -d" " -f1)" = "$2" ] || { rm -f "$DIR/$1.part"; echo "$1: sha256 mismatch" >&2; exit 1; }
 	mv "$DIR/$1.part" "$DIR/$1"
 }
 fetch qrcodegen.c 300eff07ee25baaa7578f20284411638154716379437391e7e689c0e6ce81403

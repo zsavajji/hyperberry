@@ -11,9 +11,10 @@ SRC=$ROOT/build/emoji
 DIR=$ROOT/app/assets/fonts
 mkdir -p "$SRC" "$DIR"
 fetch() { # <name in the repo> <sha256>
-	[ -f "$SRC/$1" ] && echo "$2  $SRC/$1" | sha256sum -c --status && return
+	# The hash is compared here, not by sha256sum -c: macOS's takes no --status, and fails -c on stdin.
+	[ -f "$SRC/$1" ] && [ "$(sha256sum "$SRC/$1" | cut -d" " -f1)" = "$2" ] && return
 	curl -fsSL -o "$SRC/$1.part" "$URL/$1"
-	echo "$2  $SRC/$1.part" | sha256sum -c --status || { rm -f "$SRC/$1.part"; echo "$1: sha256 mismatch" >&2; exit 1; }
+	[ "$(sha256sum "$SRC/$1.part" | cut -d" " -f1)" = "$2" ] || { rm -f "$SRC/$1.part"; echo "$1: sha256 mismatch" >&2; exit 1; }
 	mv "$SRC/$1.part" "$SRC/$1"
 }
 fetch NotoColorEmoji.ttf 15671215ab769fdc7162a045d56fd7d7e477c51b04e6b3c761d914d8fdd6cc44
