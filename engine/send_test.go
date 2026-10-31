@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/polymorfa/hypermeow"
@@ -40,6 +41,18 @@ func TestSendRejects(t *testing.T) {
 	if c := code(call(s.handleSend, `{"chat":"a@s.whatsapp.net","text":"hi"}`)); c != "unlinked" {
 		t.Errorf("unlinked: %s", c)
 	}
+	if c := code(call(s.handleGroupInfo, `{"chat":"1@g.us"}`)); c != "unlinked" {
+		t.Errorf("group.info, unlinked: %s", c)
+	}
+	if c := code(call(s.handleContacts, `{}`)); c != "unlinked" {
+		t.Errorf("contacts.list, unlinked: %s", c)
+	}
+	if c := code(call(s.handleDelete, `{"chat":"a@s.whatsapp.net","ids":[]}`)); c != "bad_request" {
+		t.Errorf("delete, no ids: %s", c)
+	}
+	if c := code(call(s.handleDelete, `{"chat":"a@s.whatsapp.net","ids":["X"]}`)); c != "unlinked" {
+		t.Errorf("delete, unlinked: %s", c)
+	}
 	// A device ID fakes "linked", so the chat key gets checked.
 	me := types.NewJID("4915700000009", types.DefaultUserServer)
 	s.cli.Store.ID = &me
@@ -48,5 +61,22 @@ func TestSendRejects(t *testing.T) {
 	}
 	if c := code(call(s.handleRead, `{"chat":""}`)); c != "bad_chat" {
 		t.Errorf("read, empty chat: %s", c)
+	}
+}
+
+func TestDeleteForMePatch(t *testing.T) {
+	chat := types.NewJID("4915700000001", types.DefaultUserServer)
+	p := deleteForMePatch(chat, []msgRow{{ID: "A", TS: 1700000000, Out: true}})
+	m := p.Mutations[0]
+	if want := []string{"deleteMessageForMe", chat.String(), "A", "1", "0"}; !reflect.DeepEqual(m.Index, want) {
+		t.Errorf("ours: %v, want %v", m.Index, want)
+	}
+	if m.Version != 3 || m.Value.DeleteMessageForMeAction.GetMessageTimestamp() != 1700000000 {
+		t.Errorf("version %d, action %v", m.Version, m.Value.DeleteMessageForMeAction)
+	}
+	group := types.NewJID("120363000000000001", types.GroupServer)
+	p = deleteForMePatch(group, []msgRow{{ID: "B", Sender: "4915700000002@lid"}})
+	if want := []string{"deleteMessageForMe", group.String(), "B", "0", "4915700000002@lid"}; !reflect.DeepEqual(p.Mutations[0].Index, want) {
+		t.Errorf("theirs, group: %v, want %v", p.Mutations[0].Index, want)
 	}
 }

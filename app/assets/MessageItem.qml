@@ -17,6 +17,38 @@ Container {
     // The gap goes above each card: in the bottom-to-top list that also spaces the first card
     // from its day's header (Q10, 2026-10-31: 1 du touched the header and was a little tight).
     topPadding: ui.du(1.5)
+    // The long-press menu (step 3.3). The set is the same on every row, with items disabled
+    // rather than left out: ActionItem has no visible, and list items are recycled across rows,
+    // so adding and removing actions per row isn't safe. The page does the work, through the
+    // list (ListItem.view). "Delete for me" is a DeleteActionItem, which the system puts last.
+    contextActions: [
+        ActionSet {
+            title: item.msg.deleted ? "" : (item.msg.text != "" ? item.msg.text : item.msg.label)
+            ActionItem {
+                title: qsTr("Reply")
+                imageSource: "file:///usr/share/icons/bb_action_reply.png"
+                enabled: !item.msg.deleted
+                onTriggered: item.ListItem.view.reply(item.msg)
+            }
+            // /usr/share/icons has no copy icon: this one is the stock Text Messages app's.
+            ActionItem {
+                title: qsTr("Copy")
+                imageSource: "asset:///images/copy.png"
+                enabled: !item.msg.deleted && item.msg.text != ""
+                onTriggered: item.ListItem.view.copy(item.msg.text)
+            }
+            ActionItem {
+                title: qsTr("Delete for everyone")
+                imageSource: "file:///usr/share/icons/bb_action_delete.png"
+                enabled: item.msg.revocable
+                onTriggered: item.ListItem.view.deleteForEveryone(item.msg.id)
+            }
+            DeleteActionItem {
+                title: qsTr("Delete for me")
+                onTriggered: item.ListItem.view.deleteForMe(item.msg.id)
+            }
+        }
+    ]
 
     Container {
         horizontalAlignment: HorizontalAlignment.Fill

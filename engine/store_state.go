@@ -17,6 +17,31 @@ edited, deleted FROM messages WHERE chat = ? AND id = ?`, chat, id).
 	return r, err == nil
 }
 
+// deleteMessage is "delete for me": the row goes. When it was the chat's newest, the preview
+// falls back to the next one; last_ts stays, so the chat keeps its place in the list.
+func (t *storeTx) deleteMessage(chat, id string) {
+	var newest string
+	wasLast := t.tx.QueryRow("SELECT id FROM messages WHERE chat = ? ORDER BY ts DESC LIMIT 1", chat).Scan(&newest) == nil && newest == id
+	if t.exec("DELETE FROM messages WHERE chat = ? AND id = ?", chat, id) == 0 {
+		return
+	}
+	t.changed(chat, id)
+	if !wasLast {
+		return
+	}
+	t.chats[chat] = true
+	if t.tx.QueryRow("SELECT id FROM messages WHERE chat = ? ORDER BY ts DESC LIMIT 1", chat).Scan(&newest) != nil {
+		t.exec("UPDATE chats SET last_preview = NULL WHERE jid = ?", chat)
+		return
+	}
+	r, _ := t.messageByID(chat, newest)
+	p := chatPreview(r)
+	if r.Deleted {
+		p = "This message was deleted"
+	}
+	t.exec("UPDATE chats SET last_preview = ?, last_out = ?, last_state = ? WHERE jid = ?", p, r.Out, r.State, chat)
+}
+
 // setState only raises the state of one of our messages: receipts arrive out of order, and a
 // failed (4) message stays failed.
 func (t *storeTx) setState(chat, id string, state int) {

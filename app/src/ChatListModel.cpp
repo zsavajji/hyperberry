@@ -23,10 +23,6 @@ using namespace bb::utility::i18n;
 // The QSQLITE connection to chats.db, read-only: only the engine writes it (PLAN.md §12).
 static const char *const kDb = "chats";
 
-// Tile colours, from the BB10 guidelines' icon palette and accents, picked by a hash of the jid
-// so a chat keeps its colour.
-static const char *const kColors[] = { "#779933", "#CC3F10", "#087099", "#A30D7E" };
-
 // A chat with no name yet, by docs/protocol.md's chats.kind.
 static QString placeholder(const QString &jid, int kind)
 {
@@ -41,24 +37,6 @@ static QString placeholder(const QString &jid, int kind)
     if (jid.endsWith("@s.whatsapp.net"))
         return "+" + jid.section('@', 0, 0);
     return ChatListModel::tr("Unknown");
-}
-
-// The first character of a word, a whole surrogate pair when it's one.
-static QString first(const QString &word)
-{
-    return word.left(word.at(0).isHighSurrogate() ? 2 : 1).toUpper();
-}
-
-// Up to two initials for the tile; "#" for a bare number.
-static QString initials(const QString &name)
-{
-    const QStringList words = name.split(' ', QString::SkipEmptyParts);
-    if (words.isEmpty() || name.startsWith('+'))
-        return "#";
-    QString s = first(words.first());
-    if (words.size() > 1 && words.last().at(0).isLetter())
-        s += first(words.last());
-    return s;
 }
 
 ChatListModel::ChatListModel(EngineLink *engine, QObject *parent)
@@ -180,7 +158,7 @@ void ChatListModel::reload()
         row["kind"] = kind;
         row["name"] = name;
         row["initials"] = initials(name);
-        row["color"] = pickColor(jid, kColors, sizeof kColors / sizeof *kColors);
+        row["color"] = pickColor(jid, kColors, kColorCount);
         row["preview"] = q.value(4).toString();
         // The time under a day's header; the day, or the date, where no header says it.
         if (hasTime)

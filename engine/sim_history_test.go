@@ -127,6 +127,28 @@ func TestSimSend(t *testing.T) {
 	}
 }
 
+func TestSimGroupInfo(t *testing.T) {
+	s, _, _ := linkedSim(t)
+	res, err := s.handleGroupInfo([]byte(`{"chat":"` + simChats[1].jid + `"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := res.(groupInfo)
+	p := g.Participants
+	if len(p) != 6 || !p[0].Me || p[0].JID != simMe || g.Subject != "Family 🏠" {
+		t.Fatalf("participants %+v", g)
+	}
+	if !p[1].Admin || !p[2].Admin || p[3].Admin {
+		t.Errorf("admins first: %+v", p)
+	}
+	if p[1].Name != "Dad" || p[2].Name != "Mum" {
+		t.Errorf("admins by name: %+v", p[1:3])
+	}
+	if _, err := s.handleGroupInfo([]byte(`{"chat":"` + simChats[0].jid + `"}`)); code(err) != "bad_chat" {
+		t.Errorf("1:1: %v", err)
+	}
+}
+
 func TestSimRead(t *testing.T) {
 	s, st, _ := linkedSim(t)
 	g := simChats[1].jid
@@ -169,4 +191,80 @@ func TestSimPresenceTyping(t *testing.T) {
 			t.Errorf("typing %d ends: %v", n, m)
 		}
 	}
+}
+
+func TestSimDelete(t *testing.T) {
+	s, st, c := linkedSim(t)
+	del := func(chat, id string, everyone bool) error {
+		_, err := s.handleDelete([]byte(fmt.Sprintf(`{"chat":%q,"ids":[%q],"everyone":%t}`, chat, id, everyone)))
+		return err
+	}
+	chat := simChats[2].jid // Marco: theirs, newest SIMSEED2
+	if err := del(chat, "SIMSEED2", true); err == nil || err.(*Error).Code != "not_ours" {
+		t.Errorf("everyone, theirs: %v, want not_ours", err)
+	}
+	var prev, text string
+	var out bool
+	st.db.QueryRow("SELECT text, out FROM messages WHERE chat = ? AND id != 'SIMSEED2' ORDER BY ts DESC LIMIT 1", chat).Scan(&text, &out)
+	prev = chatPreview(msgRow{Text: text, Out: out})
+	if err := del(chat, "SIMSEED2", false); err != nil {
+		t.Fatal(err)
+	}
+	for ok := false; !ok; {
+		m := next(t, c, "msgs")
+		for _, id := range m["ids"].([]any) {
+			ok = ok || (m["chat"] == chat && id == "SIMSEED2")
+		}
+	}
+	eventually(t, st, 0, "SELECT count(*) FROM messages WHERE chat = ? AND id = 'SIMSEED2'", chat)
+	eventually(t, st, 1, "SELECT count(*) FROM chats WHERE jid = ? AND last_preview = ?", chat, prev)
+
+	mine := simChats[5].jid
+	r, err := s.handleSend([]byte(`{"chat":"` + mine + `","text":"to delete"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := r.(map[string]string)["id"]
+	eventually(t, st, 1, "SELECT count(*) FROM messages WHERE chat = ? AND id = ? AND state >= ?", mine, id, stateSent)
+	if err := del(mine, id, true); err != nil {
+		t.Fatal(err)
+	}
+	eventually(t, st, 1, "SELECT count(*) FROM messages WHERE chat = ? AND id = ? AND deleted = 1 AND text IS NULL", mine, id)
+}
+
+func TestSimContacts(t *testing.T) {
+	s, st, _ := linkedSim(t)
+	res, err := s.handleContacts(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	book := res.([]contact)
+	var stranger, anna bool
+	for i, c := range book {
+		stranger = stranger || c.Name == "Beatrice Conti"
+		anna = anna || c.JID == simChats[0].jid
+		if strings.HasSuffix(c.JID, "@g.us") {
+			t.Errorf("group in the book: %+v", c)
+		}
+		if i > 0 && strings.ToLower(book[i-1].Name) > strings.ToLower(c.Name) {
+			t.Errorf("not sorted: %q before %q", book[i-1].Name, c.Name)
+		}
+	}
+	if !stranger || !anna {
+		t.Errorf("want a contact with no chat and one with a chat: %+v", book)
+	}
+
+	var who contact
+	for _, c := range book {
+		if c.Name == "Beatrice Conti" {
+			who = c
+		}
+	}
+	if rows(st, "SELECT count(*) FROM chats WHERE jid = ?", who.JID) != 0 {
+		t.Fatal("the stranger already has a chat")
+	}
+	if _, err := s.handleSend([]byte(`{"chat":"` + who.JID + `","text":"Hello Bea"}`)); err != nil {
+		t.Fatal(err)
+	}
+	eventually(t, st, 1, "SELECT count(*) FROM chats WHERE jid = ? AND name = 'Beatrice Conti' AND last_preview = 'You: Hello Bea'", who.JID)
 }

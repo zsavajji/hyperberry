@@ -1,5 +1,6 @@
 #include "EngineLink.h"
 
+#include <bb/cascades/Application>
 #include <bb/data/JsonDataAccess>
 #include <bb/system/InvokeRequest>
 #include <bb/system/InvokeTargetReply>
@@ -18,6 +19,7 @@ EngineLink::EngineLink(QObject *parent)
     , m_counter(0)
     , m_connected(false)
     , m_conn("offline")
+    , m_fullscreen(true) // the app opens fullscreen
 {
     // Qt 4.8's QElapsedTimer has no constructor: left alone it holds stack garbage, which can
     // read as "a START went out just now" on every retry, and the engine never starts (Q10,
@@ -47,9 +49,50 @@ QString EngineLink::conn() const { return m_conn; }
 bool EngineLink::linked() const { return m_linked; }
 QVariantMap EngineLink::failure() const { return m_failure; }
 
+bool EngineLink::fullscreen() const { return m_fullscreen; }
+QString EngineLink::openChat() const { return m_openChat; }
+
 void EngineLink::start()
 {
+    // Each of these can fire twice for one change; setFullscreen acts only on a change.
+    bb::cascades::Application *app = bb::cascades::Application::instance();
+    connect(app, SIGNAL(fullscreen()), this, SLOT(onFullscreen()));
+    connect(app, SIGNAL(thumbnail()), this, SLOT(onNotFullscreen()));
+    connect(app, SIGNAL(invisible()), this, SLOT(onNotFullscreen()));
     tryConnect();
+}
+
+void EngineLink::onFullscreen() { setFullscreen(true); }
+void EngineLink::onNotFullscreen() { setFullscreen(false); }
+
+void EngineLink::setFullscreen(bool on)
+{
+    if (on == m_fullscreen)
+        return;
+    m_fullscreen = on;
+    sendUiState();
+    emit fullscreenChanged();
+}
+
+void EngineLink::setOpenChat(const QString &jid)
+{
+    if (jid == m_openChat)
+        return;
+    m_openChat = jid;
+    sendUiState();
+}
+
+// openChat counts only while fullscreen: the notifier must speak up for a chat that's open but
+// minimised. Skipped while down, and before linking, when the engine refuses it (unlinked) and
+// that failure would hide the linking page's own; the hello and the link turning ready send it.
+void EngineLink::sendUiState()
+{
+    if (!m_connected || !m_linked)
+        return;
+    QVariantMap args;
+    args["fullscreen"] = m_fullscreen;
+    args["openChat"] = m_fullscreen ? m_openChat : QString();
+    request("ui.state", args);
 }
 
 void EngineLink::tryConnect()
@@ -135,6 +178,7 @@ void EngineLink::readLines()
                     m_invokedAt.invalidate();
                     setLink(map["result"].toMap());
                     emit connectedChanged();
+                    sendUiState(); // a restart loses this device's availability
                     qDebug() << "engine: connected, link" << m_link["state"].toString()
                              << ", conn" << m_conn;
                 } else {
@@ -148,6 +192,8 @@ void EngineLink::readLines()
                 const QString cmd = m_pending.take(id);
                 if (!ok)
                     fail(cmd, error["code"].toString(), error["message"].toString());
+                else
+                    emit replied(id, cmd, map["result"]);
             }
         } else if (map.contains("ev")) {
             const QString ev = map["ev"].toString();
@@ -179,6 +225,7 @@ void EngineLink::setLink(const QVariantMap &link)
         settings.setValue("linked", linked);
         settings.sync();
         emit linkedChanged();
+        sendUiState();
     }
     emit linkChanged();
     setConn(link["conn"].toString());
@@ -222,7 +269,7 @@ void EngineLink::fail(const QString &cmd, const QString &code, const QString &me
     emit failureChanged();
 }
 
-void EngineLink::request(const QString &cmd, const QVariantMap &args)
+QString EngineLink::request(const QString &cmd, const QVariantMap &args)
 {
     if (m_failure.value("cmd").toString() == cmd) {
         m_failure.clear();
@@ -230,7 +277,7 @@ void EngineLink::request(const QString &cmd, const QVariantMap &args)
     }
     if (!m_connected) {
         fail(cmd, "no_engine", tr("The engine isn't running."));
-        return;
+        return QString();
     }
     QVariantMap map = args;
     const QString id = QString::number(++m_counter);
@@ -238,6 +285,7 @@ void EngineLink::request(const QString &cmd, const QVariantMap &args)
     map["cmd"] = cmd;
     m_pending.insert(id, cmd);
     send(map);
+    return id;
 }
 
 void EngineLink::send(const QVariantMap &map)

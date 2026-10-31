@@ -6,6 +6,7 @@
 #include <QObject>
 #include <QPointer>
 #include <QString>
+#include <QStringList>
 #include <QTimer>
 #include <QVariantMap>
 
@@ -23,8 +24,15 @@ class ChatController : public QObject
     // `engine: engine` QML would read the controller's own property, not the context's.
     Q_PROPERTY(QObject *link READ link WRITE setLink)
     Q_PROPERTY(bb::cascades::DataModel *messages READ messages NOTIFY messagesChanged)
-    // The title bar's status line: "typing…", "online", "last seen …" or "".
+    // The title bar's status line: "typing…", "online", "last seen …", a group's "N participants" or "".
     Q_PROPERTY(QString status READ status NOTIFY statusChanged)
+    // The message the composer is replying to (step 3.3): who wrote it and a line of it; "" when
+    // not replying.
+    Q_PROPERTY(QString replyName READ replyName NOTIFY replyChanged)
+    Q_PROPERTY(QString replyText READ replyText NOTIFY replyChanged)
+    // The last group.info result {subject, description, participants}, each participant with
+    // initials and color added; empty until it comes (groups only).
+    Q_PROPERTY(QVariantMap groupInfo READ groupInfo NOTIFY groupInfoChanged)
 public:
     explicit ChatController(QObject *parent = 0);
     ~ChatController();
@@ -33,6 +41,9 @@ public:
     void setLink(QObject *link);
     bb::cascades::DataModel *messages() const;
     QString status() const;
+    QString replyName() const;
+    QString replyText() const;
+    QVariantMap groupInfo() const;
 
     // chat is a ChatListModel row (jid, kind). Once; later calls do nothing.
     Q_INVOKABLE void open(const QVariantMap &chat);
@@ -41,10 +52,26 @@ public:
     Q_INVOKABLE bool send(const QString &text);
     // Called on every change of the composer's text; sends our typing on and off.
     Q_INVOKABLE void composing(const QString &text);
+    // Whether the list shows the newest message; QML reports it on scrolling.
+    Q_INVOKABLE void setAtBottom(bool atBottom);
+
+    // msg is a MessageModel "msg" map; the next send quotes it.
+    Q_INVOKABLE void reply(const QVariantMap &msg);
+    Q_INVOKABLE void cancelReply();
+    Q_INVOKABLE void copy(const QString &text);
+    // Delete for me waits for the Undo toast: the card hides at once, the request goes with
+    // commitDelete (the toast closed, or the page going away).
+    Q_INVOKABLE void deleteForMe(const QString &id);
+    Q_INVOKABLE void undoDelete();
+    Q_INVOKABLE void commitDelete();
+    // False when the engine isn't connected: nothing was sent.
+    Q_INVOKABLE bool deleteForEveryone(const QString &id);
 
 signals:
     void messagesChanged();
     void statusChanged();
+    void replyChanged();
+    void groupInfoChanged();
 
 private slots:
     void onTyping(const QString &chat, const QString &who, bool on, bool voice);
@@ -52,16 +79,31 @@ private slots:
     void onConnected();
     void typingIdle();
     void composePaused();
+    void onIncoming();
+    void onFullscreenChanged();
+    void onReplied(const QString &id, const QString &cmd, const QVariant &result);
 
 private:
     void sendOpen();
+    void askGroupInfo();
+    void markRead();
     void setTyping(const QString &text);
     void setComposing(bool on);
 
     QPointer<EngineLink> m_engine;
     MessageModel *m_messages;
     QString m_jid;
+    QString m_name;
+    QString m_quoteId;
+    QString m_replyName;
+    QString m_replyText;
+    QVariantMap m_groupInfo;
+    QString m_infoId; // the group.info request we wait for
+    QString m_participants; // "N participants", the status line of a group
+    QStringList m_pending;
     bool m_group;
+    bool m_unseen;   // a message arrived that no one has seen yet
+    bool m_atBottom; // the list shows the newest message
     QString m_typing;
     QString m_presence;
     QTimer m_idle;

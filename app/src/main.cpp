@@ -11,6 +11,7 @@
 
 #include "ChatController.h"
 #include "ChatListModel.h"
+#include "ContactPicker.h"
 #include "EngineLink.h"
 #include "QrImage.h"
 
@@ -66,6 +67,7 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     QrImage qr(&app);
 
     qmlRegisterType<ChatController>("hyperberry", 1, 0, "ChatController");
+    qmlRegisterType<ContactPicker>("hyperberry", 1, 0, "ContactPicker");
     QmlDocument *document = QmlDocument::create("asset:///main.qml").parent(&app);
     if (!loaded(document, "main.qml"))
         return 1;

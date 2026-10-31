@@ -9,8 +9,17 @@ Page {
     property variant chat
     // Set by a send until our row goes in at the bottom.
     property bool followOwn: false
+    property string failedCmd: engine.failure.cmd || ""
+    onFailedCmdChanged: {
+        if (failedCmd == "msg.delete") {
+            deleteFailed.show()
+        }
+    }
     onChatChanged: {
         ctl.open(chat)
+        if (chat.kind == 1) {
+            addAction(infoAction, ActionBarPlacement.InOverflow)
+        }
         ctl.messages.itemAdded.connect(page.added)
     }
     attachedObjects: [
@@ -18,9 +27,52 @@ Page {
             id: ctl
             link: engine
         },
+        ComponentDefinition {
+            id: infoDef
+            source: "GroupInfoPage.qml"
+        },
+        // Added for groups only (ActionItem has no visible).
+        ActionItem {
+            id: infoAction
+            title: qsTr("Group info")
+            onTriggered: page.showInfo()
+        },
         SystemToast {
             id: notSent
             body: qsTr("Not sent: HyperBerry is reconnecting. Try again in a moment.")
+        },
+        SystemToast {
+            id: deleteFailed
+            body: qsTr("Not deleted: HyperBerry is reconnecting. Try again in a moment.")
+        },
+        // Delete for me: the card is already hidden, the request goes when the toast closes. Several
+        // deletes while it shows join one batch (show() on a showing toast keeps it up), and Undo
+        // takes them all back.
+        SystemToast {
+            id: deletedToast
+            body: qsTr("Message deleted")
+            button.label: qsTr("Undo")
+            autoUpdateEnabled: true
+            onFinished: {
+                if (value == SystemUiResult.ButtonSelection) {
+                    ctl.undoDelete()
+                } else {
+                    ctl.commitDelete()
+                }
+            }
+        },
+        SystemDialog {
+            id: revokeDialog
+            property string msgId
+            title: qsTr("Delete for everyone?")
+            body: qsTr("It will be deleted for everyone in this chat.")
+            confirmButton.label: qsTr("Delete")
+            cancelButton.label: qsTr("Cancel")
+            onFinished: {
+                if (value == SystemUiResult.ConfirmButtonSelection && !ctl.deleteForEveryone(msgId)) {
+                    deleteFailed.show()
+                }
+            }
         }
     ]
     actions: [
@@ -71,6 +123,17 @@ Page {
             list.scrollToPosition(ScrollPosition.Beginning, ScrollAnimation.None)
         }
     }
+    // The group's info page; the controller goes along, so the page reads what the chat page
+    // already asked for. The chat page stays under it, so it outlives the info page.
+    function showInfo() {
+        if (!chat || chat.kind != 1) {
+            return
+        }
+        var p = infoDef.createObject()
+        p.chat = page.chat
+        p.ctl = ctl
+        nav.push(p)
+    }
     // Called by ChatsPage once the page is pushed: every key, the first included, goes through the
     // input method (auto-capitals, Alt and Shift), which a KeyListener bypasses (bb10-pitfalls).
     function focusComposer() {
@@ -104,6 +167,9 @@ Page {
                 rightPadding: ui.px(7)
                 layout: StackLayout {
                     orientation: LayoutOrientation.LeftToRight
+                }
+                gestureHandlers: TapHandler {
+                    onTapped: page.showInfo()
                 }
                 Container {
                     verticalAlignment: VerticalAlignment.Center
@@ -155,11 +221,32 @@ Page {
         }
     }
     Container {
-        layout: DockLayout {}
         horizontalAlignment: HorizontalAlignment.Fill
         verticalAlignment: VerticalAlignment.Fill
+        layout: StackLayout {
+            orientation: LayoutOrientation.TopToBottom
+        }
         ListView {
             id: list
+            layoutProperties: StackLayoutProperties {
+                spaceQuota: 1
+            }
+            // The cards' long-press menu reaches the page through the list (ListItem.view).
+            function reply(msg) {
+                ctl.reply(msg)
+                composer.requestFocus()
+            }
+            function copy(text) {
+                ctl.copy(text)
+            }
+            function deleteForMe(id) {
+                ctl.deleteForMe(id)
+                deletedToast.show()
+            }
+            function deleteForEveryone(id) {
+                revokeDialog.msgId = id
+                revokeDialog.show()
+            }
             // The cards reach the shared emoji style (main.qml) through ListItem.view.
             property variant emojiStyle: nav.emojiStyle
             property int bodySize: nav.bodySize
@@ -180,6 +267,8 @@ Page {
                 ListScrollStateHandler {
                     // Older pages are appends, so asking on every change can't cascade.
                     onFirstVisibleItemChanged: ctl.nearTop(firstVisibleItem)
+                    // The list runs bottom to top, so its beginning is the bottom.
+                    onAtBeginningChanged: ctl.setAtBottom(atBeginning)
                 }
             ]
             listItemComponents: [
@@ -247,6 +336,63 @@ Page {
                     }
                 }
             ]
+        }
+        // The message being replied to, above the action bar. A tap cancels. Drawn as the quote in a
+        // card is: a primary-colour bar, the name, one line of the text.
+        Container {
+            visible: ctl.replyName != ""
+            horizontalAlignment: HorizontalAlignment.Fill
+            background: ui.palette.plain
+            leftPadding: ui.du(1.5)
+            rightPadding: ui.du(1.5)
+            topPadding: ui.du(1)
+            bottomPadding: ui.du(1)
+            layout: StackLayout {
+                orientation: LayoutOrientation.LeftToRight
+            }
+            gestureHandlers: TapHandler {
+                onTapped: ctl.cancelReply()
+            }
+            Container {
+                verticalAlignment: VerticalAlignment.Fill
+                preferredWidth: ui.du(0.5)
+                background: ui.palette.primary
+            }
+            Container {
+                leftMargin: ui.du(1)
+                layoutProperties: StackLayoutProperties {
+                    spaceQuota: 1
+                }
+                Label {
+                    bottomMargin: 0
+                    text: qsTr("Replying to %1").arg(ctl.replyName)
+                    textFormat: TextFormat.Plain
+                    textStyle.base: nav.emojiStyle
+                    textStyle.fontSize: FontSize.PercentageValue
+                    textStyle.fontSizeValue: nav.smallSize
+                    textStyle.fontWeight: FontWeight.Bold
+                    textStyle.color: ui.palette.primary
+                }
+                Label {
+                    topMargin: 0
+                    bottomMargin: 0
+                    multiline: false
+                    text: ctl.replyText
+                    textFormat: TextFormat.Plain
+                    textStyle.base: nav.emojiStyle
+                    textStyle.fontSize: FontSize.PercentageValue
+                    textStyle.fontSizeValue: nav.smallSize
+                    textStyle.color: ui.palette.secondaryTextOnPlain
+                }
+            }
+            Label {
+                verticalAlignment: VerticalAlignment.Center
+                leftMargin: ui.du(1)
+                text: "\u2715"
+                textFormat: TextFormat.Plain
+                textStyle.base: nav.emojiStyle
+                textStyle.color: ui.palette.secondaryTextOnPlain
+            }
         }
     }
 }

@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/polymorfa/hypermeow"
+	"github.com/polymorfa/hypermeow/appstate"
 	"github.com/polymorfa/hypermeow/proto/waE2E"
+	"github.com/polymorfa/hypermeow/proto/waSyncAction"
 	"github.com/polymorfa/hypermeow/types"
 	"github.com/polymorfa/hypermeow/types/events"
 )
@@ -27,7 +29,10 @@ func (s *Session) linked(chat string) (*whatsmeow.Client, types.JID, error) {
 	return cli, jid, nil
 }
 
-func registerSend(srv *Server, s *Session) { srv.Handle("msg.send", s.handleSend) }
+func registerSend(srv *Server, s *Session) {
+	srv.Handle("msg.send", s.handleSend)
+	srv.Handle("msg.delete", s.handleDelete)
+}
 
 func (s *Session) handleSend(req json.RawMessage) (any, error) {
 	var r struct{ Chat, Text, Quote string }
@@ -40,7 +45,14 @@ func (s *Session) handleSend(req json.RawMessage) (any, error) {
 	}
 	id, now := cli.GenerateMessageID(), time.Now().Unix()
 
-	q := s.store.queueOutgoing(jid, r.Chat, id, r.Text, r.Quote, now)
+	q, created := s.store.queueOutgoing(jid, r.Chat, id, r.Text, r.Quote, now)
+	if created && chatKind(jid) == chatUser {
+		// The first message to someone with no chat names the chat.
+		nctx, ncancel := context.WithTimeout(context.Background(), netTimeout)
+		name := displayName(nctx, cli, jid, types.EmptyJID)
+		ncancel()
+		s.store.ops <- func(t *storeTx) { t.setName(r.Chat, name) }
+	}
 	msg := &waE2E.Message{Conversation: &r.Text}
 	if q.ID != "" {
 		who := r.Chat // a 1:1 message from them was sent by the chat itself
@@ -67,11 +79,115 @@ func (s *Session) handleSend(req json.RawMessage) (any, error) {
 	return map[string]string{"id": id}, nil
 }
 
-// queueOutgoing puts our message in as sending, so the UI shows the bubble while the send is in
-// flight, and returns the message it quotes (empty when there is none).
-func (st *Store) queueOutgoing(jid types.JID, chat, id, text, quote string, now int64) msgRow {
-	quoted := make(chan msgRow, 1)
+type deleteReq struct {
+	Chat     string
+	IDs      []string `json:"ids"`
+	Everyone bool
+}
+
+func parseDelete(req json.RawMessage) (deleteReq, error) {
+	var r deleteReq
+	if err := json.Unmarshal(req, &r); err != nil || len(r.IDs) == 0 {
+		return r, &Error{"bad_request", "msg.delete needs chat and ids"}
+	}
+	return r, nil
+}
+
+// handleDelete is msg.delete. For everyone it sends a revoke per message and marks each row once
+// it went; for me the rows go first (our local action) and our other devices are told after.
+func (s *Session) handleDelete(req json.RawMessage) (any, error) {
+	r, err := parseDelete(req)
+	if err != nil {
+		return nil, err
+	}
+	cli, jid, err := s.linked(r.Chat)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := s.store.deletable(r.Chat, r.IDs, r.Everyone)
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
+	defer cancel()
+	if r.Everyone {
+		for _, m := range rows {
+			if _, err := cli.SendMessage(ctx, jid, cli.BuildRevoke(jid, types.EmptyJID, m.ID)); err != nil {
+				return nil, err
+			}
+			id := m.ID
+			s.store.ops <- func(t *storeTx) { t.revokeMessage(r.Chat, id) }
+		}
+		return nil, nil
+	}
+	for _, m := range rows {
+		id := m.ID
+		s.store.ops <- func(t *storeTx) { t.deleteMessage(r.Chat, id) }
+	}
+	if len(rows) > 0 {
+		if err := cli.SendAppState(ctx, deleteForMePatch(jid, rows)); err != nil {
+			// ponytail: our other devices keep the messages; queue and retry if that matters.
+			s.log.Warnf("delete for me: app state: %v", err)
+		}
+	}
+	return nil, nil
+}
+
+// deletable reads the rows a delete names; ids that aren't there are skipped. For everyone every
+// row must be ours and already sent: WhatsApp revokes nothing else.
+func (st *Store) deletable(chat string, ids []string, everyone bool) ([]msgRow, error) {
+	got := make(chan []msgRow, 1)
 	st.ops <- func(t *storeTx) {
+		var rows []msgRow
+		for _, id := range ids {
+			if m, ok := t.messageByID(chat, id); ok {
+				rows = append(rows, m)
+			}
+		}
+		got <- rows
+	}
+	rows := <-got
+	if everyone {
+		for _, m := range rows {
+			if !m.Out || m.Deleted || m.State < stateSent || m.State > stateRead {
+				return nil, &Error{"not_ours", "only our own sent messages can be deleted for everyone"}
+			}
+		}
+	}
+	return rows, nil
+}
+
+// deleteForMePatch tells our other devices to drop the messages. hypermeow names the index but
+// has no builder, so this follows BuildStar's layout (the sender is "0" unless it is someone
+// else's message in a group). EncodePatch sets the value's own timestamp.
+// (verify on the real link): the index layout, and that MessageTimestamp is in seconds.
+func deleteForMePatch(chat types.JID, rows []msgRow) appstate.PatchInfo {
+	p := appstate.PatchInfo{Type: appstate.WAPatchRegularHigh}
+	for _, m := range rows {
+		fromMe, who, ts, media := "0", "0", m.TS, false
+		if m.Out {
+			fromMe = "1"
+		} else if m.Sender != "" {
+			who = m.Sender
+		}
+		p.Mutations = append(p.Mutations, appstate.MutationInfo{
+			Index:   []string{appstate.IndexDeleteMessageForMe, chat.String(), m.ID, fromMe, who},
+			Version: 3,
+			Value: &waSyncAction.SyncActionValue{DeleteMessageForMeAction: &waSyncAction.DeleteMessageForMeAction{
+				DeleteMedia: &media, MessageTimestamp: &ts}},
+		})
+	}
+	return p
+}
+
+// queueOutgoing puts our message in as sending, so the UI shows the bubble while the send is in
+// flight, and returns the message it quotes (empty when there is none) and whether the chat
+// was new.
+func (st *Store) queueOutgoing(jid types.JID, chat, id, text, quote string, now int64) (msgRow, bool) {
+	quoted := make(chan msgRow, 1)
+	made := make(chan bool, 1)
+	st.ops <- func(t *storeTx) {
+		made <- !t.hasChat(chat)
 		var q msgRow
 		if quote != "" {
 			q, _ = t.messageByID(chat, quote)
@@ -85,7 +201,7 @@ func (st *Store) queueOutgoing(jid types.JID, chat, id, text, quote string, now 
 		t.insertMessage(row)
 		t.setLast(chat, now, chatPreview(row), true, stateSending)
 	}
-	return <-quoted
+	return <-quoted, <-made
 }
 
 // receipt moves the ticks of our messages, or clears unread when our other devices read a chat.

@@ -59,11 +59,14 @@ func newSim(srv *Server, st *Store, log waLog.Logger) *Sim {
 	srv.Handle("sim.removed", s.handleRemoved)
 	srv.Handle("sim.typing", s.handleTyping)
 	srv.Handle("msg.send", s.handleSend)
+	srv.Handle("msg.delete", s.handleDelete)
 	srv.Handle("chat.read", s.handleRead)
 	srv.Handle("chat.open", s.handleOpen)
 	srv.Handle("chat.typing", s.handleChatTyping)
-	srv.Handle("chat.close", accepted)
-	srv.Handle("ui.state", accepted)
+	srv.Handle("group.info", s.handleGroupInfo)
+	srv.Handle("contacts.list", s.handleContacts)
+	srv.Handle("chat.close", s.handleLogged)
+	srv.Handle("ui.state", s.handleLogged)
 	return s
 }
 
@@ -299,7 +302,12 @@ func simIndex(jid string) int {
 	return -1
 }
 
-func accepted(json.RawMessage) (any, error) { return nil, nil }
+// handleLogged answers chat.close and ui.state with ok and logs the raw request, so the Q10 check
+// can see the UI's focus rhythm (step 3.4).
+func (s *Sim) handleLogged(req json.RawMessage) (any, error) {
+	s.log.Infof("sim: %s", req)
+	return nil, nil
+}
 
 // handleSend is msg.send: the row as sending, then sent, delivered and read at simTicks. A text
 // starting with "fail" ends failed. Like the real one it blocks for the round trip.
@@ -313,7 +321,11 @@ func (s *Sim) handleSend(req json.RawMessage) (any, error) {
 		return nil, err
 	}
 	id, ops := fmt.Sprintf("SIMOUT%d", time.Now().UnixNano()), s.store.ops
-	s.store.queueOutgoing(jid, r.Chat, id, r.Text, r.Quote, time.Now().Unix())
+	_, created := s.store.queueOutgoing(jid, r.Chat, id, r.Text, r.Quote, time.Now().Unix())
+	if created && chatKind(jid) == chatUser {
+		name := simBookName(r.Chat)
+		s.store.ops <- func(t *storeTx) { t.setName(r.Chat, name) }
+	}
 	ticks := simTicks // copied before the goroutine: tests restore it while one may still sleep
 	time.Sleep(ticks[0])
 	// The Q10 capitalises the first letter, so the match ignores case.
@@ -331,9 +343,36 @@ func (s *Sim) handleSend(req json.RawMessage) (any, error) {
 	return map[string]string{"id": id}, nil
 }
 
+// handleDelete is msg.delete: the same rows change as with the real one, nothing is sent.
+func (s *Sim) handleDelete(req json.RawMessage) (any, error) {
+	r, err := parseDelete(req)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := s.chat(r.Chat); err != nil {
+		return nil, err
+	}
+	rows, err := s.store.deletable(r.Chat, r.IDs, r.Everyone)
+	if err != nil {
+		return nil, err
+	}
+	for _, m := range rows {
+		id := m.ID
+		s.store.ops <- func(t *storeTx) {
+			if r.Everyone {
+				t.revokeMessage(r.Chat, id)
+			} else {
+				t.deleteMessage(r.Chat, id)
+			}
+		}
+	}
+	return nil, nil
+}
+
 func (s *Sim) handleRead(req json.RawMessage) (any, error) {
 	var r struct{ Chat string }
 	json.Unmarshal(req, &r)
+	s.log.Infof("sim: %s", req)
 	if _, err := s.chat(r.Chat); err != nil {
 		return nil, err
 	}
@@ -346,6 +385,7 @@ func (s *Sim) handleRead(req json.RawMessage) (any, error) {
 func (s *Sim) handleOpen(req json.RawMessage) (any, error) {
 	var r struct{ Chat string }
 	json.Unmarshal(req, &r)
+	s.log.Infof("sim: %s", req)
 	jid, err := s.chat(r.Chat)
 	if err != nil || jid.Server == types.GroupServer {
 		return nil, err

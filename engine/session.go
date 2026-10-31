@@ -61,6 +61,8 @@ func newSession(container *sqlstore.Container, srv *Server, store *Store, log wa
 	srv.Handle("link.logout", s.handleLogout)
 	registerSend(srv, s)
 	registerPresence(srv, s)
+	registerGroup(srv, s)
+	registerContacts(srv, s)
 	return s, nil
 }
 

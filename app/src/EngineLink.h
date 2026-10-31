@@ -40,13 +40,19 @@ public:
     QString conn() const;
     bool linked() const;
     QVariantMap failure() const;
+    // Whether the app is on screen full size; thumbnail and invisible both mean false.
+    bool fullscreen() const;
+    QString openChat() const;
+    // The chat page on screen, "" for none. Sends ui.state.
+    void setOpenChat(const QString &jid);
 
     // Connects, starting the engine first when it isn't running. Call once, from main().
     void start();
 
 
-    // Sends a request (docs/protocol.md "Requests"); a failure shows in failure.
-    Q_INVOKABLE void request(const QString &cmd, const QVariantMap &args);
+    // Sends a request (docs/protocol.md "Requests"); a failure shows in failure. Returns the
+    // request id, "" when the engine isn't connected.
+    Q_INVOKABLE QString request(const QString &cmd, const QVariantMap &args);
 
 signals:
     void connectedChanged();
@@ -60,8 +66,14 @@ signals:
     void typing(const QString &chat, const QString &who, bool on, bool voice);
     // A presence event; lastSeen in unix seconds, 0 when hidden.
     void presence(const QString &chat, bool online, qint64 lastSeen);
+    // A successful reply to a request, hello's excepted: its id (request()'s return value), the
+    // cmd and the result. For C++ objects only: a connection ends with its object, so nothing
+    // stays connected to a destroyed page (as with failure).
+    void replied(const QString &id, const QString &cmd, const QVariant &result);
     void linkedChanged();
     void failureChanged();
+    // Emitted after ui.state went out, so it reaches the engine before a chat.close/chat.open.
+    void fullscreenChanged();
 
 private slots:
     void tryConnect();
@@ -69,12 +81,16 @@ private slots:
     void readLines();
     void lost();
     void invokeFinished();
+    void onFullscreen();
+    void onNotFullscreen();
 
 private:
     void startEngine();
     void send(const QVariantMap &map);
     void setLink(const QVariantMap &link);
     void setConn(const QString &conn);
+    void setFullscreen(bool on);
+    void sendUiState();
     void fail(const QString &cmd, const QString &code, const QString &message);
 
     QTcpSocket m_socket;
@@ -90,6 +106,8 @@ private:
     QString m_conn;
     bool m_linked;
     QVariantMap m_failure;
+    bool m_fullscreen;
+    QString m_openChat;
 };
 
 #endif

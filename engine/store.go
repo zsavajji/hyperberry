@@ -82,7 +82,7 @@ func (st *Store) handle(cli *whatsmeow.Client, evt any) {
 		return
 	case *events.HistorySync, *events.Message, *events.Contact, *events.PushName, *events.GroupInfo,
 		*events.JoinedGroup, *events.Mute, *events.Pin, *events.Archive,
-		*events.Receipt, *events.ChatPresence, *events.Presence:
+		*events.Receipt, *events.ChatPresence, *events.Presence, *events.DeleteForMe:
 		st.ops <- func(t *storeTx) { st.dispatch(t, cli, evt) }
 	}
 }
@@ -143,6 +143,9 @@ func (st *Store) dispatch(t *storeTx, cli *whatsmeow.Client, evt any) {
 		t.setPinned(chatKey(ctx, t, lids, e.JID, types.EmptyJID), e.Action.GetPinned())
 	case *events.Archive:
 		t.setArchived(chatKey(ctx, t, lids, e.JID, types.EmptyJID), e.Action.GetArchived())
+	case *events.DeleteForMe:
+		// A delete on one of our other devices.
+		t.deleteMessage(chatKey(ctx, t, lids, e.ChatJID, types.EmptyJID), e.MessageID)
 	}
 }
 

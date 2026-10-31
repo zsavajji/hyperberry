@@ -1,8 +1,10 @@
 #include "ChatController.h"
 
 #include "EngineLink.h"
+#include "colors.h"
 #include "MessageModel.h"
 
+#include <bb/system/Clipboard>
 #include <bb/utility/i18n/Formatting>
 #include <QDate>
 #include <QDateTime>
@@ -14,6 +16,8 @@ ChatController::ChatController(QObject *parent)
     : QObject(parent)
     , m_messages(0)
     , m_group(false)
+    , m_unseen(false)
+    , m_atBottom(true)
     , m_composing(false)
     , m_region(bb::system::LocaleType::Region)
 {
@@ -33,6 +37,7 @@ ChatController::ChatController(QObject *parent)
 
 ChatController::~ChatController()
 {
+    commitDelete(); // popping the page while the Undo toast shows still deletes
     if (m_engine && m_engine->connected() && !m_jid.isEmpty()) {
         QVariantMap args;
         args["chat"] = m_jid;
@@ -43,6 +48,8 @@ ChatController::~ChatController()
         }
         m_engine->request("chat.close", args);
     }
+    if (m_engine && !m_jid.isEmpty() && m_engine->openChat() == m_jid)
+        m_engine->setOpenChat(QString());
 }
 
 QObject *ChatController::link() const
@@ -63,7 +70,45 @@ bb::cascades::DataModel *ChatController::messages() const
 
 QString ChatController::status() const
 {
-    return m_typing.isEmpty() ? m_presence : m_typing;
+    if (!m_typing.isEmpty())
+        return m_typing;
+    return m_group ? m_participants : m_presence;
+}
+
+QVariantMap ChatController::groupInfo() const
+{
+    return m_groupInfo;
+}
+
+void ChatController::askGroupInfo()
+{
+    if (!m_group)
+        return;
+    QVariantMap args;
+    args["chat"] = m_jid;
+    m_infoId = m_engine->request("group.info", args);
+}
+
+// Adds what the page draws to each participant: the tile's initials and the colour the name
+// has in the chat.
+void ChatController::onReplied(const QString &id, const QString &cmd, const QVariant &result)
+{
+    if (cmd != "group.info" || id != m_infoId)
+        return;
+    QVariantMap info = result.toMap();
+    QVariantList people;
+    foreach (const QVariant &v, info["participants"].toList()) {
+        QVariantMap p = v.toMap();
+        p["initials"] = initials(p["name"].toString());
+        p["color"] = pickColor(p["jid"].toString(), kSenders, kSenderCount);
+        people << p;
+    }
+    info["participants"] = people;
+    m_groupInfo = info;
+    emit groupInfoChanged();
+    const int n = people.size();
+    m_participants = n == 1 ? tr("1 participant") : tr("%1 participants").arg(n);
+    emit statusChanged();
 }
 
 void ChatController::open(const QVariantMap &chat)
@@ -71,6 +116,7 @@ void ChatController::open(const QVariantMap &chat)
     if (m_messages || !m_engine)
         return;
     m_jid = chat["jid"].toString();
+    m_name = chat["name"].toString();
     m_group = chat["kind"].toInt() == 1;
     m_messages = new MessageModel(m_engine, m_jid, m_group, this);
     emit messagesChanged();
@@ -79,7 +125,58 @@ void ChatController::open(const QVariantMap &chat)
     connect(m_engine, SIGNAL(presence(QString, bool, qint64)), this,
             SLOT(onPresence(QString, bool, qint64)));
     connect(m_engine, SIGNAL(connectedChanged()), this, SLOT(onConnected()));
+    connect(m_engine, SIGNAL(fullscreenChanged()), this, SLOT(onFullscreenChanged()));
+    connect(m_engine, SIGNAL(replied(QString, QString, QVariant)), this,
+            SLOT(onReplied(QString, QString, QVariant)));
+    connect(m_messages, SIGNAL(incoming()), this, SLOT(onIncoming()));
+    // From chats.db, not the row we were given: a contact from the picker has no unread, and
+    // a notification tap (step 5.1) won't either.
+    m_unseen = m_messages->unread() > 0;
+    m_engine->setOpenChat(m_jid);
     sendOpen();
+    askGroupInfo();
+    markRead();
+}
+
+void ChatController::setAtBottom(bool atBottom)
+{
+    m_atBottom = atBottom;
+    if (atBottom)
+        markRead();
+}
+
+void ChatController::onIncoming()
+{
+    m_unseen = true;
+    markRead();
+}
+
+// A message is read only when its card can be seen: at the bottom of a chat that is on screen.
+// This is what keeps a badge from showing for a chat that's open.
+void ChatController::markRead()
+{
+    if (!m_unseen || !m_atBottom || !m_engine || !m_engine->connected() || !m_engine->fullscreen())
+        return;
+    m_unseen = false;
+    QVariantMap args;
+    args["chat"] = m_jid;
+    m_engine->request("chat.read", args);
+}
+
+// Minimised: stop our typing and unsubscribe; back: subscribe again, and read what came meanwhile.
+void ChatController::onFullscreenChanged()
+{
+    if (!m_engine || !m_engine->connected())
+        return;
+    if (m_engine->fullscreen()) {
+        sendOpen();
+        markRead();
+        return;
+    }
+    setComposing(false);
+    QVariantMap args;
+    args["chat"] = m_jid;
+    m_engine->request("chat.close", args);
 }
 
 void ChatController::nearTop(const QVariantList &firstVisible)
@@ -96,7 +193,103 @@ bool ChatController::send(const QString &text)
     QVariantMap args;
     args["chat"] = m_jid;
     args["text"] = text;
+    if (!m_quoteId.isEmpty())
+        args["quote"] = m_quoteId;
     m_engine->request("msg.send", args);
+    cancelReply();
+    return true;
+}
+
+QString ChatController::replyName() const
+{
+    return m_replyName;
+}
+
+QString ChatController::replyText() const
+{
+    return m_replyText;
+}
+
+void ChatController::reply(const QVariantMap &msg)
+{
+    m_quoteId = msg["id"].toString();
+    if (msg["out"].toBool())
+        m_replyName = tr("You");
+    else if (!msg["sender"].toString().isEmpty())
+        m_replyName = msg["sender"].toString();
+    else
+        m_replyName = m_name;
+    m_replyText = msg["text"].toString();
+    if (m_replyText.isEmpty())
+        m_replyText = msg["label"].toString();
+    emit replyChanged();
+}
+
+void ChatController::cancelReply()
+{
+    if (m_quoteId.isEmpty())
+        return;
+    m_quoteId.clear();
+    m_replyName.clear();
+    m_replyText.clear();
+    emit replyChanged();
+}
+
+void ChatController::copy(const QString &text)
+{
+    bb::system::Clipboard clipboard;
+    clipboard.clear();
+    clipboard.insert("text/plain", text.toUtf8());
+}
+
+void ChatController::deleteForMe(const QString &id)
+{
+    if (!m_messages)
+        return;
+    m_pending << id;
+    m_messages->hide(QStringList(id));
+    if (id == m_quoteId)
+        cancelReply();
+}
+
+void ChatController::undoDelete()
+{
+    if (m_pending.isEmpty() || !m_messages)
+        return;
+    m_messages->unhide(m_pending);
+    m_pending.clear();
+}
+
+// A committed id stays hidden for the page's life, so the card doesn't flash back before the
+// engine's msgs event removes it.
+// ponytail: with the engine down the request fails and the card stays hidden until the page is
+// reopened; the failure shows in engine.failure.
+void ChatController::commitDelete()
+{
+    if (m_pending.isEmpty())
+        return;
+    if (m_engine) {
+        QVariantList ids;
+        foreach (const QString &id, m_pending)
+            ids << id;
+        QVariantMap args;
+        args["chat"] = m_jid;
+        args["ids"] = ids;
+        args["everyone"] = false;
+        m_engine->request("msg.delete", args);
+    }
+    m_pending.clear();
+}
+
+bool ChatController::deleteForEveryone(const QString &id)
+{
+    if (!m_engine || !m_engine->connected())
+        return false;
+    QVariantMap args;
+    args["chat"] = m_jid;
+    args["ids"] = QVariantList() << id;
+    args["everyone"] = true;
+    m_engine->request("msg.delete", args);
     return true;
 }
 
@@ -148,8 +341,11 @@ void ChatController::sendOpen()
 // failed with no_engine.
 void ChatController::onConnected()
 {
-    if (m_engine && m_engine->connected())
+    if (m_engine && m_engine->connected()) {
         sendOpen();
+        askGroupInfo();
+        markRead();
+    }
 }
 
 void ChatController::setTyping(const QString &text)
@@ -182,7 +378,7 @@ void ChatController::typingIdle()
     setTyping(QString());
 }
 
-// "N participants" for a group comes with group.info in 3.5.
+// A group's status line is "N participants", set when group.info arrives.
 void ChatController::onPresence(const QString &chat, bool online, qint64 lastSeen)
 {
     if (chat != m_jid || m_group)

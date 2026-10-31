@@ -31,10 +31,6 @@ static const char *const kColumns = "rowid, id, ts, out, state, sender, sender_n
                                     QUOTED("out") ", " QUOTED("sender") ", " QUOTED("sender_name");
 #undef QUOTED
 
-// Sender name colours; light enough to read on the dark card (tune on the Q10).
-static const char *const kSenders[] = { "#4FC3F7", "#FF8A65", "#AED581", "#BA68C8", "#FFD54F",
-                                        "#4DB6AC", "#F06292", "#7986CB" };
-
 bool MessageModel::lessThan(const Msg &a, const Msg &b)
 {
     return a.ts < b.ts || (a.ts == b.ts && a.rowid < b.rowid);
@@ -120,6 +116,11 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
     m.data["state"] = q.value(4).toInt();
     m.data["edited"] = q.value(10).toInt() != 0;
     m.data["deleted"] = deleted;
+    // Delete for everyone: ours, sent, and inside WhatsApp's limit of about 2.5 days.
+    // ponytail: read when the row is read, so a page left open for days can offer it a little late.
+    const int state = q.value(4).toInt();
+    m.data["revocable"] = out && !deleted && state >= 1 && state <= 3
+                          && QDateTime::currentDateTime().toTime_t() - m.ts < 60 * 3600;
     m.data["time"] = locale.toString(QDateTime::fromTime_t(m.ts).time(),
                                      timeFormat(locale, DateFormat::Short));
     m.data["label"] = label;
@@ -129,7 +130,7 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
     QString color;
     if (!sender.isEmpty()) {
         const QString key = q.value(5).isNull() ? sender : q.value(5).toString();
-        color = pickColor(key, kSenders, sizeof kSenders / sizeof *kSenders);
+        color = pickColor(key, kSenders, kSenderCount);
     }
     m.data["senderColor"] = color;
     // In groups a quote says whose message it was, in that person's colour; ours is "You", in
@@ -142,12 +143,39 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
         } else if (!q.value(14).toString().isEmpty()) {
             quoteName = q.value(14).toString();
             const QString key = q.value(13).isNull() ? quoteName : q.value(13).toString();
-            quoteColor = pickColor(key, kSenders, sizeof kSenders / sizeof *kSenders);
+            quoteColor = pickColor(key, kSenders, kSenderCount);
         }
     }
     m.data["quoteName"] = quoteName;
     m.data["quoteColor"] = quoteColor;
     return m;
+}
+
+// The read-only connection, opened on first use. Not open before the first link: the engine
+// hasn't made chats.db yet.
+static QSqlDatabase database()
+{
+    QSqlDatabase db = QSqlDatabase::database(kDb, false);
+    if (!db.isValid()) {
+        db = QSqlDatabase::addDatabase("QSQLITE", kDb);
+        db.setDatabaseName(QDir::homePath() + "/chats.db");
+        db.setConnectOptions("QSQLITE_OPEN_READONLY");
+    }
+    if (!db.isOpen())
+        db.open();
+    return db;
+}
+
+// The chat's unread count in chats.db, 0 when it has no row (a contact with no chat yet).
+int MessageModel::unread() const
+{
+    QSqlDatabase db = database();
+    if (!db.isOpen())
+        return 0;
+    QSqlQuery q(db);
+    q.prepare("SELECT unread FROM chats WHERE jid = ?");
+    q.addBindValue(m_chat);
+    return q.exec() && q.next() ? q.value(0).toInt() : 0;
 }
 
 // Runs the messages query of this chat: "where" adds conditions on top of chat = ?, args are
@@ -156,14 +184,8 @@ QList<MessageModel::Msg> MessageModel::select(const QString &where, const QVaria
                                               int limit)
 {
     QList<Msg> rows;
-    QSqlDatabase db = QSqlDatabase::database(kDb, false);
-    if (!db.isValid()) {
-        db = QSqlDatabase::addDatabase("QSQLITE", kDb);
-        db.setDatabaseName(QDir::homePath() + "/chats.db");
-        db.setConnectOptions("QSQLITE_OPEN_READONLY");
-    }
-    // Before the first link the engine hasn't made chats.db.
-    if (!db.isOpen() && !db.open())
+    QSqlDatabase db = database();
+    if (!db.isOpen())
         return rows;
     QSqlQuery q(db);
     q.prepare(QString("SELECT %1 FROM messages WHERE chat = ? %2 ORDER BY ts DESC, rowid DESC "
@@ -274,43 +296,86 @@ void MessageModel::merge(const QStringList &asked, const QList<Msg> &fresh, bool
         }
     }
     const bool empty = m_all.isEmpty();
+    bool incoming = false;
     foreach (const Msg &m, fresh) {
         if (loaded.contains(m.id))
             continue;
         // A new message older than the loaded ones comes with a later page.
         if (older || empty || m_atStart || m.ts > m_all.first().ts
-            || (m.ts == m_all.first().ts && m.rowid > m_all.first().rowid))
+            || (m.ts == m_all.first().ts && m.rowid > m_all.first().rowid)) {
             all.append(m);
+            // Only loadPage passes older (the first load and older pages): anything else that is
+            // new arrived live, even into a chat that opened empty.
+            if (!older && !m.data["out"].toBool())
+                incoming = true;
+        }
     }
     // Sending moves a row: its ts becomes the server's.
     qStableSort(all.begin(), all.end(), lessThan);
 
-    QStringList old;
-    foreach (const Entry &e, m_entries)
-        old << e.key;
+    const QStringList old = keys();
     m_all = all;
-    rebuild();
-    QStringList now;
+    refresh(old, updated);
+    if (incoming)
+        emit this->incoming();
+}
+
+QStringList MessageModel::keys() const
+{
+    QStringList k;
     foreach (const Entry &e, m_entries)
-        now << e.key;
+        k << e.key;
+    return k;
+}
+
+// a is a subsequence of b: b is a with rows inserted anywhere.
+static bool isSubsequence(const QStringList &a, const QStringList &b)
+{
+    int i = 0;
+    for (int j = 0; j < b.size() && i < a.size(); ++j) {
+        if (a[i] == b[j])
+            ++i;
+    }
+    return i == a.size();
+}
+
+// Rebuilds the entries from m_all and tells the list how they changed from old (the keys before).
+// itemAdded and itemRemoved never move the rows on screen; an AddRemove did (Q10, 3.1). So pure
+// insertions (a new message at the bottom, an older page at the top, an unhidden one anywhere)
+// and pure removals (a hidden or deleted one) are told one by one, and only a reorder is an
+// AddRemove.
+void MessageModel::refresh(const QStringList &old, const QSet<QString> &updated)
+{
+    rebuild();
+    const QStringList now = keys();
 
     if (old.isEmpty()) {
         if (!now.isEmpty())
             emit itemsChanged(DataModelChangeType::Init);
         return;
     }
-    // Plain inserts at either end are what a list handles without moving. An older page is
-    // always this case: pages are whole days.
-    const int p = now.indexOf(old.first());
-    const bool block = p >= 0 && now.mid(p, old.size()) == old;
-    if (block) {
-        for (int j = 0; j < p; ++j)
-            emit itemAdded(QVariantList() << j); // new messages, at the bottom
-        for (int j = p + old.size(); j < now.size(); ++j)
-            emit itemAdded(QVariantList() << j); // an older page, at the top
-    } else if (old != now) {
-        // ponytail: on the Q10 an AddRemove in the old top-to-bottom list jumped to the bottom;
-        // if a sent message's new server time reorders rows and that shows, emit itemMoved.
+    if (isSubsequence(old, now)) {
+        int i = 0;
+        for (int j = 0; j < now.size(); ++j) {
+            if (i < old.size() && old[i] == now[j])
+                ++i;
+            else
+                emit itemAdded(QVariantList() << j);
+        }
+    } else if (isSubsequence(now, old)) {
+        QList<int> gone;
+        int i = 0;
+        for (int j = 0; j < old.size(); ++j) {
+            if (i < now.size() && now[i] == old[j])
+                ++i;
+            else
+                gone.prepend(j);
+        }
+        foreach (int j, gone)
+            emit itemRemoved(QVariantList() << j); // descending: the others keep their places
+    } else {
+        // ponytail: if a sent message's new server time reorders rows and the list jumps, emit
+        // itemMoved.
         Moves *moves = new Moves;
         moves->oldGroups = old;
         for (int i = 0; i < now.size(); ++i)
@@ -324,6 +389,22 @@ void MessageModel::merge(const QStringList &asked, const QList<Msg> &fresh, bool
     }
 }
 
+void MessageModel::hide(const QStringList &ids)
+{
+    const QStringList old = keys();
+    foreach (const QString &id, ids)
+        m_hidden.insert(id);
+    refresh(old, QSet<QString>());
+}
+
+void MessageModel::unhide(const QStringList &ids)
+{
+    const QStringList old = keys();
+    foreach (const QString &id, ids)
+        m_hidden.remove(id);
+    refresh(old, QSet<QString>());
+}
+
 // ponytail: rebuilds the entries on each change, fine for the hundreds of rows a chat holds.
 void MessageModel::rebuild()
 {
@@ -331,14 +412,21 @@ void MessageModel::rebuild()
     const QLocale locale = m_region.locale();
     const QDate today = QDate::currentDate();
     m_entries.clear();
-    // m_all is oldest first: walk it backwards, and a day's header follows its messages.
-    for (int i = m_all.size() - 1; i >= 0; --i) {
+    // m_all is oldest first: walk the visible rows backwards, and a day's header follows its
+    // messages. A day with only hidden messages has no header.
+    QList<int> shown;
+    for (int i = 0; i < m_all.size(); ++i) {
+        if (!m_hidden.contains(m_all[i].id))
+            shown.append(i);
+    }
+    for (int k = shown.size() - 1; k >= 0; --k) {
+        const int i = shown[k];
         const QDateTime when = QDateTime::fromTime_t(m_all[i].ts);
         Entry e;
         e.key = m_all[i].id;
         e.msg = i;
         m_entries.append(e);
-        if (i == 0 || QDateTime::fromTime_t(m_all[i - 1].ts).date() != when.date()) {
+        if (k == 0 || QDateTime::fromTime_t(m_all[shown[k - 1]].ts).date() != when.date()) {
             Entry h;
             h.key = "day:" + QString::number(when.date().toJulianDay());
             h.title = when.date().daysTo(today) < 7 ? dayLabel(when, today, locale, m_days)
