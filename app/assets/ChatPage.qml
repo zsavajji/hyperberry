@@ -15,6 +15,8 @@ Page {
     onFailedCmdChanged: {
         if (failedCmd == "msg.delete") {
             deleteFailed.show()
+        } else if (failedCmd == "voice.play") {
+            player.fail(engine.failure.code)
         }
     }
     onChatChanged: {
@@ -23,6 +25,7 @@ Page {
             addAction(infoAction, ActionBarPlacement.InOverflow)
         }
         ctl.messages.itemAdded.connect(page.added)
+        ctl.voiceReady.connect(player.ready)
     }
     attachedObjects: [
         ChatController {
@@ -42,6 +45,16 @@ Page {
         SystemToast {
             id: notSent
             body: qsTr("Not sent: HyperBerry is reconnecting. Try again in a moment.")
+        },
+        VoicePlayer {
+            id: player
+            jid: page.chat ? page.chat.jid : ""
+            onFailed: voiceFailed.show()
+            onOffline: notSent.show()
+        },
+        SystemToast {
+            id: voiceFailed
+            body: qsTr("Couldn't play this voice note")
         },
         SystemToast {
             id: deleteFailed
@@ -265,6 +278,15 @@ Page {
             }
             function copy(text) {
                 ctl.copy(text)
+            }
+            // Voice notes: the player's state, for the bubbles (VoicePlayer.qml).
+            property string playingId: player.playingId
+            property string loadingId: player.loadingId
+            property bool paused: player.paused
+            property int posMs: player.posMs
+            property int durMs: player.durMs
+            function playVoice(msg) {
+                player.toggle(msg.id)
             }
             function deleteForMe(id) {
                 ctl.deleteForMe(id)

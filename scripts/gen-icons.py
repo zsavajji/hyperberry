@@ -1,4 +1,5 @@
-"""Draws the chat list's small marks into app/assets/images/: ticks, clock, mute and pin.
+"""Draws the chat list's small marks into app/assets/images/: ticks, clock, mute, pin and mic,
+and the voice bubble's play, pause and retry discs.
 
 They're white on transparent, so QML tints them with ImageView.filterColor (grey, or the
 primary colour for read). Each is drawn at 8x and scaled down to its size on the Q10: 3 du,
@@ -58,6 +59,32 @@ def main(out):
     d.polygon(pts((0.40, 0.16), (0.60, 0.16), (0.62, 0.44), (0.76, 0.58), (0.24, 0.58), (0.38, 0.44)), white)
     d.line(pts((0.5, 0.58), (0.5, 0.94)), white, round(0.07 * H * S))
     save(img.rotate(-45, Image.BICUBIC), out, "pin")
+
+    # A microphone: capsule, cradle and stand.
+    img, d = canvas(H)
+    d.rounded_rectangle(pts((0.36, 0.06), (0.64, 0.56)), round(0.14 * H * S), white)
+    d.arc(pts((0.24, 0.30), (0.76, 0.72)), 0, 180, white, round(0.07 * H * S))
+    d.line(pts((0.5, 0.72), (0.5, 0.92)), white, round(0.07 * H * S))
+    d.line(pts((0.36, 0.92), (0.64, 0.92)), white, round(0.07 * H * S))
+    save(img, out, "mic")
+
+    # The bubble's buttons: a white disc 72 px across (8 du), a dark glyph. Not tinted.
+    dark = (0x1a, 0x1a, 0x1a, 255)
+    for name in ("play", "pause", "retry"):
+        D = 72
+        img = Image.new("RGBA", (D * S, D * S), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        d.ellipse((0, 0, D * S - 1, D * S - 1), white)
+        p = lambda *xy: [(x * D * S, y * D * S) for x, y in xy]
+        if name == "play":
+            d.polygon(p((0.40, 0.30), (0.40, 0.70), (0.72, 0.50)), dark)
+        elif name == "pause":
+            d.rectangle(p((0.34, 0.30), (0.46, 0.70)), dark)
+            d.rectangle(p((0.54, 0.30), (0.66, 0.70)), dark)
+        else:
+            d.arc(p((0.28, 0.28), (0.72, 0.72)), 40, 330, dark, round(0.08 * D * S))
+            d.polygon(p((0.70, 0.22), (0.76, 0.46), (0.52, 0.40)), dark)
+        img.resize((D, D), Image.LANCZOS).save(f"{out}/{name}.png")
 
 
 if __name__ == "__main__":

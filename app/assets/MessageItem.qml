@@ -117,6 +117,17 @@ Container {
                     }
                 }
             }
+            // Built only for voice notes: a bubble in every card would weigh down every row,
+            // and the Q10's scrolling is sensitive to that (4.1).
+            ControlDelegate {
+                delegateActive: item.msg.voice
+                sourceComponent: ComponentDefinition {
+                    VoiceBubble {
+                        msg: item.msg
+                        view: item.ListItem.view
+                    }
+                }
+            }
             Label {
                 visible: item.msg.label != ""
                 topMargin: 0

@@ -72,6 +72,8 @@ signals:
     void statusChanged();
     void replyChanged();
     void groupInfoChanged();
+    // The reply to a voice.play: the request's id, and the WAV to play.
+    void voiceReady(const QString &id, const QString &path);
 
 private slots:
     void onTyping(const QString &chat, const QString &who, bool on, bool voice);

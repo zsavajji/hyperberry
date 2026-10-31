@@ -4,6 +4,7 @@
 #include "Moves.h"
 #include "colors.h"
 #include "dates.h"
+#include "Waveform.h"
 
 #include <bb/utility/i18n/Formatting>
 #include <QDateTime>
@@ -28,7 +29,7 @@ static const int kPage = 50;
 #define QUOTED(col) "(SELECT " col " FROM messages q WHERE q.chat = messages.chat AND q.id = messages.quote_id)"
 static const char *const kColumns = "rowid, id, ts, out, state, sender, sender_name, kind, "
                                     "text, quote_preview, edited, deleted, "
-                                    QUOTED("out") ", " QUOTED("sender") ", " QUOTED("sender_name");
+                                    QUOTED("out") ", " QUOTED("sender") ", " QUOTED("sender_name") ", duration, waveform, media_state, played";
 #undef QUOTED
 
 bool MessageModel::lessThan(const Msg &a, const Msg &b)
@@ -98,7 +99,6 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
     switch (kind) {
     case 1: label = tr("Photo"); break;
     case 2: label = tr("Video"); break;
-    case 3: label = tr("Voice message"); break;
     case 4: label = tr("Document"); break;
     case 5: label = tr("Sticker"); break;
     case 7: label = text; shown = QString(); break; // "Location", "Poll: …"
@@ -124,6 +124,14 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
     m.data["time"] = locale.toString(QDateTime::fromTime_t(m.ts).time(),
                                      timeFormat(locale, DateFormat::Short));
     m.data["label"] = label;
+    const bool voice = kind == 3 && !deleted;
+    m.data["voice"] = voice;
+    if (voice) {
+        m.data["duration"] = q.value(15).toInt();
+        m.data["mediaState"] = q.value(17).toInt();
+        m.data["played"] = q.value(18).toInt() != 0;
+        m.data["wave"] = Waveform::image(q.value(16).toByteArray());
+    }
     m.data["text"] = shown;
     m.data["quote"] = q.value(9).toString();
     m.data["sender"] = sender;

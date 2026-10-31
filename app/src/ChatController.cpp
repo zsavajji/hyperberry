@@ -93,6 +93,10 @@ void ChatController::askGroupInfo()
 // has in the chat.
 void ChatController::onReplied(const QString &id, const QString &cmd, const QVariant &result)
 {
+    if (cmd == "voice.play") {
+        emit voiceReady(id, result.toMap()["path"].toString());
+        return;
+    }
     if (cmd != "group.info" || id != m_infoId)
         return;
     QVariantMap info = result.toMap();
