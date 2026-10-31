@@ -28,6 +28,8 @@ public:
     QString itemType(const QVariantList &indexPath);
     QVariant data(const QVariantList &indexPath);
     bool empty() const;
+    // The chat's map as the rows have it, archived chats included; empty when there is none.
+    Q_INVOKABLE QVariantMap chat(const QString &jid);
 
 signals:
     void emptyChanged();

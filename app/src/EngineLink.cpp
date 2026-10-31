@@ -179,6 +179,11 @@ void EngineLink::readLines()
                     setLink(map["result"].toMap());
                     emit connectedChanged();
                     sendUiState(); // a restart loses this device's availability
+                    // The engine notifies while the UI is closed, so it keeps this itself.
+                    QVariantMap prefs;
+                    prefs["notifyPreview"] = QSettings(QDir::homePath() + "/settings.ini", QSettings::IniFormat)
+                                                 .value("notifyPreview", true).toBool();
+                    request("prefs.set", prefs);
                     qDebug() << "engine: connected, link" << m_link["state"].toString()
                              << ", conn" << m_conn;
                 } else {

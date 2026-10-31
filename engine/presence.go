@@ -87,9 +87,6 @@ func (s *Session) handleOpen(req json.RawMessage) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	s.mu.Lock()
-	s.open = r.Chat
-	s.mu.Unlock()
 	if jid.Server == types.GroupServer { // groups have no online status
 		return nil, nil
 	}
@@ -98,16 +95,8 @@ func (s *Session) handleOpen(req json.RawMessage) (any, error) {
 	return nil, cli.SubscribePresence(ctx, jid)
 }
 
-func (s *Session) handleClose(req json.RawMessage) (any, error) {
-	var r struct{ Chat string }
-	json.Unmarshal(req, &r)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.open == r.Chat {
-		s.open = ""
-	}
-	return nil, nil
-}
+// handleClose has nothing to undo: the chat on screen comes from ui.state.
+func (s *Session) handleClose(json.RawMessage) (any, error) { return nil, nil }
 
 // handleUIState sets the account's presence from the app's focus. WhatsApp sends typing and
 // online status only to clients that are available, and an available client makes the main
@@ -122,9 +111,7 @@ func (s *Session) handleUIState(req json.RawMessage) (any, error) {
 	if cli.Store.ID == nil {
 		return nil, &Error{"unlinked", "link this device first"}
 	}
-	s.mu.Lock()
-	s.open = r.OpenChat
-	s.mu.Unlock()
+	s.store.ui.set(r.Fullscreen, r.OpenChat)
 	state := types.PresenceUnavailable
 	if r.Fullscreen {
 		state = types.PresenceAvailable

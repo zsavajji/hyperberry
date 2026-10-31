@@ -70,7 +70,7 @@ func newSim(srv *Server, st *Store, log waLog.Logger) *Sim {
 	srv.Handle("group.info", s.handleGroupInfo)
 	srv.Handle("contacts.list", s.handleContacts)
 	srv.Handle("chat.close", s.handleLogged)
-	srv.Handle("ui.state", s.handleLogged)
+	srv.Handle("ui.state", s.handleUIState)
 	return s
 }
 
@@ -224,6 +224,7 @@ func (s *Sim) deliver(c simChat, now time.Time, m msgRow) string {
 		if t.insertMessage(m) {
 			t.setLast(c.jid, m.TS, chatPreview(m), false, m.State)
 			t.addUnread(c.jid, 1)
+			t.notifyIncoming(c.jid)
 		}
 	}
 	return m.ID
@@ -313,11 +314,22 @@ func simIndex(jid string) int {
 	return -1
 }
 
-// handleLogged answers chat.close and ui.state with ok and logs the raw request, so the Q10 check
-// can see the UI's focus rhythm (step 3.4).
+// handleLogged answers chat.close with ok and logs the raw request.
 func (s *Sim) handleLogged(req json.RawMessage) (any, error) {
 	s.log.Infof("sim: %s", req)
 	return nil, nil
+}
+
+// handleUIState records the UI's state for the notifier and logs the raw request, so the Q10
+// check can see the UI's focus rhythm (step 3.4).
+func (s *Sim) handleUIState(req json.RawMessage) (any, error) {
+	var r struct {
+		Fullscreen bool
+		OpenChat   string
+	}
+	json.Unmarshal(req, &r)
+	s.store.ui.set(r.Fullscreen, r.OpenChat)
+	return s.handleLogged(req)
 }
 
 // handleSend is msg.send: the row as sending, then sent, delivered and read at simTicks. A text

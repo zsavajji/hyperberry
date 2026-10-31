@@ -15,6 +15,8 @@ NavigationPane {
     // through properties on their ListView, as they reach emojiStyle.
     property int bodySize: 105
     property int smallSize: 85
+    // The chat a notification tap asked for, until the chat list is up to open it.
+    property string pendingChat
     Menu.definition: MenuDefinition {
         // Settings, far right in the application menu, come in step 5.4.
         settingsAction: SettingsActionItem {
@@ -41,7 +43,11 @@ NavigationPane {
     ]
     onPopTransitionEnded: page.destroy()
     onLinkedChanged: show()
-    onCreationCompleted: show()
+    onCreationCompleted: {
+        // Not a Connections: Cascades' QML has none.
+        openRequests.openChat.connect(nav.openRequested)
+        show()
+    }
 
     // A page swap, so there's no Back to the other root: the new page goes in at the bottom
     // and every page above it (link number page, a chat) goes out.
@@ -57,5 +63,27 @@ NavigationPane {
             remove(old)
             old.destroy()
         }
+        openPending()
+    }
+
+    function openRequested(jid) {
+        pendingChat = jid
+        openPending()
+    }
+
+    // The chat replaces whatever is above the list, so Back goes to the list.
+    function openPending() {
+        if (pendingChat == "" || !linked || count() == 0)
+            return
+        var chat = chats.chat(pendingChat)
+        pendingChat = ""
+        if (!chat.jid)
+            return
+        while (count() > 1) {
+            var old = at(count() - 1)
+            remove(old)
+            old.destroy()
+        }
+        at(0).openChat(chat)
     }
 }

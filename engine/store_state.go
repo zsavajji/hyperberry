@@ -105,7 +105,9 @@ func (t *storeTx) setPlayed(chat, id string) {
 }
 
 func (t *storeTx) setUnread(chat string, n int) {
-	t.touch(chat, "UPDATE chats SET unread = ?1 WHERE unread != ?1 AND jid = ?2", n)
+	if t.touch(chat, "UPDATE chats SET unread = ?1 WHERE unread != ?1 AND jid = ?2", n) && n == 0 {
+		t.note(chat, note{})
+	}
 }
 
 // unreadIncoming lists the newest incoming messages the chat counts as unread (at least one,

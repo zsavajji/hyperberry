@@ -35,6 +35,9 @@ public:
     explicit EngineLink(QObject *parent = 0);
     ~EngineLink();
 
+    // The app's one InvokeManager: it starts the engine, and OpenRequests hears notification taps on it.
+    bb::system::InvokeManager *invoker() const { return m_invoker; }
+
     bool connected() const;
     QVariantMap link() const;
     QString conn() const;

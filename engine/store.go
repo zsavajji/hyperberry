@@ -27,10 +27,14 @@ type Store struct {
 	ops  chan func(*storeTx)
 	done chan struct{}
 	quit bool // only the writer touches it
+	ui   uiState
+	nt   *Notifier
 }
 
 func newStore(db *sql.DB, srv *Server, log waLog.Logger) *Store {
 	st := &Store{db: db, srv: srv, log: log, ops: make(chan func(*storeTx), 1024), done: make(chan struct{})}
+	st.nt = newNotifier(srv.dir, log)
+	srv.Handle("prefs.set", st.nt.handlePrefs)
 	go st.run()
 	return st
 }
@@ -53,7 +57,7 @@ func (st *Store) batch(first func(*storeTx)) {
 		st.log.Warnf("begin: %v", err)
 		return // ponytail: the ops of this batch are lost; chats.db is not locked for long, so it is rare
 	}
-	t := &storeTx{tx: tx, log: st.log, chats: map[string]bool{}, msgs: map[string]map[string]bool{}}
+	t := &storeTx{st: st, tx: tx, log: st.log, chats: map[string]bool{}, msgs: map[string]map[string]bool{}}
 	t.run(first)
 	timer := time.NewTimer(batchTime)
 	defer timer.Stop()
@@ -72,6 +76,7 @@ fill:
 		return
 	}
 	t.emit(st.srv)
+	st.nt.send(t.notes)
 }
 
 // handle queues an event for the writer. It only enqueues: hypermeow calls it on its receive loop.
@@ -189,10 +194,13 @@ func (st *Store) clear() {
 func (st *Store) close() {
 	st.ops <- func(*storeTx) { st.quit = true }
 	<-st.done
+	st.nt.close()
 }
 
 // storeTx is one open transaction and the rows it touched.
 type storeTx struct {
+	st    *Store // nil in tests of single writes
+	notes map[string]note
 	tx    *sql.Tx
 	log   waLog.Logger
 	chats map[string]bool
@@ -221,10 +229,12 @@ func (t *storeTx) exec(q string, args ...any) int64 {
 }
 
 // touch runs an UPDATE of one chat and marks it changed when a row changed.
-func (t *storeTx) touch(jid, q string, args ...any) {
+func (t *storeTx) touch(jid, q string, args ...any) bool {
 	if t.exec(q, append(args, jid)...) > 0 {
 		t.chats[jid] = true
+		return true
 	}
+	return false
 }
 
 func (t *storeTx) hasChat(jid string) bool {

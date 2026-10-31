@@ -40,7 +40,6 @@ type Session struct {
 	code   string        // the pairing code, in state code
 	stopQR func()        // ends the running QR channel
 	qrSeen chan struct{} // closed when the QR channel's first code arrives
-	open   string        // the chat on screen, for the notifier
 	rec    voiceRec      // the voice note being recorded
 }
 
@@ -85,9 +84,7 @@ func (s *Session) client() *whatsmeow.Client {
 
 // openChat is the chat key on screen, or "" (step 5.1's notifier skips it).
 func (s *Session) openChat() string {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.open
+	return s.store.ui.openChat()
 }
 
 // hello is the link part of the hello reply.

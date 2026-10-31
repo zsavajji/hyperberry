@@ -14,6 +14,7 @@
 #include "ContactPicker.h"
 #include "EmojiModel.h"
 #include "EngineLink.h"
+#include "OpenRequests.h"
 #include "QrImage.h"
 
 using namespace bb::cascades;
@@ -68,6 +69,7 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     // One for the run: the picker's table is built once, not per chat.
     EmojiModel emojis(&app);
     QrImage qr(&app);
+    OpenRequests openRequests(engine.invoker(), &app);
 
     qmlRegisterType<ChatController>("hyperberry", 1, 0, "ChatController");
     qmlRegisterType<ContactPicker>("hyperberry", 1, 0, "ContactPicker");
@@ -78,6 +80,7 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     document->setContextProperty("chats", &chats);
     document->setContextProperty("emojis", &emojis);
     document->setContextProperty("qr", &qr);
+    document->setContextProperty("openRequests", &openRequests);
     // The phone's region and language ("IT", "it"): the linking page's first country, and the
     // language of country names.
     QVariantMap phoneLocale;

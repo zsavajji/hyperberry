@@ -39,6 +39,30 @@ static QString placeholder(const QString &jid, int kind)
     return ChatListModel::tr("Unknown");
 }
 
+// The row's fields from a SELECT of kRowColumns, all but the time, which depends on the list.
+static const char *const kRowColumns =
+    "jid, kind, name, last_ts, last_preview, last_out, last_state, unread, muted_until, pinned";
+
+static QVariantMap baseRow(const QSqlQuery &q, qint64 now)
+{
+    const QString jid = q.value(0).toString();
+    const int kind = q.value(1).toInt();
+    const QString name = q.value(2).isNull() ? placeholder(jid, kind) : q.value(2).toString();
+    QVariantMap row;
+    row["jid"] = jid;
+    row["kind"] = kind;
+    row["name"] = name;
+    row["initials"] = initials(name);
+    row["color"] = pickColor(jid, kColors, kColorCount);
+    row["preview"] = q.value(4).toString();
+    row["out"] = q.value(5).toInt() != 0;
+    row["state"] = q.value(6).toInt();
+    row["unread"] = q.value(7).toInt();
+    row["muted"] = q.value(8).toLongLong() > now;
+    row["pinned"] = q.value(9).toInt() != 0;
+    return row;
+}
+
 ChatListModel::ChatListModel(EngineLink *engine, QObject *parent)
     : DataModel(parent)
     , m_days(RelativeDateFormat::NonTimeCritical)
@@ -88,6 +112,26 @@ QVariant ChatListModel::data(const QVariantList &indexPath)
     return g.rows.value(indexPath.value(1).toInt());
 }
 
+// ponytail: an archived chat has no "time", which the chat page doesn't show.
+QVariantMap ChatListModel::chat(const QString &jid)
+{
+    foreach (const Group &g, m_groups) {
+        foreach (const QVariantMap &row, g.rows) {
+            if (row["jid"].toString() == jid)
+                return row;
+        }
+    }
+    QSqlDatabase db = QSqlDatabase::database(kDb, false);
+    if (!db.isOpen() && !db.open())
+        return QVariantMap();
+    QSqlQuery q(db);
+    q.prepare(QString("SELECT %1 FROM chats WHERE jid = ?").arg(kRowColumns));
+    q.addBindValue(jid);
+    if (!q.exec() || !q.next())
+        return QVariantMap();
+    return baseRow(q, QDateTime::currentMSecsSinceEpoch() / 1000);
+}
+
 bool ChatListModel::empty() const
 {
     return m_groups.isEmpty();
@@ -108,9 +152,8 @@ void ChatListModel::reload()
     if (!db.isOpen() && !db.open())
         return;
     QSqlQuery q(db);
-    if (!q.exec("SELECT jid, kind, name, last_ts, last_preview, last_out, last_state, unread, "
-                "muted_until, pinned FROM chats WHERE archived = 0 "
-                "ORDER BY pinned DESC, last_ts DESC")) {
+    if (!q.exec(QString("SELECT %1 FROM chats WHERE archived = 0 ORDER BY pinned DESC, last_ts DESC")
+                    .arg(kRowColumns))) {
         qWarning() << "chats:" << q.lastError().text();
         return;
     }
@@ -126,8 +169,6 @@ void ChatListModel::reload()
     Moves *moves = new Moves;
     while (q.next()) {
         const QString jid = q.value(0).toString();
-        const int kind = q.value(1).toInt();
-        const QString name = q.value(2).isNull() ? placeholder(jid, kind) : q.value(2).toString();
         const bool pinned = q.value(9).toInt() != 0;
         const bool hasTime = !q.value(3).isNull();
         const QDateTime when = QDateTime::fromTime_t(q.value(3).toUInt());
@@ -153,22 +194,11 @@ void ChatListModel::reload()
             groups.last().title = title;
             moves->groups.insert(title, groups.size() - 1);
         }
-        QVariantMap row;
-        row["jid"] = jid;
-        row["kind"] = kind;
-        row["name"] = name;
-        row["initials"] = initials(name);
-        row["color"] = pickColor(jid, kColors, kColorCount);
-        row["preview"] = q.value(4).toString();
+        QVariantMap row = baseRow(q, now);
         // The time under a day's header; the day, or the date, where no header says it.
         if (hasTime)
             row["time"] = age == 0 || (age < 7 && !pinned) ? locale.toString(when.time(), clock)
                         : age < 7 ? day : locale.toString(when.date(), QLocale::ShortFormat);
-        row["out"] = q.value(5).toInt() != 0;
-        row["state"] = q.value(6).toInt();
-        row["unread"] = q.value(7).toInt();
-        row["muted"] = q.value(8).toLongLong() > now;
-        row["pinned"] = pinned;
         moves->items.insert(jid, qMakePair(groups.size() - 1, groups.last().rows.size()));
         groups.last().rows.append(row);
     }

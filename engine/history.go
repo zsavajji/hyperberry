@@ -142,6 +142,7 @@ func (st *Store) apply(ctx context.Context, t *storeTx, cli *whatsmeow.Client, k
 	t.setLast(key, row.TS, chatPreview(row), row.Out, row.State)
 	if live && fresh && !row.Out {
 		t.addUnread(key, 1)
+		t.notifyIncoming(key)
 	}
 	if live && fresh && row.MediaState == 1 {
 		go st.liveVoice(cli, row) // never in the writer: it is a network call
