@@ -190,23 +190,36 @@ func (s *Session) handleQR(json.RawMessage) (any, error) {
 	return nil, nil // the codes come as link events
 }
 
-func (s *Session) handleCode(req json.RawMessage) (any, error) {
-	var r struct{ Phone string }
-	json.Unmarshal(req, &r)
+// pairDigits is link.code's phone number as PairPhone takes it: digits only, with the country
+// code. "0039…" is how much of Europe dials "+39…". The rest is PairPhone's own check, done
+// first so a bad number doesn't cost the running QR code.
+func pairDigits(phone string) (string, error) {
 	digits := strings.Map(func(c rune) rune {
 		if c >= '0' && c <= '9' {
 			return c
 		}
 		return -1
-	}, r.Phone)
-	if len(digits) < 6 {
-		return nil, &Error{"bad_phone", "the phone number needs its country code"}
+	}, phone)
+	digits = strings.TrimPrefix(digits, "00")
+	if len(digits) <= 6 || digits[0] == '0' {
+		return "", &Error{"bad_phone", "the phone number needs its country code"}
+	}
+	return digits, nil
+}
+
+func (s *Session) handleCode(req json.RawMessage) (any, error) {
+	var r struct{ Phone string }
+	json.Unmarshal(req, &r)
+	digits, err := pairDigits(r.Phone)
+	if err != nil {
+		return nil, err
 	}
 	s.mu.Lock()
 	if s.link == linkReady || s.link == linkLinking {
 		s.mu.Unlock()
 		return nil, &Error{"linked", "this device is already linked"}
 	}
+	s.restartLogin()
 	if err := s.startQR(); err != nil {
 		s.mu.Unlock()
 		return nil, err
@@ -230,6 +243,22 @@ func (s *Session) handleCode(req json.RawMessage) (any, error) {
 	s.code = code
 	s.setLink(linkCode)
 	return map[string]string{"code": code}, nil
+}
+
+// restartLogin drops a running login socket, so a pairing code gets the socket's whole life:
+// it closes when the QR codes run out, 160 s after the first, and the linking page starts them
+// as it opens. The new socket is on a fresh client, because a cancelled QR channel disconnects
+// its client later, from its own goroutine. Going through unlinked lets a page that waits for
+// "code" see the new one. Call it with s.mu held, while not linked.
+func (s *Session) restartLogin() {
+	if s.stopQR == nil {
+		return
+	}
+	s.stopQR()
+	s.cli.Disconnect()
+	s.cli = s.newClient(s.container.NewDevice())
+	s.stopQR, s.qr, s.code, s.conn = nil, "", "", "offline"
+	s.setLink(linkUnlinked)
 }
 
 func (s *Session) handleLogout(json.RawMessage) (any, error) {
@@ -264,6 +293,9 @@ func (s *Session) onEvent(cli *whatsmeow.Client, evt any) {
 	}
 	switch e := evt.(type) {
 	case *events.PairSuccess:
+		// A new link starts a new history: nothing from an older link, or from the simulated
+		// account (sim.go), stays in chats.db.
+		s.store.clear()
 		s.setLink(linkLinking)
 	case *events.Connected:
 		s.conn = "ready"

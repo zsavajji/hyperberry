@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -10,28 +11,44 @@ import (
 	waLog "github.com/polymorfa/hypermeow/util/log"
 )
 
-// runEngine is hyperberryd's normal mode: the session, served to the UI until a signal.
-func runEngine(container *sqlstore.Container, dataDir string, log waLog.Logger) {
+// runEngine serves the session to the UI until a signal; with sim, the simulated account
+// (sim.go) instead, unless this engine is linked.
+func runEngine(container *sqlstore.Container, dataDir string, log waLog.Logger, sim bool) {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	// First, before anything slow: the navigator gives a headless app 6 s.
 	// The launch itself is the start; a START sent to a running engine needs nothing.
 	connectNavigator(stop, func(string) {}, log.Sub("nav"))
-	var sess *Session
+	if sim {
+		// Simulated rows must never mix with a real history.
+		if d, err := container.GetFirstDevice(context.Background()); err != nil || d.ID != nil {
+			log.Warnf("not simulating: this engine is linked (or session.db failed: %v)", err)
+			sim = false
+		}
+	}
+	var hello func() any
 	db, err := openChats(filepath.Join(dataDir, "chats.db"))
 	if err != nil {
 		fatal("chats.db:", err)
 	}
 	defer db.Close()
-	srv, err := NewServer(dataDir, log.Sub("server"), func() any { return sess.hello() })
+	srv, err := NewServer(dataDir, log.Sub("server"), func() any { return hello() })
 	if err != nil {
 		fatal("server:", err)
 	}
 	st := newStore(db, srv, log.Sub("store"))
-	if sess, err = newSession(container, srv, st, log.Sub("session")); err != nil {
-		srv.Close()
-		st.close()
-		fatal("session:", err)
+	closeSession := func() {}
+	if sim {
+		log.Infof("simulating an account (step 1.12): nothing goes to WhatsApp")
+		hello = newSim(srv, st, log.Sub("sim")).hello
+	} else {
+		sess, err := newSession(container, srv, st, log.Sub("session"))
+		if err != nil {
+			srv.Close()
+			st.close()
+			fatal("session:", err)
+		}
+		hello, closeSession = sess.hello, sess.close
 	}
 	go func() {
 		if err := srv.Serve(); err != nil {
@@ -41,6 +58,6 @@ func runEngine(container *sqlstore.Container, dataDir string, log waLog.Logger) 
 	log.Infof("serving the UI")
 	<-stop
 	srv.Close()
-	sess.close()
+	closeSession()
 	st.close()
 }

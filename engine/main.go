@@ -1,5 +1,5 @@
 // hyperberryd is the WhatsApp engine of HyperBerry (PLAN.md §6). It serves the UI over
-// loopback TCP; with -probe it is the terminal probe of step 0.2 instead.
+// loopback TCP.
 package main
 
 import (
@@ -29,9 +29,7 @@ func main() {
 	debug := flag.Bool("debug", false, "log the protocol")
 	osName := flag.String("os", "Windows", "OS name the phone shows for this device (fixed at linking)")
 	days := flag.Uint("days", 90, "ask the phone for this many days of history at linking (0: all)")
-	probe := flag.Bool("probe", false, "run the terminal probe of step 0.2 instead of serving the UI")
-	phone := flag.String("pair", "", "probe: link to this phone number by pairing code (with country code)")
-	qrMode := flag.Bool("qr", false, "probe: link by QR code, printing each code for the main phone to scan")
+	sim := flag.Bool("sim", false, "serve the simulated account of step 1.12 (as does a file <data>/sim)")
 	flag.Parse()
 
 	level := "INFO"
@@ -39,12 +37,9 @@ func main() {
 		level = "DEBUG"
 	}
 	var log waLog.Logger
-	switch {
-	case *probe:
-		log = waLog.Stdout("wa", level, false)
-	case *logTo == "-":
+	if *logTo == "-" {
 		log = newLogger(os.Stderr, level)
-	default:
+	} else {
 		path := *logTo
 		if path == "" {
 			path = filepath.Join(*data, "logs", "hyperberryd.log")
@@ -63,11 +58,10 @@ func main() {
 	if err != nil {
 		fatal("open store:", err)
 	}
-	if *probe {
-		runProbe(ctx, container, log, *phone, *qrMode)
-		return
+	if _, err := os.Stat(filepath.Join(*data, "sim")); err == nil {
+		*sim = true
 	}
-	runEngine(container, *data, log)
+	runEngine(container, *data, log, *sim)
 }
 
 // identity sets how this device presents itself when it links; the phone keeps it from then on.
