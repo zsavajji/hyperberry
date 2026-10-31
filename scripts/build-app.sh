@@ -13,6 +13,12 @@ docker run --rm -v "$ROOT:/src" -w /src "$IMAGE" bash -c '
 	source /root/bbndk/bbndk-env_10_3_1_995.sh >/dev/null
 	set -eu
 	mkdir -p build/ui app/assets/translations
+	# lupdate parses QML with Qt 4.8, as the phone does; the Qt 6 lint lets some syntax through
+	# that fails a whole page there (Recorder.qml, 0.0.1.77).
+	if lupdate app/assets/*.qml app/assets/*.js -ts /tmp/qml-check.ts 2>&1 | grep -A2 "error:"; then
+		echo "build-app.sh: QML that Qt 4.8 cannot parse" >&2
+		exit 1
+	fi
 	lrelease app/translations/hyperberry_it.ts -qm app/assets/translations/hyperberry_it.qm >/dev/null
 	(cd build/ui && qmake -spec blackberry-armv7le-qcc CONFIG+=device ../../app/hyperberry.pro >/dev/null &&
 		make -j"$(nproc)" >/dev/null)

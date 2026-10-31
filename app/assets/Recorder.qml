@@ -8,13 +8,15 @@ AudioRecorder {
     property bool recording: false
     // Record failed to start: nothing is running.
     signal failed
-    // m:ss, for the composer's status line.
-    property string clock: {
-        var s = Math.floor((Number(duration) || 0) / 1000)
-        return Math.floor(s / 60) + ":" + (s % 60 < 10 ? "0" : "") + (s % 60)
-    }
+    // m:ss, for the composer's status line. A function: Qt 4.8 refuses a binding written as a
+    // block with a var in it (0.0.1.77 couldn't open a chat).
+    property string clock: mmss(duration)
     statusInterval: 200
 
+    function mmss(ms) {
+        var s = Math.floor((Number(ms) || 0) / 1000)
+        return Math.floor(s / 60) + ":" + (s % 60 < 10 ? "0" : "") + (s % 60)
+    }
     function start() {
         var path = ctl.startVoice()
         if (path == "") {
