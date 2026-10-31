@@ -26,6 +26,7 @@ Page {
         }
         ctl.messages.itemAdded.connect(page.added)
         ctl.voiceReady.connect(player.ready)
+        ctl.voiceCancelled.connect(recorder.dropped)
     }
     attachedObjects: [
         ChatController {
@@ -51,6 +52,10 @@ Page {
             jid: page.chat ? page.chat.jid : ""
             onFailed: voiceFailed.show()
             onOffline: notSent.show()
+        },
+        Recorder {
+            id: recorder
+            onFailed: notSent.show()
         },
         SystemToast {
             id: voiceFailed
@@ -103,21 +108,27 @@ Page {
                 submitKeyFocusBehavior: SubmitKeyFocusBehavior.Keep
                 onSubmitted: page.send()
             }
+            // Typing while recording leaves the recording alone: the text stays for later, and
+            // Send finishes the recording first.
+            status: recorder.recording ? "\u25CF " + recorder.clock : ""
             onTextChanging: ctl.composing(text)
         },
         ActionItem {
-            title: qsTr("Emoji")
-            imageSource: "asset:///images/emoji.png"
+            title: recorder.recording ? qsTr("Discard") : qsTr("Emoji")
+            imageSource: recorder.recording ? "file:///usr/share/icons/bb_action_delete.png"
+                                            : "asset:///images/emoji.png"
             ActionBar.placement: ActionBarPlacement.OnBar
-            onTriggered: page.picking = !page.picking
+            onTriggered: recorder.recording ? recorder.discard() : page.picking = !page.picking
         },
         // The touch path to sending (the Q10 has no on-screen submit key). The phone's own icon, read
         // at run time, not shipped.
+        // Record while the composer is empty, as WhatsApp's: a tap starts, the next one sends.
         ActionItem {
-            title: qsTr("Send")
-            imageSource: "file:///usr/share/icons/bb_action_sendtextmessage.png"
+            title: page.mic ? qsTr("Record") : qsTr("Send")
+            imageSource: page.mic ? "asset:///images/record.png"
+                                  : "file:///usr/share/icons/bb_action_sendtextmessage.png"
             ActionBar.placement: ActionBarPlacement.OnBar
-            onTriggered: page.send()
+            onTriggered: page.mic ? recorder.start() : recorder.recording ? recorder.finish() : page.send()
         }
     ]
     keyListeners: KeyListener {
@@ -142,6 +153,7 @@ Page {
         emojis.use(emoji)
         composer.requestFocus()
     }
+    property bool mic: !recorder.recording && !/\S/.test(composer.text)
     function send() {
         if (!/\S/.test(composer.text)) {
             return

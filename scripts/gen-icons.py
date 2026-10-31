@@ -1,5 +1,5 @@
 """Draws the chat list's small marks into app/assets/images/: ticks, clock, mute, pin and mic,
-and the voice bubble's play, pause and retry discs.
+the action bar's record icon, and the voice bubble's play, pause and retry discs.
 
 They're white on transparent, so QML tints them with ImageView.filterColor (grey, or the
 primary colour for read). Each is drawn at 8x and scaled down to its size on the Q10: 3 du,
@@ -67,6 +67,18 @@ def main(out):
     d.line(pts((0.5, 0.72), (0.5, 0.92)), white, round(0.07 * H * S))
     d.line(pts((0.36, 0.92), (0.64, 0.92)), white, round(0.07 * H * S))
     save(img, out, "mic")
+
+    # The action bar's record icon: the same microphone, 60% of an 81 px box (the system's action
+    # icons), white on transparent.
+    B = 81
+    img = Image.new("RGBA", (B * S, B * S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    m = lambda *xy: [((0.2 + x * 0.6) * B * S, (0.2 + y * 0.6) * B * S) for x, y in xy]
+    d.rounded_rectangle(m((0.36, 0.0), (0.64, 0.58)), round(0.14 * 0.6 * B * S), white)
+    d.arc(m((0.22, 0.30), (0.78, 0.76)), 0, 180, white, round(0.07 * 0.6 * B * S))
+    d.line(m((0.5, 0.76), (0.5, 1.0)), white, round(0.07 * 0.6 * B * S))
+    d.line(m((0.34, 1.0), (0.66, 1.0)), white, round(0.07 * 0.6 * B * S))
+    img.resize((B, B), Image.LANCZOS).save(f"{out}/record.png")
 
     # The bubble's buttons: a white disc 72 px across (8 du), a dark glyph. Not tinted.
     dark = (0x1a, 0x1a, 0x1a, 255)

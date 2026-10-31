@@ -55,6 +55,12 @@ public:
     // Whether the list shows the newest message; QML reports it on scrolling.
     Q_INVOKABLE void setAtBottom(bool atBottom);
 
+    // Voice notes (step 4.4b). startVoice returns the absolute path of the WAV to record into, "" when
+    // the engine isn't connected; the page's recorder stops before sendVoice, so the tail is on disk.
+    Q_INVOKABLE QString startVoice();
+    Q_INVOKABLE void sendVoice();
+    Q_INVOKABLE void cancelVoice();
+
     // msg is a MessageModel "msg" map; the next send quotes it.
     Q_INVOKABLE void reply(const QVariantMap &msg);
     Q_INVOKABLE void cancelReply();
@@ -74,6 +80,8 @@ signals:
     void groupInfoChanged();
     // The reply to a voice.play: the request's id, and the WAV to play.
     void voiceReady(const QString &id, const QString &path);
+    // A recording was dropped from here (minimised): the page resets its recorder.
+    void voiceCancelled();
 
 private slots:
     void onTyping(const QString &chat, const QString &who, bool on, bool voice);
@@ -97,6 +105,7 @@ private:
     QString m_jid;
     QString m_name;
     QString m_quoteId;
+    QString m_voicePath; // the WAV being recorded
     QString m_replyName;
     QString m_replyText;
     QVariantMap m_groupInfo;

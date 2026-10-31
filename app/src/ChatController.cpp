@@ -8,6 +8,7 @@
 #include <bb/utility/i18n/Formatting>
 #include <QDate>
 #include <QDateTime>
+#include <QDir>
 #include <QLocale>
 
 using namespace bb::utility::i18n;
@@ -38,6 +39,7 @@ ChatController::ChatController(QObject *parent)
 ChatController::~ChatController()
 {
     commitDelete(); // popping the page while the Undo toast shows still deletes
+    cancelVoice(); // a recording the page never ended: the engine drops it and the WAV
     if (m_engine && m_engine->connected() && !m_jid.isEmpty()) {
         QVariantMap args;
         args["chat"] = m_jid;
@@ -170,6 +172,11 @@ void ChatController::markRead()
 // Minimised: stop our typing and unsubscribe; back: subscribe again, and read what came meanwhile.
 void ChatController::onFullscreenChanged()
 {
+    // A recording doesn't survive minimising (step 4.4b); the page resets its recorder.
+    if (m_engine && !m_engine->fullscreen() && !m_voicePath.isEmpty()) {
+        cancelVoice();
+        emit voiceCancelled();
+    }
     if (!m_engine || !m_engine->connected())
         return;
     if (m_engine->fullscreen()) {
@@ -202,6 +209,48 @@ bool ChatController::send(const QString &text)
     m_engine->request("msg.send", args);
     cancelReply();
     return true;
+}
+
+QString ChatController::startVoice()
+{
+    if (!m_engine || !m_engine->connected())
+        return QString();
+    QDir home(QDir::homePath());
+    home.mkpath("voice");
+    cancelVoice();
+    m_voicePath = home.absoluteFilePath(
+        QString("voice/rec-%1.wav").arg(QDateTime::currentMSecsSinceEpoch()));
+    QVariantMap args;
+    args["chat"] = m_jid;
+    args["path"] = m_voicePath;
+    m_engine->request("voice.start", args);
+    return m_voicePath;
+}
+
+void ChatController::sendVoice()
+{
+    if (m_voicePath.isEmpty() || !m_engine)
+        return;
+    QVariantMap args;
+    args["chat"] = m_jid;
+    args["path"] = m_voicePath;
+    if (!m_quoteId.isEmpty())
+        args["quote"] = m_quoteId;
+    m_engine->request("voice.send", args);
+    m_voicePath.clear();
+    cancelReply();
+}
+
+void ChatController::cancelVoice()
+{
+    if (m_voicePath.isEmpty())
+        return;
+    if (m_engine) {
+        QVariantMap args;
+        args["path"] = m_voicePath;
+        m_engine->request("voice.cancel", args);
+    }
+    m_voicePath.clear();
 }
 
 QString ChatController::replyName() const
