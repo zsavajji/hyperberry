@@ -31,6 +31,14 @@ ListView {
             set(chat.jid, {"mute": 0})
         } else {
             muteDialog.jid = chat.jid
+            // Filled here: a SystemListDialog isn't a Cascades control and has no
+            // onCreationCompleted; assigning one failed the whole page (0.0.1.76).
+            if (!muteDialog.filled) {
+                muteDialog.appendItem(qsTr("8 hours"), true, true)
+                muteDialog.appendItem(qsTr("1 week"))
+                muteDialog.appendItem(qsTr("Always"))
+                muteDialog.filled = true
+            }
             muteDialog.show()
         }
     }
@@ -38,14 +46,10 @@ ListView {
         SystemListDialog {
             id: muteDialog
             property string jid
+            property bool filled: false
             title: qsTr("Mute for…")
             confirmButton.label: qsTr("Mute")
             cancelButton.label: qsTr("Cancel")
-            onCreationCompleted: {
-                appendItem(qsTr("8 hours"), true, true)
-                appendItem(qsTr("1 week"))
-                appendItem(qsTr("Always"))
-            }
             onFinished: {
                 if (value != SystemUiResult.ConfirmButtonSelection) {
                     return
