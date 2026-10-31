@@ -195,7 +195,7 @@ func (st *Store) queueOutgoing(jid types.JID, chat, id, text, quote string, now 
 		quoted <- q
 		row := msgRow{Chat: chat, ID: id, TS: now, Out: true, State: stateSending, Kind: msgText, Text: text}
 		if q.ID != "" {
-			row.QuoteID, row.QuotePreview = q.ID, preview(q.Kind, q.Text)
+			row.QuoteID, row.QuotePreview = q.ID, preview(q.Kind, q.Text, q.Duration)
 		}
 		t.ensureChat(chat, chatKind(jid))
 		t.insertMessage(row)
@@ -215,6 +215,11 @@ func (st *Store) receipt(ctx context.Context, t *storeTx, cli *whatsmeow.Client,
 		if e.Type == types.ReceiptTypeRead || e.Type == types.ReceiptTypeReadSelf {
 			t.setUnread(key, 0)
 		}
+		if e.Type == types.ReceiptTypePlayedSelf { // we played theirs on another device
+			for _, id := range e.MessageIDs {
+				t.setPlayed(key, id)
+			}
+		}
 		return
 	}
 	state := 0
@@ -222,6 +227,11 @@ func (st *Store) receipt(ctx context.Context, t *storeTx, cli *whatsmeow.Client,
 	case types.ReceiptTypeDelivered:
 		state = stateDelivered
 	case types.ReceiptTypeRead, types.ReceiptTypePlayed:
+		if e.Type == types.ReceiptTypePlayed {
+			for _, id := range e.MessageIDs {
+				t.setPlayed(key, id)
+			}
+		}
 		// ponytail: in groups the first read receipt marks it read; WhatsApp waits for every
 		// member. Per-member state if anyone asks.
 		state = stateRead

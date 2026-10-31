@@ -5,6 +5,7 @@
     scripts/sim.py link          the phone accepts the device the linking page shows
     scripts/sim.py msg N [text]  an incoming message in chat N of engine/sim_chats.go
     scripts/sim.py typing N     chat N types for 4 s (in a group, a member does)
+    scripts/sim.py voice N [seconds]  an incoming voice note in chat N (5 s by default)
     scripts/sim.py removed       the device removed on the phone
     scripts/sim.py off           the simulated chats removed, back to the real engine
     scripts/sim.py state         the engine's link body
@@ -88,6 +89,8 @@ def main(argv):
         print(request("sim.msg", n=int(argv[1]), text=" ".join(argv[2:])))
     elif cmd == "typing" and len(argv) >= 2:
         print(request("sim.typing", n=int(argv[1])))
+    elif cmd == "voice" and len(argv) >= 2:
+        print(request("sim.voice", n=int(argv[1]), seconds=int(argv[2]) if len(argv) > 2 else 0))
     else:
         sys.exit(__doc__)
 

@@ -47,6 +47,12 @@ func TestSendRejects(t *testing.T) {
 	if c := code(call(s.handleContacts, `{}`)); c != "unlinked" {
 		t.Errorf("contacts.list, unlinked: %s", c)
 	}
+	if c := code(call(s.handleVoicePlay, `{"chat":"a@s.whatsapp.net"}`)); c != "bad_request" {
+		t.Errorf("voice.play, no id: %s", c)
+	}
+	if c := code(call(s.handleVoicePlay, `{"chat":"a@s.whatsapp.net","id":"X"}`)); c != "unlinked" {
+		t.Errorf("voice.play, unlinked: %s", c)
+	}
 	if c := code(call(s.handleDelete, `{"chat":"a@s.whatsapp.net","ids":[]}`)); c != "bad_request" {
 		t.Errorf("delete, no ids: %s", c)
 	}

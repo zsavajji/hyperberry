@@ -9,11 +9,15 @@ type unreadMsg struct{ ID, Sender string }
 func (t *storeTx) messageByID(chat, id string) (msgRow, bool) {
 	r := msgRow{Chat: chat, ID: id}
 	var sender, name, text, qid, qprev sql.NullString
+	var secs sql.NullInt64
+	var media sql.NullString
 	err := t.tx.QueryRow(`SELECT ts, out, state, sender, sender_name, kind, text, quote_id, quote_preview,
-edited, deleted FROM messages WHERE chat = ? AND id = ?`, chat, id).
-		Scan(&r.TS, &r.Out, &r.State, &sender, &name, &r.Kind, &text, &qid, &qprev, &r.Edited, &r.Deleted)
+edited, deleted, duration, waveform, media, media_state, played FROM messages WHERE chat = ? AND id = ?`, chat, id).
+		Scan(&r.TS, &r.Out, &r.State, &sender, &name, &r.Kind, &text, &qid, &qprev, &r.Edited, &r.Deleted,
+			&secs, &r.Waveform, &media, &r.MediaState, &r.Played)
 	r.Sender, r.SenderName, r.Text, r.QuoteID, r.QuotePreview =
 		sender.String, name.String, text.String, qid.String, qprev.String
+	r.Duration, r.Media = int(secs.Int64), media.String
 	return r, err == nil
 }
 
@@ -73,6 +77,30 @@ func (t *storeTx) syncLast(chat, id string) {
 	if t.exec(`UPDATE chats SET last_ts = m.ts, last_state = m.state
 FROM (SELECT ts, state FROM messages WHERE chat = ?1 AND id = ?2) AS m WHERE jid = ?1`, chat, id) > 0 {
 		t.chats[chat] = true
+	}
+}
+
+// blob is a column value: NULL for an empty slice, since the driver would bind a zero-length blob.
+func blob(b []byte) any {
+	if len(b) == 0 {
+		return nil
+	}
+	return b
+}
+
+// setMedia moves a note's media_state; a waveform computed after the download is kept.
+func (t *storeTx) setMedia(chat, id string, state int, wf []byte) {
+	if t.exec("UPDATE messages SET media_state = ?, waveform = COALESCE(?, waveform) WHERE chat = ? AND id = ?",
+		state, blob(wf), chat, id) > 0 {
+		t.changed(chat, id)
+	}
+}
+
+// setPlayed marks a voice note played, by them (ours) or by us (theirs).
+func (t *storeTx) setPlayed(chat, id string) {
+	if t.exec("UPDATE messages SET played = 1 WHERE chat = ? AND id = ? AND kind = ? AND played = 0",
+		chat, id, msgVoice) > 0 {
+		t.changed(chat, id)
 	}
 }
 

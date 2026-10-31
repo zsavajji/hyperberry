@@ -28,6 +28,7 @@ func TestContent(t *testing.T) {
 		{"photo", &waE2E.Message{ImageMessage: &waE2E.ImageMessage{Caption: proto.String("sunset")}}, msgPhoto, "sunset", "", "Photo sunset", true},
 		{"photo, no caption", &waE2E.Message{ImageMessage: &waE2E.ImageMessage{}}, msgPhoto, "", "", "Photo", true},
 		{"voice", &waE2E.Message{AudioMessage: &waE2E.AudioMessage{PTT: proto.Bool(true)}}, msgVoice, "", "", "Voice message", true},
+		{"voice, 7 s", &waE2E.Message{AudioMessage: &waE2E.AudioMessage{PTT: proto.Bool(true), Seconds: proto.Uint32(7)}}, msgVoice, "", "", "🎤 0:07", true},
 		{"audio", &waE2E.Message{AudioMessage: &waE2E.AudioMessage{}}, msgOther, "Audio", "", "Audio", true},
 		{"document", &waE2E.Message{DocumentMessage: &waE2E.DocumentMessage{FileName: proto.String("a.pdf")}}, msgDoc, "a.pdf", "", "Document: a.pdf", true},
 		{"sticker", &waE2E.Message{StickerMessage: &waE2E.StickerMessage{}}, msgSticker, "", "", "Sticker", true},
@@ -63,14 +64,14 @@ func TestChatPreviewSender(t *testing.T) {
 	if p := chatPreview(r); p != "You: Photo x" {
 		t.Error(p)
 	}
-	if p := preview(msgText, string(make([]rune, 0))+"é"+string(make([]byte, 0))); p != "é" {
+	if p := preview(msgText, string(make([]rune, 0))+"é"+string(make([]byte, 0)), 0); p != "é" {
 		t.Error(p)
 	}
 	long := ""
 	for i := 0; i < 150; i++ {
 		long += "é"
 	}
-	if n := len([]rune(preview(msgText, long))); n != 100 {
+	if n := len([]rune(preview(msgText, long, 0))); n != 100 {
 		t.Errorf("clipped to %d runes", n)
 	}
 }

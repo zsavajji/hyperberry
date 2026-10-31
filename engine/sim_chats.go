@@ -18,6 +18,7 @@ type simChat struct {
 	muted     int // hours from now; -1 for always
 	pinned    bool
 	archived  bool
+	secs      int // a voice note's length
 }
 
 const (
@@ -33,7 +34,7 @@ var simChats = append([]simChat{
 	{jid: "120363000000000001@g.us", name: "Family 🏠", sender: "Mum", text: "Who's bringing dessert on Sunday?", ago: 9 * time.Minute, unread: 12, pinned: true},
 	{jid: "393330000002@s.whatsapp.net", name: "Marco", text: "Did you see the match last night? Unbelievable ending", ago: 25 * time.Minute, unread: 3},
 	{jid: "393330000003@s.whatsapp.net", name: "Giulia Bianchi-Ferraris della Valle Lunga", text: "A name long enough to be cut off", ago: 40 * time.Minute},
-	{jid: "120363000000000002@g.us", name: "🎸 Band practice", sender: "Luca Verdi", kind: msgVoice, ago: hour, unread: 1},
+	{jid: "120363000000000002@g.us", name: "🎸 Band practice", sender: "Luca Verdi", kind: msgVoice, secs: 23, ago: hour, unread: 1},
 	{jid: "393330000004@s.whatsapp.net", name: "Sara", text: "Sending…", out: true, state: stateSending, ago: 2 * hour},
 	{jid: "393330000005@s.whatsapp.net", name: "Paolo", text: "This one didn't go", out: true, state: stateFailed, ago: 3 * hour},
 	{jid: "393330000006@s.whatsapp.net", name: "Elena", text: "Delivered, not read yet", out: true, state: stateDelivered, ago: 4 * hour},

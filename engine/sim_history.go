@@ -44,6 +44,7 @@ type simStep struct {
 	kind        int
 	text        string
 	quote       int // index of an earlier step, or 0 for none (step 0 is never quoted)
+	secs        int // a voice note's length; its audio is made when the sim links (sim_voice.go)
 	edited, del bool
 }
 
@@ -61,7 +62,7 @@ var simFamily = []simStep{
 	{kind: msgService, text: "Luca added Marco"},
 	{who: "Marco", text: "Hi all, thanks for adding me!"},
 	{who: "Mum", text: "Welcome Marco 🫶"},
-	{who: "Dad", kind: msgVoice},
+	{who: "Dad", kind: msgVoice, secs: 7},
 	{who: "Luca", kind: msgDoc, text: "recipe.pdf"},
 	{text: "Thanks Luca"},
 	{who: "Marco", del: true},
@@ -122,12 +123,12 @@ func simHistory(i int, now time.Time) []msgRow {
 	var rows []msgRow
 	quote := func(r *msgRow, k int) {
 		q := rows[k]
-		r.QuoteID, r.QuotePreview = q.ID, clip(preview(q.Kind, q.Text), 80)
+		r.QuoteID, r.QuotePreview = q.ID, clip(preview(q.Kind, q.Text, q.Duration), 80)
 	}
 	if script := simScripts[c.jid]; script != nil {
 		for k, s := range script {
 			r := msgRow{Chat: c.jid, ID: id(k), TS: end - int64(len(script)-1-k)*9000, State: stateRead,
-				Kind: s.kind, Text: s.text, Edited: s.edited, Deleted: s.del}
+				Kind: s.kind, Text: s.text, Edited: s.edited, Deleted: s.del, Duration: s.secs}
 			switch {
 			case s.who == "":
 				r.Out = s.kind != msgService

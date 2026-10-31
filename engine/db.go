@@ -61,6 +61,14 @@ CREATE TABLE messages(
   deleted INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY(chat, id));
 CREATE INDEX messages_by_time ON messages(chat, ts);`,
+	// Voice notes (step 4.3a). media_state: 0 none, 1 on the server, 2 here as voice/<id>.ogg,
+	// 3 the download failed. media is the download details as JSON, real account only. played:
+	// ours, they played it; theirs, we did.
+	`ALTER TABLE messages ADD COLUMN duration INTEGER;
+ALTER TABLE messages ADD COLUMN waveform BLOB;
+ALTER TABLE messages ADD COLUMN media TEXT;
+ALTER TABLE messages ADD COLUMN media_state INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE messages ADD COLUMN played INTEGER NOT NULL DEFAULT 0;`,
 }
 
 // openChats opens chats.db in WAL mode and migrates it to the newest schema.

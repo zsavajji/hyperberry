@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/polymorfa/hypermeow/proto/waE2E"
@@ -19,6 +21,12 @@ type msgRow struct {
 	Text                  string
 	QuoteID, QuotePreview string
 	Edited, Deleted       bool
+	// Voice notes: seconds, the waveform's 64 values (0-100), download details as JSON.
+	Duration   int
+	Waveform   []byte
+	Media      string
+	MediaState int
+	Played     bool
 }
 
 // content says what a message shows: its kind and text. ok is false for messages with nothing
@@ -88,7 +96,7 @@ func quoteOf(m *waE2E.Message) (id, prev string) {
 		return "", ""
 	}
 	if k, t, ok := content(ci.GetQuotedMessage()); ok {
-		prev = clip(preview(k, t), 80)
+		prev = clip(preview(k, t, int(ci.GetQuotedMessage().GetAudioMessage().GetSeconds())), 80)
 	}
 	return ci.GetStanzaID(), prev
 }
@@ -109,11 +117,22 @@ func rowFromMessage(key string, e *events.Message, senderName string) (msgRow, b
 		r.SenderName = senderName
 	}
 	r.QuoteID, r.QuotePreview = quoteOf(e.Message)
+	if a := e.Message.GetAudioMessage(); a != nil && a.GetPTT() {
+		r.Duration, r.Waveform = int(a.GetSeconds()), a.GetWaveform()
+		if a.GetDirectPath() != "" {
+			info := mediaInfo{a.GetDirectPath(), a.GetMediaKey(), a.GetFileEncSHA256(), a.GetFileSHA256(),
+				a.GetFileLength(), a.GetMimetype()}
+			if b, err := json.Marshal(info); err == nil {
+				r.Media, r.MediaState = string(b), 1
+			}
+		}
+	}
 	return r, true
 }
 
 // preview is the one-line form of a message, for chat rows and quotes.
-func preview(kind int, text string) string {
+// A voice note shows its length when known.
+func preview(kind int, text string, secs int) string {
 	line := clip(firstLine(text), 100)
 	label := ""
 	switch kind {
@@ -122,6 +141,9 @@ func preview(kind int, text string) string {
 	case msgVideo:
 		label = "Video"
 	case msgVoice:
+		if secs > 0 {
+			return fmt.Sprintf("🎤 %d:%02d", secs/60, secs%60)
+		}
 		return "Voice message"
 	case msgSticker:
 		return "Sticker"
@@ -141,7 +163,7 @@ func preview(kind int, text string) string {
 
 // chatPreview is the chat list line: "You: hi", "Anna: Photo".
 func chatPreview(r msgRow) string {
-	p := preview(r.Kind, r.Text)
+	p := preview(r.Kind, r.Text, r.Duration)
 	switch {
 	case r.Out:
 		return "You: " + p

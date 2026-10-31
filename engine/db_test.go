@@ -1,9 +1,39 @@
 package main
 
 import (
+	"database/sql"
 	"path/filepath"
 	"testing"
 )
+
+// A chats.db at migration 1 keeps its rows when it moves on to 2.
+func TestMigrateKeepsRows(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "chats.db")
+	old, err := sql.Open("sqlite3", "file:"+path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, q := range []string{migrations[0], "PRAGMA user_version = 1",
+		`INSERT INTO chats(jid, kind) VALUES('a@lid', 0)`,
+		`INSERT INTO messages(chat, id, ts, out, state, kind) VALUES('a@lid', 'm1', 1, 0, 3, 3)`} {
+		if _, err := old.Exec(q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	old.Close()
+	db, err := openChats(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	var v, state, played int
+	var duration sql.NullInt64
+	err = db.QueryRow("SELECT (SELECT user_version FROM pragma_user_version), duration, media_state, played FROM messages WHERE id = 'm1'").
+		Scan(&v, &duration, &state, &played)
+	if err != nil || v != 2 || duration.Valid || state != 0 || played != 0 {
+		t.Fatalf("version %d, duration %v, media_state %d, played %d: %v", v, duration, state, played, err)
+	}
+}
 
 func TestOpenChats(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "chats.db")

@@ -275,10 +275,12 @@ func (t *storeTx) setArchived(jid string, v bool) {
 // It reports whether the message was new.
 func (t *storeTx) insertMessage(m msgRow) bool {
 	if t.exec(`INSERT OR IGNORE INTO messages(chat, id, ts, out, state, sender, sender_name, kind, text,
-quote_id, quote_preview, edited, deleted)
-VALUES(?, ?, ?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?, NULLIF(?, ''), NULLIF(?, ''), NULLIF(?, ''), ?, ?)`,
+quote_id, quote_preview, edited, deleted, duration, waveform, media, media_state, played)
+VALUES(?, ?, ?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?, NULLIF(?, ''), NULLIF(?, ''), NULLIF(?, ''), ?, ?,
+NULLIF(?, 0), ?, NULLIF(?, ''), ?, ?)`,
 		m.Chat, m.ID, m.TS, m.Out, m.State, m.Sender, m.SenderName, m.Kind, m.Text,
-		m.QuoteID, m.QuotePreview, m.Edited, m.Deleted) == 0 {
+		m.QuoteID, m.QuotePreview, m.Edited, m.Deleted,
+		m.Duration, blob(m.Waveform), m.Media, m.MediaState, m.Played) == 0 {
 		return false
 	}
 	t.changed(m.Chat, m.ID)
@@ -315,8 +317,8 @@ func (t *storeTx) refreshLast(chat, id string, revoked bool) {
 	}
 	r := msgRow{Chat: chat, ID: id}
 	var text, name sql.NullString
-	if t.tx.QueryRow("SELECT ts, out, state, kind, text, sender_name FROM messages WHERE chat = ? AND id = ?",
-		chat, id).Scan(&r.TS, &r.Out, &r.State, &r.Kind, &text, &name) != nil {
+	if t.tx.QueryRow("SELECT ts, out, state, kind, text, sender_name, COALESCE(duration, 0) FROM messages WHERE chat = ? AND id = ?",
+		chat, id).Scan(&r.TS, &r.Out, &r.State, &r.Kind, &text, &name, &r.Duration) != nil {
 		return
 	}
 	r.Text, r.SenderName = text.String, name.String

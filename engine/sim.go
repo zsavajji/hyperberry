@@ -58,6 +58,8 @@ func newSim(srv *Server, st *Store, log waLog.Logger) *Sim {
 	srv.Handle("sim.msg", s.handleMsg)
 	srv.Handle("sim.removed", s.handleRemoved)
 	srv.Handle("sim.typing", s.handleTyping)
+	srv.Handle("sim.voice", s.handleVoice)
+	srv.Handle("voice.play", s.handleVoicePlay)
 	srv.Handle("msg.send", s.handleSend)
 	srv.Handle("msg.delete", s.handleDelete)
 	srv.Handle("chat.read", s.handleRead)
@@ -206,18 +208,23 @@ func (s *Sim) handleMsg(req json.RawMessage) (any, error) {
 	if r.Text == "" {
 		r.Text = "A new message at " + now.Format("15:04:05")
 	}
+	s.deliver(c, now, msgRow{Kind: msgText, Text: r.Text})
+	return nil, nil
+}
+
+// deliver puts an incoming message into chat c, unread, and returns its id.
+func (s *Sim) deliver(c simChat, now time.Time, m msgRow) string {
+	m.Chat, m.ID, m.TS, m.State, m.SenderName = c.jid, fmt.Sprintf("SIM%d", now.UnixNano()), now.Unix(), stateRead, c.sender
+	if c.sender != "" {
+		m.Sender = simMember(c.sender)
+	}
 	s.store.ops <- func(t *storeTx) {
-		m := msgRow{Chat: c.jid, ID: fmt.Sprintf("SIM%d", now.UnixNano()), TS: now.Unix(), State: stateRead,
-			Kind: msgText, Text: r.Text, SenderName: c.sender}
-		if c.sender != "" {
-			m.Sender = simMember(c.sender)
-		}
 		if t.insertMessage(m) {
 			t.setLast(c.jid, m.TS, chatPreview(m), false, m.State)
 			t.addUnread(c.jid, 1)
 		}
 	}
-	return nil, nil
+	return m.ID
 }
 
 // handleRemoved is the device removed on the phone, and link.logout: the history goes with it.
@@ -237,10 +244,12 @@ func (s *Sim) seed() {
 	s.store.ops <- func(t *storeTx) {
 		for i, c := range simChats {
 			for _, h := range simHistory(i, now) {
+				s.voiceAudio(&h)
 				t.insertMessage(h)
 			}
 			m := msgRow{Chat: c.jid, ID: fmt.Sprintf("SIMSEED%d", i), TS: now.Add(-c.ago).Unix(), Out: c.out,
-				State: c.state, SenderName: c.sender, Kind: c.kind, Text: c.text}
+				State: c.state, SenderName: c.sender, Kind: c.kind, Text: c.text, Duration: c.secs}
+			s.voiceAudio(&m)
 			if !c.out {
 				m.State = stateRead
 			}
