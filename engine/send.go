@@ -40,24 +40,9 @@ func (s *Session) handleSend(req json.RawMessage) (any, error) {
 	}
 	id, now := cli.GenerateMessageID(), time.Now().Unix()
 
-	// The row goes in first, so the UI shows the bubble while the send is in flight.
-	quoted := make(chan msgRow, 1)
-	s.store.ops <- func(t *storeTx) {
-		var q msgRow
-		if r.Quote != "" {
-			q, _ = t.messageByID(r.Chat, r.Quote)
-		}
-		quoted <- q
-		row := msgRow{Chat: r.Chat, ID: id, TS: now, Out: true, State: stateSending, Kind: msgText, Text: r.Text}
-		if q.ID != "" {
-			row.QuoteID, row.QuotePreview = q.ID, preview(q.Kind, q.Text)
-		}
-		t.ensureChat(r.Chat, chatKind(jid))
-		t.insertMessage(row)
-		t.setLast(r.Chat, now, chatPreview(row), true, stateSending)
-	}
+	q := s.store.queueOutgoing(jid, r.Chat, id, r.Text, r.Quote, now)
 	msg := &waE2E.Message{Conversation: &r.Text}
-	if q := <-quoted; q.ID != "" {
+	if q.ID != "" {
 		who := r.Chat // a 1:1 message from them was sent by the chat itself
 		switch {
 		case q.Out:
@@ -80,6 +65,27 @@ func (s *Session) handleSend(req json.RawMessage) (any, error) {
 	// The server's clock, not the phone's: it drifts.
 	s.store.ops <- func(t *storeTx) { t.sentAs(r.Chat, id, resp.Timestamp.Unix(), stateSent) }
 	return map[string]string{"id": id}, nil
+}
+
+// queueOutgoing puts our message in as sending, so the UI shows the bubble while the send is in
+// flight, and returns the message it quotes (empty when there is none).
+func (st *Store) queueOutgoing(jid types.JID, chat, id, text, quote string, now int64) msgRow {
+	quoted := make(chan msgRow, 1)
+	st.ops <- func(t *storeTx) {
+		var q msgRow
+		if quote != "" {
+			q, _ = t.messageByID(chat, quote)
+		}
+		quoted <- q
+		row := msgRow{Chat: chat, ID: id, TS: now, Out: true, State: stateSending, Kind: msgText, Text: text}
+		if q.ID != "" {
+			row.QuoteID, row.QuotePreview = q.ID, preview(q.Kind, q.Text)
+		}
+		t.ensureChat(chat, chatKind(jid))
+		t.insertMessage(row)
+		t.setLast(chat, now, chatPreview(row), true, stateSending)
+	}
+	return <-quoted
 }
 
 // receipt moves the ticks of our messages, or clears unread when our other devices read a chat.

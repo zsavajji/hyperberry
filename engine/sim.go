@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -13,7 +15,8 @@ import (
 // Sim is the simulated account of step 1.12: link.* and a made-up account's chats, with nothing
 // sent to WhatsApp, so the UI's flows run without linking the real number again (steps.md, "Real
 // links are few"). scripts/sim.py drives it with sim.* requests: the phone accepting the device,
-// a message arriving, the device removed on the phone.
+// a message arriving, the device removed on the phone. It also answers the chat requests from
+// made-up data (step 3.0).
 type Sim struct {
 	srv   *Server
 	store *Store
@@ -32,6 +35,9 @@ var (
 	simCodes = []time.Duration{60 * time.Second, 20 * time.Second, 20 * time.Second,
 		20 * time.Second, 20 * time.Second, 20 * time.Second}
 	simDelay = time.Second
+	// simTicks are when a sent message turns sent, delivered and read, from the send.
+	simTicks  = [3]time.Duration{500 * time.Millisecond, 1500 * time.Millisecond, 3 * time.Second}
+	simTyping = 4 * time.Second
 )
 
 const simMe = "390000000000@s.whatsapp.net"
@@ -51,6 +57,13 @@ func newSim(srv *Server, st *Store, log waLog.Logger) *Sim {
 	srv.Handle("sim.link", s.handleLink)
 	srv.Handle("sim.msg", s.handleMsg)
 	srv.Handle("sim.removed", s.handleRemoved)
+	srv.Handle("sim.typing", s.handleTyping)
+	srv.Handle("msg.send", s.handleSend)
+	srv.Handle("chat.read", s.handleRead)
+	srv.Handle("chat.open", s.handleOpen)
+	srv.Handle("chat.typing", accepted)
+	srv.Handle("chat.close", accepted)
+	srv.Handle("ui.state", accepted)
 	return s
 }
 
@@ -84,9 +97,9 @@ func (s *Sim) setLink(state string) {
 // s.mu held.
 func (s *Sim) startQR() {
 	s.run++
-	run := s.run
+	run, codes := s.run, simCodes
 	go func() {
-		for i, d := range simCodes {
+		for i, d := range codes {
 			s.mu.Lock()
 			if run != s.run {
 				s.mu.Unlock()
@@ -160,8 +173,9 @@ func (s *Sim) handleLink(json.RawMessage) (any, error) {
 	s.qr, s.code = "", ""
 	s.store.clear()
 	s.setLink(linkLinking)
+	delay := simDelay
 	go func() {
-		time.Sleep(simDelay)
+		time.Sleep(delay)
 		s.mu.Lock()
 		defer s.mu.Unlock()
 		if s.link == linkLinking {
@@ -179,11 +193,8 @@ func (s *Sim) handleMsg(req json.RawMessage) (any, error) {
 		Text string
 	}
 	json.Unmarshal(req, &r)
-	s.mu.Lock()
-	ready := s.link == linkReady
-	s.mu.Unlock()
-	if !ready {
-		return nil, &Error{"unlinked", "the simulated account isn't linked"}
+	if err := s.ready(); err != nil {
+		return nil, err
 	}
 	if r.N < 0 || r.N >= len(simChats) {
 		return nil, &Error{"bad_request", fmt.Sprintf("n is 0 to %d", len(simChats)-1)}
@@ -195,6 +206,9 @@ func (s *Sim) handleMsg(req json.RawMessage) (any, error) {
 	s.store.ops <- func(t *storeTx) {
 		m := msgRow{Chat: c.jid, ID: fmt.Sprintf("SIM%d", now.UnixNano()), TS: now.Unix(), State: stateRead,
 			Kind: msgText, Text: r.Text, SenderName: c.sender}
+		if c.sender != "" {
+			m.Sender = simMember(c.sender)
+		}
 		if t.insertMessage(m) {
 			t.setLast(c.jid, m.TS, chatPreview(m), false, m.State)
 			t.addUnread(c.jid, 1)
@@ -219,10 +233,16 @@ func (s *Sim) seed() {
 	now := time.Now()
 	s.store.ops <- func(t *storeTx) {
 		for i, c := range simChats {
+			for _, h := range simHistory(i, now) {
+				t.insertMessage(h)
+			}
 			m := msgRow{Chat: c.jid, ID: fmt.Sprintf("SIMSEED%d", i), TS: now.Add(-c.ago).Unix(), Out: c.out,
 				State: c.state, SenderName: c.sender, Kind: c.kind, Text: c.text}
 			if !c.out {
 				m.State = stateRead
+			}
+			if c.sender != "" {
+				m.Sender = simMember(c.sender)
 			}
 			if c.kind == msgText && c.text == "" {
 				m.Deleted = true
@@ -245,4 +265,125 @@ func (s *Sim) seed() {
 			t.setFlags(c.jid, c.unread, muted, c.pinned, c.archived)
 		}
 	}
+}
+
+// ready reports the error a request gets while the simulated account isn't linked.
+func (s *Sim) ready() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.link != linkReady {
+		return &Error{"unlinked", "the simulated account isn't linked"}
+	}
+	return nil
+}
+
+// chat is ready, then the chat key parsed as Session.linked does.
+func (s *Sim) chat(key string) (types.JID, error) {
+	if err := s.ready(); err != nil {
+		return types.EmptyJID, err
+	}
+	jid, err := types.ParseJID(key)
+	if err != nil || jid.IsEmpty() {
+		return types.EmptyJID, &Error{"bad_chat", "not a chat key: " + key}
+	}
+	return jid, nil
+}
+
+// simIndex is the place of a chat in simChats, -1 when it isn't there.
+func simIndex(jid string) int {
+	for i, c := range simChats {
+		if c.jid == jid {
+			return i
+		}
+	}
+	return -1
+}
+
+func accepted(json.RawMessage) (any, error) { return nil, nil }
+
+// handleSend is msg.send: the row as sending, then sent, delivered and read at simTicks. A text
+// starting with "fail" ends failed. Like the real one it blocks for the round trip.
+func (s *Sim) handleSend(req json.RawMessage) (any, error) {
+	var r struct{ Chat, Text, Quote string }
+	if err := json.Unmarshal(req, &r); err != nil || strings.TrimSpace(r.Text) == "" {
+		return nil, &Error{"bad_request", "msg.send needs chat and non-empty text"}
+	}
+	jid, err := s.chat(r.Chat)
+	if err != nil {
+		return nil, err
+	}
+	id, ops := fmt.Sprintf("SIMOUT%d", time.Now().UnixNano()), s.store.ops
+	s.store.queueOutgoing(jid, r.Chat, id, r.Text, r.Quote, time.Now().Unix())
+	ticks := simTicks // copied before the goroutine: tests restore it while one may still sleep
+	time.Sleep(ticks[0])
+	// The Q10 capitalises the first letter, so the match ignores case.
+	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(r.Text)), "fail") {
+		ops <- func(t *storeTx) { t.sentAs(r.Chat, id, 0, stateFailed) }
+		return nil, errors.New("simulated send failure")
+	}
+	ops <- func(t *storeTx) { t.sentAs(r.Chat, id, 0, stateSent) }
+	go func() {
+		time.Sleep(ticks[1] - ticks[0])
+		ops <- func(t *storeTx) { t.setState(r.Chat, id, stateDelivered) }
+		time.Sleep(ticks[2] - ticks[1])
+		ops <- func(t *storeTx) { t.setState(r.Chat, id, stateRead) }
+	}()
+	return map[string]string{"id": id}, nil
+}
+
+func (s *Sim) handleRead(req json.RawMessage) (any, error) {
+	var r struct{ Chat string }
+	json.Unmarshal(req, &r)
+	if _, err := s.chat(r.Chat); err != nil {
+		return nil, err
+	}
+	s.store.ops <- func(t *storeTx) { t.setUnread(r.Chat, 0) }
+	return nil, nil
+}
+
+// handleOpen answers with a presence after a round trip: online for even chats, last seen an
+// hour ago for odd ones, hidden for chats that aren't in simChats. Groups have none.
+func (s *Sim) handleOpen(req json.RawMessage) (any, error) {
+	var r struct{ Chat string }
+	json.Unmarshal(req, &r)
+	jid, err := s.chat(r.Chat)
+	if err != nil || jid.Server == types.GroupServer {
+		return nil, err
+	}
+	delay := simDelay
+	go func() {
+		time.Sleep(delay)
+		online, seen := false, int64(0)
+		switch i := simIndex(r.Chat); {
+		case i < 0:
+		case i%2 == 0:
+			online = true
+		default:
+			seen = time.Now().Add(-time.Hour).Unix()
+		}
+		s.srv.Emit("presence", map[string]any{"chat": r.Chat, "online": online, "lastSeen": seen})
+	}()
+	return nil, nil
+}
+
+// handleTyping is sim.typing: chat n types for simTyping; in a group, a member does.
+func (s *Sim) handleTyping(req json.RawMessage) (any, error) {
+	var r struct{ N int }
+	json.Unmarshal(req, &r)
+	if err := s.ready(); err != nil {
+		return nil, err
+	}
+	if r.N < 0 || r.N >= len(simChats) {
+		return nil, &Error{"bad_request", fmt.Sprintf("n is 0 to %d", len(simChats)-1)}
+	}
+	c, who := simChats[r.N], ""
+	if j, _ := types.ParseJID(c.jid); j.Server == types.GroupServer {
+		who = firstWord(c.sender)
+	}
+	typing := func(on bool) {
+		s.srv.Emit("typing", map[string]any{"chat": c.jid, "who": who, "on": on, "voice": false})
+	}
+	typing(true)
+	time.AfterFunc(simTyping, func() { typing(false) })
+	return nil, nil
 }

@@ -10,9 +10,11 @@ import (
 
 func newTestSim(t *testing.T) (*Sim, *Store, *conn) {
 	t.Helper()
-	codes, delay := simCodes, simDelay
+	codes, delay, ticks, typing := simCodes, simDelay, simTicks, simTyping
 	simCodes, simDelay = []time.Duration{50 * time.Millisecond, 50 * time.Millisecond}, 10*time.Millisecond
-	t.Cleanup(func() { simCodes, simDelay = codes, delay })
+	// 100 ms apart keeps each state change in its own store batch (batches close after 50 ms).
+	simTicks, simTyping = [3]time.Duration{100 * time.Millisecond, 200 * time.Millisecond, 300 * time.Millisecond}, 100*time.Millisecond
+	t.Cleanup(func() { simCodes, simDelay, simTicks, simTyping = codes, delay, ticks, typing })
 	ts := newTestServer(t)
 	db, err := openChats(filepath.Join(t.TempDir(), "chats.db"))
 	if err != nil {
@@ -26,7 +28,7 @@ func newTestSim(t *testing.T) (*Sim, *Store, *conn) {
 // next reads until event ev and returns it; other events and replies are skipped.
 func next(t *testing.T, c *conn, ev string) map[string]any {
 	t.Helper()
-	for i := 0; i < 50; i++ {
+	for i := 0; i < 500; i++ {
 		if m := c.read(t); m["ev"] == ev {
 			return m
 		}
@@ -80,7 +82,7 @@ func TestSimLinkMessageRemove(t *testing.T) {
 	next(t, c, "chats")
 	eventually(t, st, len(simChats), "SELECT count(*) FROM chats")
 	eventually(t, st, 1, "SELECT count(*) FROM chats WHERE archived = 1")
-	eventually(t, st, 1, "SELECT count(*) FROM messages WHERE deleted = 1")
+	eventually(t, st, 1, "SELECT count(*) FROM messages WHERE deleted = 1 AND id LIKE 'SIMSEED%'")
 
 	// A restarted engine finds the account linked.
 	if newSim(s.srv, st, waLog.Noop).hello().(map[string]any)["state"] != linkReady {
