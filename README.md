@@ -16,6 +16,10 @@ It is built from two parts that ship in one `.bar`:
 
 Calls are planned for later, through [meowcaller](https://github.com/purpshell/meowcaller).
 
+**Status:** not usable yet. Iteration 1 (chats, emoji, voice notes, notifications, settings,
+Italian) is written and runs against a simulated account; it hasn't linked a real number.
+See [docs/plan/status.md](docs/plan/status.md).
+
 > HyperBerry is an independent project, not affiliated with or endorsed by WhatsApp or Meta.
 > Using an unofficial client may be against WhatsApp's terms of service; use it at your own risk.
 
@@ -29,11 +33,14 @@ You need Docker and the local images `bb10-cxx20` and `yamsergey/bb10-ndk:0.6`.
 ./scripts/build-app.sh       # build/hyperberry.bar: engine + UI, unsigned
 ```
 
-The `.bar` installs on a rooted BB10 phone in Development Mode.
+`build-app.sh` fetches the pieces that aren't committed (Google's emoji font, qrcodegen) and
+compiles the Italian translation. The `.bar` installs on a rooted BB10 phone in Development
+Mode.
 
 ## Documents
 
 - [PLAN.md](PLAN.md): the plan, its decisions and rules
+- [docs/plan/status.md](docs/plan/status.md): where things stand, and what comes next
 - [docs/protocol.md](docs/protocol.md): the contract between the UI and the engine
 - [.claude/skills/](.claude/skills/): BB10 skills for Claude Code (Cascades, build and deploy, pitfalls, UX, devices, the C++20 toolchain)
 

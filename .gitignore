@@ -4,3 +4,4 @@ app/assets/fonts/
 app/assets/emoji/
 lib/qrcodegen/
 app/assets/translations/
+.DS_Store
