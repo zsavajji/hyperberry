@@ -41,6 +41,7 @@ Mode.
 
 - [PLAN.md](PLAN.md): the plan, its decisions and rules
 - [docs/plan/status.md](docs/plan/status.md): where things stand, and what comes next
+- [docs/memory/](docs/memory/README.md): what an agent needs to know about the phone and the work
 - [docs/protocol.md](docs/protocol.md): the contract between the UI and the engine
 - [.claude/skills/](.claude/skills/): BB10 skills for Claude Code (Cascades, build and deploy, pitfalls, UX, devices, the C++20 toolchain)
 
