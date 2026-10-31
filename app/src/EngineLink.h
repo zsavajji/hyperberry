@@ -52,8 +52,14 @@ signals:
     void connectedChanged();
     void linkChanged();
     void connChanged();
-    // A chats event: these rows of chats.db changed. (Other events get signals in the steps that use them.)
+    // A chats event: these rows of chats.db changed.
     void chatsChanged(const QStringList &jids);
+    // A msgs event: these rows of the chat's messages changed or disappeared.
+    void msgsChanged(const QString &chat, const QStringList &ids);
+    // A typing event: who ("" in 1:1) started or stopped typing in the chat; voice while recording.
+    void typing(const QString &chat, const QString &who, bool on, bool voice);
+    // A presence event; lastSeen in unix seconds, 0 when hidden.
+    void presence(const QString &chat, bool online, qint64 lastSeen);
     void linkedChanged();
     void failureChanged();
 

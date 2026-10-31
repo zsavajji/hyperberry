@@ -5,9 +5,11 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QTextCodec>
 #include <QtDeclarative>
 #include <sys/slog2.h>
 
+#include "ChatController.h"
 #include "ChatListModel.h"
 #include "EngineLink.h"
 #include "QrImage.h"
@@ -55,10 +57,15 @@ Q_DECL_EXPORT int main(int argc, char **argv)
 {
     Application app(argc, argv);
     logToSystem();
+    // The sources are UTF-8; Qt 4 reads tr() and C-string literals as Latin-1 unless told, and
+    // "typing…" showed as "typingà|" (Q10, 2026-10-31).
+    QTextCodec::setCodecForTr(QTextCodec::codecForName("UTF-8"));
+    QTextCodec::setCodecForCStrings(QTextCodec::codecForName("UTF-8"));
     EngineLink engine(&app);
     ChatListModel chats(&engine, &app);
     QrImage qr(&app);
 
+    qmlRegisterType<ChatController>("hyperberry", 1, 0, "ChatController");
     QmlDocument *document = QmlDocument::create("asset:///main.qml").parent(&app);
     if (!loaded(document, "main.qml"))
         return 1;

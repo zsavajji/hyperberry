@@ -3,6 +3,12 @@ import bb.cascades 1.4
 // The chat list (PLAN.md §7, step 2.4): chats.db's chats under date headers, drawn by
 // ChatListModel (the context property chats) before the engine answers.
 Page {
+    attachedObjects: [
+        ComponentDefinition {
+            id: chatDef
+            source: "ChatPage.qml"
+        }
+    ]
     titleBar: TitleBar {
         title: engine.connected && engine.conn == "ready" ? qsTr("Chats") : qsTr("Connecting…")
     }
@@ -13,7 +19,17 @@ Page {
         ListView {
             // The rows reach the shared emoji style (main.qml) through ListItem.view.
             property variant emojiStyle: nav.emojiStyle
+            property int bodySize: nav.bodySize
+            property int smallSize: nav.smallSize
             dataModel: chats
+            onTriggered: {
+                if (indexPath.length < 2) {
+                    return
+                }
+                var page = chatDef.createObject()
+                page.chat = dataModel.data(indexPath)
+                nav.push(page)
+            }
             listItemComponents: [
                 ListItemComponent {
                     type: "header"

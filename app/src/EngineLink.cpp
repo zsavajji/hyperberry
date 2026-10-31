@@ -157,6 +157,14 @@ void EngineLink::readLines()
                 setConn(map["state"].toString());
             else if (ev == "chats")
                 emit chatsChanged(map["jids"].toStringList());
+            else if (ev == "msgs")
+                emit msgsChanged(map["chat"].toString(), map["ids"].toStringList());
+            else if (ev == "typing")
+                emit typing(map["chat"].toString(), map["who"].toString(), map["on"].toBool(),
+                            map["voice"].toBool());
+            else if (ev == "presence")
+                emit presence(map["chat"].toString(), map["online"].toBool(),
+                              map["lastSeen"].toLongLong());
         }
     }
 }

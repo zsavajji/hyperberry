@@ -1,6 +1,9 @@
 #include "ChatListModel.h"
 
 #include "EngineLink.h"
+#include "Moves.h"
+#include "colors.h"
+#include "dates.h"
 
 #include <bb/utility/i18n/Formatting>
 #include <QDateTime>
@@ -57,48 +60,6 @@ static QString initials(const QString &name)
         s += first(words.last());
     return s;
 }
-
-// BB10's labels are lower case in some languages ("oggi", "luglio"); a header starts upper case.
-static QString capitalized(QString s)
-{
-    if (!s.isEmpty())
-        s[0] = s[0].toUpper();
-    return s;
-}
-
-// Tells the ListView where each row and header it holds went after a reload, so a re-sort
-// moves rows instead of resetting the list and its scroll position.
-class Moves : public DataModel::IndexMapper
-{
-public:
-    QStringList oldTitles;
-    QList<QStringList> oldJids;
-    QHash<QString, int> titles;           // new group index, by title
-    QHash<QString, QPair<int, int> > jids; // new [g, i], by jid
-
-    bool newIndexPath(QVariantList *out, int *replacement, const QVariantList &old) const
-    {
-        const int g = old.value(0).toInt();
-        if (old.size() == 1) {
-            const QString title = oldTitles.value(g);
-            if (!titles.contains(title)) {
-                *replacement = g;
-                return false;
-            }
-            *out = QVariantList() << titles.value(title);
-            return true;
-        }
-        const int i = old.value(1).toInt();
-        const QString jid = oldJids.value(g).value(i);
-        if (!jids.contains(jid)) {
-            *replacement = i;
-            return false;
-        }
-        const QPair<int, int> at = jids.value(jid);
-        *out = QVariantList() << at.first << at.second;
-        return true;
-    }
-};
 
 ChatListModel::ChatListModel(EngineLink *engine, QObject *parent)
     : DataModel(parent)
@@ -201,8 +162,7 @@ void ChatListModel::reload()
             const QDate date = when.date();
             age = date.daysTo(today);
             if (!days.contains(date.toJulianDay()))
-                days.insert(date.toJulianDay(), capitalized(age >= 2 && age < 7
-                    ? locale.standaloneDayName(date.dayOfWeek()) : m_days.format(when)));
+                days.insert(date.toJulianDay(), dayLabel(when, today, locale, m_days));
             day = days.value(date.toJulianDay());
             header = age < 7 ? day : capitalized(locale.standaloneMonthName(date.month()));
             if (age >= 7 && date.year() != today.year())
@@ -213,14 +173,14 @@ void ChatListModel::reload()
         if (groups.isEmpty() || groups.last().title != title) {
             groups.append(Group());
             groups.last().title = title;
-            moves->titles.insert(title, groups.size() - 1);
+            moves->groups.insert(title, groups.size() - 1);
         }
         QVariantMap row;
         row["jid"] = jid;
         row["kind"] = kind;
         row["name"] = name;
         row["initials"] = initials(name);
-        row["color"] = kColors[qHash(jid) % (sizeof kColors / sizeof *kColors)];
+        row["color"] = pickColor(jid, kColors, sizeof kColors / sizeof *kColors);
         row["preview"] = q.value(4).toString();
         // The time under a day's header; the day, or the date, where no header says it.
         if (hasTime)
@@ -231,16 +191,16 @@ void ChatListModel::reload()
         row["unread"] = q.value(7).toInt();
         row["muted"] = q.value(8).toLongLong() > now;
         row["pinned"] = pinned;
-        moves->jids.insert(jid, qMakePair(groups.size() - 1, groups.last().rows.size()));
+        moves->items.insert(jid, qMakePair(groups.size() - 1, groups.last().rows.size()));
         groups.last().rows.append(row);
     }
 
     foreach (const Group &g, m_groups) {
-        moves->oldTitles.append(g.title);
+        moves->oldGroups.append(g.title);
         QStringList jids;
         foreach (const QVariantMap &row, g.rows)
             jids.append(row["jid"].toString());
-        moves->oldJids.append(jids);
+        moves->oldItems.append(jids);
     }
     const bool wasEmpty = m_groups.isEmpty();
     m_groups = groups;

@@ -9,6 +9,12 @@ NavigationPane {
     // built on it, and each rule loads the font again. Pages take it as nav.emojiStyle, list
     // items through a property on their ListView.
     property variant emojiStyle: emoji.style
+    // Text sizes in percent of the emoji style at 100 % (capitals 20 px on the Q10), in one place
+    // for the font size setting (5.4). body: messages and chat names, the stock Text Messages
+    // body's 21 px; small: previews, senders, quotes and service lines. List items reach them
+    // through properties on their ListView, as they reach emojiStyle.
+    property int bodySize: 105
+    property int smallSize: 85
     Menu.definition: MenuDefinition {
         // Settings, far right in the application menu, come in step 5.4.
         settingsAction: SettingsActionItem {
