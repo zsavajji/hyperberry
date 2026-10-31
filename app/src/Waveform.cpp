@@ -14,6 +14,11 @@ const int kMinBar = 3;
 
 QVariant Waveform::image(const QByteArray &values)
 {
+    return image(values, kBars);
+}
+
+QVariant Waveform::image(const QByteArray &values, int bars)
+{
     bb::ImageData img(bb::PixelFormat::RGBA_Premultiplied, kWidth, kHeight);
     unsigned char *pixels = img.pixels();
     const int stride = img.bytesPerLine();
@@ -22,7 +27,7 @@ QVariant Waveform::image(const QByteArray &values)
             pixels[y * stride + x] = 0;
 
     const int n = values.size();
-    for (int i = 0; i < kBars; ++i) {
+    for (int i = 0; i < kBars && i < bars; ++i) {
         int v = n ? values.at(i * n / kBars) : 0;
         if (v > 100)
             v = 100;

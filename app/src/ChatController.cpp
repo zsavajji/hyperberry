@@ -3,6 +3,7 @@
 #include "EngineLink.h"
 #include "colors.h"
 #include "MessageModel.h"
+#include "Waveform.h"
 
 #include <bb/system/Clipboard>
 #include <bb/utility/i18n/Formatting>
@@ -75,6 +76,14 @@ QString ChatController::status() const
     if (!m_typing.isEmpty())
         return m_typing;
     return m_group ? m_participants : m_presence;
+}
+
+QVariant ChatController::playedWave(const QVariant &values, int bars) const
+{
+    QByteArray bytes;
+    foreach (const QVariant &v, values.toList())
+        bytes.append(char(v.toInt()));
+    return Waveform::image(bytes, bars);
 }
 
 QVariantMap ChatController::groupInfo() const

@@ -10,6 +10,8 @@ namespace Waveform {
 // tints it with filterColor. The BLOB is 64 values of 0 to 100; another length is resampled,
 // an empty one gives all-minimum bars.
 QVariant image(const QByteArray &values);
+// Only the first `bars` bars, at their places: the played part, laid over the grey whole.
+QVariant image(const QByteArray &values, int bars);
 }
 
 #endif

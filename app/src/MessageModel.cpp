@@ -131,6 +131,11 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
         m.data["mediaState"] = q.value(17).toInt();
         m.data["played"] = q.value(18).toInt() != 0;
         m.data["wave"] = Waveform::image(q.value(16).toByteArray());
+        // As numbers: bytes could reach QML as a string, cut at the first 0 (a silent bar).
+        QVariantList wave;
+        foreach (char v, q.value(16).toByteArray())
+            wave << int(v);
+        m.data["waveData"] = wave;
     }
     m.data["text"] = shown;
     m.data["quote"] = q.value(9).toString();

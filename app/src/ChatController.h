@@ -60,6 +60,8 @@ public:
     Q_INVOKABLE QString startVoice();
     Q_INVOKABLE void sendVoice();
     Q_INVOKABLE void cancelVoice();
+    // The first `bars` of a voice note's 64 bars (its waveData), for the part played (4.3b).
+    Q_INVOKABLE QVariant playedWave(const QVariant &values, int bars) const;
 
     // msg is a MessageModel "msg" map; the next send quotes it.
     Q_INVOKABLE void reply(const QVariantMap &msg);

@@ -1,8 +1,9 @@
 import bb.cascades 1.4
 
 // A voice note in a card (step 4.3b), as Telega lays it out: the disc on the left; the waveform
-// over the length on the right. The waveform is one image (Waveform.cpp) twice: grey, and over it
-// the primary colour in a container as wide as the part played. view is the chat page's list,
+// over the length on the right. The waveform (Waveform.cpp) is grey, and over it an image of only
+// the bars played, in the primary colour. A clipping container as wide as the part played shrank
+// its image instead, which then slid over the grey one (0.0.1.79). view is the chat page's list,
 // which holds the player's state (playingId, loadingId, paused, posMs, durMs).
 Container {
     id: bubble
@@ -13,6 +14,8 @@ Container {
     // The note's own length until the player knows it.
     property int total: playing && view.durMs > 0 ? view.durMs : msg.duration * 1000
     property real progress: playing && total > 0 ? Math.min(1, view.posMs / total) : 0
+    // An int, so the played image is drawn again only when a bar changes: at most 64 times.
+    property int bars: Math.ceil(progress * 64)
     topMargin: 0
     bottomMargin: 0
     layout: StackLayout {
@@ -60,17 +63,13 @@ Container {
                 image: bubble.msg.wave
                 filterColor: ui.palette.secondaryTextOnPlain
             }
-            Container {
-                horizontalAlignment: HorizontalAlignment.Left
-                preferredWidth: bubble.progress * 381
-                clipContentToBounds: true
-                ImageView {
-                    preferredWidth: 381
-                    preferredHeight: 45
-                    scalingMethod: ScalingMethod.None
-                    image: bubble.msg.wave
-                    filterColor: ui.palette.primary
-                }
+            ImageView {
+                visible: bubble.bars > 0
+                preferredWidth: 381
+                preferredHeight: 45
+                scalingMethod: ScalingMethod.None
+                image: bubble.bars > 0 ? bubble.view.playedWave(bubble.msg.waveData, bubble.bars) : bubble.msg.wave
+                filterColor: ui.palette.primary
             }
         }
         Container {

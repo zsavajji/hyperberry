@@ -301,6 +301,9 @@ Page {
             function playVoice(msg) {
                 player.toggle(msg.id)
             }
+            function playedWave(data, bars) {
+                return ctl.playedWave(data, bars)
+            }
             function deleteForMe(id) {
                 ctl.deleteForMe(id)
                 deletedToast.show()
