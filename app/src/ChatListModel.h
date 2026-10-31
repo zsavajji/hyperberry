@@ -20,6 +20,10 @@ class ChatListModel : public bb::cascades::DataModel
     Q_OBJECT
     // True when there's no chat to show.
     Q_PROPERTY(bool empty READ empty NOTIFY emptyChanged)
+    // The Active Frame's two facts (step 5.2): unread messages in unmuted chats, and the newest
+    // incoming "Name: preview". Only recomputed while the app isn't fullscreen.
+    Q_PROPERTY(int unreadTotal READ unreadTotal NOTIFY frameChanged)
+    Q_PROPERTY(QString lastLine READ lastLine NOTIFY frameChanged)
 public:
     explicit ChatListModel(EngineLink *engine, QObject *parent = 0);
 
@@ -28,15 +32,19 @@ public:
     QString itemType(const QVariantList &indexPath);
     QVariant data(const QVariantList &indexPath);
     bool empty() const;
+    int unreadTotal() const { return m_unreadTotal; }
+    QString lastLine() const { return m_lastLine; }
     // The chat's map as the rows have it, archived chats included; empty when there is none.
     Q_INVOKABLE QVariantMap chat(const QString &jid);
 
 signals:
     void emptyChanged();
+    void frameChanged();
 
 private slots:
     void reloadSoon();
     void reload();
+    void updateFrame();
 
 private:
     struct Group
@@ -44,7 +52,10 @@ private:
         QString title;
         QList<QVariantMap> rows;
     };
+    EngineLink *m_engine;
     QList<Group> m_groups;
+    int m_unreadTotal;
+    QString m_lastLine;
     QTimer m_soon;
     bb::utility::i18n::RelativeDateFormatter m_days;
     bb::system::LocaleHandler m_region;

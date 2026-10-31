@@ -32,6 +32,10 @@ NavigationPane {
             id: linkDef
             source: "LinkPage.qml"
         },
+        ComponentDefinition {
+            id: coverDef
+            source: "cover.qml"
+        },
         TextStyleDefinition {
             id: emoji
             fontFamily: "sans-serif, HBEmoji"
@@ -46,6 +50,8 @@ NavigationPane {
     onCreationCompleted: {
         // Not a Connections: Cascades' QML has none.
         openRequests.openChat.connect(nav.openRequested)
+        // setCover, as the skills have it: cover belongs to Application, not to a page.
+        Application.setCover(coverDef.createObject())
         show()
     }
 

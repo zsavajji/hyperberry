@@ -65,6 +65,8 @@ static QVariantMap baseRow(const QSqlQuery &q, qint64 now)
 
 ChatListModel::ChatListModel(EngineLink *engine, QObject *parent)
     : DataModel(parent)
+    , m_engine(engine)
+    , m_unreadTotal(0)
     , m_days(RelativeDateFormat::NonTimeCritical)
     , m_region(bb::system::LocaleType::Region)
 {
@@ -81,6 +83,8 @@ ChatListModel::ChatListModel(EngineLink *engine, QObject *parent)
     connect(engine, SIGNAL(chatsChanged(QStringList)), this, SLOT(reloadSoon()));
     // Events sent while the link was down are lost; the database has what they said.
     connect(engine, SIGNAL(connectedChanged()), this, SLOT(reloadSoon()));
+    // Nobody sees the frame while the app is fullscreen: it's computed when the app leaves it.
+    connect(engine, SIGNAL(fullscreenChanged()), this, SLOT(updateFrame()));
     // A cold start draws what chats.db already has, before the engine answers (PLAN.md §12).
     reload();
 }
@@ -222,4 +226,37 @@ void ChatListModel::reload()
     }
     if (wasEmpty != m_groups.isEmpty())
         emit emptyChanged();
+    updateFrame();
+}
+
+// A chat marked unread (unread < 0, step 5.3) counts as 1. 2^40 in muted_until is forever.
+void ChatListModel::updateFrame()
+{
+    if (m_engine->fullscreen())
+        return;
+    QSqlDatabase db = QSqlDatabase::database(kDb, false);
+    if (!db.isOpen() && !db.open())
+        return;
+    const qint64 now = QDateTime::currentMSecsSinceEpoch() / 1000;
+    int total = 0;
+    QString line;
+    QSqlQuery q(db);
+    q.prepare("SELECT COALESCE(SUM(CASE WHEN unread < 0 THEN 1 ELSE unread END), 0) FROM chats "
+              "WHERE muted_until <= ?");
+    q.addBindValue(now);
+    if (q.exec() && q.next())
+        total = q.value(0).toInt();
+    q.prepare("SELECT name, jid, last_preview FROM chats WHERE muted_until <= ? AND last_out = 0 "
+              "ORDER BY last_ts DESC LIMIT 1");
+    q.addBindValue(now);
+    if (q.exec() && q.next()) {
+        const QString name = q.value(0).toString();
+        line = (name.isEmpty() ? q.value(1).toString().section('@', 0, 0) : name) + ": "
+               + q.value(2).toString();
+    }
+    if (total != m_unreadTotal || line != m_lastLine) {
+        m_unreadTotal = total;
+        m_lastLine = line;
+        emit frameChanged();
+    }
 }
