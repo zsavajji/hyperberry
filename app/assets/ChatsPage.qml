@@ -176,17 +176,30 @@ Page {
                 smallSize: nav.smallSize
                 onChatTapped: page.openChat(chat)
             }
-            // The engine doesn't say when a history sync starts, so an empty list says what's
-            // coming rather than spinning.
-            Label {
+            // The engine doesn't say when a history sync starts or ends, but linked with no chats
+            // is the wait for it: a spinner runs over the message until the first chats come
+            // (the user's request, 2026-11-01). ponytail: an account with no chats at all spins
+            // on; the engine could report the sync's progress (HistorySync) at the real link.
+            Container {
                 visible: chats.empty
                 horizontalAlignment: HorizontalAlignment.Center
                 verticalAlignment: VerticalAlignment.Center
-                multiline: true
-                textStyle.textAlign: TextAlign.Center
-                textStyle.color: ui.palette.secondaryTextOnPlain
-                text: page.searching ? qsTr("No chat matches.")
-                    : qsTr("No chats yet.\nYour phone sends your recent chats shortly after linking.")
+                ActivityIndicator {
+                    visible: !page.searching && engine.linked
+                    running: visible
+                    horizontalAlignment: HorizontalAlignment.Center
+                    preferredWidth: ui.du(8)
+                    preferredHeight: ui.du(8)
+                    bottomMargin: ui.du(2)
+                }
+                Label {
+                    horizontalAlignment: HorizontalAlignment.Center
+                    multiline: true
+                    textStyle.textAlign: TextAlign.Center
+                    textStyle.color: ui.palette.secondaryTextOnPlain
+                    text: page.searching ? qsTr("No chat matches.")
+                        : qsTr("No chats yet.\nYour phone sends your recent chats shortly after linking.")
+                }
             }
         }
     }
