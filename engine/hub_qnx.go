@@ -89,7 +89,7 @@ static int hb_uds_item(long long account, int add, const char *source, const cha
 	uds_inbox_item_data_set_user_data(i, source);
 	uds_inbox_item_data_set_name(i, name);
 	uds_inbox_item_data_set_description(i, desc);
-	uds_inbox_item_data_set_icon(i, "message.png");
+	uds_inbox_item_data_set_icon(i, "hub.png"); // the Hub is light: a white glyph vanished (Q10, 0.0.1.100)
 	uds_inbox_item_data_set_mime_type(i, HB_MIME);
 	uds_inbox_item_data_set_unread_count(i, unread);
 	uds_inbox_item_data_set_total_count(i, 1);

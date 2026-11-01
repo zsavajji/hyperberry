@@ -1,6 +1,7 @@
 #include <bb/cascades/AbstractPane>
 #include <bb/cascades/Application>
 #include <bb/cascades/QmlDocument>
+#include <bb/platform/NotificationDefaultApplicationSettings>
 #include <bb/system/LocaleHandler>
 #include <QDir>
 #include <QFile>
@@ -79,6 +80,14 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     EmojiModel emojis(&app);
     QrImage qr(&app);
     Settings settings(&engine, &app);
+    // With a Hub account (step 5.7) instant previews become possible, but BB10 starts them off,
+    // and 5.6's try left the LED off: both on by default, as BBTelega does. apply() leaves alone
+    // what the user has changed in Settings -> Notifications (Q10, 0.0.1.100).
+    bb::platform::NotificationDefaultApplicationSettings notifyDefaults;
+    notifyDefaults.setPreview(bb::platform::NotificationPriorityPolicy::Allow);
+    notifyDefaults.setLed(bb::platform::NotificationPolicy::Allow);
+    if (notifyDefaults.apply() != bb::platform::NotificationSettingsError::None)
+        qWarning() << "notification defaults refused";
     OpenRequests openRequests(engine.invoker(), &app);
 
     qmlRegisterType<ChatController>("hyperberry", 1, 0, "ChatController");

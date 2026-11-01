@@ -6,7 +6,7 @@ CONFIG += qt warn_on release
 QT += declarative network sql
 # No QtGui: bb::ImageData and bb::utility::ImageConverter instead of QImage.
 QT -= gui
-LIBS += -lbbcascades -lbbdata -lbbsystem -lbb -lbbutilityi18n -lslog2
+LIBS += -lbbcascades -lbbdata -lbbsystem -lbbplatform -lbb -lbbutilityi18n -lslog2
 QMAKE_LFLAGS += -Wl,-rpath-link,$${QNX_DIR}/$${QNX_CPUDIR}/usr/lib/qt4/lib
 QMAKE_CXXFLAGS += -Wno-psabi
 
