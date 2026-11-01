@@ -16,9 +16,12 @@ Page {
         title: qsTr("Link to WhatsApp")
     }
     actions: [
+        // Off once the phone accepted the link, through "Getting your chats…", so no stray press
+        // starts a second link (the user's, 2026-11-01). ActionItem has no visible.
         ActionItem {
             title: qsTr("Link with phone number")
             ActionBar.placement: ActionBarPlacement.OnBar
+            enabled: page.linkState != "linking" && page.linkState != "ready"
             onTriggered: nav.push(numberDef.createObject())
         }
     ]
