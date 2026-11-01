@@ -10,4 +10,4 @@ func withdraw(itemID string) error { return nil }
 // ledOpen and led have no LED off BB10.
 func ledOpen() error { return nil }
 
-func led(id string, rgb int) error { return nil }
+func led(id string, rgb, blinks int) error { return nil }

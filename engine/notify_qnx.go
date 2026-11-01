@@ -18,9 +18,9 @@ static int hb_bps_open(void) {
 	return bps_initialize() == BPS_SUCCESS ? 0 : errno;
 }
 
-// Flashes the LED in rgb until cancelled; rgb 0 cancels.
-static int hb_led(const char *id, int rgb) {
-	int rc = rgb ? led_request_rgb(id, rgb, 0) : led_cancel(id);
+// Flashes the LED in rgb blinks times (0: until cancelled); rgb 0 cancels.
+static int hb_led(const char *id, int rgb, int blinks) {
+	int rc = rgb ? led_request_rgb(id, rgb, blinks) : led_cancel(id);
 	return rc == BPS_SUCCESS ? 0 : errno;
 }
 
@@ -85,12 +85,12 @@ func withdraw(itemID string) error {
 // ledOpen keeps BPS open on the calling thread, which must stay locked to its goroutine.
 func ledOpen() error { return errnoErr(C.hb_bps_open()) }
 
-// led flashes the LED in rgb (0x00rrggbb; any non-zero part is full, so 7 colours) until
-// led(id, 0). Needs access_led_control, and the thread ledOpen opened.
-func led(id string, rgb int) error {
+// led flashes the LED in rgb (0x00rrggbb; any non-zero part is full, so 7 colours) blinks
+// times, 0 for until led(id, 0, 0) cancels it. Needs access_led_control.
+func led(id string, rgb, blinks int) error {
 	cid := C.CString(id)
 	defer C.free(unsafe.Pointer(cid))
-	return errnoErr(C.hb_led(cid, C.int(rgb)))
+	return errnoErr(C.hb_led(cid, C.int(rgb), C.int(blinks)))
 }
 
 func errnoErr(rc C.int) error {

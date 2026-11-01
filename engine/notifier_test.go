@@ -17,7 +17,7 @@ type fakeHub struct {
 	mu    sync.Mutex
 	posts []posted
 	gone  []string
-	leds  []string // "id rgb"
+	leds  []string // "id rgb blinks"
 }
 
 func (h *fakeHub) list() ([]posted, []string) {
@@ -58,9 +58,9 @@ func hubSim(t *testing.T) (*Sim, *Store, *conn, *fakeHub) {
 		h.mu.Unlock()
 		return nil
 	}
-	ledFn = func(id string, rgb int) error {
+	ledFn = func(id string, rgb, blinks int) error {
 		h.mu.Lock()
-		h.leds = append(h.leds, fmt.Sprintf("%s %06x", id, rgb))
+		h.leds = append(h.leds, fmt.Sprintf("%s %06x %d", id, rgb, blinks))
 		h.mu.Unlock()
 		return nil
 	}
@@ -175,19 +175,23 @@ func TestNotifyLED(t *testing.T) {
 	}
 	msg(s, 2, "chat") // Marco
 	h.wait(t, 1, 0)
-	leds("hyperberry_chats ff0000")
+	leds("hyperberry_chats ff0000 0")
 	msg(s, 1, "group") // Family
 	h.wait(t, 2, 0)
-	leds("hyperberry_groups ff0000")
+	leds("hyperberry_groups ff0000 0")
 	if _, err := st.nt.handlePrefs([]byte(`{"led":[65280,0,255]}`)); err != nil {
 		t.Fatal(err)
 	}
-	leds("hyperberry_chats 00ff00", "hyperberry_groups 000000") // channels: nothing up
+	// Groups off: one blink, then the cancel. Channels have nothing up.
+	leds("hyperberry_chats 00ff00 0", "hyperberry_groups ff0000 1", "hyperberry_groups 000000 0")
+	msg(s, 1, "again") // a kind that's off lights nothing
+	h.wait(t, 3, 0)
+	leds()
 	if _, err := s.handleRead([]byte(`{"chat":"` + simChats[2].jid + `"}`)); err != nil {
 		t.Fatal(err)
 	}
-	h.wait(t, 2, 1)
-	leds("hyperberry_chats 000000")
+	h.wait(t, 3, 1)
+	leds("hyperberry_chats 00ff00 1", "hyperberry_chats 000000 0")
 	if _, err := st.nt.handlePrefs([]byte(`{"led":[16777216,0,0]}`)); err == nil {
 		t.Error("a colour past 0xFFFFFF: want an error")
 	}

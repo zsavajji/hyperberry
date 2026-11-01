@@ -108,10 +108,11 @@ type Notifier struct {
 	path    string
 	post    func(itemID, title, body, payload string) error
 	drop    func(itemID string) error
-	led     func(id string, rgb int) error
+	led     func(id string, rgb, blinks int) error
 	// The chats with a notification up, per ledKind: the LED shows a kind's colour while any is.
 	// ponytail: kept in memory, so an engine restart leaves the Hub items but drops the LED.
 	lit     [3]map[string]bool
+	on      [3]int // the colour each kind's request flashes, 0 for none
 	mu      sync.Mutex
 	preview bool
 	colours [3]int // per ledKind, 0x00rrggbb; 0 is off
@@ -176,6 +177,7 @@ func (n *Notifier) run() {
 }
 
 // light flashes kind k's colour while any of its chats has a notification up, else stops it.
+// Each call is logged: the Q10 kept flashing after a cancel (0.0.1.85), cause unknown.
 func (n *Notifier) light(k int) {
 	n.mu.Lock()
 	rgb := n.colours[k]
@@ -183,9 +185,19 @@ func (n *Notifier) light(k int) {
 	if len(n.lit[k]) == 0 {
 		rgb = 0
 	}
-	if err := n.led(ledIDs[k], rgb); err != nil && rgb != 0 {
-		n.log.Warnf("led %s %06x: %v", ledIDs[k], rgb, err) // a cancel may have nothing to cancel
+	id := ledIDs[k]
+	if rgb != 0 {
+		n.on[k] = rgb
+		n.log.Infof("led %s %06x: %v", id, rgb, n.led(id, rgb, 0))
+		return
 	}
+	if n.on[k] == 0 {
+		return
+	}
+	// One blink first, so the request ends by itself should the cancel not take.
+	n.log.Infof("led %s once: %v", id, n.led(id, n.on[k], 1))
+	n.log.Infof("led %s cancel: %v", id, n.led(id, 0, 0))
+	n.on[k] = 0
 }
 
 func (n *Notifier) apply(chat string, nt note) {
