@@ -26,12 +26,16 @@ static const char *const kDb = "chats";
 
 static const int kPage = 50;
 
-// The last three are the quoted message's out, sender and sender_name, by its primary key.
+// The three QUOTED are the quoted message's out, sender and sender_name, by its primary key. The
+// last two columns are the message's reactions, all and ours (sender '' is us); the engine makes
+// that table when it migrates chats.db, before the UI reads it.
 #define QUOTED(col) "(SELECT " col " FROM messages q WHERE q.chat = messages.chat AND q.id = messages.quote_id)"
 static const char *const kColumns = "rowid, id, ts, out, state, sender, sender_name, kind, "
                                     "text, quote_preview, edited, deleted, "
                                     QUOTED("out") ", " QUOTED("sender") ", " QUOTED("sender_name") ", duration, waveform, media_state, played, "
-                                    "thumb, width, height, size, path";
+                                    "thumb, width, height, size, path, "
+                                    "(SELECT group_concat(emoji, ' ') FROM reactions r WHERE r.chat = messages.chat AND r.msg = messages.id), "
+                                    "(SELECT emoji FROM reactions r WHERE r.chat = messages.chat AND r.msg = messages.id AND r.sender = '')";
 #undef QUOTED
 
 bool MessageModel::lessThan(const Msg &a, const Msg &b)
@@ -121,6 +125,16 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
     m.data["state"] = q.value(4).toInt();
     m.data["edited"] = q.value(10).toInt() != 0;
     m.data["deleted"] = deleted;
+    // The chip under the card: up to three different emoji, and how many reactions there are.
+    const QStringList all = deleted ? QStringList() : q.value(24).toString().split(' ', QString::SkipEmptyParts);
+    QStringList kinds;
+    foreach (const QString &e, all) {
+        if (kinds.size() < 3 && !kinds.contains(e))
+            kinds << e;
+    }
+    m.data["reactions"] = kinds.join(QString());
+    m.data["reactionCount"] = all.size();
+    m.data["myReaction"] = deleted ? QString() : q.value(25).toString();
     // Delete for everyone: ours, sent, and inside WhatsApp's limit of about 2.5 days.
     // ponytail: read when the row is read, so a page left open for days can offer it a little late.
     const int state = q.value(4).toInt();

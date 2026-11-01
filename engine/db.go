@@ -77,6 +77,17 @@ ALTER TABLE messages ADD COLUMN width INTEGER;
 ALTER TABLE messages ADD COLUMN height INTEGER;
 ALTER TABLE messages ADD COLUMN size INTEGER;
 ALTER TABLE messages ADD COLUMN path TEXT;`,
+	// Reactions (step 5.11), one row per reactor and message; a removal deletes the row. msg is the
+	// reacted message's id. sender is the reactor's key as messages.sender has it (in a 1:1 chat
+	// that is the chat's own key), '' for us; sender_name is NULL for us. A plain table: the UI's
+	// SQLite is Qt 4.8's.
+	`CREATE TABLE reactions(
+  chat TEXT NOT NULL, msg TEXT NOT NULL,
+  sender TEXT NOT NULL,
+  sender_name TEXT,
+  emoji TEXT NOT NULL,
+  ts INTEGER NOT NULL,
+  PRIMARY KEY(chat, msg, sender));`,
 }
 
 // openChats opens chats.db in WAL mode and migrates it to the newest schema.

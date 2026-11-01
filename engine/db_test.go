@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-// A chats.db at migration 1 keeps its rows when it moves on to 2.
+// A chats.db at migration 1 keeps its rows when it moves on to the newest.
 func TestMigrateKeepsRows(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "chats.db")
 	old, err := sql.Open("sqlite3", "file:"+path)
@@ -32,8 +32,51 @@ func TestMigrateKeepsRows(t *testing.T) {
 	var path2 sql.NullString
 	err = db.QueryRow("SELECT (SELECT user_version FROM pragma_user_version), duration, media_state, played, thumb, width, size, path FROM messages WHERE id = 'm1'").
 		Scan(&v, &duration, &state, &played, &thumb, &width, &size, &path2)
-	if err != nil || v != 3 || duration.Valid || state != 0 || played != 0 || thumb != nil || width.Valid || size.Valid || path2.Valid {
+	if err != nil || v != len(migrations) || duration.Valid || state != 0 || played != 0 || thumb != nil || width.Valid || size.Valid || path2.Valid {
 		t.Fatalf("version %d, duration %v, media_state %d, played %d, step 3's columns %v %v %v %v: %v", v, duration, state, played, thumb, width, size, path2, err)
+	}
+}
+
+// A v3 database, as shipped before reactions, gets the reactions table and keeps its rows.
+func TestMigrateReactions(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "chats.db")
+	old, err := sql.Open("sqlite3", "file:"+path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, q := range append(migrations[:3:3], "PRAGMA user_version = 3",
+		`INSERT INTO chats(jid, kind) VALUES('a@lid', 0)`,
+		`INSERT INTO messages(chat, id, ts, out, state, kind) VALUES('a@lid', 'm1', 1, 0, 3, 0)`) {
+		if _, err := old.Exec(q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := old.Exec("SELECT 1 FROM reactions"); err == nil {
+		t.Fatal("a v3 database has a reactions table")
+	}
+	old.Close()
+	db, err := openChats(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	var v, msgs int
+	db.QueryRow("PRAGMA user_version").Scan(&v)
+	db.QueryRow("SELECT count(*) FROM messages").Scan(&msgs)
+	if v != 4 || msgs != 1 {
+		t.Fatalf("version %d, %d messages", v, msgs)
+	}
+	ins := `INSERT INTO reactions(chat, msg, sender, sender_name, emoji, ts) VALUES('a@lid', 'm1', ?, NULL, '👍', 5)`
+	for _, sender := range []string{"", "b@lid"} {
+		if _, err := db.Exec(ins, sender); err != nil {
+			t.Fatalf("reaction by %q: %v", sender, err)
+		}
+	}
+	if _, err := db.Exec(ins, ""); err == nil {
+		t.Error("a second reaction by the same sender on the same message: want a primary key error")
+	}
+	if _, err := db.Exec(`INSERT INTO reactions(chat, msg, sender, emoji, ts) VALUES('a@lid', 'm1', 'c@lid', NULL, 5)`); err == nil {
+		t.Error("a reaction with no emoji: want an error")
 	}
 }
 

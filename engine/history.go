@@ -65,6 +65,7 @@ func (st *Store) history(ctx context.Context, t *storeTx, cli *whatsmeow.Client,
 				continue
 			}
 			st.apply(ctx, t, cli, key, ev, false)
+			historyReactions(ctx, t, cli, key, chat, alt, ev)
 		}
 
 		unread := int(conv.GetUnreadCount())
@@ -99,7 +100,7 @@ func (st *Store) message(ctx context.Context, t *storeTx, cli *whatsmeow.Client,
 }
 
 // apply writes one message event, live or from history: a new message, an edit, a revoke or
-// a reaction (which only touches the chat preview).
+// a reaction (its row, and the chat preview).
 func (st *Store) apply(ctx context.Context, t *storeTx, cli *whatsmeow.Client, key string, e *events.Message, live bool) {
 	m := e.Message
 	if pm := m.GetProtocolMessage(); pm != nil {
@@ -118,17 +119,7 @@ func (st *Store) apply(ctx context.Context, t *storeTx, cli *whatsmeow.Client, k
 		name = resolveName(ctx, cli, e.Info.Sender, e.Info.SenderAlt, e.Info.PushName)
 	}
 	if r := m.GetReactionMessage(); r != nil {
-		if r.GetText() != "" {
-			who := "You"
-			if !e.Info.IsFromMe {
-				who = firstWord(name)
-			}
-			state := stateRead
-			if e.Info.IsFromMe {
-				state = stateSent
-			}
-			t.setLast(key, e.Info.Timestamp.Unix(), who+" reacted "+r.GetText(), e.Info.IsFromMe, state)
-		}
+		liveReaction(ctx, t, cli, key, e, r, name)
 		return
 	}
 	row, ok := rowFromMessage(key, e, name)

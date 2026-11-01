@@ -26,8 +26,8 @@ func chatKey(ctx context.Context, tx *storeTx, lids store.LIDStore, chat, alt ty
 	return lid.String()
 }
 
-// mergeChat folds the phone-number row into the LID row: their messages, unread count, name,
-// flags and last message. It does nothing when there is no phone-number row.
+// mergeChat folds the phone-number row into the LID row: their messages and reactions, unread
+// count, name, flags and last message. It does nothing when there is no phone-number row.
 func mergeChat(tx *storeTx, from, to string) {
 	if !tx.hasChat(from) {
 		return
@@ -35,6 +35,7 @@ func mergeChat(tx *storeTx, from, to string) {
 	tx.ensureChat(to, chatUser)
 	tx.exec("UPDATE OR IGNORE messages SET chat = ? WHERE chat = ?", to, from)
 	tx.exec("DELETE FROM messages WHERE chat = ?", from) // what is left are duplicates
+	moveReactions(tx, from, to)
 	tx.exec(`UPDATE chats SET (last_ts, last_preview, last_out, last_state) =
 (SELECT last_ts, last_preview, last_out, last_state FROM chats WHERE jid = ?1)
 WHERE jid = ?2 AND (SELECT last_ts FROM chats WHERE jid = ?1) > COALESCE(last_ts, -1)`, from, to)

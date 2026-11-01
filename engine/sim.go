@@ -67,6 +67,7 @@ func newSim(srv *Server, st *Store, log waLog.Logger) *Sim {
 	srv.Handle("voice.play", s.handleVoicePlay)
 	s.registerVoiceSend()
 	s.registerSimMedia()
+	s.registerSimReact()
 	s.registerProfile()
 	srv.Handle("media.send", s.handleMediaSend)
 	srv.Handle("msg.send", s.handleSend)
@@ -309,6 +310,7 @@ func (s *Sim) seed() {
 			}
 			t.setFlags(c.jid, c.unread, muted, c.pinned, c.archived)
 		}
+		seedReactions(t, now)
 	}
 }
 

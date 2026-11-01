@@ -7,6 +7,7 @@
     scripts/sim.py typing N     chat N types for 4 s (in a group, a member does)
     scripts/sim.py voice N [seconds]  an incoming voice note in chat N (5 s by default)
     scripts/sim.py photo N       an incoming photo in chat N, downloaded at once
+    scripts/sim.py react N [emoji]  chat N reacts to our newest message (👍 by default; "" takes it back)
     scripts/sim.py removed       the device removed on the phone
     scripts/sim.py off           the simulated chats removed, back to the real engine
     scripts/sim.py state         the engine's link body
@@ -94,6 +95,9 @@ def main(argv):
         print(request("sim.voice", n=int(argv[1]), seconds=int(argv[2]) if len(argv) > 2 else 0))
     elif cmd == "photo" and len(argv) >= 2:
         print(request("sim.photo", n=int(argv[1])))
+    elif cmd == "react" and len(argv) >= 2:
+        emoji = {"emoji": argv[2]} if len(argv) > 2 else {}  # absent is 👍, "" a removal
+        print(request("sim.react", n=int(argv[1]), **emoji))
     else:
         sys.exit(__doc__)
 

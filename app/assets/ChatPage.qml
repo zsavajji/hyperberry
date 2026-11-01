@@ -179,16 +179,13 @@ Page {
     keyListeners: KeyListener {
         onKeyPressed: page.typeKey(event)
     }
-    // The first open creates the picker (about 1,400 cells' worth of model, none of them controls);
-    // the time is logged for the 300 ms check (step 4.2).
+    // The first open creates the picker (about 1,400 cells' worth of model, none of them controls).
     onPickingChanged: {
         if (!picking) {
             return
         }
         if (!pickerSlot.delegateActive) {
-            var t = Date.now()
             pickerSlot.delegateActive = true
-            console.log("emoji picker: created in " + (Date.now() - t) + " ms")
         }
         emojis.refresh()
     }
@@ -368,6 +365,13 @@ Page {
                 function copy(text) {
                     ctl.copy(text)
                 }
+                // Reactions (step 5.11): the bar over the composer, and the chip's who-reacted toast.
+                function react(msg) {
+                    reactBar.open(msg)
+                }
+                function whoReacted(id) {
+                    reactBar.who(id)
+                }
                 // Voice notes: the player's state, for the bubbles (VoicePlayer.qml).
                 property string playingId: player.playingId
                 // The search match, tinted (SearchBar.qml).
@@ -456,6 +460,10 @@ Page {
                 textStyle.fontSizeValue: nav.bodySize
                 textStyle.color: ui.palette.secondaryTextOnPlain
             }
+        }
+        ReactBar {
+            id: reactBar
+            jid: page.chat ? page.chat.jid : ""
         }
         ReplyBar {
             name: ctl.replyName

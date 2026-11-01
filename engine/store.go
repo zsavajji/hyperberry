@@ -275,6 +275,7 @@ func (st *Store) clear() {
 			rows.Close()
 		}
 		t.exec("DELETE FROM messages")
+		t.exec("DELETE FROM reactions")
 		t.exec("DELETE FROM chats")
 	}
 }
@@ -407,6 +408,7 @@ func (t *storeTx) editMessage(chat, id, text string) {
 func (t *storeTx) revokeMessage(chat, id string) {
 	if t.exec("UPDATE messages SET deleted = 1, text = NULL WHERE chat = ? AND id = ?", chat, id) > 0 {
 		t.changed(chat, id)
+		t.exec("DELETE FROM reactions WHERE chat = ? AND msg = ?", chat, id)
 		t.refreshLast(chat, id, true)
 	}
 }

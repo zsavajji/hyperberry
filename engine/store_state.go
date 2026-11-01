@@ -34,6 +34,7 @@ func (t *storeTx) deleteMessage(chat, id string) {
 		return
 	}
 	t.changed(chat, id)
+	t.exec("DELETE FROM reactions WHERE chat = ? AND msg = ?", chat, id)
 	if !wasLast {
 		return
 	}
@@ -75,6 +76,7 @@ func (t *storeTx) clearChat(chat string, drop bool) {
 	}
 	rows.Close()
 	t.exec("DELETE FROM messages WHERE chat = ?", chat)
+	t.exec("DELETE FROM reactions WHERE chat = ?", chat)
 	if drop {
 		if t.exec("DELETE FROM chats WHERE jid = ?", chat) > 0 {
 			t.chats[chat] = true

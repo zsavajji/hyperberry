@@ -32,6 +32,13 @@ Container {
                 enabled: !item.msg.deleted
                 onTriggered: item.ListItem.view.reply(item.msg)
             }
+            // The icon is the emoji picker's action (step 5.11); the bar opens over the composer.
+            ActionItem {
+                title: qsTr("React")
+                imageSource: "asset:///images/emoji.png"
+                enabled: !item.msg.deleted
+                onTriggered: item.ListItem.view.react(item.msg)
+            }
             // /usr/share/icons has no copy icon: this one is the stock Text Messages app's.
             ActionItem {
                 title: qsTr("Copy")
@@ -213,5 +220,29 @@ Container {
         horizontalAlignment: HorizontalAlignment.Fill
         preferredHeight: ui.px(2)
         background: item.msg.out ? ui.palette.primary : ui.palette.secondaryTextOnPlain
+    }
+    // The reactions (step 5.11), under the card at its left edge, theirs and ours alike, with the
+    // card's own left padding so the emoji line up with its text. A tap says who reacted.
+    Container {
+        visible: (item.msg.reactionCount || 0) > 0
+        horizontalAlignment: HorizontalAlignment.Left
+        topMargin: ui.du(0.5)
+        background: ui.palette.plain
+        leftPadding: ui.du(1.5 * item.ListItem.view.textScale) + ui.px(2)
+        rightPadding: ui.du(1)
+        topPadding: ui.du(0.5)
+        bottomPadding: ui.du(0.5)
+        gestureHandlers: TapHandler {
+            onTapped: item.ListItem.view.whoReacted(item.msg.id)
+        }
+        Label {
+            topMargin: 0
+            bottomMargin: 0
+            text: (item.msg.reactions || "") + (item.msg.reactionCount > 1 ? " " + item.msg.reactionCount : "")
+            textFormat: TextFormat.Plain
+            textStyle.base: item.ListItem.view.emojiStyle
+            textStyle.fontSize: FontSize.PercentageValue
+            textStyle.fontSizeValue: item.ListItem.view.smallSize
+        }
     }
 }

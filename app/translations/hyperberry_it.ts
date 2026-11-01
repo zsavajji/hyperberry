@@ -129,12 +129,17 @@
         <translation>Sconosciuto</translation>
     </message>
     <message>
-        <location filename="../src/ChatListModel.cpp" line="222"/>
+        <location filename="../src/ChatListModel.cpp" line="190"/>
+        <source>You</source>
+        <translation>Tu</translation>
+    </message>
+    <message>
+        <location filename="../src/ChatListModel.cpp" line="278"/>
         <source>Pinned</source>
         <translation>Fissate</translation>
     </message>
     <message>
-        <location filename="../src/ChatListModel.cpp" line="222"/>
+        <location filename="../src/ChatListModel.cpp" line="278"/>
         <source>No messages</source>
         <translation>Nessun messaggio</translation>
     </message>
@@ -238,7 +243,7 @@
         <translation>Cerca</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="426"/>
+        <location filename="../assets/ChatPage.qml" line="456"/>
         <source>No messages here</source>
         <translation>Nessun messaggio qui</translation>
     </message>
@@ -678,21 +683,26 @@
     </message>
     <message>
         <location filename="../assets/MessageItem.qml" line="37"/>
+        <source>React</source>
+        <translation>Reagisci</translation>
+    </message>
+    <message>
+        <location filename="../assets/MessageItem.qml" line="44"/>
         <source>Copy</source>
         <translation>Copia</translation>
     </message>
     <message>
-        <location filename="../assets/MessageItem.qml" line="43"/>
+        <location filename="../assets/MessageItem.qml" line="50"/>
         <source>Delete for everyone</source>
         <translation>Elimina per tutti</translation>
     </message>
     <message>
-        <location filename="../assets/MessageItem.qml" line="49"/>
+        <location filename="../assets/MessageItem.qml" line="56"/>
         <source>Delete for me</source>
         <translation>Elimina per me</translation>
     </message>
     <message>
-        <location filename="../assets/MessageItem.qml" line="186"/>
+        <location filename="../assets/MessageItem.qml" line="194"/>
         <source>edited</source>
         <translation>modificato</translation>
     </message>
@@ -700,17 +710,17 @@
 <context>
     <name>MessageModel</name>
     <message>
-        <location filename="../src/MessageModel.cpp" line="103"/>
+        <location filename="../src/MessageModel.cpp" line="107"/>
         <source>Sticker</source>
         <translation>Sticker</translation>
     </message>
     <message>
-        <location filename="../src/MessageModel.cpp" line="113"/>
+        <location filename="../src/MessageModel.cpp" line="117"/>
         <source>This message was deleted</source>
         <translation>Questo messaggio è stato eliminato</translation>
     </message>
     <message>
-        <location filename="../src/MessageModel.cpp" line="160"/>
+        <location filename="../src/MessageModel.cpp" line="174"/>
         <source>You</source>
         <translation>Tu</translation>
     </message>
@@ -827,6 +837,14 @@
         <location filename="../assets/ProfilePage.qml" line="201"/>
         <source>Couldn't load your profile. Check the connection and try again.</source>
         <translation>Impossibile caricare il profilo. Controlla la connessione e riprova.</translation>
+    </message>
+</context>
+<context>
+    <name>ReactBar</name>
+    <message>
+        <location filename="../assets/ReactBar.qml" line="115"/>
+        <source>Not sent: HyperBerry is reconnecting. Try again in a moment.</source>
+        <translation>Non inviato: HyperBerry si sta riconnettendo. Riprova tra un attimo.</translation>
     </message>
 </context>
 <context>
