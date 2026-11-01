@@ -257,6 +257,8 @@ void ChatListModel::reload()
 }
 
 // A chat marked unread (unread < 0, step 5.3) counts as 1. 2^40 in muted_until is forever.
+// The frame names the chats with unread messages, newest first, and shows no message text: the
+// newest line showed after it was read, and with the notification preview off (Q10, 0.0.1.88).
 void ChatListModel::updateFrame()
 {
     if (m_engine->fullscreen())
@@ -266,24 +268,26 @@ void ChatListModel::updateFrame()
         return;
     const qint64 now = QDateTime::currentMSecsSinceEpoch() / 1000;
     int total = 0;
-    QString line;
+    QStringList names;
     QSqlQuery q(db);
-    q.prepare("SELECT COALESCE(SUM(CASE WHEN unread < 0 THEN 1 ELSE unread END), 0) FROM chats "
-              "WHERE muted_until <= ?");
+    // ponytail: the first 10 names are more than the frame's three lines hold.
+    q.prepare("SELECT name, jid, unread FROM chats WHERE muted_until <= ? AND unread != 0 "
+              "ORDER BY last_ts DESC");
     q.addBindValue(now);
-    if (q.exec() && q.next())
-        total = q.value(0).toInt();
-    q.prepare("SELECT name, jid, last_preview FROM chats WHERE muted_until <= ? AND last_out = 0 "
-              "ORDER BY last_ts DESC LIMIT 1");
-    q.addBindValue(now);
-    if (q.exec() && q.next()) {
-        const QString name = q.value(0).toString();
-        line = (name.isEmpty() ? q.value(1).toString().section('@', 0, 0) : name) + ": "
-               + q.value(2).toString();
+    if (q.exec()) {
+        while (q.next()) {
+            const int unread = q.value(2).toInt();
+            total += unread < 0 ? 1 : unread;
+            if (names.size() < 10) {
+                const QString name = q.value(0).toString();
+                names << (name.isEmpty() ? q.value(1).toString().section('@', 0, 0) : name);
+            }
+        }
     }
-    if (total != m_unreadTotal || line != m_lastLine) {
+    const QString chats = names.join(", ");
+    if (total != m_unreadTotal || chats != m_unreadChats) {
         m_unreadTotal = total;
-        m_lastLine = line;
+        m_unreadChats = chats;
         emit frameChanged();
     }
 }

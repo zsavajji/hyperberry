@@ -24,8 +24,7 @@ SceneCover {
                 orientation: LayoutOrientation.LeftToRight
             }
             Label {
-                visible: chats.unreadTotal > 0
-                text: chats.unreadTotal
+                text: chats.unreadTotal > 0 ? chats.unreadTotal : "HyperBerry"
                 textStyle.base: SystemDefaults.TextStyles.BodyText
                 textStyle.fontSize: FontSize.PercentageValue
                 textStyle.fontSizeValue: 130
@@ -34,9 +33,10 @@ SceneCover {
                 bottomMargin: 0
             }
             Label {
+                visible: chats.unreadTotal > 0
                 verticalAlignment: VerticalAlignment.Bottom
                 leftMargin: 12
-                text: chats.unreadTotal > 0 ? qsTr("unread") : qsTr("No new messages")
+                text: qsTr("unread")
                 textStyle.base: SystemDefaults.TextStyles.SmallText
                 textStyle.fontSize: FontSize.PercentageValue
                 textStyle.fontSizeValue: 85
@@ -45,10 +45,11 @@ SceneCover {
                 bottomMargin: 0
             }
         }
-        // The emoji style, so a preview's emoji draw (they do, in a cover: 0.0.1.76), at the chat
-        // list's preview size. Up to three lines, ending in an ellipsis where it's cut.
+        // The chats with unread messages, newest first, or nothing new (the user's design,
+        // 2026-11-01). The emoji style, so names' emoji draw (they do, in a cover: 0.0.1.76), at
+        // the chat list's preview size. Up to three lines, ending in an ellipsis where it's cut.
         Label {
-            text: chats.lastLine
+            text: chats.unreadTotal > 0 ? chats.unreadChats : qsTr("Nothing new to see")
             textStyle.base: nav.emojiStyle
             textStyle.fontSize: FontSize.PercentageValue
             textStyle.fontSizeValue: 74

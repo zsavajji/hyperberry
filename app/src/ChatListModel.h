@@ -23,7 +23,7 @@ class ChatListModel : public bb::cascades::DataModel
     // The Active Frame's two facts (step 5.2): unread messages in unmuted chats, and the newest
     // incoming "Name: preview". Only recomputed while the app isn't fullscreen.
     Q_PROPERTY(int unreadTotal READ unreadTotal NOTIFY frameChanged)
-    Q_PROPERTY(QString lastLine READ lastLine NOTIFY frameChanged)
+    Q_PROPERTY(QString unreadChats READ unreadChats NOTIFY frameChanged)
 public:
     // archived: only the archived chats, and no frame work (the Archived page).
     explicit ChatListModel(EngineLink *engine, bool archived = false, QObject *parent = 0);
@@ -34,7 +34,7 @@ public:
     QVariant data(const QVariantList &indexPath);
     bool empty() const;
     int unreadTotal() const { return m_unreadTotal; }
-    QString lastLine() const { return m_lastLine; }
+    QString unreadChats() const { return m_unreadChats; }
     // The chat's map as the rows have it, archived chats included; empty when there is none.
     Q_INVOKABLE QVariantMap chat(const QString &jid);
     // Shows only the chats whose name has a word starting with text; "" shows all.
@@ -61,7 +61,7 @@ private:
     QString m_dbName;
     QList<Group> m_groups;
     int m_unreadTotal;
-    QString m_lastLine;
+    QString m_unreadChats;
     QString m_filter;
     QTimer m_soon;
     bb::utility::i18n::RelativeDateFormatter m_days;

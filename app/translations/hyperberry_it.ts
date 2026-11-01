@@ -673,8 +673,8 @@ Il telefono invia le chat recenti poco dopo il collegamento.</translation>
     </message>
     <message>
         <location filename="../assets/cover.qml" line="25"/>
-        <source>No new messages</source>
-        <translation>Nessun nuovo messaggio</translation>
+        <source>Nothing new to see</source>
+        <translation>Niente di nuovo</translation>
     </message>
 </context>
 <context>
