@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	rdebug "runtime/debug"
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/polymorfa/hypermeow/proto/waCompanionReg"
@@ -49,6 +50,14 @@ func main() {
 			fatal("log:", err)
 		}
 		log = newLogger(w, level)
+		// A panic or a fatal error (out of memory among them) goes to stderr, which nothing
+		// reads on the phone: crash.log keeps a copy. A kill from outside leaves nothing there.
+		if f, err := os.OpenFile(filepath.Join(filepath.Dir(path), "crash.log"),
+			os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600); err == nil {
+			if err := rdebug.SetCrashOutput(f, rdebug.CrashOptions{}); err != nil {
+				log.Warnf("crash output: %v", err)
+			}
+		}
 	}
 
 	identity(*osName, *days)

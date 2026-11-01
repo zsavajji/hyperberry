@@ -7,8 +7,10 @@ import (
 	"mime"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/polymorfa/hypermeow"
 )
@@ -133,9 +135,15 @@ func (st *Store) fetchMedia(dir string, row msgRow, get func() ([]byte, string, 
 		}
 		if row.Kind == msgPhoto { // the inline thumbnail stays if the photo won't decode
 			var perr error
+			t0 := time.Now()
 			if thumb, w, h, perr = previewOf(data); perr != nil {
 				st.log.Warnf("preview of %s: %v", row.ID, perr)
 			}
+			// What a preview costs on the phone, whose limit for us is unknown (Q10, 2026-11-01).
+			var ms runtime.MemStats
+			runtime.ReadMemStats(&ms)
+			st.log.Infof("preview of %s (%d bytes): %v, heap %d MB, from the OS %d MB", row.ID, len(data),
+				time.Since(t0).Round(time.Millisecond), ms.HeapAlloc>>20, ms.Sys>>20)
 		}
 		return p, nil
 	}()
