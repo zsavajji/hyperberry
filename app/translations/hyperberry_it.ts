@@ -142,6 +142,12 @@
 <context>
     <name>ChatPage</name>
     <message>
+        <location filename="../assets/ChatPage.qml" line="42"/>
+        <location filename="../assets/ChatPage.qml" line="163"/>
+        <source>Attach</source>
+        <translation>Allega</translation>
+    </message>
+    <message>
         <location filename="../assets/ChatPage.qml" line="60"/>
         <source>Contact info</source>
         <translation>Info contatto</translation>

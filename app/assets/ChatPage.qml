@@ -1,5 +1,6 @@
 import bb.cascades 1.4
 import bb.system 1.2
+import bb.cascades.pickers 1.0
 import hyperberry 1.0
 
 // One chat (PLAN.md §7, step 3.1): a FreeForm title bar with the tile, name and status line, and
@@ -33,6 +34,14 @@ Page {
         ctl.voiceCancelled.connect(recorder.dropped)
     }
     attachedObjects: [
+        // Attach (step 6.2): the system's picker, every file type; the engine sends by the extension.
+        FilePicker {
+            id: attachPicker
+            type: FileType.Picture | FileType.Video | FileType.Music | FileType.Document | FileType.Other
+            mode: FilePickerMode.Picker
+            title: qsTr("Attach")
+            onFileSelected: page.sendFile(selectedFiles[0])
+        },
         ChatController {
             id: ctl
             link: engine
@@ -149,6 +158,11 @@ Page {
                                   : "file:///usr/share/icons/bb_action_sendtextmessage.png"
             ActionBar.placement: ActionBarPlacement.OnBar
             onTriggered: page.mic ? recorder.start() : recorder.recording ? recorder.finish() : page.send()
+        },
+        ActionItem {
+            title: qsTr("Attach")
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            onTriggered: attachPicker.open()
         }
     ]
     keyListeners: KeyListener {
@@ -184,6 +198,14 @@ Page {
             return
         }
         composer.text = ""
+        page.followOwn = true
+    }
+    // ponytail: a file goes without the quote being replied to; ctl keeps it for the next text.
+    function sendFile(path) {
+        if (!engine.request("media.send", {"chat": chat.jid, "path": path})) {
+            notSent.show()
+            return
+        }
         page.followOwn = true
     }
     // Our own message is followed even when the list was scrolled up. Scrolling once the row is in:

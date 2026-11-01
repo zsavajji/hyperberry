@@ -66,6 +66,7 @@ func newSim(srv *Server, st *Store, log waLog.Logger) *Sim {
 	srv.Handle("voice.play", s.handleVoicePlay)
 	s.registerVoiceSend()
 	s.registerSimMedia()
+	srv.Handle("media.send", s.handleMediaSend)
 	srv.Handle("msg.send", s.handleSend)
 	srv.Handle("msg.delete", s.handleDelete)
 	srv.Handle("chat.read", s.handleRead)

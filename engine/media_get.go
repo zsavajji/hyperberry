@@ -187,7 +187,7 @@ func (s *Session) handleMediaGet(req json.RawMessage) (any, error) {
 		return nil, err
 	}
 	fetch := func(row msgRow) (string, error) {
-		ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), mediaTimeout)
 		defer cancel()
 		return s.store.downloadMedia(ctx, cli, s.srv.dir, row)
 	}

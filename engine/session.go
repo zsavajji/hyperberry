@@ -73,6 +73,7 @@ func newSession(container *sqlstore.Container, srv *Server, store *Store, log wa
 	registerContacts(srv, s)
 	registerMedia(srv, s)
 	registerVoiceSend(srv, s)
+	srv.Handle("media.send", s.handleMediaSend)
 	return s, nil
 }
 
