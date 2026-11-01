@@ -1,4 +1,6 @@
 import bb.cascades 1.4
+import bb.system 1.2
+import hyperberry 1.0
 
 // A received photo, full screen on black (step 6.1); pinch zooms from 1 to 4 times and a
 // dragged finger pans. path is the file's absolute path, set right after createObject().
@@ -6,7 +8,24 @@ import bb.cascades 1.4
 Page {
     id: page
     property string path
+    attachedObjects: [
+        MediaOpener {
+            id: saver
+        },
+        SystemToast {
+            id: savedToast
+        }
+    ]
     actions: [
+        ActionItem {
+            title: qsTr("Save")
+            ActionBar.placement: ActionBarPlacement.OnBar
+            onTriggered: {
+                savedToast.body = saver.saveToPictures(page.path) != "" ? qsTr("Saved to Pictures")
+                                                                       : qsTr("Couldn't save the photo")
+                savedToast.show()
+            }
+        },
         // The uri follows the path: the query is asked again when it changes (the SDK's idiom).
         InvokeActionItem {
             id: share

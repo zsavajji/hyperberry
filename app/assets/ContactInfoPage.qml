@@ -3,7 +3,8 @@ import bb.system 1.2
 import hyperberry 1.0
 
 // A person's info (step 5.8), read-only but for the mute toggle and, in the action menu, the
-// account actions (step 5.8b). chat is a chat list row, set right after createObject(). The page
+// account actions (step 5.8b). chat is a chat list row, set right after createObject(), or a row
+// built like the contact picker's for a person with no chat yet (a group's participant). The page
 // asks the engine itself (contact.info) through its own ContactInfo, so the answer goes with the
 // page.
 Page {
@@ -15,6 +16,9 @@ Page {
     // From info, not a method call: a binding isn't re-read when a method's result changes.
     property int groupCount: loaded ? info.groups.length : 0
     property bool muted: false
+    // The chat exists in chats.db. A person from a group, or the picker, may have none yet: then
+    // there is nothing to mute, export, clear or delete.
+    property bool hasChat: false
     // As ChatPage: a failure of the page's own requests, once per failure.
     property string failedCmd: engine.failure.cmd || ""
     onFailedCmdChanged: {
@@ -25,6 +29,7 @@ Page {
     onChatChanged: {
         // !!: a contact picked with no chat yet has no muted, and undefined fails a bool.
         muted = !!chat.muted
+        hasChat = !!chats.chat(chat.jid).jid
         contact.ask(chat.jid)
     }
     onInfoChanged: fill()
@@ -34,8 +39,16 @@ Page {
         title: qsTr("Contact info")
     }
     actions: [
+        // Opens the person's chat, which may not exist yet (nav.openRow).
+        ActionItem {
+            title: qsTr("Message")
+            imageSource: "file:///usr/share/icons/bb_action_sendtextmessage.png"
+            ActionBar.placement: ActionBarPlacement.OnBar
+            onTriggered: nav.openRow(page.chat)
+        },
         ActionItem {
             title: qsTr("Export chat")
+            enabled: page.hasChat
             ActionBar.placement: ActionBarPlacement.InOverflow
             onTriggered: {
                 contact.exportChat()
@@ -43,6 +56,7 @@ Page {
         },
         ActionItem {
             title: qsTr("Clear chat")
+            enabled: page.hasChat
             ActionBar.placement: ActionBarPlacement.InOverflow
             onTriggered: {
                 clearDialog.show()
@@ -63,6 +77,7 @@ Page {
         },
         DeleteActionItem {
             title: qsTr("Delete chat")
+            enabled: page.hasChat
             ActionBar.placement: ActionBarPlacement.InOverflow
             onTriggered: {
                 deleteDialog.show()
@@ -287,6 +302,7 @@ Page {
                 }
             }
             Container {
+                visible: page.hasChat
                 horizontalAlignment: HorizontalAlignment.Fill
                 topPadding: ui.du(1.5)
                 leftPadding: ui.du(1.5)

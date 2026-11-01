@@ -6,6 +6,9 @@
 #include <bb/system/InvokeRequest>
 #include <bb/system/InvokeTargetReply>
 #include <QDebug>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
 #include <QUrl>
 
 using namespace bb::system;
@@ -104,4 +107,17 @@ void MediaOpener::onInvoked()
         emit openFailed(); // no app for the type, or no access to Downloads
     }
     reply->deleteLater();
+}
+
+// A received photo lives in the sandbox (phase6.md, choice 1), where neither Pictures nor File
+// Manager looks: Save puts a copy where both do. A copy already there is the answer.
+QString MediaOpener::saveToPictures(const QString &path)
+{
+    const QString dir = "/accounts/1000/shared/photos/HyperBerry";
+    if (!QDir().mkpath(dir))
+        return QString();
+    const QString target = dir + "/" + QFileInfo(path).fileName();
+    if (QFile::exists(target) || QFile::copy(path, target))
+        return target;
+    return QString();
 }

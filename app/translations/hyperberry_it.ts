@@ -233,6 +233,11 @@
         <translation>Invia</translation>
     </message>
     <message>
+        <location filename="../assets/ChatPage.qml" line="379"/>
+        <source>No messages here</source>
+        <translation>Nessun messaggio qui</translation>
+    </message>
+    <message>
         <location filename="../assets/ChatPage.qml" line="421"/>
         <source>Replying to %1</source>
         <translation>In risposta a %1</translation>
@@ -340,116 +345,121 @@
 <context>
     <name>ContactInfoPage</name>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="34"/>
+        <location filename="../assets/ContactInfoPage.qml" line="39"/>
         <source>Contact info</source>
         <translation>Info contatto</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="38"/>
+        <location filename="../assets/ContactInfoPage.qml" line="44"/>
+        <source>Message</source>
+        <translation>Messaggio</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="50"/>
         <source>Export chat</source>
         <translation>Esporta chat</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="45"/>
+        <location filename="../assets/ContactInfoPage.qml" line="58"/>
         <source>Clear chat</source>
         <translation>Svuota chat</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="53"/>
+        <location filename="../assets/ContactInfoPage.qml" line="67"/>
         <source>Unblock</source>
         <translation>Sblocca</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="53"/>
-        <location filename="../assets/ContactInfoPage.qml" line="148"/>
+        <location filename="../assets/ContactInfoPage.qml" line="67"/>
+        <location filename="../assets/ContactInfoPage.qml" line="163"/>
         <source>Block</source>
         <translation>Blocca</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="65"/>
+        <location filename="../assets/ContactInfoPage.qml" line="79"/>
         <source>Delete chat</source>
         <translation>Elimina chat</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="134"/>
+        <location filename="../assets/ContactInfoPage.qml" line="149"/>
         <source>Clear this chat?</source>
         <translation>Svuotare questa chat?</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="135"/>
-        <location filename="../assets/ContactInfoPage.qml" line="159"/>
+        <location filename="../assets/ContactInfoPage.qml" line="150"/>
+        <location filename="../assets/ContactInfoPage.qml" line="174"/>
         <source>Its messages will be deleted from this phone.</source>
         <translation>I suoi messaggi saranno eliminati da questo telefono.</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="136"/>
+        <location filename="../assets/ContactInfoPage.qml" line="151"/>
         <source>Clear</source>
         <translation>Svuota</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="137"/>
-        <location filename="../assets/ContactInfoPage.qml" line="149"/>
-        <location filename="../assets/ContactInfoPage.qml" line="161"/>
+        <location filename="../assets/ContactInfoPage.qml" line="152"/>
+        <location filename="../assets/ContactInfoPage.qml" line="164"/>
+        <location filename="../assets/ContactInfoPage.qml" line="176"/>
         <source>Cancel</source>
         <translation>Annulla</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="146"/>
+        <location filename="../assets/ContactInfoPage.qml" line="161"/>
         <source>Block %1?</source>
         <translation>Bloccare %1?</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="147"/>
+        <location filename="../assets/ContactInfoPage.qml" line="162"/>
         <source>Blocked contacts can&apos;t call you or send you messages.</source>
         <translation>I contatti bloccati non possono chiamarti né inviarti messaggi.</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="158"/>
+        <location filename="../assets/ContactInfoPage.qml" line="173"/>
         <source>Delete this chat?</source>
         <translation>Eliminare questa chat?</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="160"/>
+        <location filename="../assets/ContactInfoPage.qml" line="175"/>
         <source>Delete</source>
         <translation>Elimina</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="175"/>
+        <location filename="../assets/ContactInfoPage.qml" line="190"/>
         <source>Couldn&apos;t do that. Check the connection and try again.</source>
         <translation>Non è stato possibile. Controlla la connessione e riprova.</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="188"/>
+        <location filename="../assets/ContactInfoPage.qml" line="203"/>
         <source>Saved to Downloads: %1</source>
         <translation>Salvato in Download: %1</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="252"/>
+        <location filename="../assets/ContactInfoPage.qml" line="271"/>
         <source>Loading…</source>
         <translation>Caricamento…</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="261"/>
+        <location filename="../assets/ContactInfoPage.qml" line="280"/>
         <source>Couldn&apos;t load the contact&apos;s info. Check the connection and try again.</source>
         <translation>Impossibile caricare le info del contatto. Controlla la connessione e riprova.</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="265"/>
+        <location filename="../assets/ContactInfoPage.qml" line="284"/>
         <source>About</source>
         <translation>Info</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="299"/>
+        <location filename="../assets/ContactInfoPage.qml" line="319"/>
         <source>Mute notifications</source>
         <translation>Disattiva notifiche</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="309"/>
+        <location filename="../assets/ContactInfoPage.qml" line="329"/>
         <source>1 group in common</source>
         <translation>1 gruppo in comune</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="309"/>
+        <location filename="../assets/ContactInfoPage.qml" line="329"/>
         <source>%1 groups in common</source>
         <translation>%1 gruppi in comune</translation>
     </message>
@@ -735,6 +745,21 @@
 </context>
 <context>
     <name>PhotoViewer</name>
+    <message>
+        <location filename="../assets/PhotoViewer.qml" line="21"/>
+        <source>Save</source>
+        <translation>Salva</translation>
+    </message>
+    <message>
+        <location filename="../assets/PhotoViewer.qml" line="24"/>
+        <source>Saved to Pictures</source>
+        <translation>Salvata in Immagini</translation>
+    </message>
+    <message>
+        <location filename="../assets/PhotoViewer.qml" line="25"/>
+        <source>Couldn&apos;t save the photo</source>
+        <translation>Impossibile salvare la foto</translation>
+    </message>
     <message>
         <location filename="../assets/PhotoViewer.qml" line="13"/>
         <source>Share</source>

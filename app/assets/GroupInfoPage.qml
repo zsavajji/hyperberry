@@ -1,6 +1,7 @@
 import bb.cascades 1.4
 
-// A group's info (PLAN.md §7, step 3.5), read-only. ctl is the chat page's ChatController, which
+// A group's info (PLAN.md §7, step 3.5), read-only but for a tap on a participant, which opens
+// their contact page (step 5.8). ctl is the chat page's ChatController, which
 // asked the engine for group.info; the chat page stays under this one, so ctl outlives it.
 Page {
     id: page
@@ -14,8 +15,28 @@ Page {
     titleBar: TitleBar {
         title: qsTr("Group info")
     }
-    attachedObjects: ArrayDataModel {
-        id: people
+    attachedObjects: [
+        ArrayDataModel {
+            id: people
+        },
+        ComponentDefinition {
+            id: contactDef
+            source: "ContactInfoPage.qml"
+        }
+    ]
+    // Not our own row. The chat's row when there is a one-to-one chat (participants are keyed LID
+    // first, as chats are); else a row built like ContactPicker's, so the page and its Message
+    // work for a person with no chat yet. The participant's colour is the sender colour: fine
+    // for a tile here.
+    function openPerson(p) {
+        if (p.me) {
+            return
+        }
+        var c = contactDef.createObject()
+        var row = chats.chat(p.jid)
+        c.chat = row.jid ? row : {"kind": 0, "jid": p.jid, "name": p.name || p.jid.split("@")[0],
+                                  "initials": p.initials, "color": p.color}
+        nav.push(c)
     }
     function fill() {
         people.clear()
@@ -103,6 +124,7 @@ Page {
                 property int bodySize: nav.bodySize
                 property int smallSize: nav.smallSize
                 dataModel: people
+                onTriggered: page.openPerson(people.data(indexPath))
                 listItemComponents: ListItemComponent {
                     type: ""
                     Container {

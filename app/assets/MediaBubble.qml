@@ -13,6 +13,9 @@ Container {
     // A caption follows a picture, with no margin of its own.
     topMargin: 0
     bottomMargin: msg.text != "" ? ui.du(0.5) : 0
+    // Air above and below a picture, so it doesn't touch the card's name line or caption (user).
+    topPadding: picture ? ui.du(1) : 0
+    bottomPadding: picture ? ui.du(1) : 0
     gestureHandlers: TapHandler {
         onTapped: bubble.view.openMedia(bubble.msg)
     }

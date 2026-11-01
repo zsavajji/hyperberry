@@ -27,6 +27,8 @@ class EngineLink;
 class MessageModel : public bb::cascades::DataModel
 {
     Q_OBJECT
+    // True when there is nothing to show: the page says so (a cleared chat, a new one).
+    Q_PROPERTY(bool empty READ empty NOTIFY emptyChanged)
 public:
     MessageModel(EngineLink *engine, const QString &chat, bool group, QObject *parent = 0);
 
@@ -39,6 +41,8 @@ public:
     // entries of the visual top (in a bottom-to-top list that is the model's end).
     Q_INVOKABLE void nearTop(const QVariantList &firstVisible);
 
+    bool empty() const { return m_entries.isEmpty(); }
+
     // The chat's unread count as chats.db has it now.
     int unread() const;
 
@@ -48,6 +52,7 @@ public:
     void unhide(const QStringList &ids);
 
 signals:
+    void emptyChanged();
     // A merge added a message that isn't ours and wasn't there before (not a first load or an
     // older page): the controller decides whether it was seen.
     void incoming();

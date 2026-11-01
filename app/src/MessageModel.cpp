@@ -429,6 +429,7 @@ void MessageModel::rebuild()
     m_days.applyCurrentTimeAsAnchor();
     const QLocale locale = m_region.locale();
     const QDate today = QDate::currentDate();
+    const bool wasEmpty = m_entries.isEmpty();
     m_entries.clear();
     // m_all is oldest first: walk the visible rows backwards, and a day's header follows its
     // messages. A day with only hidden messages has no header.
@@ -453,4 +454,7 @@ void MessageModel::rebuild()
             m_entries.append(h);
         }
     }
+    // m_entries changes only here, so this is the one place that tells `empty` changed.
+    if (wasEmpty != m_entries.isEmpty())
+        emit emptyChanged();
 }

@@ -94,6 +94,13 @@ NavigationPane {
         at(0).openChat(chat)
     }
 
+    // A contact page's Message (step 5.8): a chat list row, for a chat that may not exist yet
+    // (openRequested only opens existing chats). Like openPending, Back goes to the list.
+    function openRow(row) {
+        backToList()
+        at(0).openChat(row)
+    }
+
     // Every page above the list goes out. Deleting a chat (step 5.8b) uses it too.
     function backToList() {
         while (count() > 1) {

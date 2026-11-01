@@ -279,136 +279,113 @@ Page {
         layout: StackLayout {
             orientation: LayoutOrientation.TopToBottom
         }
-        ListView {
-            id: list
+        // The list, and over it the note of an empty chat.
+        Container {
             layoutProperties: StackLayoutProperties {
                 spaceQuota: 1
             }
-            // The cards' long-press menu reaches the page through the list (ListItem.view).
-            function reply(msg) {
-                ctl.reply(msg)
-                composer.requestFocus()
-            }
-            function copy(text) {
-                ctl.copy(text)
-            }
-            // Voice notes: the player's state, for the bubbles (VoicePlayer.qml).
-            property string playingId: player.playingId
-            property string loadingId: player.loadingId
-            property bool paused: player.paused
-            property int posMs: player.posMs
-            property int durMs: player.durMs
-            function playVoice(msg) {
-                player.toggle(msg.id)
-            }
-            function playedWave(data, bars) {
-                return ctl.playedWave(data, bars)
-            }
-            // Photos, videos, audio files and documents: the message being fetched, for the bubbles
-            // (MediaBubble.qml). Always through media.get: it answers at once when the file is here,
-            // and fetches it again when the user moved it out of Downloads.
-            property string mediaLoadingId: media.loadingId
-            function openMedia(msg) {
-                media.get(page.chat.jid, msg.id, msg.media)
-            }
-            function deleteForMe(id) {
-                ctl.deleteForMe(id)
-                deletedToast.show()
-            }
-            function deleteForEveryone(id) {
-                revokeDialog.msgId = id
-                revokeDialog.show()
-            }
-            // The cards reach the shared emoji style (main.qml) through ListItem.view.
-            property variant emojiStyle: nav.emojiStyle
-            property int bodySize: nav.bodySize
-            property int smallSize: nav.smallSize
-            property real textScale: settings.textScale
-            dataModel: ctl.messages
-            // Bottom to top: the model is newest first, so the list opens at the newest message
-            // with no scroll call, and an older page is appended at the visual top without
-            // moving the rows on screen.
-            layout: StackListLayout {
-                orientation: LayoutOrientation.BottomToTop
-            }
-            // The newest card keeps the cards' gap above the action bar.
-            bottomPadding: ui.du(1.5)
-            // The beginning is the bottom: a new message is followed only when the list was
-            // already there.
-            stickToEdgePolicy: ListViewStickToEdgePolicy.Beginning
-            attachedObjects: [
-                ListScrollStateHandler {
-                    // Older pages are appends, so asking on every change can't cascade.
-                    onFirstVisibleItemChanged: ctl.nearTop(firstVisibleItem)
-                    // The list runs bottom to top, so its beginning is the bottom.
-                    onAtBeginningChanged: ctl.setAtBottom(atBeginning)
+            layout: DockLayout {}
+            horizontalAlignment: HorizontalAlignment.Fill
+            verticalAlignment: VerticalAlignment.Fill
+            ListView {
+                id: list
+                // Filled: a DockLayout's child sits at its top left, at its own size, otherwise.
+                horizontalAlignment: HorizontalAlignment.Fill
+                verticalAlignment: VerticalAlignment.Fill
+                // The cards' long-press menu reaches the page through the list (ListItem.view).
+                function reply(msg) {
+                    ctl.reply(msg)
+                    composer.requestFocus()
                 }
-            ]
-            listItemComponents: [
-                ListItemComponent {
-                    type: "header"
-                    Header {
-                        title: ListItemData
-                    }
-                },
-                ListItemComponent {
-                    type: "msg"
-                    MessageItem {
-                        msg: ListItemData
-                    }
-                },
-                ListItemComponent {
-                    type: "service"
-                    // A chip, like a button that isn't one (Q10, 2026-10-31). Containers have no
-                    // border: the outer one's colour shows 2 px around the inner one. A list item
-                    // is as wide as its content, so Center alone left it on the left: the spacers'
-                    // spaceQuota stretches the row across the list, as the cards' text column does.
-                    Container {
-                        id: service
-                        horizontalAlignment: HorizontalAlignment.Fill
-                        topPadding: ui.du(1.5)
-                        bottomPadding: 0
-                        layout: StackLayout {
-                            orientation: LayoutOrientation.LeftToRight
-                        }
-                        Container {
-                            layoutProperties: StackLayoutProperties {
-                                spaceQuota: 1
-                            }
-                        }
-                        Container {
-                            background: Color.create("#5A5A5A")
-                            leftPadding: ui.px(2)
-                            rightPadding: ui.px(2)
-                            topPadding: ui.px(2)
-                            bottomPadding: ui.px(2)
-                            Container {
-                                background: ui.palette.plain
-                                leftPadding: ui.du(2)
-                                rightPadding: ui.du(2)
-                                topPadding: ui.du(1)
-                                bottomPadding: ui.du(1)
-                                Label {
-                                    horizontalAlignment: HorizontalAlignment.Center
-                                    multiline: true
-                                    text: ListItemData.text
-                                    textFormat: TextFormat.Plain
-                                    textStyle.base: service.ListItem.view.emojiStyle
-                                    textStyle.fontSize: FontSize.PercentageValue
-                                    textStyle.fontSizeValue: service.ListItem.view.smallSize
-                                    textStyle.textAlign: TextAlign.Center
-                                    textStyle.color: ui.palette.secondaryTextOnPlain
-                                }
-                            }
-                        }
-                        Container {
-                            layoutProperties: StackLayoutProperties {
-                                spaceQuota: 1
-                            }
-                        }
-                    }
+                function copy(text) {
+                    ctl.copy(text)
                 }
-            ]
+                // Voice notes: the player's state, for the bubbles (VoicePlayer.qml).
+                property string playingId: player.playingId
+                property string loadingId: player.loadingId
+                property bool paused: player.paused
+                property int posMs: player.posMs
+                property int durMs: player.durMs
+                function playVoice(msg) {
+                    player.toggle(msg.id)
+                }
+                function playedWave(data, bars) {
+                    return ctl.playedWave(data, bars)
+                }
+                // Photos, videos, audio files and documents: the message being fetched, for the bubbles
+                // (MediaBubble.qml). Always through media.get: it answers at once when the file is here,
+                // and fetches it again when the user moved it out of Downloads.
+                property string mediaLoadingId: media.loadingId
+                function openMedia(msg) {
+                    media.get(page.chat.jid, msg.id, msg.media)
+                }
+                function deleteForMe(id) {
+                    ctl.deleteForMe(id)
+                    deletedToast.show()
+                }
+                function deleteForEveryone(id) {
+                    revokeDialog.msgId = id
+                    revokeDialog.show()
+                }
+                // The cards reach the shared emoji style (main.qml) through ListItem.view.
+                property variant emojiStyle: nav.emojiStyle
+                property int bodySize: nav.bodySize
+                property int smallSize: nav.smallSize
+                property real textScale: settings.textScale
+                dataModel: ctl.messages
+                // Bottom to top: the model is newest first, so the list opens at the newest message
+                // with no scroll call, and an older page is appended at the visual top without
+                // moving the rows on screen.
+                layout: StackListLayout {
+                    orientation: LayoutOrientation.BottomToTop
+                }
+                // The newest card keeps the cards' gap above the action bar.
+                bottomPadding: ui.du(1.5)
+                // The beginning is the bottom: a new message is followed only when the list was
+                // already there.
+                stickToEdgePolicy: ListViewStickToEdgePolicy.Beginning
+                attachedObjects: [
+                    ListScrollStateHandler {
+                        // Older pages are appends, so asking on every change can't cascade.
+                        onFirstVisibleItemChanged: ctl.nearTop(firstVisibleItem)
+                        // The list runs bottom to top, so its beginning is the bottom.
+                        onAtBeginningChanged: ctl.setAtBottom(atBeginning)
+                    }
+                ]
+                listItemComponents: [
+                    ListItemComponent {
+                        type: "header"
+                        Header {
+                            title: ListItemData
+                        }
+                    },
+                    ListItemComponent {
+                        type: "msg"
+                        MessageItem {
+                            msg: ListItemData
+                        }
+                    },
+                    ListItemComponent {
+                        type: "service"
+                        ServiceItem {
+                            msg: ListItemData
+                        }
+                    }
+                ]
+            }
+            // ctl.messages is null until the page opens the chat, hence the first test.
+            Label {
+                visible: !!ctl.messages && ctl.messages.empty
+                horizontalAlignment: HorizontalAlignment.Center
+                verticalAlignment: VerticalAlignment.Center
+                multiline: false
+                text: qsTr("No messages here")
+                textFormat: TextFormat.Plain
+                textStyle.base: nav.emojiStyle
+                textStyle.fontSize: FontSize.PercentageValue
+                textStyle.fontSizeValue: nav.bodySize
+                textStyle.color: ui.palette.secondaryTextOnPlain
+            }
         }
         // The message being replied to, above the action bar. A tap cancels. Drawn as the quote in a
         // card is: a primary-colour bar, the name, one line of the text.
