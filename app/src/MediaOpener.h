@@ -2,6 +2,7 @@
 #define MEDIAOPENER_H
 
 #include <bb/system/InvokeManager>
+#include <bb/system/LocaleHandler>
 #include <QObject>
 #include <QPointer>
 #include <QString>
@@ -38,6 +39,10 @@ public:
     // height} (the original's size); thumb is missing when no quality made it small enough. Empty
     // for any other file or on failure.
     Q_INVOKABLE QVariantMap photoInfo(const QString &path);
+    // What the staged bar shows for a file picked to send (step 6.4): {name, sizeText, picture (a
+    // photo or a video: its caption rides in the message), image (a .jpg's thumbnail, as an Image;
+    // missing for the rest)}. Empty when the file can't be read.
+    Q_INVOKABLE QVariantMap fileInfo(const QString &path);
 
 signals:
     void loadingIdChanged();
@@ -59,6 +64,7 @@ private:
     QString m_loadingId;
     QString m_kind;
     QString m_reqId; // the media.get request we wait for
+    bb::system::LocaleHandler m_region; // for the size text, as the chat models have it
 };
 
 #endif

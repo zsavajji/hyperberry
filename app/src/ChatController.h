@@ -66,6 +66,8 @@ public:
     // msg is a MessageModel "msg" map; the next send quotes it.
     Q_INVOKABLE void reply(const QVariantMap &msg);
     Q_INVOKABLE void cancelReply();
+    // The reply's message id, "" when not replying: a file sent as the reply carries it (step 6.4).
+    Q_INVOKABLE QString quoteId() const { return m_quoteId; }
     Q_INVOKABLE void copy(const QString &text);
     // Delete for me waits for the Undo toast: the card hides at once, the request goes with
     // commitDelete (the toast closed, or the page going away).

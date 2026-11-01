@@ -125,6 +125,21 @@ func TestSimMediaSend(t *testing.T) {
 		t.Errorf("photo row without a thumbnail: %+v", r)
 	}
 
+	// A caption is a photo's or a video's text; a document's text stays its file name,
+	// an audio file has none.
+	for name, c := range map[string]struct {
+		kind int
+		text string
+	}{"IMG_2.jpg": {msgPhoto, "sunset"}, "clip2.mp4": {msgVideo, "sunset"}, "Menu.pdf": {msgDoc, "Menu.pdf"}, "song2.mp3": {msgAudio, ""}} {
+		p := filepath.Join(dir, name)
+		os.WriteFile(p, []byte("x"), 0o644)
+		if id, err = send(chat, p, "", `,"caption":"sunset"`); err != nil {
+			t.Fatal(err)
+		}
+		if r, _ = st.row(chat, id); r.Kind != c.kind || r.Text != c.text {
+			t.Errorf("%s with a caption: kind %d, text %q; want %d, %q", name, r.Kind, r.Text, c.kind, c.text)
+		}
+	}
 	// A PDF: a document row named for the file, with no thumbnail.
 	pdf := filepath.Join(dir, "Recipe.pdf")
 	os.WriteFile(pdf, simPDF, 0o644)
@@ -206,6 +221,19 @@ func TestMediaMessage(t *testing.T) {
 		}
 		if kind == msgVideo && (m.GetVideoMessage().GetJPEGThumbnail() != nil || m.GetVideoMessage().GetSeconds() != 0) {
 			t.Error("video has a thumbnail or a length")
+		}
+	}
+	// A caption goes in a photo's and a video's message, and a message without one has none.
+	caption := func(kind int, text string) string {
+		m := mediaMessage(&mediaOut{mime: "x/y", row: msgRow{Kind: kind, Text: text}}, up, nil)
+		if kind == msgVideo {
+			return m.GetVideoMessage().GetCaption()
+		}
+		return m.GetImageMessage().GetCaption()
+	}
+	for _, kind := range []int{msgPhoto, msgVideo} {
+		if got, none := caption(kind, "sunset"), caption(kind, ""); got != "sunset" || none != "" {
+			t.Errorf("kind %d: caption %q, without %q", kind, got, none)
 		}
 	}
 	// A photo carries the thumbnail and size it was given as they are, and nothing if it had none.

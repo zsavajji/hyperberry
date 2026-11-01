@@ -67,11 +67,12 @@ func sendKind(path string) (kind int, mimeType string) {
 
 // mediaSendReq is media.send. Thumb (a JPEG, base64 in the JSON), Width and Height are a
 // photo's, made by the UI: the engine never decodes a picture, its memory is too small.
+// Caption goes with a photo or a video only; the UI sends the other kinds' as a text message.
 type mediaSendReq struct {
-	Chat, Path, Quote string
-	Thumb             []byte
-	Width, Height     int
-	size              int64 // from the stat of parseMediaSend
+	Chat, Path, Quote, Caption string
+	Thumb                      []byte
+	Width, Height              int
+	size                       int64 // from the stat of parseMediaSend
 }
 
 func parseMediaSend(req json.RawMessage) (mediaSendReq, error) {
@@ -102,14 +103,17 @@ type mediaOut struct {
 }
 
 // queueMedia puts our row in as sending, and is the one place both accounts build it. A
-// photo's thumbnail and size are the UI's; the other kinds ignore them.
+// photo's thumbnail and size are the UI's, and a photo's or a video's caption is its text; the
+// other kinds ignore them.
 func (st *Store) queueMedia(jid types.JID, r mediaSendReq, id string) *mediaOut {
 	kind, mimeType := sendKind(r.Path)
 	o := &mediaOut{mime: mimeType, row: msgRow{Chat: r.Chat, ID: id, TS: time.Now().Unix(), Out: true,
 		State: stateSending, Kind: kind, Size: r.size, Path: r.Path, MediaState: 2}}
 	switch kind {
 	case msgPhoto:
-		o.row.Thumb, o.row.Width, o.row.Height = r.Thumb, r.Width, r.Height
+		o.row.Thumb, o.row.Width, o.row.Height, o.row.Text = r.Thumb, r.Width, r.Height, r.Caption
+	case msgVideo:
+		o.row.Text = r.Caption
 	case msgDoc:
 		o.row.Text = filepath.Base(r.Path)
 	}
@@ -121,7 +125,8 @@ var uploadTypes = map[int]whatsmeow.MediaType{msgPhoto: whatsmeow.MediaImage, ms
 	msgAudio: whatsmeow.MediaAudio, msgDoc: whatsmeow.MediaDocument}
 
 // mediaMessage is the message of an uploaded file; ci quotes, or is nil. A photo carries the
-// thumbnail and size the UI gave, if it gave them.
+// thumbnail and size the UI gave, if it gave them; a photo and a video carry the row's text as
+// their caption.
 // ponytail: a video has no thumbnail and no length, so the phone shows a grey box until it
 // downloads; the UI could make them as it does for photos.
 func mediaMessage(o *mediaOut, up whatsmeow.UploadResponse, ci *waE2E.ContextInfo) *waE2E.Message {
@@ -131,13 +136,20 @@ func mediaMessage(o *mediaOut, up whatsmeow.UploadResponse, ci *waE2E.ContextInf
 		img := &waE2E.ImageMessage{URL: &up.URL, DirectPath: &up.DirectPath, MediaKey: up.MediaKey,
 			FileEncSHA256: up.FileEncSHA256, FileSHA256: up.FileSHA256, FileLength: &up.FileLength, Mimetype: &o.mime,
 			JPEGThumbnail: r.Thumb, ContextInfo: ci}
+		if r.Text != "" {
+			img.Caption = &r.Text
+		}
 		if r.Width > 0 && r.Height > 0 {
 			img.Width, img.Height = proto.Uint32(uint32(r.Width)), proto.Uint32(uint32(r.Height))
 		}
 		return &waE2E.Message{ImageMessage: img}
 	case msgVideo:
-		return &waE2E.Message{VideoMessage: &waE2E.VideoMessage{URL: &up.URL, DirectPath: &up.DirectPath, MediaKey: up.MediaKey,
-			FileEncSHA256: up.FileEncSHA256, FileSHA256: up.FileSHA256, FileLength: &up.FileLength, Mimetype: &o.mime, ContextInfo: ci}}
+		vid := &waE2E.VideoMessage{URL: &up.URL, DirectPath: &up.DirectPath, MediaKey: up.MediaKey,
+			FileEncSHA256: up.FileEncSHA256, FileSHA256: up.FileSHA256, FileLength: &up.FileLength, Mimetype: &o.mime, ContextInfo: ci}
+		if r.Text != "" {
+			vid.Caption = &r.Text
+		}
+		return &waE2E.Message{VideoMessage: vid}
 	case msgAudio:
 		return &waE2E.Message{AudioMessage: &waE2E.AudioMessage{URL: &up.URL, DirectPath: &up.DirectPath, MediaKey: up.MediaKey,
 			FileEncSHA256: up.FileEncSHA256, FileSHA256: up.FileSHA256, FileLength: &up.FileLength, Mimetype: &o.mime,

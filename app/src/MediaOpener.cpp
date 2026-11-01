@@ -1,7 +1,9 @@
 #include "MediaOpener.h"
 
 #include "EngineLink.h"
+#include "sizes.h"
 
+#include <bb/cascades/Image>
 #include <bb/system/InvokeReplyError>
 #include <bb/system/InvokeRequest>
 #include <bb/system/InvokeTargetReply>
@@ -18,6 +20,7 @@ using namespace bb::system;
 
 MediaOpener::MediaOpener(QObject *parent)
     : QObject(parent)
+    , m_region(bb::system::LocaleType::Region)
 {
 }
 
@@ -156,5 +159,22 @@ QVariantMap MediaOpener::photoInfo(const QString &path)
             break;
         }
     }
+    return info;
+}
+
+// The thumbnail is photoInfo's, decoded back from its base64: one place makes it.
+QVariantMap MediaOpener::fileInfo(const QString &path)
+{
+    QVariantMap info;
+    const QFileInfo file(path);
+    if (!file.isFile())
+        return info;
+    info["name"] = file.fileName();
+    info["sizeText"] = sizeText(file.size(), m_region.locale());
+    const QString ext = file.suffix().toLower();
+    info["picture"] = ext == "jpg" || ext == "jpeg" || ext == "mp4" || ext == "3gp" || ext == "mov";
+    const QByteArray thumb = QByteArray::fromBase64(photoInfo(path)["thumb"].toString().toLatin1());
+    if (!thumb.isEmpty())
+        info["image"] = QVariant::fromValue(bb::cascades::Image(thumb));
     return info;
 }

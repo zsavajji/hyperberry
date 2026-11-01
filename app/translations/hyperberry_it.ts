@@ -142,105 +142,100 @@
 <context>
     <name>ChatPage</name>
     <message>
-        <location filename="../assets/ChatPage.qml" line="42"/>
-        <location filename="../assets/ChatPage.qml" line="163"/>
+        <location filename="../assets/ChatPage.qml" line="45"/>
+        <location filename="../assets/ChatPage.qml" line="167"/>
         <source>Attach</source>
         <translation>Allega</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="60"/>
+        <location filename="../assets/ChatPage.qml" line="73"/>
         <source>Contact info</source>
         <translation>Info contatto</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="60"/>
+        <location filename="../assets/ChatPage.qml" line="73"/>
         <source>Group info</source>
         <translation>Info gruppo</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="65"/>
+        <location filename="../assets/ChatPage.qml" line="79"/>
         <source>Not sent: HyperBerry is reconnecting. Try again in a moment.</source>
         <translation>Non inviato: HyperBerry si sta riconnettendo. Riprova tra un attimo.</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="79"/>
+        <location filename="../assets/ChatPage.qml" line="93"/>
         <source>Couldn&apos;t open this file</source>
         <translation>Impossibile aprire questo file</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="83"/>
+        <location filename="../assets/ChatPage.qml" line="97"/>
         <source>Couldn&apos;t play this voice note</source>
         <translation>Impossibile riprodurre questo messaggio vocale</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="87"/>
+        <location filename="../assets/ChatPage.qml" line="101"/>
         <source>Not deleted: HyperBerry is reconnecting. Try again in a moment.</source>
         <translation>Non eliminato: HyperBerry si sta riconnettendo. Riprova tra un attimo.</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="94"/>
+        <location filename="../assets/ChatPage.qml" line="108"/>
         <source>Message deleted</source>
         <translation>Messaggio eliminato</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="95"/>
+        <location filename="../assets/ChatPage.qml" line="109"/>
         <source>Undo</source>
         <translation>Annulla</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="108"/>
+        <location filename="../assets/ChatPage.qml" line="122"/>
         <source>Delete for everyone?</source>
         <translation>Eliminare per tutti?</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="109"/>
+        <location filename="../assets/ChatPage.qml" line="123"/>
         <source>It will be deleted for everyone in this chat.</source>
         <translation>Verrà eliminato per tutti i partecipanti di questa chat.</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="110"/>
+        <location filename="../assets/ChatPage.qml" line="124"/>
         <source>Delete</source>
         <translation>Elimina</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="111"/>
+        <location filename="../assets/ChatPage.qml" line="125"/>
         <source>Cancel</source>
         <translation>Annulla</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="125"/>
+        <location filename="../assets/ChatPage.qml" line="139"/>
         <source>Message</source>
         <translation>Messaggio</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="136"/>
+        <location filename="../assets/ChatPage.qml" line="150"/>
         <source>Discard</source>
         <translation>Scarta</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="136"/>
+        <location filename="../assets/ChatPage.qml" line="150"/>
         <source>Emoji</source>
         <translation>Emoji</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="146"/>
+        <location filename="../assets/ChatPage.qml" line="160"/>
         <source>Record</source>
         <translation>Registra</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="146"/>
+        <location filename="../assets/ChatPage.qml" line="160"/>
         <source>Send</source>
         <translation>Invia</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="379"/>
+        <location filename="../assets/ChatPage.qml" line="426"/>
         <source>No messages here</source>
         <translation>Nessun messaggio qui</translation>
-    </message>
-    <message>
-        <location filename="../assets/ChatPage.qml" line="421"/>
-        <source>Replying to %1</source>
-        <translation>In risposta a %1</translation>
     </message>
 </context>
 <context>
@@ -772,6 +767,14 @@
         <location filename="../assets/RecordingBar.qml" line="23"/>
         <source>Recording %1</source>
         <translation>Registrazione %1</translation>
+    </message>
+</context>
+<context>
+    <name>ReplyBar</name>
+    <message>
+        <location filename="../assets/ReplyBar.qml" line="35"/>
+        <source>Replying to %1</source>
+        <translation>In risposta a %1</translation>
     </message>
 </context>
 <context>

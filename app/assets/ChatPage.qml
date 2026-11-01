@@ -12,6 +12,9 @@ Page {
     property bool followOwn: false
     // The emoji picker is open, in the keyboard's place; only the Emoji action closes it.
     property bool picking: false
+    // The file picked to send, waiting for Send (step 6.4), and MediaOpener.fileInfo's of it.
+    property string staged: ""
+    property variant stagedInfo: ({})
     property string failedCmd: engine.failure.cmd || ""
     onFailedCmdChanged: {
         if (failedCmd == "msg.delete") {
@@ -40,7 +43,7 @@ Page {
             type: FileType.Picture | FileType.Video | FileType.Music | FileType.Document | FileType.Other
             mode: FilePickerMode.Picker
             title: qsTr("Attach")
-            onFileSelected: page.sendFile(selectedFiles[0])
+            onFileSelected: page.stage(selectedFiles[0])
         },
         ChatController {
             id: ctl
@@ -189,24 +192,31 @@ Page {
         emojis.use(emoji)
         composer.requestFocus()
     }
-    property bool mic: !recorder.recording && !/\S/.test(composer.text)
+    property bool mic: !recorder.recording && staged == "" && !/\S/.test(composer.text)
+    // A staged file goes instead of a text (step 6.4).
     function send() {
-        if (!/\S/.test(composer.text)) {
+        var text = composer.text.trim()
+        if (staged == "" && text == "") {
             return
         }
         // Cleared only once the engine has it: it writes the row before it replies, so nothing typed is lost.
-        if (!ctl.send(composer.text)) {
+        if (!(staged == "" ? ctl.send(composer.text) : page.sendStaged(text))) {
             notSent.show()
             return
         }
         composer.text = ""
+        page.unstage()
+        ctl.cancelReply()
         page.followOwn = true
     }
-    // ponytail: a file goes without the quote being replied to; ctl keeps it for the next text.
-    function sendFile(path) {
-        var args = {"chat": chat.jid, "path": path}
+    // A photo's or a video's caption rides in the message; the other kinds' text follows as a message.
+    function sendStaged(text) {
+        var args = {"chat": chat.jid, "path": staged}
+        if (ctl.quoteId()) {
+            args.quote = ctl.quoteId()
+        }
         // A photo's thumbnail and size come from here: the engine decodes no picture (step 6.3).
-        var info = media.photoInfo(path)
+        var info = media.photoInfo(staged)
         if (info.width) {
             args.width = info.width
             args.height = info.height
@@ -214,11 +224,33 @@ Page {
         if (info.thumb) {
             args.thumb = info.thumb
         }
+        if (stagedInfo.picture && text) {
+            args.caption = text
+        }
         if (!engine.request("media.send", args)) {
-            notSent.show()
+            return false
+        }
+        if (!stagedInfo.picture && text) {
+            // The file carries the reply; the text after it is plain.
+            ctl.cancelReply()
+            ctl.send(text)
+        }
+        return true
+    }
+    // The picker's file waits in the staged bar; what is typed is its caption.
+    function stage(path) {
+        var info = media.fileInfo(path)
+        if (!info.name) {
             return
         }
-        page.followOwn = true
+        staged = path
+        stagedInfo = info
+        composer.requestFocus()
+    }
+    // Drops the file; the composer keeps its text.
+    function unstage() {
+        staged = ""
+        stagedInfo = {}
     }
     // Our own message is followed even when the list was scrolled up. Scrolling once the row is in:
     // a scroll before it, at send, left the new card below the screen, while an incoming one at the
@@ -399,63 +431,14 @@ Page {
                 textStyle.color: ui.palette.secondaryTextOnPlain
             }
         }
-        // The message being replied to, above the action bar. A tap cancels. Drawn as the quote in a
-        // card is: a primary-colour bar, the name, one line of the text.
-        Container {
-            visible: ctl.replyName != ""
-            horizontalAlignment: HorizontalAlignment.Fill
-            background: ui.palette.plain
-            leftPadding: ui.du(1.5)
-            rightPadding: ui.du(1.5)
-            topPadding: ui.du(1)
-            bottomPadding: ui.du(1)
-            layout: StackLayout {
-                orientation: LayoutOrientation.LeftToRight
-            }
-            gestureHandlers: TapHandler {
-                onTapped: ctl.cancelReply()
-            }
-            Container {
-                verticalAlignment: VerticalAlignment.Fill
-                preferredWidth: ui.du(0.5)
-                background: ui.palette.primary
-            }
-            Container {
-                leftMargin: ui.du(1)
-                layoutProperties: StackLayoutProperties {
-                    spaceQuota: 1
-                }
-                Label {
-                    bottomMargin: 0
-                    text: qsTr("Replying to %1").arg(ctl.replyName)
-                    textFormat: TextFormat.Plain
-                    textStyle.base: nav.emojiStyle
-                    textStyle.fontSize: FontSize.PercentageValue
-                    textStyle.fontSizeValue: nav.smallSize
-                    textStyle.fontWeight: FontWeight.Bold
-                    textStyle.color: ui.palette.primary
-                }
-                Label {
-                    topMargin: 0
-                    bottomMargin: 0
-                    multiline: false
-                    // Without U+20E3, a keycap's frame, as MessageItem's body.
-                    text: ctl.replyText.replace(/\u20E3/g, "")
-                    textFormat: TextFormat.Plain
-                    textStyle.base: nav.emojiStyle
-                    textStyle.fontSize: FontSize.PercentageValue
-                    textStyle.fontSizeValue: nav.smallSize
-                    textStyle.color: ui.palette.secondaryTextOnPlain
-                }
-            }
-            Label {
-                verticalAlignment: VerticalAlignment.Center
-                leftMargin: ui.du(1)
-                text: "\u2715"
-                textFormat: TextFormat.Plain
-                textStyle.base: nav.emojiStyle
-                textStyle.color: ui.palette.secondaryTextOnPlain
-            }
+        ReplyBar {
+            name: ctl.replyName
+            quote: ctl.replyText
+            onCancelled: ctl.cancelReply()
+        }
+        StagedBar {
+            info: page.stagedInfo
+            onCancelled: page.unstage()
         }
         // Typing while recording leaves the recording alone: the text stays for later, and Send
         // finishes the recording first.
