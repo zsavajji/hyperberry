@@ -1,7 +1,7 @@
 """Draws the chat list's small marks into app/assets/images/: ticks, clock, mute, pin and mic,
 the action bar's record icon, the row menu's pin and mute, the voice bubble's play, pause and
-retry discs, and the Hub's: the item menu's tick_action and unread_action, and the account's
-hub.png (the app's green with message.png, which this script doesn't make, on it).
+retry discs, and the Hub's: the item menu's tick_action, unread_action and delete_action, and
+the account's hub.png (the app's green with message.png, which this script doesn't make, on it).
 
 They're white on transparent, so QML tints them with ImageView.filterColor (grey, or the
 primary colour for read). Each is drawn at 8x and scaled down to its size on the Q10: 3 du,
@@ -71,6 +71,16 @@ def main(out):
     img, d = canvas(H)
     d.ellipse(pts((0.22, 0.22), (0.78, 0.78)), white)
     action(img, out, "unread")
+
+    # A trash can: the Hub item menu's Delete. A lid line with a handle, a body that narrows
+    # toward the bottom, and three slits.
+    img, d = canvas(H)
+    d.line(pts((0.14, 0.24), (0.86, 0.24)), white, round(0.08 * H * S))
+    d.rectangle(pts((0.38, 0.12), (0.62, 0.20)), white)
+    d.polygon(pts((0.22, 0.32), (0.78, 0.32), (0.72, 0.90), (0.28, 0.90)), white)
+    for x in (0.38, 0.5, 0.62):
+        d.line(pts((x, 0.42), (x, 0.80)), (0, 0, 0, 0), round(0.05 * H * S))
+    action(img, out, "delete")
 
     # A pushpin, drawn upright and turned 45 degrees.
     img, d = canvas(H)

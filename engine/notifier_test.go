@@ -12,7 +12,8 @@ import (
 	waLog "github.com/polymorfa/hypermeow/util/log"
 )
 
-// hubCall is one call the notifier made on the Hub: op is open, account+, account-, add or update.
+// hubCall is one call the notifier made on the Hub: op is open, account+, account-, add, update
+// or remove (item has just the id).
 type hubCall struct {
 	op   string
 	item hubItem
@@ -44,7 +45,7 @@ func (h *fakeHub) set(fresh bool, deny string) {
 
 // install points the notifier at h until the test ends. Call it before the notifier is made.
 func (h *fakeHub) install(t *testing.T) {
-	open, account, item := hubOpenFn, hubAccountFn, hubItemFn
+	open, account, item, remove := hubOpenFn, hubAccountFn, hubItemFn, hubRemoveFn
 	hubOpenFn = func(string) (bool, error) {
 		h.rec("open", hubItem{})
 		h.mu.Lock()
@@ -63,7 +64,8 @@ func (h *fakeHub) install(t *testing.T) {
 		}
 		return h.rec("update", it)
 	}
-	t.Cleanup(func() { hubOpenFn, hubAccountFn, hubItemFn = open, account, item }) // after the store's own
+	hubRemoveFn = func(id string) error { return h.rec("remove", hubItem{id: id}) }
+	t.Cleanup(func() { hubOpenFn, hubAccountFn, hubItemFn, hubRemoveFn = open, account, item, remove }) // after the store's own
 }
 
 // take returns the calls since the last take.
@@ -359,17 +361,20 @@ func TestHubChat(t *testing.T) {
 	}
 }
 
+// runHub delivers the Hub's invocations to hubActions, which returns once it has handled them.
+func runHub(st *Store, invs ...invocation) {
+	in := make(chan invocation, len(invs))
+	for _, i := range invs {
+		in <- i
+	}
+	close(in)
+	hubActions(st.srv, in, st.nt.removeItem, waLog.Noop)
+}
+
 func TestHubActions(t *testing.T) {
 	s, st, _, h := hubSim(t)
 	chat := simChats[3].jid
-	run := func(invs ...invocation) {
-		in := make(chan invocation, len(invs))
-		for _, i := range invs {
-			in <- i
-		}
-		close(in)
-		hubActions(st.srv, in, waLog.Noop)
-	}
+	run := func(invs ...invocation) { runHub(st, invs...) }
 	unread := func(want int) {
 		t.Helper()
 		eventually(t, st, 1, "SELECT count(*) FROM chats WHERE jid = ? AND unread = ?", chat, want)

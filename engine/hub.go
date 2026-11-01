@@ -13,6 +13,7 @@ const (
 	hubAccount    = 1212305497 // "HBRY"
 	hubMarkRead   = "com.zsavajji.hyperberry.MARKREAD"
 	hubMarkUnread = "com.zsavajji.hyperberry.MARKUNREAD"
+	hubDelete     = "com.zsavajji.hyperberry.DELETE"
 )
 
 // invocation is what the navigator delivers to the engine: a Hub item's action.
@@ -51,16 +52,21 @@ func hubChat(s string) string {
 }
 
 // hubActions turns the Hub items' Mark as read and Mark as unread into chat.set, as if the UI
-// had asked. The invocation is logged whole: where the item id rides is for the Q10 to show.
-func hubActions(srv *Server, in <-chan invocation, log waLog.Logger) {
+// had asked, and its Delete into remove: the item goes, the chat stays. The invocation is
+// logged whole: where the item id rides is for the Q10 to show.
+func hubActions(srv *Server, in <-chan invocation, remove func(chat string), log waLog.Logger) {
 	for inv := range in {
-		if inv.action != hubMarkRead && inv.action != hubMarkUnread {
+		if inv.action != hubMarkRead && inv.action != hubMarkUnread && inv.action != hubDelete {
 			continue // START and the like need nothing
 		}
 		log.Infof("%s mime %q uri %q data %q", inv.action, inv.mime, inv.uri, inv.data)
 		chat := hubChat(inv.uri + " " + string(inv.data))
 		if chat == "" {
 			log.Warnf("%s: no chat in the invocation", inv.action)
+			continue
+		}
+		if inv.action == hubDelete {
+			remove(chat)
 			continue
 		}
 		req := map[string]any{"chat": chat, "unread": inv.action == hubMarkUnread}

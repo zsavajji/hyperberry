@@ -37,7 +37,7 @@ static int hb_uds_open(const char *assets, int *fresh) {
 // hb_uds_action registers one of the item menu's actions, shown for the items whose context
 // state has a bit of mask. They go to the engine's headless target.
 static int hb_uds_action(long long id, const char *action, const char *title, const char *image,
-		unsigned int mask) {
+		unsigned int mask, uds_placement_type_t placement) {
 	uds_item_action_data_t *a = uds_item_action_data_create();
 	int rc;
 	uds_item_action_data_set_action(a, action);
@@ -46,16 +46,17 @@ static int hb_uds_action(long long id, const char *action, const char *title, co
 	uds_item_action_data_set_title(a, title);
 	uds_item_action_data_set_image_source(a, image);
 	uds_item_action_data_set_mime_type(a, HB_MIME);
-	uds_item_action_data_set_placement(a, UDS_PLACEMENT_DEFAULT);
+	uds_item_action_data_set_placement(a, placement);
 	uds_item_action_data_set_context_mask(a, mask);
 	rc = uds_register_item_context_action(hb_uds, id, a);
 	uds_item_action_data_destroy(a);
 	return rc;
 }
 
-// hb_uds_account adds the account with its two item actions, or removes it with its items.
+// hb_uds_account adds the account with its three item actions, or removes it with its items.
 // An account that is already there is updated, and its actions are left as they are.
-static int hb_uds_account(long long id, int add, const char *markRead, const char *markUnread) {
+static int hb_uds_account(long long id, int add, const char *markRead, const char *markUnread,
+		const char *del) {
 	uds_account_data_t *a;
 	int rc;
 	if (!add)
@@ -74,9 +75,15 @@ static int hb_uds_account(long long id, int add, const char *markRead, const cha
 		return rc;
 	}
 	uds_account_data_destroy(a);
-	if ((rc = hb_uds_action(id, "com.zsavajji.hyperberry.MARKREAD", markRead, "tick_action.png", 1)) != 0)
+	if ((rc = hb_uds_action(id, "com.zsavajji.hyperberry.MARKREAD", markRead, "tick_action.png", 1,
+			UDS_PLACEMENT_DEFAULT)) != 0)
 		return rc;
-	return hb_uds_action(id, "com.zsavajji.hyperberry.MARKUNREAD", markUnread, "unread_action.png", 2);
+	if ((rc = hb_uds_action(id, "com.zsavajji.hyperberry.MARKUNREAD", markUnread, "unread_action.png", 2,
+			UDS_PLACEMENT_DEFAULT)) != 0)
+		return rc;
+	// FIXED is the placement for a delete: without this action the Hub's Delete does nothing.
+	return hb_uds_action(id, "com.zsavajji.hyperberry.DELETE", del, "delete_action.png", 3,
+		UDS_PLACEMENT_FIXED);
 }
 
 // hb_uds_item adds or updates one chat's inbox item. The source id rides in the user data too.
@@ -99,6 +106,11 @@ static int hb_uds_item(long long account, int add, const char *source, const cha
 	rc = add ? uds_item_added(hb_uds, i) : uds_item_updated(hb_uds, i);
 	uds_inbox_item_data_destroy(i);
 	return rc;
+}
+
+// hb_uds_remove takes one chat's item out of the Hub; the chat stays in the app.
+static int hb_uds_remove(long long account, const char *source) {
+	return uds_item_removed(hb_uds, account, (uds_source_key_t)source);
 }
 
 // hb_italian is 1 when the phone's language is Italian.
@@ -154,14 +166,15 @@ func udsOpen(assets string) (fresh bool, err error) {
 // ponytail: the action titles follow the phone's language when the account is added; a later
 // change shows the old ones until a re-link.
 func udsAccount(add bool) error {
-	read, unread := "Mark as read", "Mark as unread"
+	read, unread, del := "Mark as read", "Mark as unread", "Delete"
 	if add && C.hb_italian() != 0 {
-		read, unread = "Segna come letta", "Segna come da leggere"
+		read, unread, del = "Segna come letta", "Segna come da leggere", "Elimina"
 	}
-	r, u := C.CString(read), C.CString(unread)
+	r, u, d := C.CString(read), C.CString(unread), C.CString(del)
 	defer C.free(unsafe.Pointer(r))
 	defer C.free(unsafe.Pointer(u))
-	return udsErr(C.hb_uds_account(C.longlong(hubAccount), cbool(add), r, u))
+	defer C.free(unsafe.Pointer(d))
+	return udsErr(C.hb_uds_account(C.longlong(hubAccount), cbool(add), r, u, d))
 }
 
 // udsItem adds or, with add false, updates one chat's item.
@@ -172,4 +185,11 @@ func udsItem(it hubItem, add bool) error {
 	defer C.free(unsafe.Pointer(body))
 	return udsErr(C.hb_uds_item(C.longlong(hubAccount), cbool(add), id, title, body,
 		C.int(it.unread), C.longlong(it.ts), cbool(it.alert)))
+}
+
+// udsRemove takes one chat's item out of the Hub.
+func udsRemove(id string) error {
+	s := C.CString(id)
+	defer C.free(unsafe.Pointer(s))
+	return udsErr(C.hb_uds_remove(C.longlong(hubAccount), s))
 }

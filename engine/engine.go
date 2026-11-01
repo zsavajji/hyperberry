@@ -58,7 +58,7 @@ func runEngine(container *sqlstore.Container, dataDir string, log waLog.Logger, 
 		}
 		hello, closeSession = sess.hello, sess.close
 	}
-	go hubActions(srv, invokes, log.Sub("hub"))
+	go hubActions(srv, invokes, st.nt.removeItem, log.Sub("hub"))
 	go func() {
 		if err := srv.Serve(); err != nil {
 			log.Errorf("server: %v", err)

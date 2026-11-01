@@ -47,6 +47,7 @@ pinned = chats.pinned | f.pinned,
 archived = chats.archived | f.archived
 FROM (SELECT * FROM chats WHERE jid = ?1) AS f WHERE chats.jid = ?2`, from, to)
 	tx.exec("DELETE FROM chats WHERE jid = ?", from)
+	tx.note(from, note{gone: true}) // the merged-away chat's Hub item goes with its row
 	tx.chats[from], tx.chats[to] = true, true
 }
 

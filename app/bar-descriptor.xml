@@ -48,10 +48,11 @@
             <mime-type>*</mime-type>
             <property var="uris" value="data://local"/>
         </filter>
-        <!-- The Hub items' Mark as read and Mark as unread. -->
+        <!-- The Hub items' Mark as read, Mark as unread and Delete. -->
         <filter>
             <action>com.zsavajji.hyperberry.MARKREAD</action>
             <action>com.zsavajji.hyperberry.MARKUNREAD</action>
+            <action>com.zsavajji.hyperberry.DELETE</action>
             <mime-type>application/vnd.zsavajji.hyperberry.chat</mime-type>
             <property var="uris" value="data://,pim:"/>
         </filter>
@@ -75,6 +76,7 @@
     <asset path="assets/images/hub.png" public="true">hub.png</asset>
     <asset path="assets/images/tick_action.png" public="true">tick_action.png</asset>
     <asset path="assets/images/unread_action.png" public="true">unread_action.png</asset>
+    <asset path="assets/images/delete_action.png" public="true">delete_action.png</asset>
 
     <permission system="true">run_native</permission>
     <permission>access_internet</permission>

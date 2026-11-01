@@ -79,6 +79,7 @@ func (t *storeTx) clearChat(chat string, drop bool) {
 		if t.exec("DELETE FROM chats WHERE jid = ?", chat) > 0 {
 			t.chats[chat] = true
 		}
+		t.note(chat, note{gone: true}) // its Hub item goes with it
 	} else if t.touch(chat, "UPDATE chats SET last_preview = NULL, unread = 0 WHERE jid = ?") {
 		t.hubItem(chat, false, false)
 	}

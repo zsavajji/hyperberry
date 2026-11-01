@@ -19,6 +19,7 @@ var (
 	hubOpenFn    = udsOpen
 	hubAccountFn = udsAccount
 	hubItemFn    = udsItem
+	hubRemoveFn  = udsRemove
 )
 
 // uiState is what the UI last said with ui.state, for both accounts: the chat on screen while
@@ -49,12 +50,13 @@ func (u *uiState) openChat() string {
 
 // note is what a committed transaction wants done to one chat's Hub item. add: a live incoming
 // message, so the item may be created; otherwise only an existing item changes. alert: the Hub
-// alerts (sound, LED, the instant preview). ts is unix seconds.
+// alerts (sound, LED, the instant preview). gone: the chat is deleted, so its item goes and
+// nothing else is done. ts is unix seconds.
 type note struct {
-	add, alert     bool
-	title, preview string
-	unread         int
-	ts             int64
+	add, alert, gone bool
+	title, preview   string
+	unread           int
+	ts               int64
 }
 
 // hubItem queues the chat's item as the chat is now: its name, last message and unread count.
@@ -82,7 +84,7 @@ func (t *storeTx) hubItem(chat string, add, alert bool) {
 	if ts == 0 {
 		ts = time.Now().Unix() // a chat with no message yet
 	}
-	t.note(chat, note{add, alert, title, preview.String, unread, ts})
+	t.note(chat, note{add: add, alert: alert, title: title, preview: preview.String, unread: unread, ts: ts})
 }
 
 // notifyIncoming queues the item of a chat that just got a live incoming message; a muted or
@@ -107,7 +109,8 @@ func (t *storeTx) endBacklog() {
 }
 
 // note keeps one note per chat in a batch: the last wins, but it may still create the item or
-// alert for what an earlier one in the batch asked.
+// alert for what an earlier one in the batch asked. A gone note wins over those: apply checks
+// it first.
 func (t *storeTx) note(chat string, n note) {
 	if t.notes == nil {
 		t.notes = map[string]note{}
@@ -120,11 +123,17 @@ func (t *storeTx) note(chat string, n note) {
 }
 
 // hubState is what the notifier remembers of the Hub, in hub.json: whether our account is
-// there and which chats have an item. The Hub keeps its own copy; this tells add from update.
+// there, with which set of item actions, and which chats have an item. The Hub keeps its own
+// copy; this tells add from update.
 type hubState struct {
 	Account bool     `json:"account"`
+	Actions int      `json:"actions"`
 	Items   []string `json:"items"`
 }
+
+// hubActionSet is the item actions an account is added with: 1 was Mark read/unread, 2 adds
+// Delete. The Hub fixes them when the account is added, so a newer set means adding it again.
+const hubActionSet = 2
 
 // Notifier keeps the Hub account and its items from one goroutine, so UDS calls never run
 // inside the store's writer and always on the same thread.
@@ -138,15 +147,17 @@ type Notifier struct {
 	open    func(assets string) (fresh bool, err error)
 	account func(add bool) error
 	item    func(it hubItem, add bool) error
+	remove  func(id string) error
 
 	mu      sync.Mutex
 	preview bool
 	closed  bool
 
 	// Only the run goroutine touches these.
-	ready bool            // registered with the Hub
-	acct  bool            // our account is in the Hub
-	items map[string]bool // chats with an item in the Hub
+	ready   bool            // registered with the Hub
+	acct    bool            // our account is in the Hub
+	actions int             // the hubActionSet it was added with; 0 from an older build
+	items   map[string]bool // chats with an item in the Hub
 }
 
 func newNotifier(dir string, log waLog.Logger) *Notifier {
@@ -155,14 +166,14 @@ func newNotifier(dir string, log waLog.Logger) *Notifier {
 		// dir is /accounts/1000/appdata/<pkg>/data on the phone, and the Hub reads the public
 		// assets from /apps/<pkg>/public/.
 		assets: "/apps/" + filepath.Base(filepath.Dir(dir)) + "/public/",
-		open:   hubOpenFn, account: hubAccountFn, item: hubItemFn, items: map[string]bool{}}
+		open:   hubOpenFn, account: hubAccountFn, item: hubItemFn, remove: hubRemoveFn, items: map[string]bool{}}
 	var p struct{ NotifyPreview *bool }
 	if b, err := os.ReadFile(n.path); err == nil && json.Unmarshal(b, &p) == nil && p.NotifyPreview != nil {
 		n.preview = *p.NotifyPreview
 	}
 	var hs hubState
 	if b, err := os.ReadFile(n.state); err == nil && json.Unmarshal(b, &hs) == nil {
-		n.acct = hs.Account
+		n.acct, n.actions = hs.Account, hs.Actions
 		for _, c := range hs.Items {
 			n.items[c] = true
 		}
@@ -202,7 +213,7 @@ func (n *Notifier) opened() bool {
 
 // save writes hub.json; tmp and rename, as prefs.json.
 func (n *Notifier) save() {
-	hs := hubState{n.acct, make([]string, 0, len(n.items))}
+	hs := hubState{n.acct, n.actions, make([]string, 0, len(n.items))}
 	for c := range n.items {
 		hs.Items = append(hs.Items, c)
 	}
@@ -213,18 +224,32 @@ func (n *Notifier) save() {
 	}
 }
 
-// ensureAccount adds the account to the Hub unless it is there.
+// ensureAccount adds the account to the Hub unless it is there with the current actions.
 func (n *Notifier) ensureAccount() {
-	if !n.opened() || n.acct {
+	if !n.opened() {
+		return
+	}
+	// An account added by an older build has the old actions, and the Hub only takes them when the
+	// account is added. The cost: its items go with it, and each chat's comes back with its next
+	// message.
+	again := n.acct && n.actions < hubActionSet
+	if again {
+		n.dropAccount()
+	}
+	if n.acct {
 		return
 	}
 	if err := n.account(true); err != nil {
 		n.log.Warnf("hub: add account: %v", err)
 		return
 	}
-	n.acct = true
+	n.acct, n.actions = true, hubActionSet
 	n.save()
-	n.log.Infof("hub: account added")
+	if again {
+		n.log.Infof("hub: account added again for its new actions")
+	} else {
+		n.log.Infof("hub: account added")
+	}
 }
 
 // dropAccount removes the account, and its items with it.
@@ -242,6 +267,10 @@ func (n *Notifier) dropAccount() {
 
 // apply brings one chat's item to what the note says.
 func (n *Notifier) apply(chat string, nt note) {
+	if nt.gone {
+		n.forget(chat)
+		return
+	}
 	if !n.opened() {
 		return
 	}
@@ -251,6 +280,10 @@ func (n *Notifier) apply(chat string, nt note) {
 	}
 	n.ensureAccount()
 	if !n.acct {
+		return
+	}
+	known = n.items[chat] // a re-added account holds none
+	if !known && !nt.add {
 		return
 	}
 	n.mu.Lock()
@@ -289,6 +322,32 @@ func (n *Notifier) apply(chat string, nt note) {
 		n.items[chat] = true
 		n.save()
 	}
+}
+
+// forget takes one chat's item out of the Hub, if there is one. A refusal only logs: the item
+// may be gone already, and it is forgotten either way.
+func (n *Notifier) forget(chat string) {
+	if !n.opened() || !n.items[chat] {
+		return
+	}
+	if err := n.remove(hubItemID(chat)); err != nil {
+		n.log.Warnf("hub: remove %s: %v", chat, err)
+	}
+	delete(n.items, chat)
+	n.save()
+	n.log.Infof("hub: remove %s", chat)
+}
+
+// removeItem is the Hub's Delete: the chat's item goes, the chat stays, and its next message
+// brings the item back.
+// The Hub asked, so the item is there even when hub.json lost track of it: known it is.
+func (n *Notifier) removeItem(chat string) {
+	n.queue(func() {
+		if n.opened() {
+			n.items[chat] = true
+			n.forget(chat)
+		}
+	}, "the removal")
 }
 
 // queue puts f on the notifier's thread. ponytail: a full queue (64 behind a stuck UDS) drops
