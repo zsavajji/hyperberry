@@ -21,7 +21,7 @@ Page {
     }
     onChatChanged: {
         ctl.open(chat)
-        if (chat.kind == 1) {
+        if (chat.kind <= 1) {
             addAction(infoAction, ActionBarPlacement.InOverflow)
         }
         ctl.messages.itemAdded.connect(page.added)
@@ -37,10 +37,14 @@ Page {
             id: infoDef
             source: "GroupInfoPage.qml"
         },
-        // Added for groups only (ActionItem has no visible).
+        ComponentDefinition {
+            id: contactDef
+            source: "ContactInfoPage.qml"
+        },
+        // Added for people and groups only (ActionItem has no visible).
         ActionItem {
             id: infoAction
-            title: qsTr("Group info")
+            title: page.chat && page.chat.kind == 0 ? qsTr("Contact info") : qsTr("Group info")
             onTriggered: page.showInfo()
         },
         SystemToast {
@@ -173,10 +177,19 @@ Page {
             list.scrollToPosition(ScrollPosition.Beginning, ScrollAnimation.None)
         }
     }
-    // The group's info page; the controller goes along, so the page reads what the chat page
-    // already asked for. The chat page stays under it, so it outlives the info page.
+    // The info page of a person or a group. A person's page asks the engine itself, with a fresh
+    // row for the mute state; a group's gets the controller, so it reads what the chat page already
+    // asked for. The chat page stays under it, so it outlives the info page.
     function showInfo() {
-        if (!chat || chat.kind != 1) {
+        if (!chat || chat.kind > 1) {
+            return
+        }
+        if (chat.kind == 0) {
+            var c = contactDef.createObject()
+            var row = chats.chat(chat.jid)
+            // No row for a contact picked with no chat yet.
+            c.chat = row.jid ? row : page.chat
+            nav.push(c)
             return
         }
         var p = infoDef.createObject()

@@ -142,7 +142,12 @@
 <context>
     <name>ChatPage</name>
     <message>
-        <location filename="../assets/ChatPage.qml" line="43"/>
+        <location filename="../assets/ChatPage.qml" line="47"/>
+        <source>Contact info</source>
+        <translation>Info contatto</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChatPage.qml" line="47"/>
         <source>Group info</source>
         <translation>Info gruppo</translation>
     </message>
@@ -311,6 +316,52 @@
         <location filename="../assets/ChatsPage.qml" line="156"/>
         <source>No chat matches.</source>
         <translation>Nessuna chat corrisponde.</translation>
+    </message>
+</context>
+<context>
+    <name>ContactInfo</name>
+    <message>
+        <location filename="../src/ContactInfo.cpp" line="49"/>
+        <source>Unnamed group</source>
+        <translation>Gruppo senza nome</translation>
+    </message>
+</context>
+<context>
+    <name>ContactInfoPage</name>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="22"/>
+        <source>Contact info</source>
+        <translation>Info contatto</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="154"/>
+        <source>Loading…</source>
+        <translation>Caricamento…</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="163"/>
+        <source>Couldn&apos;t load the contact&apos;s info. Check the connection and try again.</source>
+        <translation>Impossibile caricare le info del contatto. Controlla la connessione e riprova.</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="167"/>
+        <source>About</source>
+        <translation>Info</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="201"/>
+        <source>Mute notifications</source>
+        <translation>Disattiva notifiche</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="211"/>
+        <source>1 group in common</source>
+        <translation>1 gruppo in comune</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="211"/>
+        <source>%1 groups in common</source>
+        <translation>%1 gruppi in comune</translation>
     </message>
 </context>
 <context>

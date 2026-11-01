@@ -51,6 +51,37 @@ func (s *Sim) handleGroupInfo(req json.RawMessage) (any, error) {
 	return out, nil
 }
 
+// handleContactInfo answers contact.info after a round trip: Anna is in every group, Marco in
+// the band's, the rest in none.
+func (s *Sim) handleContactInfo(req json.RawMessage) (any, error) {
+	var r struct{ Chat string }
+	json.Unmarshal(req, &r)
+	jid, err := s.chat(r.Chat)
+	if err != nil {
+		return nil, err
+	}
+	if jid.Server != types.DefaultUserServer && jid.Server != types.HiddenUserServer {
+		return nil, &Error{"bad_chat", "not a person: " + r.Chat}
+	}
+	time.Sleep(simDelay)
+	out := contactInfo{About: "Hey there! I am using WhatsApp.", Groups: []groupRef{}}
+	if jid.Server == types.DefaultUserServer {
+		out.Phone = "+" + jid.User
+	} else {
+		out.About = ""
+	}
+	i := simIndex(r.Chat)
+	if i == 0 {
+		out.About = "Out for pizza 🍕"
+	}
+	for _, c := range simChats {
+		if strings.HasSuffix(c.jid, "@g.us") && (i == 0 || i == 2 && c.name == "🎸 Band practice") {
+			out.Groups = append(out.Groups, groupRef{c.jid, c.name})
+		}
+	}
+	return out, nil
+}
+
 // simStrangers are in the address book but have no chat yet.
 var simStrangers = []string{"Alessandro Romano", "Beatrice Conti", "Federico Marino", "Ilaria Costa",
 	"Matteo Ricci", "Noemi Bruno", "Valentina Moretti", "Zia Rosa 🌹"}
