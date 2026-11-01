@@ -3,6 +3,9 @@
 #include "EngineLink.h"
 #include "colors.h"
 
+#include <bb/system/InvokeRequest>
+#include <bb/system/InvokeTargetReply>
+
 ContactInfo::ContactInfo(QObject *parent)
     : QObject(parent)
 {
@@ -54,6 +57,20 @@ void ContactInfo::exportChat()
     QVariantMap args;
     args["chat"] = m_jid;
     m_exportId = m_engine->request("chat.export", args);
+}
+
+// The card the phone app's "Add to contacts" opens: new contact or an existing one, the number
+// filled in. Its target and type are from the Contacts app's manifest on the Q10 (2026-11-01).
+void ContactInfo::saveNumber(const QString &phone)
+{
+    bb::system::InvokeRequest request;
+    request.setTarget("sys.pim.contacts.card.picker");
+    request.setAction("bb.action.ADDTOCONTACT");
+    request.setMimeType("application/vnd.blackberry.string.phone");
+    request.setData(phone.toUtf8());
+    bb::system::InvokeTargetReply *reply = m_invoker.invoke(request);
+    if (reply)
+        connect(reply, SIGNAL(finished()), reply, SLOT(deleteLater()));
 }
 
 // Gives each group the tile the chat list gives it: initials and the jid's colour.

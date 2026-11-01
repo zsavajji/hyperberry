@@ -235,6 +235,7 @@ Page {
                     textStyle.fontSize: FontSize.PercentageValue
                     textStyle.fontSizeValue: nav.bodySize * 1.3
                 }
+                // In the primary colour, as a link: a tap saves the number in the phone's contacts.
                 Label {
                     visible: !!page.info.phone
                     horizontalAlignment: HorizontalAlignment.Center
@@ -243,7 +244,10 @@ Page {
                     textStyle.base: nav.emojiStyle
                     textStyle.fontSize: FontSize.PercentageValue
                     textStyle.fontSizeValue: nav.bodySize
-                    textStyle.color: ui.palette.secondaryTextOnPlain
+                    textStyle.color: ui.palette.primary
+                    gestureHandlers: TapHandler {
+                        onTapped: contact.saveNumber(page.info.phone)
+                    }
                 }
             }
             Busy {

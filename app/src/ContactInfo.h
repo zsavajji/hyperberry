@@ -1,6 +1,7 @@
 #ifndef CONTACTINFO_H
 #define CONTACTINFO_H
 
+#include <bb/system/InvokeManager>
 #include <QObject>
 #include <QPointer>
 #include <QString>
@@ -31,6 +32,8 @@ public:
     Q_INVOKABLE void block(bool on);
     // Writes the chat as a text file into Downloads; exported() says where.
     Q_INVOKABLE void exportChat();
+    // Opens the Contacts app's card to save the number in a new or an existing contact.
+    Q_INVOKABLE void saveNumber(const QString &phone);
 
 signals:
     void infoChanged();
@@ -46,6 +49,7 @@ private:
     QString m_id; // the contact.info request we wait for
     QString m_blockId; // the contact.block request we wait for
     QString m_exportId; // the chat.export request we wait for
+    bb::system::InvokeManager m_invoker;
 };
 
 #endif
