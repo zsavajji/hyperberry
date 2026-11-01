@@ -17,8 +17,16 @@ func runEngine(container *sqlstore.Container, dataDir string, log waLog.Logger, 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	// First, before anything slow: the navigator gives a headless app 6 s.
-	// The launch itself is the start; a START sent to a running engine needs nothing.
-	connectNavigator(stop, func(string) {}, log.Sub("nav"))
+	// The launch itself is the start; a START sent to a running engine needs nothing. The
+	// Hub's actions wait in invokes for hubActions; the callback runs on the BPS thread, so it
+	// drops what doesn't fit.
+	invokes := make(chan invocation, 16)
+	connectNavigator(stop, func(inv invocation) {
+		select {
+		case invokes <- inv:
+		default:
+		}
+	}, log.Sub("nav"))
 	if sim {
 		// Simulated rows must never mix with a real history.
 		if d, err := container.GetFirstDevice(context.Background()); err != nil || d.ID != nil {
@@ -50,6 +58,7 @@ func runEngine(container *sqlstore.Container, dataDir string, log waLog.Logger, 
 		}
 		hello, closeSession = sess.hello, sess.close
 	}
+	go hubActions(srv, invokes, log.Sub("hub"))
 	go func() {
 		if err := srv.Serve(); err != nil {
 			log.Errorf("server: %v", err)

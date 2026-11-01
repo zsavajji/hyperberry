@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/hex"
 	"fmt"
 	"testing"
 )
@@ -50,16 +49,26 @@ func TestSimChatSetRefuses(t *testing.T) {
 	}
 }
 
-func TestNotifyChatSet(t *testing.T) {
-	s, _, _, h := hubSim(t)
-	chat := simChats[2].jid // 3 unread
-	s.handleChatSet([]byte(`{"chat":"` + chat + `","unread":true}`))
-	s.handleChatSet([]byte(`{"chat":"` + chat + `","unread":false}`))
-	_, g := h.wait(t, 0, 1)
-	if g[0] != hex.EncodeToString([]byte(chat)) {
-		t.Errorf("withdrew %s", g[0])
+func TestHubChatSet(t *testing.T) {
+	s, st, _, h := hubSim(t)
+	set := func(body string) {
+		t.Helper()
+		if _, err := s.handleChatSet([]byte(`{"chat":"` + simChats[2].jid + `",` + body + `}`)); err != nil {
+			t.Fatal(err)
+		}
+		flush(t, st)
 	}
-	s.handleChatSet([]byte(`{"chat":"` + chat + `","mute":-1}`))
+	set(`"unread":true`) // 3 unread, no item: nothing to change in the Hub
+	set(`"unread":false`)
+	if c := h.take(); len(c) != 0 {
+		t.Fatalf("a chat with no item: %v", c)
+	}
+	set(`"mute":-1`)
 	msg(s, 2, "quiet")
-	h.wait(t, 0, 1)
+	flush(t, st)
+	item(t, only(t, h.take(), "add"), 2, "quiet", 1, false) // a muted chat's item is silent
+	set(`"unread":true`)
+	item(t, only(t, h.take(), "update"), 2, "quiet", 1, false) // marked unread by hand shows as one
+	set(`"unread":false`)
+	item(t, only(t, h.take(), "update"), 2, "quiet", 0, false)
 }

@@ -1,6 +1,6 @@
 #!/bin/sh
 # Runs the engine's tests on the PC, in the build image. The engine is plain Go, so it also
-# builds for Linux; only notify_qnx.go and the phone itself need the BB10 build.
+# builds for Linux; only the *_qnx.go files and the phone itself need the BB10 build.
 set -eu
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 CACHE=${XDG_CACHE_HOME:-$HOME/.cache}/hyperberry-go   # apart from stock Go's (go-qnx README)

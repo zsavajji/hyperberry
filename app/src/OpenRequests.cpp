@@ -1,5 +1,9 @@
 #include "OpenRequests.h"
 
+#include <QByteArray>
+#include <QDebug>
+#include <QRegExp>
+
 using namespace bb::system;
 
 // The invocation that started the app is delivered through the same signal, once the event
@@ -13,6 +17,12 @@ OpenRequests::OpenRequests(InvokeManager *manager, QObject *parent)
 
 void OpenRequests::invoked(const InvokeRequest &request)
 {
-    if (request.action() == "com.zsavajji.hyperberry.OPEN")
-        emit openChat(QString::fromUtf8(request.data().constData(), request.data().size()));
+    if (request.action() != "bb.action.OPEN" && request.action() != "bb.action.VIEW")
+        return;
+    // Logged whole: where the Hub puts the item id is for the Q10 to show.
+    qDebug() << "invoked:" << request.action() << request.mimeType() << request.uri()
+             << request.data();
+    QRegExp item("chat_([0-9a-f]+)");
+    if (item.indexIn(request.uri().toString() + " " + QString::fromUtf8(request.data())) >= 0)
+        emit openChat(QString::fromUtf8(QByteArray::fromHex(item.cap(1).toLatin1())));
 }

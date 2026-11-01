@@ -84,6 +84,20 @@ func NewServer(dataDir string, log waLog.Logger, hello func() any) (*Server, err
 // Handle registers the handler for cmd; do it before Serve.
 func (s *Server) Handle(cmd string, h Handler) { s.handlers[cmd] = h }
 
+// Call runs the handler of cmd with req as a UI request would, for the engine's own use (the
+// Hub's actions). Like Handle, it is for after the handlers are in.
+func (s *Server) Call(cmd string, req any) (any, error) {
+	h := s.handlers[cmd]
+	if h == nil {
+		return nil, &Error{"unknown_cmd", "unknown cmd " + cmd}
+	}
+	line, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+	return h(line)
+}
+
 // Serve accepts clients until Close, then returns nil.
 func (s *Server) Serve() error {
 	for {

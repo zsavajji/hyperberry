@@ -104,9 +104,10 @@ func (t *storeTx) setPlayed(chat, id string) {
 	}
 }
 
+// setUnread sets the chat's counter (0 read, -1 marked unread); the Hub's item follows.
 func (t *storeTx) setUnread(chat string, n int) {
-	if t.touch(chat, "UPDATE chats SET unread = ?1 WHERE unread != ?1 AND jid = ?2", n) && n == 0 {
-		t.note(chat, note{})
+	if t.touch(chat, "UPDATE chats SET unread = ?1 WHERE unread != ?1 AND jid = ?2", n) {
+		t.hubItem(chat, false, false)
 	}
 }
 

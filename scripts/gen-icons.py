@@ -1,6 +1,7 @@
 """Draws the chat list's small marks into app/assets/images/: ticks, clock, mute, pin and mic,
-the action bar's record icon, the row menu's pin and mute, and the voice bubble's play, pause
-and retry discs.
+the action bar's record icon, the row menu's pin and mute, the voice bubble's play, pause and
+retry discs, and the Hub's: the item menu's tick_action and unread_action, and the account's
+hub.png (the app's green with message.png, which this script doesn't make, on it).
 
 They're white on transparent, so QML tints them with ImageView.filterColor (grey, or the
 primary colour for read). Each is drawn at 8x and scaled down to its size on the Q10: 3 du,
@@ -44,6 +45,7 @@ def main(out):
     img, d = canvas(H)
     d.line(pts((0.14, 0.52), (0.38, 0.76), (0.86, 0.26)), white, w, joint="curve")
     save(img, out, "tick")
+    action(img, out, "tick")  # the Hub item menu's Mark as read
 
     # The second tick's short stroke starts past the first tick's long one, as WhatsApp draws it.
     img, d = canvas(round(H * 1.3))
@@ -64,6 +66,11 @@ def main(out):
     d.line(pts((0.6, 0.64), (0.9, 0.36)), white, x)
     save(img, out, "mute")
     action(img, out, "mute")
+
+    # A filled disc: the Hub item menu's Mark as unread, as the unread dot of a chat.
+    img, d = canvas(H)
+    d.ellipse(pts((0.22, 0.22), (0.78, 0.78)), white)
+    action(img, out, "unread")
 
     # A pushpin, drawn upright and turned 45 degrees.
     img, d = canvas(H)
@@ -128,6 +135,16 @@ def main(out):
             d.arc(p((0.28, 0.28), (0.72, 0.72)), 40, 330, dark, round(0.08 * D * S))
             d.polygon(p((0.70, 0.22), (0.76, 0.46), (0.52, 0.40)), dark)
         img.resize((D, D), Image.LANCZOS).save(f"{out}/{name}.png")
+
+    # The Hub account's icon: the app's green in a rounded square, message.png at 60% of it.
+    B = 81
+    img = Image.new("RGBA", (B * S, B * S), (0, 0, 0, 0))
+    ImageDraw.Draw(img).rounded_rectangle((0, 0, B * S - 1, B * S - 1), round(0.18 * B * S), (0x1B, 0xD8, 0x62, 255))
+    m = Image.open(f"{out}/message.png").convert("RGBA")
+    side = round(0.6 * B * S)
+    m = m.resize((side, round(side * m.height / m.width)), Image.LANCZOS)
+    img.paste(m, ((B * S - m.width) // 2, (B * S - m.height) // 2), m)
+    img.resize((B, B), Image.LANCZOS).save(f"{out}/hub.png")
 
 
 if __name__ == "__main__":

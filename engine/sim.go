@@ -250,13 +250,14 @@ func (s *Sim) handleRemoved(json.RawMessage) (any, error) {
 	return nil, nil
 }
 
-// endSync ends sim.link's "syncing" and tells the UI.
+// endSync ends sim.link's "syncing" and tells the UI, then lets the Hub show the account.
 func (s *Sim) endSync() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.syncing {
 		s.syncing = false
 		s.setLink(s.link)
+		s.store.nt.link() // the new link's chats are in
 	}
 }
 

@@ -125,13 +125,14 @@ func (s *Session) setLink(state string) {
 	s.srv.Emit("link", s.linkBody())
 }
 
-// endSync ends a new link's "syncing" and tells the UI.
+// endSync ends a new link's "syncing" and tells the UI, then lets the Hub show the account.
 func (s *Session) endSync() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.syncing {
 		s.syncing = false
 		s.setLink(s.link)
+		s.store.nt.link() // the new link's chats are in
 	}
 }
 

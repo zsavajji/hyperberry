@@ -48,19 +48,34 @@
             <mime-type>*</mime-type>
             <property var="uris" value="data://local"/>
         </filter>
+        <!-- The Hub items' Mark as read and Mark as unread. -->
+        <filter>
+            <action>com.zsavajji.hyperberry.MARKREAD</action>
+            <action>com.zsavajji.hyperberry.MARKUNREAD</action>
+            <mime-type>application/vnd.zsavajji.hyperberry.chat</mime-type>
+            <property var="uris" value="data://,pim:"/>
+        </filter>
     </invoke-target>
-    <!-- The UI, opened by a tap on the engine's notification (engine/notify_qnx.go). -->
+    <!-- The UI, opened by a tap on a chat's item in the Hub (engine/hub_qnx.go). Without the pim:
+         uri a tap matches nothing. -->
     <invoke-target id="com.zsavajji.hyperberry">
         <invoke-target-type>application</invoke-target-type>
         <entry-point-id>HyperBerry</entry-point-id>
         <filter>
-            <action>com.zsavajji.hyperberry.OPEN</action>
-            <mime-type>text/plain</mime-type>
-            <property var="uris" value="data://local"/>
+            <action>bb.action.OPEN</action>
+            <action>bb.action.VIEW</action>
+            <mime-type>application/vnd.zsavajji.hyperberry.chat</mime-type>
+            <property var="uris" value="pim:"/>
         </filter>
     </invoke-target>
 
     <asset path="assets">assets</asset>
+    <!-- The Hub is another process: it reads these from /apps/<pkg>/public/ (engine/hub_qnx.go
+         hands it that folder). -->
+    <asset path="assets/images/hub.png" public="true">hub.png</asset>
+    <asset path="assets/images/message.png" public="true">message.png</asset>
+    <asset path="assets/images/tick_action.png" public="true">tick_action.png</asset>
+    <asset path="assets/images/unread_action.png" public="true">unread_action.png</asset>
 
     <permission system="true">run_native</permission>
     <permission>access_internet</permission>
@@ -68,6 +83,9 @@
     <permission>post_notification</permission>
     <permission>record_audio</permission>
     <permission>play_audio</permission>
+    <!-- The Hub account (step 5.7). The name is from BBTelega's bar, an unsigned app with a
+         working Hub account on the Q10. -->
+    <permission system="true">_sys_access_pim_unified</permission>
     <env var="LD_LIBRARY_PATH" value="app/native/lib:/usr/lib/qt4/lib"/>
     <env var="CASCADES_THEME" value="dark?primaryColor=0x1BD862&amp;primaryBase=0x14A249"/>
 </qnx>

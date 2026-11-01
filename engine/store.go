@@ -18,6 +18,10 @@ import (
 const (
 	batchOps  = 500
 	batchTime = 50 * time.Millisecond
+	// backlogCap ends a backlog whose OfflineSyncCompleted never comes.
+	// ponytail: a sync that never completes (a dropped connection) flushes after the cap; a
+	// second preview inside it is ended by the first's timer, which only makes the Hub earlier.
+	backlogCap = 2 * time.Minute
 	// muteForever stands for WhatsApp's "always" (-1) as a unix time that never comes.
 	muteForever = int64(1) << 40
 )
@@ -30,8 +34,12 @@ type Store struct {
 	ops  chan func(*storeTx)
 	done chan struct{}
 	quit bool // only the writer touches it
-	ui   uiState
-	nt   *Notifier
+	// backlog is set from OfflineSyncPreview to OfflineSyncCompleted while the server hands over
+	// what came during downtime; those chats reach the Hub only at the end, so chats read on the
+	// main phone meanwhile don't alert (the user's call, 2026-11-01). Only the writer touches it.
+	backlog map[string]bool
+	ui      uiState
+	nt      *Notifier
 	// historyIn is called once a recent-chats history sync has committed: the session ends its
 	// "syncing" then (step 5.5, after the Q10 test). Set before the client connects.
 	historyIn func()
@@ -97,10 +105,11 @@ func (st *Store) afterCommit(f func()) {
 	st.ops <- func(t *storeTx) { t.after = append(t.after, f) }
 }
 
-// wipe takes what is left of the old link once clear has committed: the voice notes and the
-// decoded cache, and the deleted rows still in chats.db's free pages and WAL. The UI's settings
-// stay: they belong to the phone. Both folders come back on the next write.
+// wipe takes what is left of the old link once clear has committed: the Hub's account, the
+// voice notes and the decoded cache, and the deleted rows still in chats.db's free pages and
+// WAL. The UI's settings stay: they belong to the phone. Both folders come back on the next write.
 func (st *Store) wipe() {
+	st.nt.unlink() // the Hub's account and items belong to the link too
 	for _, d := range []string{"voice", "cache"} {
 		if err := os.RemoveAll(filepath.Join(st.srv.dir, d)); err != nil {
 			st.log.Warnf("wipe %s: %v", d, err)
@@ -118,6 +127,17 @@ func (st *Store) handle(cli *whatsmeow.Client, evt any) {
 	switch e := evt.(type) {
 	case *events.Connected:
 		go st.syncGroups(cli)
+		return
+	case *events.OfflineSyncPreview: // not through dispatch: cli may be nil
+		st.ops <- func(*storeTx) {
+			if st.backlog == nil {
+				st.backlog = map[string]bool{}
+			}
+		}
+		time.AfterFunc(backlogCap, func() { st.ops <- (*storeTx).endBacklog })
+		return
+	case *events.OfflineSyncCompleted:
+		st.ops <- (*storeTx).endBacklog
 		return
 	case *events.HistorySync, *events.Message, *events.Contact, *events.PushName, *events.GroupInfo,
 		*events.JoinedGroup, *events.Mute, *events.Pin, *events.Archive, *events.MarkChatAsRead,
