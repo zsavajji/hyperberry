@@ -43,6 +43,7 @@ signals:
 private slots:
     void onReplied(const QString &id, const QString &cmd, const QVariant &result);
     void onFailure();
+    void onConnected();
 
 private:
     void set(const QString &key, const QString &value);
@@ -50,6 +51,7 @@ private:
     QPointer<EngineLink> m_engine;
     QVariantMap m_info;
     QString m_id; // the profile.get request we wait for
+    bool m_wanted; // the page asked; asked again when the engine connects, until it answers
 };
 
 #endif

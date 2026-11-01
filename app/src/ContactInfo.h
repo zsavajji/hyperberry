@@ -41,6 +41,7 @@ signals:
 
 private slots:
     void onReplied(const QString &id, const QString &cmd, const QVariant &result);
+    void onConnected();
 
 private:
     QPointer<EngineLink> m_engine;

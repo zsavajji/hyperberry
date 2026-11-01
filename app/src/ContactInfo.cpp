@@ -20,9 +20,18 @@ QObject *ContactInfo::link() const
 void ContactInfo::setLink(QObject *link)
 {
     m_engine = qobject_cast<EngineLink *>(link);
-    if (m_engine)
+    if (m_engine) {
         connect(m_engine, SIGNAL(replied(QString, QString, QVariant)), this,
                 SLOT(onReplied(QString, QString, QVariant)));
+        connect(m_engine, SIGNAL(connectedChanged()), this, SLOT(onConnected()));
+    }
+}
+
+// As Profile's: a page opened while the engine (re)starts is asked again once it's connected.
+void ContactInfo::onConnected()
+{
+    if (m_engine && m_engine->connected() && !m_jid.isEmpty() && m_info.isEmpty())
+        ask(m_jid);
 }
 
 QVariantMap ContactInfo::info() const

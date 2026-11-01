@@ -12,6 +12,7 @@ static const int kPhotoSide = 640;
 
 Profile::Profile(QObject *parent)
     : QObject(parent)
+    , m_wanted(false)
 {
 }
 
@@ -28,7 +29,16 @@ void Profile::setLink(QObject *link)
         connect(m_engine, SIGNAL(replied(QString, QString, QVariant)), this,
                 SLOT(onReplied(QString, QString, QVariant)));
         connect(m_engine, SIGNAL(failureChanged()), this, SLOT(onFailure()));
+        connect(m_engine, SIGNAL(connectedChanged()), this, SLOT(onConnected()));
     }
+}
+
+// A page opened while the engine (re)starts asks before it's there: the request fails with
+// no_engine and nothing would ask again (Q10, 2026-11-01). So it's asked again on connecting.
+void Profile::onConnected()
+{
+    if (m_engine && m_engine->connected() && m_wanted && m_info.isEmpty())
+        ask();
 }
 
 QVariantMap Profile::info() const
@@ -40,6 +50,7 @@ void Profile::ask()
 {
     if (!m_engine)
         return;
+    m_wanted = true;
     m_id = m_engine->request("profile.get", QVariantMap());
 }
 
