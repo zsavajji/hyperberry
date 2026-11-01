@@ -23,6 +23,15 @@ NavigationPane {
         settingsAction: SettingsActionItem {
             onTriggered: nav.push(settingsDef.createObject())
         }
+        // Beside Settings (step 5.9). Off while unlinked: there is no profile to show.
+        actions: [
+            ActionItem {
+                title: qsTr("Profile")
+                imageSource: "asset:///images/contacts_action.png"
+                enabled: engine.linked
+                onTriggered: nav.push(profileDef.createObject())
+            }
+        ]
     }
     attachedObjects: [
         ComponentDefinition {
@@ -36,6 +45,10 @@ NavigationPane {
         ComponentDefinition {
             id: settingsDef
             source: "SettingsPage.qml"
+        },
+        ComponentDefinition {
+            id: profileDef
+            source: "ProfilePage.qml"
         },
         ComponentDefinition {
             id: coverDef

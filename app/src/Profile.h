@@ -8,7 +8,7 @@
 
 class EngineLink;
 
-// My profile on the settings page (step 5.9), made by QML in the page's attachedObjects: the
+// My profile page (step 5.9), made by QML in the page's attachedObjects: the
 // request's owner dies with the page, so no connection to the engine outlives it.
 class Profile : public QObject
 {

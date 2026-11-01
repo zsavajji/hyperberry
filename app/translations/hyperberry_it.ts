@@ -762,6 +762,69 @@
     </message>
 </context>
 <context>
+    <name>ProfilePage</name>
+    <message>
+        <location filename="../assets/ProfilePage.qml" line="20"/>
+        <source>Profile</source>
+        <translation>Profilo</translation>
+    </message>
+    <message>
+        <location filename="../assets/ProfilePage.qml" line="35"/>
+        <source>Change photo</source>
+        <translation>Cambia foto</translation>
+    </message>
+    <message>
+        <location filename="../assets/ProfilePage.qml" line="37"/>
+        <source>Remove photo</source>
+        <translation>Rimuovi foto</translation>
+    </message>
+    <message>
+        <location filename="../assets/ProfilePage.qml" line="69"/>
+        <source>Profile photo</source>
+        <translation>Foto del profilo</translation>
+    </message>
+    <message>
+        <location filename="../assets/ProfilePage.qml" line="70"/>
+        <source>Cancel</source>
+        <translation>Annulla</translation>
+    </message>
+    <message>
+        <location filename="../assets/ProfilePage.qml" line="84"/>
+        <source>Your name</source>
+        <translation>Il tuo nome</translation>
+    </message>
+    <message>
+        <location filename="../assets/ProfilePage.qml" line="95"/>
+        <source>About</source>
+        <translation>Info</translation>
+    </message>
+    <message>
+        <location filename="../assets/ProfilePage.qml" line="106"/>
+        <source>Couldn't update your profile. Check the connection and try again.</source>
+        <translation>Impossibile aggiornare il profilo. Controlla la connessione e riprova.</translation>
+    </message>
+    <message>
+        <location filename="../assets/ProfilePage.qml" line="110"/>
+        <source>Couldn't read that picture.</source>
+        <translation>Impossibile leggere questa immagine.</translation>
+    </message>
+    <message>
+        <location filename="../assets/ProfilePage.qml" line="169"/>
+        <source>Tap to edit</source>
+        <translation>Tocca per modificare</translation>
+    </message>
+    <message>
+        <location filename="../assets/ProfilePage.qml" line="192"/>
+        <source>Loading…</source>
+        <translation>Caricamento…</translation>
+    </message>
+    <message>
+        <location filename="../assets/ProfilePage.qml" line="201"/>
+        <source>Couldn't load your profile. Check the connection and try again.</source>
+        <translation>Impossibile caricare il profilo. Controlla la connessione e riprova.</translation>
+    </message>
+</context>
+<context>
     <name>RecordingBar</name>
     <message>
         <location filename="../assets/RecordingBar.qml" line="23"/>
@@ -780,157 +843,112 @@
 <context>
     <name>SettingsPage</name>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="20"/>
+        <location filename="../assets/SettingsPage.qml" line="9"/>
         <source>Settings</source>
         <translation>Impostazioni</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="36"/>
-        <source>Change photo</source>
-        <translation>Cambia foto</translation>
-    </message>
-    <message>
-        <location filename="../assets/SettingsPage.qml" line="38"/>
-        <source>Remove photo</source>
-        <translation>Rimuovi foto</translation>
-    </message>
-    <message>
-        <location filename="../assets/SettingsPage.qml" line="70"/>
-        <source>Profile photo</source>
-        <translation>Foto del profilo</translation>
-    </message>
-    <message>
-        <location filename="../assets/SettingsPage.qml" line="71"/>
-        <source>Cancel</source>
-        <translation>Annulla</translation>
-    </message>
-    <message>
-        <location filename="../assets/SettingsPage.qml" line="85"/>
-        <source>Your name</source>
-        <translation>Il tuo nome</translation>
-    </message>
-    <message>
-        <location filename="../assets/SettingsPage.qml" line="96"/>
-        <source>About</source>
-        <translation>Info</translation>
-    </message>
-    <message>
-        <location filename="../assets/SettingsPage.qml" line="107"/>
-        <source>Couldn't update your profile. Check the connection and try again.</source>
-        <translation>Impossibile aggiornare il profilo. Controlla la connessione e riprova.</translation>
-    </message>
-    <message>
-        <location filename="../assets/SettingsPage.qml" line="111"/>
-        <source>Couldn't read that picture.</source>
-        <translation>Impossibile leggere questa immagine.</translation>
-    </message>
-    <message>
-        <location filename="../assets/SettingsPage.qml" line="115"/>
+        <location filename="../assets/SettingsPage.qml" line="16"/>
         <source>Unlink this device?</source>
         <translation>Scollegare questo dispositivo?</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="116"/>
+        <location filename="../assets/SettingsPage.qml" line="17"/>
         <source>This device is removed from your linked devices and its chats are deleted here.</source>
         <translation>Il dispositivo viene rimosso dai dispositivi collegati e le sue chat vengono eliminate qui.</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="117"/>
+        <location filename="../assets/SettingsPage.qml" line="18"/>
         <source>Unlink</source>
         <translation>Scollega</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="181"/>
-        <source>Loading…</source>
-        <translation>Caricamento…</translation>
+        <location filename="../assets/SettingsPage.qml" line="19"/>
+        <source>Cancel</source>
+        <translation>Annulla</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="187"/>
-        <source>Couldn't load your profile. Check the connection and try again.</source>
-        <translation>Impossibile caricare il profilo. Controlla la connessione e riprova.</translation>
-    </message>
-    <message>
-        <location filename="../assets/SettingsPage.qml" line="241"/>
+        <location filename="../assets/SettingsPage.qml" line="36"/>
         <source>Theme</source>
         <translation>Tema</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="243"/>
+        <location filename="../assets/SettingsPage.qml" line="38"/>
         <source>Dark</source>
         <translation>Scuro</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="244"/>
+        <location filename="../assets/SettingsPage.qml" line="39"/>
         <source>Bright</source>
         <translation>Chiaro</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="249"/>
+        <location filename="../assets/SettingsPage.qml" line="44"/>
         <source>Text size</source>
         <translation>Dimensione del testo</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="251"/>
+        <location filename="../assets/SettingsPage.qml" line="46"/>
         <source>Small</source>
         <translation>Piccola</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="252"/>
+        <location filename="../assets/SettingsPage.qml" line="47"/>
         <source>Normal</source>
         <translation>Normale</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="253"/>
+        <location filename="../assets/SettingsPage.qml" line="48"/>
         <source>Large</source>
         <translation>Grande</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="268"/>
+        <location filename="../assets/SettingsPage.qml" line="63"/>
         <source>Enter sends</source>
         <translation>Invio invia il messaggio</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="272"/>
+        <location filename="../assets/SettingsPage.qml" line="67"/>
         <source>Off, Enter starts a new line; the Send action still sends.</source>
         <translation>Se disattivato, Invio va a capo; l'azione Invia continua a inviare.</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="296"/>
+        <location filename="../assets/SettingsPage.qml" line="91"/>
         <source>Notification preview</source>
         <translation>Anteprima notifiche</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="300"/>
+        <location filename="../assets/SettingsPage.qml" line="95"/>
         <source>Off, a notification says &quot;New message&quot; instead of the text.</source>
         <translation>Se disattivato, la notifica mostra &quot;Nuovo messaggio&quot; invece del testo.</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="315"/>
+        <location filename="../assets/SettingsPage.qml" line="110"/>
         <source>Storage</source>
         <translation>Spazio</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="327"/>
+        <location filename="../assets/SettingsPage.qml" line="122"/>
         <source>Cache: %1</source>
         <translation>Cache: %1</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="331"/>
+        <location filename="../assets/SettingsPage.qml" line="126"/>
         <source>Clear cache</source>
         <translation>Svuota la cache</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="336"/>
+        <location filename="../assets/SettingsPage.qml" line="131"/>
         <source>Cache cleared: %1 freed</source>
         <translation>Cache svuotata: %1 liberati</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="344"/>
+        <location filename="../assets/SettingsPage.qml" line="139"/>
         <source>Voice notes' decoded audio and photo previews; they're made again when needed.</source>
         <translation>L'audio decodificato dei vocali e le anteprime delle foto; si rifanno quando servono.</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="352"/>
+        <location filename="../assets/SettingsPage.qml" line="147"/>
         <source>Unlink this device</source>
         <translation>Scollega questo dispositivo</translation>
     </message>
@@ -979,6 +997,14 @@
         <location filename="../assets/errors.js" line="13"/>
         <source>That didn&apos;t work: %1</source>
         <translation>Operazione non riuscita: %1</translation>
+    </message>
+</context>
+<context>
+    <name>main</name>
+    <message>
+        <location filename="../assets/main.qml" line="29"/>
+        <source>Profile</source>
+        <translation>Profilo</translation>
     </message>
 </context>
 </TS>
