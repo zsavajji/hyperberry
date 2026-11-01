@@ -17,7 +17,8 @@ It is built from two parts that ship in one `.bar`:
 Calls are planned for later, through [meowcaller](https://github.com/purpshell/meowcaller).
 
 **Status:** not usable yet. Iteration 1 (chats, emoji, voice notes, notifications, settings,
-Italian) is written and runs against a simulated account; it hasn't linked a real number.
+Italian) is written and checked on a Q10 against a simulated account; it hasn't linked a real
+number.
 See [docs/plan/status.md](docs/plan/status.md).
 
 > HyperBerry is an independent project, not affiliated with or endorsed by WhatsApp or Meta.
