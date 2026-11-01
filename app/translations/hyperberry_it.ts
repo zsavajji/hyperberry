@@ -564,6 +564,14 @@ Il telefono invia le chat recenti poco dopo il collegamento.</translation>
     </message>
 </context>
 <context>
+    <name>RecordingBar</name>
+    <message>
+        <location filename="../assets/RecordingBar.qml" line="23"/>
+        <source>Recording %1</source>
+        <translation>Registrazione %1</translation>
+    </message>
+</context>
+<context>
     <name>SettingsPage</name>
     <message>
         <location filename="../assets/SettingsPage.qml" line="7"/>

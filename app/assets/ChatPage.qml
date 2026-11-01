@@ -109,9 +109,6 @@ Page {
                 // Off, Enter is a new line: the key still submits, so the field keeps its focus.
                 onSubmitted: settings.enterSends ? page.send() : composer.editor.insertPlainText("\n")
             }
-            // Typing while recording leaves the recording alone: the text stays for later, and
-            // Send finishes the recording first.
-            status: recorder.recording ? "\u25CF " + recorder.clock : ""
             onTextChanging: ctl.composing(text)
         },
         ActionItem {
@@ -460,6 +457,12 @@ Page {
                 textStyle.base: nav.emojiStyle
                 textStyle.color: ui.palette.secondaryTextOnPlain
             }
+        }
+        // Typing while recording leaves the recording alone: the text stays for later, and Send
+        // finishes the recording first.
+        RecordingBar {
+            visible: recorder.recording
+            clock: recorder.clock
         }
         // Created at the first open and kept (delegateActive stays true).
         ControlDelegate {
