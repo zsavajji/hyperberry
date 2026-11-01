@@ -1,10 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"image/jpeg"
 	"mime"
 	"os"
 	"path/filepath"
@@ -22,20 +20,16 @@ import (
 // send follow it.
 
 // maxSendSize is the biggest file media.send takes.
-// ponytail: the file is read whole, as hypermeow's Upload takes bytes; a stream if 100 MB
-// proves too much for the Q10's memory.
+// ponytail: a fixed cap, picked for a phone's upload time; the file streams now, so memory is
+// not why. Raise it if it gets in the way.
 const maxSendSize = 100 << 20
+
+// maxThumb is the biggest thumbnail media.send takes, decoded: WhatsApp's are a few KB.
+const maxThumb = 16 << 10
 
 // mediaTimeout bounds a media upload or download: a video of tens of MB takes minutes on a
 // phone's data connection, past sendTimeout's minute.
 const mediaTimeout = 10 * time.Minute
-
-// thumbSide and thumbQuality are the thumbnail inside an image message: WhatsApp's are small,
-// and the 320 px preview could swell the message.
-const (
-	thumbSide    = 96
-	thumbQuality = 60
-)
 
 // sendMimes are the mimetypes of the extensions we send by name: mediaExts reversed (it has the
 // extensions of what WhatsApp sends), and JPEG.
@@ -71,15 +65,22 @@ func sendKind(path string) (kind int, mimeType string) {
 	return kind, "application/octet-stream"
 }
 
+// mediaSendReq is media.send. Thumb (a JPEG, base64 in the JSON), Width and Height are a
+// photo's, made by the UI: the engine never decodes a picture, its memory is too small.
 type mediaSendReq struct {
 	Chat, Path, Quote string
+	Thumb             []byte
+	Width, Height     int
 	size              int64 // from the stat of parseMediaSend
 }
 
 func parseMediaSend(req json.RawMessage) (mediaSendReq, error) {
 	var r mediaSendReq
 	if err := json.Unmarshal(req, &r); err != nil || !filepath.IsAbs(r.Path) {
-		return r, &Error{"bad_request", "media.send needs chat and an absolute path"}
+		return r, &Error{"bad_request", "media.send needs chat and an absolute path (thumb is base64)"}
+	}
+	if len(r.Thumb) > maxThumb || r.Width < 0 || r.Height < 0 {
+		return r, &Error{"bad_request", "media.send: thumb is at most 16 KB, width and height aren't negative"}
 	}
 	fi, err := os.Stat(r.Path)
 	switch {
@@ -96,61 +97,44 @@ func parseMediaSend(req json.RawMessage) (mediaSendReq, error) {
 type mediaOut struct {
 	row     msgRow // as queued
 	mime    string
-	data    []byte // the file, read for a photo's preview; nil otherwise, and the upload reads it
 	quote   msgRow
 	created bool // the chat was new
 }
 
-// queueMedia puts our row in as sending, with a photo's 320 px preview, and is the one place
-// both accounts build it. A file that won't decode only logs: the row has no thumbnail.
-func (st *Store) queueMedia(jid types.JID, r mediaSendReq, id string) (*mediaOut, error) {
+// queueMedia puts our row in as sending, and is the one place both accounts build it. A
+// photo's thumbnail and size are the UI's; the other kinds ignore them.
+func (st *Store) queueMedia(jid types.JID, r mediaSendReq, id string) *mediaOut {
 	kind, mimeType := sendKind(r.Path)
 	o := &mediaOut{mime: mimeType, row: msgRow{Chat: r.Chat, ID: id, TS: time.Now().Unix(), Out: true,
 		State: stateSending, Kind: kind, Size: r.size, Path: r.Path, MediaState: 2}}
 	switch kind {
 	case msgPhoto:
-		var err error
-		if o.data, err = os.ReadFile(r.Path); err != nil {
-			return nil, &Error{"bad_request", err.Error()}
-		}
-		var perr error
-		if o.row.Thumb, o.row.Width, o.row.Height, perr = previewOf(o.data); perr != nil {
-			st.log.Warnf("preview of %s: %v", r.Path, perr)
-		}
+		o.row.Thumb, o.row.Width, o.row.Height = r.Thumb, r.Width, r.Height
 	case msgDoc:
 		o.row.Text = filepath.Base(r.Path)
 	}
 	o.quote, o.created = st.queueRow(jid, r.Chat, r.Quote, o.row)
-	return o, nil
-}
-
-// smallThumb is the preview shrunk to the thumbnail of an image message, or nil if it won't.
-// Made from the 320 px preview, so the photo isn't decoded twice.
-func smallThumb(preview []byte) []byte {
-	img, err := jpeg.Decode(bytes.NewReader(preview))
-	if err != nil {
-		return nil
-	}
-	var buf bytes.Buffer
-	if jpeg.Encode(&buf, boxScale(img, thumbSide), &jpeg.Options{Quality: thumbQuality}) != nil {
-		return nil
-	}
-	return buf.Bytes()
+	return o
 }
 
 var uploadTypes = map[int]whatsmeow.MediaType{msgPhoto: whatsmeow.MediaImage, msgVideo: whatsmeow.MediaVideo,
 	msgAudio: whatsmeow.MediaAudio, msgDoc: whatsmeow.MediaDocument}
 
-// mediaMessage is the message of an uploaded file; ci quotes, or is nil.
+// mediaMessage is the message of an uploaded file; ci quotes, or is nil. A photo carries the
+// thumbnail and size the UI gave, if it gave them.
 // ponytail: a video has no thumbnail and no length, so the phone shows a grey box until it
-// downloads; reading the MP4's headers can come later.
+// downloads; the UI could make them as it does for photos.
 func mediaMessage(o *mediaOut, up whatsmeow.UploadResponse, ci *waE2E.ContextInfo) *waE2E.Message {
 	r := o.row
 	switch r.Kind {
 	case msgPhoto:
-		return &waE2E.Message{ImageMessage: &waE2E.ImageMessage{URL: &up.URL, DirectPath: &up.DirectPath, MediaKey: up.MediaKey,
+		img := &waE2E.ImageMessage{URL: &up.URL, DirectPath: &up.DirectPath, MediaKey: up.MediaKey,
 			FileEncSHA256: up.FileEncSHA256, FileSHA256: up.FileSHA256, FileLength: &up.FileLength, Mimetype: &o.mime,
-			JPEGThumbnail: smallThumb(r.Thumb), Width: proto.Uint32(uint32(r.Width)), Height: proto.Uint32(uint32(r.Height)), ContextInfo: ci}}
+			JPEGThumbnail: r.Thumb, ContextInfo: ci}
+		if r.Width > 0 && r.Height > 0 {
+			img.Width, img.Height = proto.Uint32(uint32(r.Width)), proto.Uint32(uint32(r.Height))
+		}
+		return &waE2E.Message{ImageMessage: img}
 	case msgVideo:
 		return &waE2E.Message{VideoMessage: &waE2E.VideoMessage{URL: &up.URL, DirectPath: &up.DirectPath, MediaKey: up.MediaKey,
 			FileEncSHA256: up.FileEncSHA256, FileSHA256: up.FileSHA256, FileLength: &up.FileLength, Mimetype: &o.mime, ContextInfo: ci}}
@@ -176,12 +160,39 @@ func (s *Session) handleMediaSend(req json.RawMessage) (any, error) {
 		return nil, err
 	}
 	id := cli.GenerateMessageID()
-	o, err := s.store.queueMedia(jid, r, id)
-	if err != nil {
-		return nil, err
-	}
-	go s.uploadMedia(cli, jid, r.Path, o)
+	go s.uploadMedia(cli, jid, r.Path, s.store.queueMedia(jid, r, id))
 	return map[string]string{"id": id}, nil
+}
+
+// uploadTemp makes the file the upload encrypts into, under <data dir>/cache/upload/, and the
+// func that closes and removes it. A crash leaves the file there until the cache goes.
+// ponytail: stale ones are never swept; Phase 8's cache cap can.
+func uploadTemp(dir string) (*os.File, func(), error) {
+	d := filepath.Join(dir, "cache", "upload")
+	if err := os.MkdirAll(d, 0o755); err != nil {
+		return nil, nil, err
+	}
+	f, err := os.CreateTemp(d, "up-*")
+	if err != nil {
+		return nil, nil, err
+	}
+	return f, func() { f.Close(); os.Remove(f.Name()) }, nil
+}
+
+// uploadFile streams the file at path through UploadReader: read, encrypted into a temporary
+// file, sent. The engine never holds the file.
+func (s *Session) uploadFile(ctx context.Context, cli *whatsmeow.Client, path string, typ whatsmeow.MediaType) (whatsmeow.UploadResponse, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return whatsmeow.UploadResponse{}, err
+	}
+	defer f.Close()
+	tmp, done, err := uploadTemp(s.srv.dir)
+	if err != nil {
+		return whatsmeow.UploadResponse{}, err
+	}
+	defer done()
+	return cli.UploadReader(ctx, f, tmp, typ)
 }
 
 func (s *Session) uploadMedia(cli *whatsmeow.Client, jid types.JID, path string, o *mediaOut) {
@@ -189,22 +200,18 @@ func (s *Session) uploadMedia(cli *whatsmeow.Client, jid types.JID, path string,
 	s.nameNew(cli, jid, chat, o.created)
 	ctx, cancel := context.WithTimeout(context.Background(), mediaTimeout)
 	defer cancel()
-	data, err := o.data, error(nil)
-	if data == nil {
-		data, err = os.ReadFile(path)
-	}
+	t0 := time.Now()
+	up, err := s.uploadFile(ctx, cli, path, uploadTypes[o.row.Kind])
 	if err == nil {
-		var up whatsmeow.UploadResponse
-		if up, err = cli.Upload(ctx, data, uploadTypes[o.row.Kind]); err == nil {
-			var ci *waE2E.ContextInfo
-			if o.quote.ID != "" {
-				ci = quoteInfo(cli, chat, o.quote)
-			}
-			var resp whatsmeow.SendResponse
-			if resp, err = cli.SendMessage(ctx, jid, mediaMessage(o, up, ci), whatsmeow.SendRequestExtra{ID: id}); err == nil {
-				s.store.ops <- func(t *storeTx) { t.sentAs(chat, id, resp.Timestamp.Unix(), stateSent) }
-				return
-			}
+		logTransfer(s.log, "media "+id+" sent", int64(up.FileLength), t0)
+		var ci *waE2E.ContextInfo
+		if o.quote.ID != "" {
+			ci = quoteInfo(cli, chat, o.quote)
+		}
+		var resp whatsmeow.SendResponse
+		if resp, err = cli.SendMessage(ctx, jid, mediaMessage(o, up, ci), whatsmeow.SendRequestExtra{ID: id}); err == nil {
+			s.store.ops <- func(t *storeTx) { t.sentAs(chat, id, resp.Timestamp.Unix(), stateSent) }
+			return
 		}
 	}
 	s.log.Warnf("media %s: %v", id, err)

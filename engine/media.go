@@ -58,7 +58,8 @@ func oggPath(dir, id string) string { return filepath.Join(dir, "voice", id+".og
 func cachedWAV(dir, id string) string { return filepath.Join(dir, "cache", "voice", id+".wav") }
 
 // downloadVoice fetches a note, decrypted, into voice/<id>.ogg and moves its media_state to 2,
-// or to 3 on a failure. A note with no waveform gets one from the decoded audio.
+// or to 3 on a failure. A note with no waveform gets one from the decoded audio. It streams to
+// disk like any other file, though a note is small: one way of downloading.
 func (st *Store) downloadVoice(ctx context.Context, cli *whatsmeow.Client, dir string, row msgRow) error {
 	var wf []byte
 	err := func() error {
@@ -66,16 +67,21 @@ func (st *Store) downloadVoice(ctx context.Context, cli *whatsmeow.Client, dir s
 		if err := json.Unmarshal([]byte(row.Media), &info); err != nil {
 			return err
 		}
-		data, err := cli.Download(ctx, info.message(msgVoice))
+		ogg := oggPath(dir, row.ID)
+		_, err := downloadTo(filepath.Join(filepath.Dir(ogg), row.ID+".tmp"), func(f *os.File) (string, error) {
+			return "", cli.DownloadToFile(ctx, info.message(msgVoice), f)
+		}, func(string) string { return ogg })
 		if err != nil {
 			return err
 		}
 		if len(row.Waveform) == 0 {
-			if pcm, err := decodeOpus(data); err == nil && len(pcm) > 0 {
-				wf = waveform(pcm)
+			if data, err := os.ReadFile(ogg); err == nil {
+				if pcm, err := decodeOpus(data); err == nil && len(pcm) > 0 {
+					wf = waveform(pcm)
+				}
 			}
 		}
-		return writeFile(oggPath(dir, row.ID), data)
+		return nil
 	}()
 	state := 2
 	if err != nil {

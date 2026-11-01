@@ -2,10 +2,8 @@ package main
 
 import (
 	"bytes"
-	"image"
-	"image/color"
+	"errors"
 	"image/jpeg"
-	"image/png"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,59 +17,47 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func TestBoxScale(t *testing.T) {
-	for _, tc := range []struct{ w, h, nw, nh int }{
-		{1000, 500, 320, 160}, {300, 900, 106, 320}, {320, 100, 320, 100}, {5, 2000, 1, 320},
-	} {
-		got := boxScale(image.NewRGBA(image.Rect(0, 0, tc.w, tc.h)), 320).Bounds()
-		if got.Dx() != tc.nw || got.Dy() != tc.nh {
-			t.Errorf("%dx%d: %dx%d, want %dx%d", tc.w, tc.h, got.Dx(), got.Dy(), tc.nw, tc.nh)
-		}
+// A download lands under its final name only when whole; whatever way it ends, no .tmp stays.
+func TestDownloadTo(t *testing.T) {
+	dir := t.TempDir()
+	tmp := filepath.Join(dir, "sub", "X.tmp")
+	path, err := downloadTo(tmp, func(f *os.File) (string, error) {
+		f.WriteString("hello")
+		return "video/mp4", nil
+	}, func(m string) string { return filepath.Join(dir, "sub", "X."+strings.TrimPrefix(m, "video/")) })
+	if want := filepath.Join(dir, "sub", "X.mp4"); err != nil || path != want {
+		t.Fatalf("path %q, %v, want %s", path, err, want)
 	}
-	// A checkerboard of black and white averages to grey; two flat halves keep their colours.
-	src := image.NewRGBA(image.Rect(0, 0, 8, 4))
-	for y := 0; y < 4; y++ {
-		for x := 0; x < 8; x++ {
-			c := color.RGBA{255, 255, 255, 255}
-			if (x+y)%2 == 0 {
-				c = color.RGBA{0, 0, 0, 255}
-			}
-			src.SetRGBA(x, y, c)
-		}
+	if b, _ := os.ReadFile(path); string(b) != "hello" {
+		t.Errorf("file: %q", b)
 	}
-	if c := color.RGBAModel.Convert(boxScale(src, 1).At(0, 0)).(color.RGBA); c.R < 126 || c.R > 128 || c.R != c.G || c.A != 255 {
-		t.Errorf("checkerboard averages to %v", c)
+	if _, err := os.Stat(tmp); err == nil {
+		t.Error("the .tmp is still there after a good download")
 	}
-	halves := image.NewRGBA(image.Rect(10, 10, 14, 12)) // not at the origin
-	for y := 10; y < 12; y++ {
-		for x := 10; x < 14; x++ {
-			halves.SetRGBA(x, y, map[bool]color.RGBA{true: {200, 0, 0, 255}, false: {0, 0, 100, 255}}[x < 12])
-		}
+
+	// Half the bytes, then an error: nothing at all remains.
+	failed := filepath.Join(dir, "sub", "Y.mp4")
+	_, err = downloadTo(filepath.Join(dir, "sub", "Y.tmp"), func(f *os.File) (string, error) {
+		f.WriteString("hal")
+		return "", errors.New("connection lost")
+	}, func(string) string { return failed })
+	if err == nil {
+		t.Fatal("the failure was swallowed")
 	}
-	out := boxScale(halves, 2)
-	if l, r := out.At(0, 0), out.At(1, 0); l != (color.RGBA{200, 0, 0, 255}) || r != (color.RGBA{0, 0, 100, 255}) {
-		t.Errorf("halves: %v %v", l, r)
+	if left, _ := filepath.Glob(filepath.Join(dir, "sub", "Y*")); len(left) != 0 {
+		t.Errorf("a failed download left %v", left)
 	}
 }
 
-func TestPreviewOf(t *testing.T) {
-	img := image.NewRGBA(image.Rect(0, 0, 640, 480))
-	for i := range img.Pix {
-		img.Pix[i] = 200
+// The sim's photo is drawn in YCbCr planes, not RGBA: 2.9 MB where RGBA took 7.7.
+func TestSimGradientSize(t *testing.T) {
+	img := simGradient(simPhotoW, simPhotoH, "SIMH1.4")
+	if n := len(img.Y) + len(img.Cb) + len(img.Cr); n < 2_800_000 || n > 3_000_000 {
+		t.Errorf("%d bytes of pixels", n)
 	}
-	var pngBytes bytes.Buffer
-	png.Encode(&pngBytes, img)
-	for name, data := range map[string][]byte{"jpeg": simJPEG(img, 90), "png": pngBytes.Bytes()} {
-		jpg, w, h, err := previewOf(data)
-		if err != nil || w != 640 || h != 480 {
-			t.Fatalf("%s: %d x %d, %v", name, w, h, err)
-		}
-		if got, err := jpeg.Decode(bytes.NewReader(jpg)); err != nil || got.Bounds().Dx() != 320 || got.Bounds().Dy() != 240 {
-			t.Errorf("%s: preview %v, %v", name, got, err)
-		}
-	}
-	if _, _, _, err := previewOf([]byte("not an image")); err == nil {
-		t.Error("garbage: want an error")
+	a, b := simGradient(80, 60, "a").YCbCrAt(0, 0), simGradient(80, 60, "b").YCbCrAt(0, 0)
+	if a == b {
+		t.Error("two messages, one colour")
 	}
 }
 
@@ -199,7 +185,7 @@ func TestSimMediaGet(t *testing.T) {
 		return r.(map[string]string)["path"], nil
 	}
 
-	// Giorgia's photo: a thumbnail and no file, then the file and a 320 px preview.
+	// Giorgia's photo: a thumbnail and no file, then the file; the row keeps its thumbnail.
 	before := mediaOf(t, st, g, "SIMH1.4")
 	if before.Kind != msgPhoto || before.MediaState != 1 || before.Width != 1600 || before.Height != 1200 || before.Size == 0 || len(before.Thumb) == 0 || before.Path != "" {
 		t.Fatalf("seeded photo: %+v", before)
@@ -213,11 +199,8 @@ func TestSimMediaGet(t *testing.T) {
 	}
 	eventually(t, st, 1, "SELECT count(*) FROM messages WHERE chat = ? AND id = 'SIMH1.4' AND media_state = 2 AND path = ?", g, p)
 	after := mediaOf(t, st, g, "SIMH1.4")
-	if cfg, err := jpeg.DecodeConfig(bytes.NewReader(after.Thumb)); err != nil || cfg.Width != 320 || cfg.Height != 240 || bytes.Equal(after.Thumb, before.Thumb) {
-		t.Errorf("preview not in place of the thumbnail: %v, %v", cfg, err)
-	}
-	if after.Width != 1600 || after.Height != 1200 {
-		t.Errorf("size changed: %+v", after)
+	if !bytes.Equal(after.Thumb, before.Thumb) || after.Width != 1600 || after.Height != 1200 {
+		t.Errorf("the engine changed the thumbnail or the size: %+v", after)
 	}
 	for ok := false; !ok; { // the change reached the UI
 		m := next(t, c, "msgs")
@@ -276,6 +259,9 @@ func TestSimMediaGet(t *testing.T) {
 		t.Errorf("video: %v", err)
 	}
 	eventually(t, st, 1, "SELECT count(*) FROM messages WHERE id = 'VID' AND media_state = 3")
+	if left, _ := filepath.Glob(filepath.Join(downloadsDir(dir), "*.tmp")); len(left) != 0 {
+		t.Errorf("a failed download left %v", left)
+	}
 	for id, want := range map[string]string{"nope": "not_found", "SIMH1.0": "not_found", "SIMH1.15": "not_found"} { // none; text; sticker
 		if _, err := get(g, id); code(err) != want {
 			t.Errorf("%s: %v, want %s", id, err, want)

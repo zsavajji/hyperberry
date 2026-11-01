@@ -18,10 +18,7 @@ func (s *Sim) handleMediaSend(req json.RawMessage) (any, error) {
 		return nil, err
 	}
 	id, ops := fmt.Sprintf("SIMOUT%d", time.Now().UnixNano()), s.store.ops
-	o, err := s.store.queueMedia(jid, r, id)
-	if err != nil {
-		return nil, err
-	}
+	o := s.store.queueMedia(jid, r, id)
 	if o.created && chatKind(jid) == chatUser {
 		name := simBookName(r.Chat)
 		ops <- func(t *storeTx) { t.setName(r.Chat, name) }

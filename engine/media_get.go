@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"mime"
 	"os"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/polymorfa/hypermeow"
+	waLog "github.com/polymorfa/hypermeow/util/log"
 )
 
 // Photos, videos, audio files and documents (step 6.1): media.get downloads one when it isn't
@@ -82,8 +84,51 @@ func mediaHere(dir string, row msgRow) string {
 	return ""
 }
 
-// downloadMedia fetches row's file and moves its media_state to 2 with its path (a photo also
-// gets its preview), or to 3 on a failure. A voice note goes through downloadVoice.
+// memUsage is the engine's memory, for the log: the phone caps it at about 30 MB (phase6.md 6.3).
+func memUsage() string {
+	var ms runtime.MemStats
+	runtime.ReadMemStats(&ms)
+	return fmt.Sprintf("heap %d MB, from the OS %d MB", ms.HeapAlloc>>20, ms.Sys>>20)
+}
+
+// logTransfer says what a download or an upload (who: "media <id>") moved and what it cost.
+func logTransfer(log waLog.Logger, who string, n int64, since time.Time) {
+	log.Infof("%s: %d bytes in %v, %s", who, n, time.Since(since).Round(time.Millisecond), memUsage())
+}
+
+// downloadTo has get write a download into the temporary file tmp, and once it is whole (synced
+// and closed) moves it to target(mimeType), the mimetype being what get answers. A failed
+// download leaves nothing behind, and a half file never has the final name. tmp must be in the
+// directory the target will be in.
+func downloadTo(tmp string, get func(f *os.File) (string, error), target func(mimeType string) string) (string, error) {
+	if err := os.MkdirAll(filepath.Dir(tmp), 0o755); err != nil {
+		return "", err
+	}
+	f, err := os.Create(tmp)
+	if err != nil {
+		return "", err
+	}
+	mimeType, err := get(f)
+	if err == nil {
+		err = f.Sync()
+	}
+	if cerr := f.Close(); err == nil {
+		err = cerr
+	}
+	path := ""
+	if err == nil {
+		path = target(mimeType)
+		err = os.Rename(tmp, path)
+	}
+	if err != nil {
+		os.Remove(tmp)
+		return "", err
+	}
+	return path, nil
+}
+
+// downloadMedia fetches row's file and moves its media_state to 2 with its path, or to 3 on a
+// failure. A voice note goes through downloadVoice.
 func (st *Store) downloadMedia(ctx context.Context, cli *whatsmeow.Client, dir string, row msgRow) (string, error) {
 	dir, err := filepath.Abs(dir)
 	if err != nil {
@@ -92,22 +137,21 @@ func (st *Store) downloadMedia(ctx context.Context, cli *whatsmeow.Client, dir s
 	if row.Kind == msgVoice {
 		return oggPath(dir, row.ID), st.downloadVoice(ctx, cli, dir, row)
 	}
-	// ponytail: the whole file is held in memory (hypermeow's Download); a streamed download if
-	// videos of tens of MB turn out to be a problem on the Q10.
-	return st.fetchMedia(dir, row, func() ([]byte, string, error) {
+	// The file streams to disk, decrypted as it comes: the engine never holds it whole.
+	return st.fetchMedia(dir, row, func(f *os.File) (string, error) {
 		var info mediaInfo
 		if err := json.Unmarshal([]byte(row.Media), &info); err != nil {
-			return nil, "", err
+			return "", err
 		}
-		data, err := cli.Download(ctx, info.message(row.Kind))
-		return data, info.Mimetype, err
+		return info.Mimetype, cli.DownloadToFile(ctx, info.message(row.Kind), f)
 	})
 }
 
-// fetchMedia is the download of the real and the simulated account: get makes the bytes and
-// says what they are (the sim makes them up), the rest is shared. One message downloads at a
-// time, so a tap during a live photo's download waits and finds the file.
-func (st *Store) fetchMedia(dir string, row msgRow, get func() ([]byte, string, error)) (string, error) {
+// fetchMedia is the download of the real and the simulated account: get writes the file into f
+// and says what it is (the real one knows from the row, the sim makes it up), the rest is
+// shared. One message downloads at a time, so a tap during a live photo's download waits and
+// finds the file.
+func (st *Store) fetchMedia(dir string, row msgRow, get func(f *os.File) (string, error)) (string, error) {
 	dir, err := filepath.Abs(dir)
 	if err != nil {
 		return "", err
@@ -122,36 +166,18 @@ func (st *Store) fetchMedia(dir string, row msgRow, get func() ([]byte, string, 
 	if p := mediaHere(dir, cur); p != "" {
 		return p, nil
 	}
-	var thumb []byte
-	var w, h int
-	path, err := func() (string, error) {
-		data, mimeType, err := get()
-		if err != nil {
-			return "", err
-		}
-		p := mediaTarget(dir, row, mimeType)
-		if err := writeFile(p, data); err != nil {
-			return "", err
-		}
-		if row.Kind == msgPhoto { // the inline thumbnail stays if the photo won't decode
-			var perr error
-			t0 := time.Now()
-			if thumb, w, h, perr = previewOf(data); perr != nil {
-				st.log.Warnf("preview of %s: %v", row.ID, perr)
-			}
-			// What a preview costs on the phone, whose limit for us is unknown (Q10, 2026-11-01).
-			var ms runtime.MemStats
-			runtime.ReadMemStats(&ms)
-			st.log.Infof("preview of %s (%d bytes): %v, heap %d MB, from the OS %d MB", row.ID, len(data),
-				time.Since(t0).Round(time.Millisecond), ms.HeapAlloc>>20, ms.Sys>>20)
-		}
-		return p, nil
-	}()
+	// The name of a video or audio file depends on the mimetype, a document's on what is taken
+	// in Downloads: so the file is named after the download, from its own <id>.tmp.
+	t0 := time.Now()
+	tmp := filepath.Join(filepath.Dir(mediaTarget(dir, row, "")), row.ID+".tmp")
+	path, err := downloadTo(tmp, get, func(mimeType string) string { return mediaTarget(dir, row, mimeType) })
 	state := 2
 	if err != nil {
 		state, path = 3, ""
+	} else if fi, serr := os.Stat(path); serr == nil {
+		logTransfer(st.log, "media "+row.ID, fi.Size(), t0)
 	}
-	st.ops <- func(t *storeTx) { t.setFile(row.Chat, row.ID, state, path, thumb, w, h) }
+	st.ops <- func(t *storeTx) { t.setFile(row.Chat, row.ID, state, path) }
 	return path, err
 }
 

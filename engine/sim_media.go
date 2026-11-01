@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"hash/fnv"
 	"image"
+	"image/color"
 	"image/jpeg"
+	"os"
 	"strings"
 	"time"
 )
@@ -40,18 +42,25 @@ func simHash(s string) uint32 {
 	return h.Sum32()
 }
 
-// simGradient is a w by h picture whose colours come from id: a diagonal blend between two.
-func simGradient(w, h int, id string) *image.RGBA {
+// simGradient is a w by h picture whose colours come from id: a diagonal blend between a colour
+// and its opposite. Drawn straight into YCbCr 4:2:0 planes (1.5 bytes a pixel, 2.9 MB at
+// 1600x1200 where RGBA's 7.7 MB broke the phone's 30 MB cap, phase6.md 6.3); the blend is
+// linear, so it is the same in YCbCr as in RGB.
+func simGradient(w, h int, id string) *image.YCbCr {
 	k := simHash(id)
-	c0 := [3]int{int(k & 0xff), int(k >> 8 & 0xff), int(k >> 16 & 0xff)}
-	img := image.NewRGBA(image.Rect(0, 0, w, h))
+	r, g, b := uint8(k), uint8(k>>8), uint8(k>>16)
+	y0, cb0, cr0 := color.RGBToYCbCr(r, g, b)
+	y1, cb1, cr1 := color.RGBToYCbCr(255-r, 255-g, 255-b)
+	mix := func(a, b uint8, t int) uint8 { return uint8(int(a) + (int(b)-int(a))*t/255) }
+	img := image.NewYCbCr(image.Rect(0, 0, w, h), image.YCbCrSubsampleRatio420)
 	for y := 0; y < h; y++ {
 		for x := 0; x < w; x++ {
-			t, i := 255*(x+y)/(w+h), img.PixOffset(x, y)
-			for c := 0; c < 3; c++ {
-				img.Pix[i+c] = uint8(c0[c] + (255-2*c0[c])*t/255)
+			t := 255 * (x + y) / (w + h)
+			img.Y[img.YOffset(x, y)] = mix(y0, y1, t)
+			if x%2 == 0 && y%2 == 0 { // one chroma sample for each 2x2 block
+				c := img.COffset(x, y)
+				img.Cb[c], img.Cr[c] = mix(cb0, cb1, t), mix(cr0, cr1, t)
 			}
-			img.Pix[i+3] = 255
 		}
 	}
 	return img
@@ -112,24 +121,27 @@ func (s *Sim) seedMedia(r *msgRow) {
 	}
 }
 
-// simFile is the download: a photo, a PDF or a WAV by the row's kind, else an error.
-func simFile(row msgRow) ([]byte, string, error) {
+// simFile is the download: a photo, a PDF or a WAV by the row's kind written into f, else an
+// error. It says the mimetype.
+func simFile(row msgRow, f *os.File) (string, error) {
 	switch {
 	case row.Kind == msgPhoto:
-		return simJPEG(simGradient(simPhotoW, simPhotoH, row.ID), 85), "image/jpeg", nil
+		return "image/jpeg", jpeg.Encode(f, simGradient(simPhotoW, simPhotoH, row.ID), &jpeg.Options{Quality: 85})
 	case row.Kind == msgDoc && strings.HasSuffix(strings.ToLower(row.Text), ".pdf"):
-		return simPDF, "application/pdf", nil
+		_, err := f.Write(simPDF)
+		return "application/pdf", err
 	case row.Kind == msgAudio:
-		return writeWAV(simSpeech(max(row.Duration, 1)), simRate), "audio/wav", nil
+		_, err := f.Write(writeWAV(simSpeech(max(row.Duration, 1)), simRate))
+		return "audio/wav", err
 	}
-	return nil, "", errors.New("the simulated account has no such file")
+	return "", errors.New("the simulated account has no such file")
 }
 
 // fetchMedia is the sim's download: a round trip, then the file as the real one stores it.
 func (s *Sim) fetchMedia(row msgRow) (string, error) {
-	return s.store.fetchMedia(s.srv.dir, row, func() ([]byte, string, error) {
+	return s.store.fetchMedia(s.srv.dir, row, func(f *os.File) (string, error) {
 		time.Sleep(simDelay)
-		return simFile(row)
+		return simFile(row, f)
 	})
 }
 

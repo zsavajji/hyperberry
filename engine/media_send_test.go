@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	"image/jpeg"
+	"encoding/base64"
 	"os"
 	"path/filepath"
 	"testing"
@@ -48,44 +48,87 @@ func TestMediaSendRejects(t *testing.T) {
 	if _, err := call(s.handleMediaSend, `{"chat":"a@s.whatsapp.net","path":%q}`, file); code(err) != "unlinked" {
 		t.Errorf("unlinked: %v", err)
 	}
+	// A thumbnail of 16 KB goes on to the link check; one byte more, bad base64 or a negative size don't.
+	b64 := func(n int) string { return base64.StdEncoding.EncodeToString(make([]byte, n)) }
+	for name, c := range map[string]struct{ extra, want string }{
+		"thumb 16 KB":    {`"thumb":"` + b64(maxThumb) + `"`, "unlinked"},
+		"thumb over":     {`"thumb":"` + b64(maxThumb+1) + `"`, "bad_request"},
+		"not base64":     {`"thumb":"@@@"`, "bad_request"},
+		"width < 0":      {`"width":-1`, "bad_request"},
+		"height < 0":     {`"height":-5`, "bad_request"},
+		"size, no thumb": {`"width":800,"height":600`, "unlinked"},
+	} {
+		if _, err := call(s.handleMediaSend, `{"chat":"a@s.whatsapp.net","path":%q,%s}`, file, c.extra); code(err) != c.want {
+			t.Errorf("%s: %v, want %s", name, err, c.want)
+		}
+	}
+}
+
+// The upload's temporary file is made under cache/upload and is gone once done is called.
+func TestUploadTemp(t *testing.T) {
+	dir := t.TempDir()
+	f, done, err := uploadTemp(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if filepath.Dir(f.Name()) != filepath.Join(dir, "cache", "upload") {
+		t.Errorf("temp file at %s", f.Name())
+	}
+	f.WriteString("encrypted")
+	if _, err := os.Stat(f.Name()); err != nil {
+		t.Fatal(err)
+	}
+	done()
+	if left, _ := os.ReadDir(filepath.Join(dir, "cache", "upload")); len(left) != 0 {
+		t.Errorf("left behind: %v", left)
+	}
 }
 
 func TestSimMediaSend(t *testing.T) {
 	s, st, _ := linkedSim(t)
 	dir, chat := t.TempDir(), simChats[2].jid
-	send := func(chat, path, quote string) (string, error) {
-		r, err := call(s.handleMediaSend, `{"chat":%q,"path":%q,"quote":%q}`, chat, path, quote)
+	// extra is more JSON fields, with a comma in front.
+	send := func(chat, path, quote, extra string) (string, error) {
+		r, err := call(s.handleMediaSend, `{"chat":%q,"path":%q,"quote":%q%s}`, chat, path, quote, extra)
 		if err != nil {
 			return "", err
 		}
 		return r.(map[string]string)["id"], nil
 	}
 
-	// A JPEG: a picture row with its preview, sending at once, then sent.
+	// A JPEG with the UI's thumbnail and size: a picture row with them, sending at once, then sent.
 	photo := filepath.Join(dir, "IMG_1.JPG")
 	data := simJPEG(simGradient(800, 600, "p"), 85)
 	os.WriteFile(photo, data, 0o644)
+	thumb := simJPEG(simGradient(96, 72, "p"), 60)
 	var quoted string
 	st.db.QueryRow("SELECT id FROM messages WHERE chat = ? LIMIT 1", chat).Scan(&quoted)
-	id, err := send(chat, photo, quoted)
+	id, err := send(chat, photo, quoted, `,"thumb":"`+base64.StdEncoding.EncodeToString(thumb)+`","width":800,"height":600`)
 	if err != nil {
 		t.Fatal(err)
 	}
 	r, ok := st.row(chat, id)
-	cfg, cerr := jpeg.DecodeConfig(bytes.NewReader(r.Thumb))
 	if !ok || r.Kind != msgPhoto || !r.Out || r.State != stateSending || r.Text != "" || r.Size != int64(len(data)) || r.Path != photo ||
-		r.MediaState != 2 || r.Width != 800 || r.Height != 600 || cerr != nil || cfg.Width != 320 || cfg.Height != 240 || r.QuoteID != quoted {
-		t.Fatalf("photo row: %+v (%v)", r, cerr)
+		r.MediaState != 2 || r.Width != 800 || r.Height != 600 || !bytes.Equal(r.Thumb, thumb) || r.QuoteID != quoted {
+		t.Fatalf("photo row: %+v", r)
 	}
 	eventually(t, st, 1, "SELECT count(*) FROM chats WHERE jid = ? AND last_preview = 'You: Photo'", chat)
 	for _, q := range []string{"state = 1", "state = 2", "state = 3"} {
 		eventually(t, st, 1, "SELECT count(*) FROM messages WHERE chat = ? AND id = ? AND "+q, chat, id)
 	}
 
+	// The same without them: a picture with no thumbnail and no size. The engine decodes nothing.
+	if id, err = send(chat, photo, "", ""); err != nil {
+		t.Fatal(err)
+	}
+	if r, _ = st.row(chat, id); r.Kind != msgPhoto || r.Thumb != nil || r.Width != 0 || r.Height != 0 || r.Size != int64(len(data)) {
+		t.Errorf("photo row without a thumbnail: %+v", r)
+	}
+
 	// A PDF: a document row named for the file, with no thumbnail.
 	pdf := filepath.Join(dir, "Recipe.pdf")
 	os.WriteFile(pdf, simPDF, 0o644)
-	if id, err = send(chat, pdf, ""); err != nil {
+	if id, err = send(chat, pdf, "", ""); err != nil {
 		t.Fatal(err)
 	}
 	if r, ok = st.row(chat, id); !ok || r.Kind != msgDoc || r.Text != "Recipe.pdf" || r.Thumb != nil || r.State != stateSending ||
@@ -99,21 +142,24 @@ func TestSimMediaSend(t *testing.T) {
 	for name, kind := range map[string]int{"clip.mp4": msgVideo, "song.mp3": msgAudio} {
 		p := filepath.Join(dir, name)
 		os.WriteFile(p, []byte("x"), 0o644)
-		if id, err = send(chat, p, ""); err != nil {
+		if id, err = send(chat, p, "", `,"thumb":"/9j/","width":10,"height":10`); err != nil { // not a photo: ignored
 			t.Fatal(err)
 		}
-		if r, _ = st.row(chat, id); r.Kind != kind || r.Text != "" || r.Thumb != nil || r.MediaState != 2 {
+		if r, _ = st.row(chat, id); r.Kind != kind || r.Text != "" || r.Thumb != nil || r.Width != 0 || r.Height != 0 || r.MediaState != 2 {
 			t.Errorf("%s row: %+v", name, r)
 		}
 	}
 
 	for name, path := range map[string]string{"relative": "Recipe.pdf", "missing": filepath.Join(dir, "nope.jpg"), "directory": dir} {
-		if _, err := send(chat, path, ""); code(err) != "bad_request" {
+		if _, err := send(chat, path, "", ""); code(err) != "bad_request" {
 			t.Errorf("%s: %v", name, err)
 		}
 	}
-	if _, err := send("not a jid@@@", pdf, ""); code(err) != "bad_chat" {
+	if _, err := send("not a jid@@@", pdf, "", ""); code(err) != "bad_chat" {
 		t.Errorf("bad chat: %v", err)
+	}
+	if _, err := send(chat, photo, "", `,"thumb":"`+base64.StdEncoding.EncodeToString(make([]byte, maxThumb+1))+`"`); code(err) != "bad_request" {
+		t.Errorf("a thumbnail over 16 KB: %v", err)
 	}
 }
 
@@ -127,12 +173,9 @@ type uploaded interface {
 
 func TestMediaMessage(t *testing.T) {
 	up := whatsmeow.UploadResponse{URL: "u", DirectPath: "/d", MediaKey: []byte{1}, FileEncSHA256: []byte{2}, FileSHA256: []byte{3}, FileLength: 9}
-	preview, _, _, err := previewOf(simJPEG(simGradient(800, 600, "p"), 85))
-	if err != nil {
-		t.Fatal(err)
-	}
+	thumb := simJPEG(simGradient(96, 72, "p"), 60)
 	for kind, name := range map[int]string{msgPhoto: "a.jpg", msgVideo: "a.mp4", msgAudio: "a.mp3", msgDoc: "a.pdf"} {
-		o := &mediaOut{mime: "x/y", row: msgRow{Kind: kind, Text: "", Thumb: preview, Width: 800, Height: 600}}
+		o := &mediaOut{mime: "x/y", row: msgRow{Kind: kind, Text: "", Thumb: thumb, Width: 800, Height: 600}}
 		if kind == msgDoc {
 			o.row.Text = name
 		}
@@ -165,12 +208,13 @@ func TestMediaMessage(t *testing.T) {
 			t.Error("video has a thumbnail or a length")
 		}
 	}
-	i := mediaMessage(&mediaOut{mime: "image/jpeg", row: msgRow{Kind: msgPhoto, Thumb: preview, Width: 800, Height: 600}}, up, nil).GetImageMessage()
-	cfg, err := jpeg.DecodeConfig(bytes.NewReader(i.GetJPEGThumbnail()))
-	if err != nil || cfg.Width != 96 || cfg.Height != 72 || i.GetWidth() != 800 || i.GetHeight() != 600 || len(i.GetJPEGThumbnail()) >= len(preview) {
-		t.Errorf("photo: thumbnail %v (%d bytes of %d), %v; %dx%d", cfg, len(i.GetJPEGThumbnail()), len(preview), err, i.GetWidth(), i.GetHeight())
+	// A photo carries the thumbnail and size it was given as they are, and nothing if it had none.
+	i := mediaMessage(&mediaOut{mime: "image/jpeg", row: msgRow{Kind: msgPhoto, Thumb: thumb, Width: 800, Height: 600}}, up, nil).GetImageMessage()
+	if !bytes.Equal(i.GetJPEGThumbnail(), thumb) || i.GetWidth() != 800 || i.GetHeight() != 600 {
+		t.Errorf("photo: thumbnail %d bytes, %dx%d", len(i.GetJPEGThumbnail()), i.GetWidth(), i.GetHeight())
 	}
-	if smallThumb([]byte("not a jpeg")) != nil || smallThumb(nil) != nil {
-		t.Error("a thumbnail from nothing")
+	i = mediaMessage(&mediaOut{mime: "image/jpeg", row: msgRow{Kind: msgPhoto}}, up, nil).GetImageMessage()
+	if i.JPEGThumbnail != nil || i.Width != nil || i.Height != nil {
+		t.Errorf("photo without them: %v", i)
 	}
 }

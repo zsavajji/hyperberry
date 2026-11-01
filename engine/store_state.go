@@ -147,12 +147,10 @@ func (t *storeTx) setMedia(chat, id string, state int, wf []byte) {
 	}
 }
 
-// setFile records a downloaded file: the state, its path and, for a photo, the preview in place
-// of the inline thumbnail; the pixel size only when the message had none.
-func (t *storeTx) setFile(chat, id string, state int, path string, thumb []byte, w, h int) {
-	if t.exec(`UPDATE messages SET media_state = ?, path = COALESCE(NULLIF(?, ''), path), thumb = COALESCE(?, thumb),
-width = COALESCE(NULLIF(width, 0), NULLIF(?, 0)), height = COALESCE(NULLIF(height, 0), NULLIF(?, 0))
-WHERE chat = ? AND id = ?`, state, path, blob(thumb), w, h, chat, id) > 0 {
+// setFile records a downloaded file: the state and its path. The row keeps its inline thumbnail.
+func (t *storeTx) setFile(chat, id string, state int, path string) {
+	if t.exec(`UPDATE messages SET media_state = ?, path = COALESCE(NULLIF(?, ''), path)
+WHERE chat = ? AND id = ?`, state, path, chat, id) > 0 {
 		t.changed(chat, id)
 	}
 }
