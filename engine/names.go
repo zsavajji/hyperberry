@@ -16,6 +16,10 @@ func displayName(ctx context.Context, cli *whatsmeow.Client, jid, alt types.JID)
 // resolveName is displayName with a push name from the message in hand, which beats the
 // phone-number fallback.
 func resolveName(ctx context.Context, cli *whatsmeow.Client, jid, alt types.JID, push string) string {
+	// WhatsApp's own account (its tips and notices) has no contact card, so it would be "+0".
+	if j := jid.ToNonAD(); j == types.PSAJID || j == types.LegacyPSAJID {
+		return "WhatsApp"
+	}
 	var ids []types.JID
 	for _, j := range []types.JID{jid.ToNonAD(), alt.ToNonAD()} {
 		if j.IsEmpty() {

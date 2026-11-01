@@ -13,6 +13,8 @@ Page {
     property variant info: contact.info
     property bool loaded: info.groups !== undefined
     property bool failed: !loaded && engine.failure.cmd == "contact.info"
+    // The full-size picture the engine fetched with the info; its file name has the picture's id.
+    property bool hasPicture: !!info.picture
     // From info, not a method call: a binding isn't re-read when a method's result changes.
     property int groupCount: loaded ? info.groups.length : 0
     property bool muted: false
@@ -233,6 +235,7 @@ Page {
                     background: page.chat ? Color.create(page.chat.color) : Color.Transparent
                     layout: DockLayout {}
                     Label {
+                        visible: !page.hasPicture
                         horizontalAlignment: HorizontalAlignment.Center
                         verticalAlignment: VerticalAlignment.Center
                         text: page.chat ? page.chat.initials : ""
@@ -241,6 +244,14 @@ Page {
                         textStyle.fontSize: FontSize.PercentageValue
                         textStyle.fontSizeValue: 300
                         textStyle.color: Color.White
+                    }
+                    ImageView {
+                        visible: page.hasPicture
+                        horizontalAlignment: HorizontalAlignment.Fill
+                        verticalAlignment: VerticalAlignment.Fill
+                        imageSource: page.hasPicture ? "file://" + page.info.picture : ""
+                        scalingMethod: ScalingMethod.AspectFill
+                        loadEffect: ImageViewLoadEffect.None
                     }
                 }
                 Label {

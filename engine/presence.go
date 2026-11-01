@@ -87,6 +87,8 @@ func (s *Session) handleOpen(req json.RawMessage) (any, error) {
 	if err != nil {
 		return nil, err
 	}
+	// A chat that appeared since the last round, or whose picture changed unseen, gets it now.
+	s.photos.add(r.Chat)
 	if jid.Server == types.GroupServer { // groups have no online status
 		return nil, nil
 	}

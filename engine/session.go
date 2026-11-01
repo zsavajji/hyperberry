@@ -44,6 +44,7 @@ type Session struct {
 	// syncing is true from a new link until its recent chats are in chats.db, or syncCap: the
 	// UI waits on the linking page meanwhile (the user's, 2026-11-01).
 	syncing bool
+	photos  *photoQueue // the chats' pictures (photos.go)
 }
 
 // syncCap ends "syncing" if the phone sends no recent-chats history: an account with no chats.
@@ -56,6 +57,7 @@ func newSession(container *sqlstore.Container, srv *Server, store *Store, log wa
 		return nil, err
 	}
 	s := &Session{container: container, srv: srv, store: store, log: log, link: linkUnlinked, conn: "offline"}
+	s.photos = newPhotoQueue(store, func() photoFetch { return clientFetch(s.client()) })
 	store.historyIn = func() { go s.endSync() } // off the writer: endSync takes s.mu
 	s.cli = s.newClient(device)
 	if s.cli.Store.ID != nil {
@@ -139,6 +141,7 @@ func (s *Session) endSync() {
 		s.syncing = false
 		s.setLink(s.link)
 		s.store.nt.link() // the new link's chats are in
+		s.photos.round()  // and need their pictures
 	}
 }
 
@@ -340,6 +343,9 @@ func (s *Session) onEvent(cli *whatsmeow.Client, evt any) {
 			s.setLink(linkReady)
 		}
 		s.srv.Emit("conn", map[string]any{"state": s.conn})
+		s.photos.connected()
+	case *events.Picture:
+		s.photos.changed(cli, e.JID)
 	case *events.Disconnected:
 		s.conn = "connecting" // hypermeow reconnects by itself
 		s.srv.Emit("conn", map[string]any{"state": s.conn})

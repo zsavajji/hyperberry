@@ -6,6 +6,7 @@ TitleBar {
     id: bar
     property variant chat
     property string status
+    property bool hasPhoto: !!bar.chat && !!bar.chat.photo
     signal tapped
     kind: TitleBarKind.FreeForm
     // The status line must stay; the default let the bar scroll away with the list (Q10).
@@ -52,7 +53,8 @@ TitleBar {
                     textStyle.color: ui.palette.secondaryTextOnPlain
                 }
             }
-            // The initials tile where the stock app has the picture; photos come in Phase 6.
+            // The chat's picture (chat.photo, the engine's preview file) where the stock app has
+            // it, over the initials tile.
             Container {
                 verticalAlignment: VerticalAlignment.Center
                 leftMargin: ui.du(1.5)
@@ -60,7 +62,16 @@ TitleBar {
                 preferredHeight: ui.px(81)
                 background: bar.chat ? Color.create(bar.chat.color) : Color.Transparent
                 layout: DockLayout {}
+                ImageView {
+                    visible: bar.hasPhoto
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    verticalAlignment: VerticalAlignment.Fill
+                    imageSource: bar.hasPhoto ? "file://" + bar.chat.photo : ""
+                    scalingMethod: ScalingMethod.AspectFill
+                    loadEffect: ImageViewLoadEffect.None
+                }
                 Label {
+                    visible: !bar.hasPhoto
                     horizontalAlignment: HorizontalAlignment.Center
                     verticalAlignment: VerticalAlignment.Center
                     text: bar.chat ? bar.chat.initials : ""

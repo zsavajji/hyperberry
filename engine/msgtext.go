@@ -3,12 +3,17 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/polymorfa/hypermeow/proto/waE2E"
 	"github.com/polymorfa/hypermeow/types/events"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
+
+// unknownText is the text of a message content() has no kind for.
+const unknownText = "Message"
 
 // msgRow is one row of messages; the empty string stands for NULL in the optional columns.
 type msgRow struct {
@@ -36,8 +41,10 @@ type msgRow struct {
 }
 
 // content says what a message shows: its kind and text. ok is false for messages with nothing
-// to show (protocol messages, reactions, key distribution and the like).
+// to show (protocol messages, reactions, key distribution and the like). A business message
+// shows as what it wraps (msgflat.go), so a quote of one previews right too.
 func content(m *waE2E.Message) (kind int, text string, ok bool) {
+	m = flatten(m)
 	switch {
 	case m == nil || m.GetProtocolMessage() != nil || m.GetReactionMessage() != nil:
 		return 0, "", false
@@ -78,7 +85,19 @@ func content(m *waE2E.Message) (kind int, text string, ok bool) {
 	if proto.Size(c) == 0 {
 		return 0, "", false
 	}
-	return msgOther, "Message", true
+	return msgOther, unknownText, true
+}
+
+// fieldNames lists the fields a message has set, by name: what the log says of a message
+// content() has no kind for, so the next format to handle can be told from the log.
+func fieldNames(m *waE2E.Message) string {
+	var names []string
+	m.ProtoReflect().Range(func(fd protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+		names = append(names, string(fd.Name()))
+		return true
+	})
+	sort.Strings(names)
+	return strings.Join(names, ", ")
 }
 
 // quoteOf returns the id and a one-line preview of the message a reply answers.

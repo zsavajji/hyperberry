@@ -118,7 +118,7 @@ func (st *Store) afterCommit(f func()) {
 // Downloads' files, as a browser's. The folders come back on the next write.
 func (st *Store) wipe() {
 	st.nt.unlink() // the Hub's account and items belong to the link too
-	for _, d := range []string{"voice", "cache", "media", "profile", "history"} {
+	for _, d := range []string{"voice", "cache", "media", "profile", "history", "photos"} {
 		if err := os.RemoveAll(filepath.Join(st.srv.dir, d)); err != nil {
 			st.log.Warnf("wipe %s: %v", d, err)
 		}
@@ -139,6 +139,7 @@ func (st *Store) handle(cli *whatsmeow.Client, evt any) {
 	case *events.Connected:
 		go st.syncGroups(cli)
 		go st.hist.resume(cli) // the chunks a crash or a failure left on disk
+		st.ops <- func(t *storeTx) { t.tidy(cli) }
 		return
 	case *events.OfflineSyncPreview: // not through dispatch: cli may be nil
 		st.ops <- func(*storeTx) {

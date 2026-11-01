@@ -83,6 +83,12 @@ func (st *Store) message(ctx context.Context, t *storeTx, cli *whatsmeow.Client,
 	if chat == types.StatusBroadcastJID {
 		return
 	}
+	// Device-to-device protocol messages (key shares, history notices) are never chat content;
+	// one from our own phone would leave an empty chat with ourselves. The answers to msg.resend
+	// carry no category (hypermeow builds their Info from the web message), so they pass.
+	if e.Info.Category == "peer" {
+		return
+	}
 	alt := e.Info.SenderAlt
 	if e.Info.IsFromMe {
 		alt = e.Info.RecipientAlt
@@ -102,7 +108,11 @@ func (st *Store) message(ctx context.Context, t *storeTx, cli *whatsmeow.Client,
 // apply writes one message event, live or from history: a new message, an edit, a revoke or
 // a reaction (its row, and the chat preview).
 func (st *Store) apply(ctx context.Context, t *storeTx, cli *whatsmeow.Client, key string, e *events.Message, live bool) {
-	m := e.Message
+	// A business message is written as what it wraps (msgflat.go). On a copy: the event is
+	// hypermeow's, and this runs on the writer after the handlers returned.
+	c := *e
+	c.Message = flatten(e.Message)
+	e, m := &c, c.Message
 	if pm := m.GetProtocolMessage(); pm != nil {
 		switch pm.GetType() {
 		case waE2E.ProtocolMessage_REVOKE:
@@ -125,6 +135,18 @@ func (st *Store) apply(ctx context.Context, t *storeTx, cli *whatsmeow.Client, k
 	row, ok := rowFromMessage(key, e, name)
 	if !ok {
 		return
+	}
+	if row.Kind == msgOther && row.Text == unknownText {
+		st.log.Warnf("unknown message type: %s", fieldNames(m))
+	}
+	// The answer to msg.resend replaces the row of the same id. The user has seen that one, so
+	// nothing is unread or alerts again; an answer to a request hypermeow made by itself finds
+	// no row and is a new message.
+	if e.UnavailableRequestID != "" {
+		if _, had := t.messageByID(key, e.Info.ID); had {
+			t.deleteMessage(key, e.Info.ID)
+			live = false
+		}
 	}
 	if e.Info.IsGroup {
 		row.Sender = chatKey(ctx, t, cli.Store.LIDs, e.Info.Sender, e.Info.SenderAlt)

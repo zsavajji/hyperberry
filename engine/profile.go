@@ -4,9 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -186,23 +183,7 @@ func (s *Session) fetchProfilePicture(cli *whatsmeow.Client, me types.JID) (stri
 	if err != nil {
 		return "", err
 	}
-	// ponytail: hypermeow's media HTTP client isn't exported; the default one does for a CDN URL.
-	return downloadTo(strings.TrimSuffix(dst, ".jpg")+".tmp", func(f *os.File) (string, error) {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, info.URL, nil)
-		if err != nil {
-			return "", err
-		}
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return "", err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			return "", fmt.Errorf("picture: HTTP %d", resp.StatusCode)
-		}
-		_, err = io.Copy(f, resp.Body) // streams: the picture is never held whole
-		return "", err
-	}, func(string) string { return dst })
+	return downloadTo(strings.TrimSuffix(dst, ".jpg")+".tmp", streamURL(ctx, info.URL), func(string) string { return dst })
 }
 
 func (s *Session) handleProfileSet(req json.RawMessage) (any, error) {

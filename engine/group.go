@@ -20,6 +20,7 @@ type groupInfo struct {
 	Subject      string        `json:"subject"`
 	Description  string        `json:"description"`
 	Participants []participant `json:"participants"`
+	Picture      string        `json:"picture"` // the full-size picture's path, "" when none
 }
 
 type groupRef struct {
@@ -32,6 +33,7 @@ type contactInfo struct {
 	About   string     `json:"about"`
 	Groups  []groupRef `json:"groups"`
 	Blocked bool       `json:"blocked"`
+	Picture string     `json:"picture"` // as groupInfo's
 }
 
 func registerGroup(srv *Server, s *Session) {
@@ -101,6 +103,7 @@ func (s *Session) handleGroupInfo(req json.RawMessage) (any, error) {
 		})
 	}
 	sortParticipants(out.Participants)
+	out.Picture = s.photos.full(jid)
 	return out, nil
 }
 
@@ -166,5 +169,6 @@ func (s *Session) handleContactInfo(req json.RawMessage) (any, error) {
 		return nil, err
 	}
 	out.Blocked = isBlocked(bl, jid.User, pn.User)
+	out.Picture = s.photos.full(jid)
 	return out, nil
 }

@@ -10,6 +10,7 @@ Container {
     id: row
     property variant chat
     property bool unread: chat.unread != 0
+    property bool hasPhoto: !!chat.photo
     horizontalAlignment: HorizontalAlignment.Fill
     // The long-press menu (step 5.3): the work is the list's (ListItem.view). ActionItem has no
     // visible, so each title follows the row's state.
@@ -49,14 +50,24 @@ Container {
         layout: StackLayout {
             orientation: LayoutOrientation.LeftToRight
         }
-        // The initials tile; photos come in Phase 6.
+        // The chat's picture (the engine's preview file, chat.photo) over the initials tile. The
+        // file's name has the picture's id, so a new picture is a new path and reloads.
         Container {
             verticalAlignment: VerticalAlignment.Center
             preferredWidth: ui.du(7 * row.ListItem.view.textScale)
             preferredHeight: ui.du(7 * row.ListItem.view.textScale)
             background: Color.create(row.chat.color)
             layout: DockLayout {}
+            ImageView {
+                visible: row.hasPhoto
+                horizontalAlignment: HorizontalAlignment.Fill
+                verticalAlignment: VerticalAlignment.Fill
+                imageSource: row.hasPhoto ? "file://" + row.chat.photo : ""
+                scalingMethod: ScalingMethod.AspectFill
+                loadEffect: ImageViewLoadEffect.None
+            }
             Label {
+                visible: !row.hasPhoto
                 horizontalAlignment: HorizontalAlignment.Center
                 verticalAlignment: VerticalAlignment.Center
                 text: row.chat.initials
@@ -116,6 +127,7 @@ Container {
                 ImageView {
                     visible: row.chat.out && row.chat.state < 4
                     verticalAlignment: VerticalAlignment.Center
+                    rightMargin: 0
                     imageSource: row.chat.state == 0 ? "asset:///images/clock.png" : row.chat.state == 1 ? "asset:///images/tick.png" : "asset:///images/ticks.png"
                     filterColor: row.chat.state == 3 ? ui.palette.primary : ui.palette.secondaryTextOnPlain
                 }
@@ -132,6 +144,9 @@ Container {
                     layoutProperties: StackLayoutProperties {
                         spaceQuota: 1
                     }
+                    // Closer to the ticks than Cascades' default gap (about 20 px between labels):
+                    // the user's, Q10, 2026-11-02.
+                    leftMargin: ui.du(1)
                     // Without U+20E3, a keycap's frame, as MessageItem's body.
                     text: row.chat.preview.replace(/\u20E3/g, "")
                     textStyle.base: row.ListItem.view.emojiStyle

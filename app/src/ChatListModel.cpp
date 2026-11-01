@@ -41,7 +41,7 @@ static QString placeholder(const QString &jid, int kind)
 
 // The row's fields from a SELECT of kRowColumns, all but the time, which depends on the list.
 static const char *const kRowColumns =
-    "jid, kind, name, last_ts, last_preview, last_out, last_state, unread, muted_until, pinned";
+    "jid, kind, name, last_ts, last_preview, last_out, last_state, unread, muted_until, pinned, photo";
 
 static QVariantMap baseRow(const QSqlQuery &q, qint64 now)
 {
@@ -60,6 +60,7 @@ static QVariantMap baseRow(const QSqlQuery &q, qint64 now)
     row["unread"] = q.value(7).toInt();
     row["muted"] = q.value(8).toLongLong() > now;
     row["pinned"] = q.value(9).toInt() != 0;
+    row["photo"] = q.value(10).toString(); // the engine's preview file's path, "" when none
     return row;
 }
 
