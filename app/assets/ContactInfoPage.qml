@@ -48,6 +48,7 @@ Page {
         },
         ActionItem {
             title: qsTr("Export chat")
+            imageSource: "asset:///images/save_action.png"
             enabled: page.hasChat
             ActionBar.placement: ActionBarPlacement.InOverflow
             onTriggered: {
@@ -56,6 +57,7 @@ Page {
         },
         ActionItem {
             title: qsTr("Clear chat")
+            imageSource: "file:///usr/share/icons/bb_action_delete.png"
             enabled: page.hasChat
             ActionBar.placement: ActionBarPlacement.InOverflow
             onTriggered: {
@@ -65,6 +67,7 @@ Page {
         // Unblock asks nothing: it undoes the block, which is the confirmation.
         ActionItem {
             title: page.info.blocked ? qsTr("Unblock") : qsTr("Block")
+            imageSource: "asset:///images/block_action.png"
             enabled: page.loaded
             ActionBar.placement: ActionBarPlacement.InOverflow
             onTriggered: {

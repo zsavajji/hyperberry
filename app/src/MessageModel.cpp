@@ -103,7 +103,7 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
     case 5: label = tr("Sticker"); break;
     case 7: label = text; shown = QString(); break; // "Location", "Poll: …"
     }
-    if (MediaData::fill(m.data, deleted ? 0 : kind, text, q.value(19).toByteArray(),
+    if (MediaData::fill(m.data, m.id, deleted ? 0 : kind, text, q.value(19).toByteArray(),
                         q.value(20).toInt(), q.value(21).toInt(), q.value(22).toLongLong(),
                         q.value(15).toInt(), q.value(17).toInt(), q.value(23).toString(), locale)
         && (kind == 4 || kind == 8))

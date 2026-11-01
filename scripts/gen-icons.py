@@ -2,12 +2,16 @@
 the action bar's record icon, the row menu's pin and mute, the voice bubble's play, pause and
 retry discs, and the Hub's: the item menu's tick_action, unread_action and delete_action, and
 the account's hub.png (the app's green with message.png, which this script doesn't make, on it).
+The phone has only the trash can among the info page's and chat menu's icons (user's choice,
+2026-11-01), so these are drawn as action icons too: contacts_action (two people), save_action
+(a floppy disk), block_action (the "forbidden" sign) and attach_action (a paperclip).
 
 They're white on transparent, so QML tints them with ImageView.filterColor (grey, or the
 primary colour for read). Each is drawn at 8x and scaled down to its size on the Q10: 3 du,
 27 px tall (PLAN.md §7). Run by hand when a mark changes, in the image fetch-emoji.sh builds:
     docker run --rm -v "$PWD:/src" hyperberry-font python -I /src/scripts/gen-icons.py /src/app/assets/images
 """
+import math
 import sys
 
 from PIL import Image, ImageDraw
@@ -81,6 +85,59 @@ def main(out):
     for x in (0.38, 0.5, 0.62):
         d.line(pts((x, 0.42), (x, 0.80)), (0, 0, 0, 0), round(0.05 * H * S))
     action(img, out, "delete")
+
+    # Two people, outlines: a head and a dome of shoulders each, the back one up and to the right.
+    # The front one's silhouette is cleared first, so the back one's lines stop at a gap.
+    img, d = canvas(H)
+    o, clear = round(0.07 * H * S), (0, 0, 0, 0)
+
+    def person(cx, top, r, half, v, base):
+        """Head of radius r with its top at `top`, a dome half wide and v tall on the line y = base."""
+        d.ellipse(pts((cx - r, top), (cx + r, top + 2 * r)), outline=white, width=o)
+        d.arc(pts((cx - half, base - v), (cx + half, base + v)), 180, 360, white, o)
+        d.line(pts((cx - half, base), (cx + half, base)), white, o)
+
+    person(0.68, 0.10, 0.13, 0.24, 0.36, 0.86)
+    g = 0.045  # the gap round the front person
+    fx, fh, fr, fv = 0.34, 0.26, 0.14, 0.30
+    d.ellipse(pts((fx - fr - g, 0.20 - g), (fx + fr + g, 0.20 + 2 * fr + g)), clear)
+    d.pieslice(pts((fx - fh - g, 0.86 - fv - g), (fx + fh + g, 0.86 + fv + g)), 180, 360, clear)
+    d.rectangle(pts((fx - fh - g, 0.86), (fx + fh + g, 0.92)), clear)
+    person(fx, 0.20, fr, fh, fv, 0.86)
+    action(img, out, "contacts")
+
+    # A floppy disk: a square with the top right corner cut, the shutter at the top and the label
+    # at the bottom.
+    img, d = canvas(H)
+    o = round(0.07 * H * S)
+    d.line(pts((0.12, 0.12), (0.74, 0.12), (0.88, 0.26), (0.88, 0.88), (0.12, 0.88), (0.12, 0.12)),
+           white, o, joint="curve")
+    d.rectangle(pts((0.30, 0.12), (0.66, 0.36)), outline=white, width=o)
+    d.rectangle(pts((0.26, 0.54), (0.74, 0.88)), outline=white, width=o)
+    action(img, out, "save")
+
+    # The "forbidden" sign: a circle with a bar from the top left to the bottom right.
+    img, d = canvas(H)
+    o = round(0.09 * H * S)
+    d.ellipse(pts((0.10, 0.10), (0.90, 0.90)), outline=white, width=o)
+    d.line(pts((0.22, 0.22), (0.78, 0.78)), white, o)
+    action(img, out, "block")
+
+    # A paperclip, drawn upright as one wire (outer left up, over the top, down the right, round
+    # the bottom, up the inside, a small turn, down to the free end) and turned 45 degrees.
+    def arc(cx, cy, r, a0, a1):
+        return [(cx + r * math.cos(math.radians(a0 + (a1 - a0) * i / 24)),
+                 cy + r * math.sin(math.radians(a0 + (a1 - a0) * i / 24))) for i in range(25)]
+
+    img, d = canvas(H)
+    o = round(0.07 * H * S)
+    wire = ([(0.28, 0.68), (0.28, 0.35)] + arc(0.50, 0.35, 0.22, 180, 360)  # up and over the top
+            + [(0.72, 0.70)] + arc(0.56, 0.70, 0.16, 0, 180)  # down, round the bottom
+            + [(0.40, 0.42)] + arc(0.50, 0.42, 0.10, 180, 360) + [(0.60, 0.64)])  # up, turn, down
+    d.line(pts(*wire), white, o, joint="curve")
+    for x, y in (wire[0], wire[-1]):  # round ends
+        d.ellipse(pts((x - 0.035, y - 0.035), (x + 0.035, y + 0.035)), white)
+    action(img.rotate(-45, Image.BICUBIC), out, "attach")
 
     # A pushpin, drawn upright and turned 45 degrees.
     img, d = canvas(H)

@@ -68,6 +68,7 @@ Page {
         ActionItem {
             id: infoAction
             title: page.chat && page.chat.kind == 0 ? qsTr("Contact info") : qsTr("Group info")
+            imageSource: "asset:///images/contacts_action.png"
             onTriggered: page.showInfo()
         },
         SystemToast {
@@ -161,6 +162,7 @@ Page {
         },
         ActionItem {
             title: qsTr("Attach")
+            imageSource: "asset:///images/attach_action.png"
             ActionBar.placement: ActionBarPlacement.InOverflow
             onTriggered: attachPicker.open()
         }
@@ -202,7 +204,17 @@ Page {
     }
     // ponytail: a file goes without the quote being replied to; ctl keeps it for the next text.
     function sendFile(path) {
-        if (!engine.request("media.send", {"chat": chat.jid, "path": path})) {
+        var args = {"chat": chat.jid, "path": path}
+        // A photo's thumbnail and size come from here: the engine decodes no picture (step 6.3).
+        var info = media.photoInfo(path)
+        if (info.width) {
+            args.width = info.width
+            args.height = info.height
+        }
+        if (info.thumb) {
+            args.thumb = info.thumb
+        }
+        if (!engine.request("media.send", args)) {
             notSent.show()
             return
         }

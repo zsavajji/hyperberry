@@ -5,10 +5,13 @@
 #include <bb/system/InvokeReplyError>
 #include <bb/system/InvokeRequest>
 #include <bb/system/InvokeTargetReply>
+#include <QBuffer>
 #include <QDebug>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QImage>
+#include <QImageReader>
 #include <QUrl>
 
 using namespace bb::system;
@@ -120,4 +123,38 @@ QString MediaOpener::saveToPictures(const QString &path)
     if (QFile::exists(target) || QFile::copy(path, target))
         return target;
     return QString();
+}
+
+// ponytail: EXIF orientation isn't applied (Qt 4.8's reader ignores it): a portrait camera photo's
+// thumbnail may lie on its side. Decoded on the UI thread, at reduced size.
+QVariantMap MediaOpener::photoInfo(const QString &path)
+{
+    QVariantMap info;
+    const QString ext = QFileInfo(path).suffix().toLower();
+    if (ext != "jpg" && ext != "jpeg")
+        return info;
+    QImageReader reader(path);
+    const QSize size = reader.size(); // from the header
+    if (!size.isValid())
+        return info;
+    QSize to = size;
+    if (to.width() > 96 || to.height() > 96)
+        to.scale(96, 96, Qt::KeepAspectRatio);
+    reader.setScaledSize(to);
+    const QImage image = reader.read();
+    if (image.isNull())
+        return info;
+    info["width"] = size.width();
+    info["height"] = size.height();
+    // The engine takes at most 16 KB; a busy picture may need a lower quality.
+    for (int quality = 60; quality >= 40; quality -= 20) {
+        QByteArray jpeg;
+        QBuffer buffer(&jpeg);
+        buffer.open(QIODevice::WriteOnly);
+        if (image.save(&buffer, "JPEG", quality) && jpeg.size() <= 16 * 1024) {
+            info["thumb"] = QString::fromLatin1(jpeg.toBase64().constData());
+            break;
+        }
+    }
+    return info;
 }

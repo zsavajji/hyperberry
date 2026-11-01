@@ -19,6 +19,7 @@ Page {
     actions: [
         ActionItem {
             title: qsTr("Save")
+            imageSource: "asset:///images/save_action.png"
             ActionBar.placement: ActionBarPlacement.OnBar
             onTriggered: {
                 savedToast.body = saver.saveToPictures(page.path) != "" ? qsTr("Saved to Pictures")

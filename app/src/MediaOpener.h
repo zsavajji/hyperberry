@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QPointer>
 #include <QString>
+#include <QVariantMap>
 
 class EngineLink;
 
@@ -32,6 +33,11 @@ public:
     Q_INVOKABLE bool openFile(const QString &path);
     // Copies a photo into Pictures (shared/photos/HyperBerry/); the copy's path, "" on failure.
     Q_INVOKABLE QString saveToPictures(const QString &path);
+    // What media.send is given with a photo (step 6.3), since the engine decodes no picture: for a
+    // .jpg or .jpeg Qt can read, {thumb: base64 of a JPEG of at most 96 px and 16 KB, width,
+    // height} (the original's size); thumb is missing when no quality made it small enough. Empty
+    // for any other file or on failure.
+    Q_INVOKABLE QVariantMap photoInfo(const QString &path);
 
 signals:
     void loadingIdChanged();
