@@ -267,6 +267,7 @@ void EngineLink::lost()
 
 void EngineLink::fail(const QString &cmd, const QString &code, const QString &message)
 {
+    qWarning() << "engine:" << cmd << "failed:" << code << message;
     m_failure.clear();
     m_failure["cmd"] = cmd;
     m_failure["code"] = code;
@@ -293,11 +294,34 @@ QString EngineLink::request(const QString &cmd, const QVariantMap &args)
     return id;
 }
 
+// QML hands every number over as a double, which JsonDataAccess doesn't write as a plain
+// integer, and the engine's integer fields refuse anything else: the 8-hour mute's unix time
+// never took (Q10, 0.0.1.87). Whole numbers go as integers.
+static QVariant wholeNumbers(const QVariant &v)
+{
+    if (v.type() == QVariant::Double) {
+        const double d = v.toDouble();
+        if (qAbs(d) < 9e15 && d == double(qlonglong(d)))
+            return QVariant(qlonglong(d));
+    } else if (v.type() == QVariant::Map) {
+        QVariantMap m = v.toMap();
+        for (QVariantMap::iterator it = m.begin(); it != m.end(); ++it)
+            it.value() = wholeNumbers(it.value());
+        return m;
+    } else if (v.type() == QVariant::List) {
+        QVariantList l = v.toList();
+        for (int i = 0; i < l.size(); ++i)
+            l[i] = wholeNumbers(l[i]);
+        return l;
+    }
+    return v;
+}
+
 void EngineLink::send(const QVariantMap &map)
 {
     QByteArray buf;
     JsonDataAccess json;
-    json.saveToBuffer(QVariant(map), &buf);
+    json.saveToBuffer(wholeNumbers(map), &buf);
     // JsonDataAccess may write indented JSON. JSON escapes newlines inside strings, so a raw one
     // can only be layout: dropping them keeps one object per line, as the engine's framing needs.
     buf.replace('\n', "");

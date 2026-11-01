@@ -157,8 +157,8 @@ void ChatController::open(const QVariantMap &chat)
             SLOT(onReplied(QString, QString, QVariant)));
     connect(m_messages, SIGNAL(incoming()), this, SLOT(onIncoming()));
     // From chats.db, not the row we were given: a contact from the picker has no unread, and
-    // a notification tap (step 5.1) won't either.
-    m_unseen = m_messages->unread() > 0;
+    // a notification tap (step 5.1) won't either. Marked unread is -1 (step 5.3).
+    m_unseen = m_messages->unread() != 0;
     m_engine->setOpenChat(m_jid);
     sendOpen();
     askGroupInfo();

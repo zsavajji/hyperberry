@@ -23,12 +23,12 @@ Container {
             }
             ActionItem {
                 title: row.chat.pinned ? qsTr("Unpin") : qsTr("Pin")
-                imageSource: "asset:///images/pin.png"
+                imageSource: "asset:///images/pin_action.png"
                 onTriggered: row.ListItem.view.togglePin(row.chat)
             }
             ActionItem {
                 title: row.chat.muted ? qsTr("Unmute") : qsTr("Mute…")
-                imageSource: "asset:///images/mute.png"
+                imageSource: "asset:///images/mute_action.png"
                 onTriggered: row.ListItem.view.toggleMute(row.chat)
             }
             ActionItem {

@@ -1,5 +1,6 @@
 """Draws the chat list's small marks into app/assets/images/: ticks, clock, mute, pin and mic,
-the action bar's record icon, and the voice bubble's play, pause and retry discs.
+the action bar's record icon, the row menu's pin and mute, and the voice bubble's play, pause
+and retry discs.
 
 They're white on transparent, so QML tints them with ImageView.filterColor (grey, or the
 primary colour for read). Each is drawn at 8x and scaled down to its size on the Q10: 3 du,
@@ -27,6 +28,16 @@ def save(img, out, name):
     img.resize((img.width // S, img.height // S), Image.LANCZOS).save(f"{out}/{name}.png")
 
 
+def action(img, out, name):
+    """A mark as an action icon: 80% of an 81 px box, since the marks carry their own margin.
+    The row menu showed the 27 px marks small beside the system's icons (Q10, 2026-11-01)."""
+    B = 81
+    box = Image.new("RGBA", (B, B), (0, 0, 0, 0))
+    m = img.resize((round(0.8 * B * img.width / img.height), round(0.8 * B)), Image.LANCZOS)
+    box.paste(m, ((B - m.width) // 2, (B - m.height) // 2), m)
+    box.save(f"{out}/{name}_action.png")
+
+
 def main(out):
     white, w = (255, 255, 255, 255), round(0.11 * H * S)
 
@@ -52,6 +63,7 @@ def main(out):
     d.line(pts((0.6, 0.36), (0.9, 0.64)), white, x)
     d.line(pts((0.6, 0.64), (0.9, 0.36)), white, x)
     save(img, out, "mute")
+    action(img, out, "mute")
 
     # A pushpin, drawn upright and turned 45 degrees.
     img, d = canvas(H)
@@ -59,6 +71,7 @@ def main(out):
     d.polygon(pts((0.40, 0.16), (0.60, 0.16), (0.62, 0.44), (0.76, 0.58), (0.24, 0.58), (0.38, 0.44)), white)
     d.line(pts((0.5, 0.58), (0.5, 0.94)), white, round(0.07 * H * S))
     save(img.rotate(-45, Image.BICUBIC), out, "pin")
+    action(img.rotate(-45, Image.BICUBIC), out, "pin")
 
     # A microphone: capsule, cradle and stand.
     img, d = canvas(H)
