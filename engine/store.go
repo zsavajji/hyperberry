@@ -47,11 +47,14 @@ type Store struct {
 	// dl holds a *sync.Mutex per message being downloaded, so a tap and the live download of a
 	// photo don't both write its file. ponytail: one small mutex per downloaded message, never pruned.
 	dl sync.Map
+	// hist takes the history-sync notifications and works them a chat at a time (history_stream.go).
+	hist *historyQueue
 }
 
 func newStore(db *sql.DB, srv *Server, log waLog.Logger) *Store {
 	st := &Store{db: db, srv: srv, log: log, ops: make(chan func(*storeTx), 1024), done: make(chan struct{})}
 	st.nt = newNotifier(srv.dir, log)
+	st.hist = newHistoryQueue(st)
 	srv.Handle("prefs.set", st.nt.handlePrefs)
 	go st.run()
 	return st
@@ -115,7 +118,7 @@ func (st *Store) afterCommit(f func()) {
 // Downloads' files, as a browser's. The folders come back on the next write.
 func (st *Store) wipe() {
 	st.nt.unlink() // the Hub's account and items belong to the link too
-	for _, d := range []string{"voice", "cache", "media", "profile"} {
+	for _, d := range []string{"voice", "cache", "media", "profile", "history"} {
 		if err := os.RemoveAll(filepath.Join(st.srv.dir, d)); err != nil {
 			st.log.Warnf("wipe %s: %v", d, err)
 		}
@@ -129,9 +132,13 @@ func (st *Store) wipe() {
 
 // handle queues an event for the writer. It only enqueues: hypermeow calls it on its receive loop.
 func (st *Store) handle(cli *whatsmeow.Client, evt any) {
+	if st.takeHistory(cli, evt) {
+		return
+	}
 	switch e := evt.(type) {
 	case *events.Connected:
 		go st.syncGroups(cli)
+		go st.hist.resume(cli) // the chunks a crash or a failure left on disk
 		return
 	case *events.OfflineSyncPreview: // not through dispatch: cli may be nil
 		st.ops <- func(*storeTx) {

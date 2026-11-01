@@ -80,6 +80,10 @@ func newSession(container *sqlstore.Container, srv *Server, store *Store, log wa
 
 func (s *Session) newClient(device *store.Device) *whatsmeow.Client {
 	cli := whatsmeow.NewClient(device, s.log.Sub("client"))
+	// hypermeow would acknowledge a history chunk before downloading it and then read it whole.
+	// It only dispatches the notification now; the Store works it and sends the receipt itself.
+	cli.ManualHistorySyncDownload = true
+	cli.DisableManualHistorySyncReceipt = true
 	cli.AddEventHandler(func(evt any) { s.onEvent(cli, evt) })
 	cli.AddEventHandler(func(evt any) { s.store.handle(cli, evt) })
 	return cli
