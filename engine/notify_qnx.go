@@ -5,24 +5,10 @@ package main
 /*
 #cgo LDFLAGS: -lbps
 #include <errno.h>
-#include <stdbool.h> // bps/led.h uses bool without it
 #include <stdlib.h>
 #include <string.h>
 #include <bps/bps.h>
-#include <bps/led.h>
 #include <bps/notification.h>
-
-// Opens BPS on the calling thread for good: an LED request may end with the session that made
-// it, so the notifier's thread keeps one open (step 5.6).
-static int hb_bps_open(void) {
-	return bps_initialize() == BPS_SUCCESS ? 0 : errno;
-}
-
-// Flashes the LED in rgb blinks times (0: until cancelled); rgb 0 cancels.
-static int hb_led(const char *id, int rgb, int blinks) {
-	int rc = rgb ? led_request_rgb(id, rgb, blinks) : led_cancel(id);
-	return rc == BPS_SUCCESS ? 0 : errno;
-}
 
 // Each call initialises BPS on the calling thread, so any goroutine can post. 0 on success,
 // otherwise errno.
@@ -80,17 +66,6 @@ func withdraw(itemID string) error {
 	item := C.CString(itemID)
 	defer C.free(unsafe.Pointer(item))
 	return errnoErr(C.hb_notification(item, nil, nil, nil))
-}
-
-// ledOpen keeps BPS open on the calling thread, which must stay locked to its goroutine.
-func ledOpen() error { return errnoErr(C.hb_bps_open()) }
-
-// led flashes the LED in rgb (0x00rrggbb; any non-zero part is full, so 7 colours) blinks
-// times, 0 for until led(id, 0, 0) cancels it. Needs access_led_control.
-func led(id string, rgb, blinks int) error {
-	cid := C.CString(id)
-	defer C.free(unsafe.Pointer(cid))
-	return errnoErr(C.hb_led(cid, C.int(rgb), C.int(blinks)))
 }
 
 func errnoErr(rc C.int) error {

@@ -17,7 +17,6 @@ type fakeHub struct {
 	mu    sync.Mutex
 	posts []posted
 	gone  []string
-	leds  []string // "id rgb blinks"
 }
 
 func (h *fakeHub) list() ([]posted, []string) {
@@ -45,7 +44,7 @@ func (h *fakeHub) wait(t *testing.T, n, w int) ([]posted, []string) {
 // hubSim is a linked sim whose notifier talks to a fakeHub. The seed posts nothing.
 func hubSim(t *testing.T) (*Sim, *Store, *conn, *fakeHub) {
 	h := &fakeHub{}
-	post, drop, light := notifyFn, withdrawFn, ledFn
+	post, drop := notifyFn, withdrawFn
 	notifyFn = func(item, title, body, payload string) error {
 		h.mu.Lock()
 		h.posts = append(h.posts, posted{item, title, body, payload})
@@ -58,13 +57,7 @@ func hubSim(t *testing.T) (*Sim, *Store, *conn, *fakeHub) {
 		h.mu.Unlock()
 		return nil
 	}
-	ledFn = func(id string, rgb, blinks int) error {
-		h.mu.Lock()
-		h.leds = append(h.leds, fmt.Sprintf("%s %06x %d", id, rgb, blinks))
-		h.mu.Unlock()
-		return nil
-	}
-	t.Cleanup(func() { notifyFn, withdrawFn, ledFn = post, drop, light }) // after the store's own cleanup
+	t.Cleanup(func() { notifyFn, withdrawFn = post, drop }) // runs after the store's own cleanup
 	s, st, c := linkedSim(t)
 	h.wait(t, 0, 0)
 	return s, st, c, h
@@ -146,53 +139,10 @@ func TestPrefsPersist(t *testing.T) {
 		t.Error("prefs.set with nothing: want an error")
 	}
 	n.handlePrefs([]byte(`{"notifyPreview":false}`))
-	n.handlePrefs([]byte(`{"led":[255,0,16776960]}`)) // keeps notifyPreview
 	n.close()
 	n = newNotifier(dir, waLog.Noop)
 	defer n.close()
 	if n.preview {
 		t.Error("a new engine on the same dir lost notifyPreview")
-	}
-	if n.colours != [3]int{255, 0, 16776960} {
-		t.Errorf("a new engine on the same dir has led %06x", n.colours)
-	}
-}
-
-// The LED follows each kind's notifications in its colour (step 5.6), and a colour change
-// relights what's up.
-func TestNotifyLED(t *testing.T) {
-	s, st, _, h := hubSim(t)
-	leds := func(want ...string) {
-		t.Helper()
-		time.Sleep(150 * time.Millisecond)
-		h.mu.Lock()
-		got := fmt.Sprint(h.leds)
-		h.leds = nil
-		h.mu.Unlock()
-		if got != fmt.Sprint(want) {
-			t.Errorf("leds %s, want %v", got, want)
-		}
-	}
-	msg(s, 2, "chat") // Marco
-	h.wait(t, 1, 0)
-	leds("hyperberry_chats ff0000 0")
-	msg(s, 1, "group") // Family
-	h.wait(t, 2, 0)
-	leds("hyperberry_groups ff0000 0")
-	if _, err := st.nt.handlePrefs([]byte(`{"led":[65280,0,255]}`)); err != nil {
-		t.Fatal(err)
-	}
-	// Groups off: one blink, then the cancel. Channels have nothing up.
-	leds("hyperberry_chats 00ff00 0", "hyperberry_groups ff0000 1", "hyperberry_groups 000000 0")
-	msg(s, 1, "again") // a kind that's off lights nothing
-	h.wait(t, 3, 0)
-	leds()
-	if _, err := s.handleRead([]byte(`{"chat":"` + simChats[2].jid + `"}`)); err != nil {
-		t.Fatal(err)
-	}
-	h.wait(t, 3, 1)
-	leds("hyperberry_chats 00ff00 1", "hyperberry_chats 000000 0")
-	if _, err := st.nt.handlePrefs([]byte(`{"led":[16777216,0,0]}`)); err == nil {
-		t.Error("a colour past 0xFFFFFF: want an error")
 	}
 }

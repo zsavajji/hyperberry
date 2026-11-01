@@ -16,8 +16,6 @@ class Settings : public QObject
     Q_PROPERTY(bool notifyPreview READ notifyPreview WRITE setNotifyPreview NOTIFY notifyPreviewChanged)
     Q_PROPERTY(int textSize READ textSize WRITE setTextSize NOTIFY textSizeChanged) // 0..3
     Q_PROPERTY(qreal textScale READ textScale NOTIFY textSizeChanged)
-    // The LED's colour per kind of chat (step 5.6): chats, groups, channels; 0x00rrggbb, 0 off.
-    Q_PROPERTY(QVariantList leds READ leds NOTIFY ledsChanged)
 
 public:
     explicit Settings(EngineLink *engine, QObject *parent = 0);
@@ -26,19 +24,16 @@ public:
     bool notifyPreview() const;
     int textSize() const;
     qreal textScale() const;
-    QVariantList leds() const;
     void setTheme(int theme);
     void setEnterSends(bool on);
     void setNotifyPreview(bool on);
     void setTextSize(int size);
-    Q_INVOKABLE void setLed(int kind, int rgb);
 
 signals:
     void themeChanged();
     void enterSendsChanged();
     void notifyPreviewChanged();
     void textSizeChanged();
-    void ledsChanged();
 
 private:
     void applyTheme();
