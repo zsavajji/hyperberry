@@ -318,6 +318,10 @@ Page {
     // next key. Modifiers, Sym and Delete arrive cut to their low byte with a keycap of 0xE000 or more
     // (bb10-pitfalls); control characters (Enter, Backspace) and Ctrl shortcuts aren't text.
     function typeKey(event) {
+        // The search field is inside the page, so its keys come here too (Q10, 0.0.1.122).
+        if (searchBar.typing) {
+            return
+        }
         var c = event.unicode
         if (event.keycap >= 0xE000 || event.ctrlPressed || c.length == 0 || c < " " || c == "\u007f") {
             return

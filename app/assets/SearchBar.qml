@@ -13,11 +13,15 @@ Container {
     property variant matches: []
     property int at: -1
     property bool searched: false
+    // The field's keys also reach the page's KeyListener, which would hand them to the composer.
+    property bool typing: field.focused
     signal jump(string id)
     signal closed()
     visible: false
     horizontalAlignment: HorizontalAlignment.Fill
     background: ui.palette.plain
+    // As the reply bar's: the field sat against the screen's edge (Q10, 0.0.1.122).
+    leftPadding: ui.du(1.5)
     topPadding: ui.du(0.5)
     bottomPadding: ui.du(0.5)
     layout: StackLayout {
