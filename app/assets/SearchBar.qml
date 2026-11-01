@@ -15,6 +15,12 @@ Container {
     property bool searched: false
     // The field's keys also reach the page's KeyListener, which would hand them to the composer.
     property bool typing: field.focused
+    // Whether ▲ and ▼ have a match their way; one with none is dimmed (Q10, 0.0.1.123: they
+    // never changed). Before a search, ▲ (as Enter) searches once there is text. Set from
+    // textChanging: the field's text notifies only when it is committed.
+    property bool hasText: false
+    property bool canOlder: searched ? at + 1 < matches.length : hasText
+    property bool canNewer: at > 0
     signal jump(string id)
     signal closed()
     visible: false
@@ -74,6 +80,7 @@ Container {
             onSubmitted: bar.older()
         }
         onTextChanging: {
+            bar.hasText = text.trim() != ""
             bar.matches = []
             bar.at = -1
             bar.searched = false
@@ -102,7 +109,8 @@ Container {
             // From the phone's fallback font (DejaVu Sans), as the ✕ is.
             text: "▲"
             textFormat: TextFormat.Plain
-            textStyle.color: ui.palette.secondaryTextOnPlain
+            textStyle.color: bar.canOlder ? ui.palette.textOnPlain : ui.palette.secondaryTextOnPlain
+            opacity: bar.canOlder ? 1 : 0.4
         }
     }
     Container {
@@ -119,7 +127,8 @@ Container {
             verticalAlignment: VerticalAlignment.Center
             text: "▼"
             textFormat: TextFormat.Plain
-            textStyle.color: ui.palette.secondaryTextOnPlain
+            textStyle.color: bar.canNewer ? ui.palette.textOnPlain : ui.palette.secondaryTextOnPlain
+            opacity: bar.canNewer ? 1 : 0.4
         }
     }
     Container {
