@@ -780,114 +780,159 @@
 <context>
     <name>SettingsPage</name>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="9"/>
+        <location filename="../assets/SettingsPage.qml" line="20"/>
         <source>Settings</source>
         <translation>Impostazioni</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="16"/>
-        <source>Unlink this device?</source>
-        <translation>Scollegare questo dispositivo?</translation>
+        <location filename="../assets/SettingsPage.qml" line="36"/>
+        <source>Change photo</source>
+        <translation>Cambia foto</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="17"/>
-        <source>This device is removed from your linked devices and its chats are deleted here.</source>
-        <translation>Il dispositivo viene rimosso dai dispositivi collegati e le sue chat vengono eliminate qui.</translation>
+        <location filename="../assets/SettingsPage.qml" line="38"/>
+        <source>Remove photo</source>
+        <translation>Rimuovi foto</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="18"/>
-        <source>Unlink</source>
-        <translation>Scollega</translation>
+        <location filename="../assets/SettingsPage.qml" line="70"/>
+        <source>Profile photo</source>
+        <translation>Foto del profilo</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="19"/>
+        <location filename="../assets/SettingsPage.qml" line="71"/>
         <source>Cancel</source>
         <translation>Annulla</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="36"/>
+        <location filename="../assets/SettingsPage.qml" line="85"/>
+        <source>Your name</source>
+        <translation>Il tuo nome</translation>
+    </message>
+    <message>
+        <location filename="../assets/SettingsPage.qml" line="96"/>
+        <source>About</source>
+        <translation>Info</translation>
+    </message>
+    <message>
+        <location filename="../assets/SettingsPage.qml" line="107"/>
+        <source>Couldn't update your profile. Check the connection and try again.</source>
+        <translation>Impossibile aggiornare il profilo. Controlla la connessione e riprova.</translation>
+    </message>
+    <message>
+        <location filename="../assets/SettingsPage.qml" line="111"/>
+        <source>Couldn't read that picture.</source>
+        <translation>Impossibile leggere questa immagine.</translation>
+    </message>
+    <message>
+        <location filename="../assets/SettingsPage.qml" line="115"/>
+        <source>Unlink this device?</source>
+        <translation>Scollegare questo dispositivo?</translation>
+    </message>
+    <message>
+        <location filename="../assets/SettingsPage.qml" line="116"/>
+        <source>This device is removed from your linked devices and its chats are deleted here.</source>
+        <translation>Il dispositivo viene rimosso dai dispositivi collegati e le sue chat vengono eliminate qui.</translation>
+    </message>
+    <message>
+        <location filename="../assets/SettingsPage.qml" line="117"/>
+        <source>Unlink</source>
+        <translation>Scollega</translation>
+    </message>
+    <message>
+        <location filename="../assets/SettingsPage.qml" line="181"/>
+        <source>Loading…</source>
+        <translation>Caricamento…</translation>
+    </message>
+    <message>
+        <location filename="../assets/SettingsPage.qml" line="187"/>
+        <source>Couldn't load your profile. Check the connection and try again.</source>
+        <translation>Impossibile caricare il profilo. Controlla la connessione e riprova.</translation>
+    </message>
+    <message>
+        <location filename="../assets/SettingsPage.qml" line="241"/>
         <source>Theme</source>
         <translation>Tema</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="38"/>
+        <location filename="../assets/SettingsPage.qml" line="243"/>
         <source>Dark</source>
         <translation>Scuro</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="39"/>
+        <location filename="../assets/SettingsPage.qml" line="244"/>
         <source>Bright</source>
         <translation>Chiaro</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="44"/>
+        <location filename="../assets/SettingsPage.qml" line="249"/>
         <source>Text size</source>
         <translation>Dimensione del testo</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="46"/>
+        <location filename="../assets/SettingsPage.qml" line="251"/>
         <source>Small</source>
         <translation>Piccola</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="47"/>
+        <location filename="../assets/SettingsPage.qml" line="252"/>
         <source>Normal</source>
         <translation>Normale</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="48"/>
+        <location filename="../assets/SettingsPage.qml" line="253"/>
         <source>Large</source>
         <translation>Grande</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="63"/>
+        <location filename="../assets/SettingsPage.qml" line="268"/>
         <source>Enter sends</source>
         <translation>Invio invia il messaggio</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="67"/>
+        <location filename="../assets/SettingsPage.qml" line="272"/>
         <source>Off, Enter starts a new line; the Send action still sends.</source>
         <translation>Se disattivato, Invio va a capo; l'azione Invia continua a inviare.</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="91"/>
+        <location filename="../assets/SettingsPage.qml" line="296"/>
         <source>Notification preview</source>
         <translation>Anteprima notifiche</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="95"/>
+        <location filename="../assets/SettingsPage.qml" line="300"/>
         <source>Off, a notification says &quot;New message&quot; instead of the text.</source>
         <translation>Se disattivato, la notifica mostra &quot;Nuovo messaggio&quot; invece del testo.</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="111"/>
-        <source>Unlink this device</source>
-        <translation>Scollega questo dispositivo</translation>
-    </message>
-    <message>
-        <location filename="../assets/SettingsPage.qml" line="117"/>
+        <location filename="../assets/SettingsPage.qml" line="315"/>
         <source>Storage</source>
         <translation>Spazio</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="129"/>
+        <location filename="../assets/SettingsPage.qml" line="327"/>
         <source>Cache: %1</source>
         <translation>Cache: %1</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="133"/>
+        <location filename="../assets/SettingsPage.qml" line="331"/>
         <source>Clear cache</source>
         <translation>Svuota la cache</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="138"/>
+        <location filename="../assets/SettingsPage.qml" line="336"/>
         <source>Cache cleared: %1 freed</source>
         <translation>Cache svuotata: %1 liberati</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="146"/>
+        <location filename="../assets/SettingsPage.qml" line="344"/>
         <source>Voice notes' decoded audio and photo previews; they're made again when needed.</source>
         <translation>L'audio decodificato dei vocali e le anteprime delle foto; si rifanno quando servono.</translation>
+    </message>
+    <message>
+        <location filename="../assets/SettingsPage.qml" line="352"/>
+        <source>Unlink this device</source>
+        <translation>Scollega questo dispositivo</translation>
     </message>
 </context>
 <context>

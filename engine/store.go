@@ -110,12 +110,12 @@ func (st *Store) afterCommit(f func()) {
 }
 
 // wipe takes what is left of the old link once clear has committed: the Hub's account, the
-// voice notes, the photos and the decoded cache, and the deleted rows still in chats.db's free
-// pages and WAL. The UI's settings stay: they belong to the phone. So do Downloads' files, as
-// a browser's. The folders come back on the next write.
+// voice notes, the photos, the decoded cache, our profile picture, and the deleted rows still in
+// chats.db's free pages and WAL. The UI's settings stay: they belong to the phone. So do
+// Downloads' files, as a browser's. The folders come back on the next write.
 func (st *Store) wipe() {
 	st.nt.unlink() // the Hub's account and items belong to the link too
-	for _, d := range []string{"voice", "cache", "media"} {
+	for _, d := range []string{"voice", "cache", "media", "profile"} {
 		if err := os.RemoveAll(filepath.Join(st.srv.dir, d)); err != nil {
 			st.log.Warnf("wipe %s: %v", d, err)
 		}

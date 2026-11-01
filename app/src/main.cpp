@@ -19,6 +19,7 @@
 #include "EngineLink.h"
 #include "MediaOpener.h"
 #include "OpenRequests.h"
+#include "Profile.h"
 #include "QrImage.h"
 #include "Settings.h"
 
@@ -96,6 +97,7 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     qmlRegisterType<ContactInfo>("hyperberry", 1, 0, "ContactInfo");
     qmlRegisterType<ContactPicker>("hyperberry", 1, 0, "ContactPicker");
     qmlRegisterType<MediaOpener>("hyperberry", 1, 0, "MediaOpener");
+    qmlRegisterType<Profile>("hyperberry", 1, 0, "Profile");
     QmlDocument *document = QmlDocument::create("asset:///main.qml").parent(&app);
     if (!loaded(document, "main.qml"))
         return 1;
