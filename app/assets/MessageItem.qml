@@ -16,7 +16,9 @@ Container {
     rightPadding: msg.out ? ui.du(1.5) : ui.du(7)
     // The gap goes above each card: in the bottom-to-top list that also spaces the first card
     // from its day's header (Q10, 2026-10-31: 1 du touched the header and was a little tight).
-    topPadding: ui.du(1.5)
+    // It and the card's padding grow with the text size (Q10, 2026-11-01: Larger looked
+    // cramped).
+    topPadding: ui.du(1.5 * item.ListItem.view.textScale)
     // The long-press menu (step 3.3). The set is the same on every row, with items disabled
     // rather than left out: ActionItem has no visible, and list items are recycled across rows,
     // so adding and removing actions per row isn't safe. The page does the work, through the
@@ -54,10 +56,10 @@ Container {
         horizontalAlignment: HorizontalAlignment.Fill
         background: ui.palette.plain
         // 2 px over 1.5 and 1 du: the text sat a little tight to the card's edges (Q10).
-        leftPadding: ui.du(1.5) + ui.px(2)
-        rightPadding: ui.du(1.5) + ui.px(2)
-        topPadding: ui.du(1) + ui.px(2)
-        bottomPadding: ui.du(1) + ui.px(2)
+        leftPadding: ui.du(1.5 * item.ListItem.view.textScale) + ui.px(2)
+        rightPadding: ui.du(1.5 * item.ListItem.view.textScale) + ui.px(2)
+        topPadding: ui.du(1 * item.ListItem.view.textScale) + ui.px(2)
+        bottomPadding: ui.du(1 * item.ListItem.view.textScale) + ui.px(2)
         layout: StackLayout {
             orientation: LayoutOrientation.LeftToRight
         }
@@ -173,7 +175,11 @@ Container {
                 verticalAlignment: VerticalAlignment.Center
                 text: (item.msg.edited ? qsTr("edited") + " " : "") + item.msg.time
                 textFormat: TextFormat.Plain
+                // A percentage of its base, SmallText (fontsize.h): the same at Normal, and
+                // growing with the text size as the body does.
                 textStyle.base: SystemDefaults.TextStyles.SmallText
+                textStyle.fontSize: FontSize.PercentageValue
+                textStyle.fontSizeValue: Math.round(100 * item.ListItem.view.textScale)
                 textStyle.color: ui.palette.secondaryTextOnPlain
             }
             ImageView {

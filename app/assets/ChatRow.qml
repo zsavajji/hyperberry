@@ -99,7 +99,10 @@ Container {
                 Label {
                     verticalAlignment: VerticalAlignment.Center
                     text: row.chat.time || ""
+                    // Grows with the text size, as the name and preview do (MessageItem's time).
                     textStyle.base: SystemDefaults.TextStyles.SmallText
+                    textStyle.fontSize: FontSize.PercentageValue
+                    textStyle.fontSizeValue: Math.round(100 * row.ListItem.view.textScale)
                     textStyle.color: row.unread ? ui.palette.primary : ui.palette.secondaryTextOnPlain
                 }
             }

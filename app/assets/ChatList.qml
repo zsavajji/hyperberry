@@ -9,6 +9,7 @@ ListView {
     property variant emojiStyle
     property int bodySize
     property int smallSize
+    property real textScale: settings.textScale
     // True on the Archived page, where "Archive" reads "Unarchive".
     property bool archivedList: false
     signal chatTapped(variant chat)
