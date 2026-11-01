@@ -25,7 +25,7 @@ Container {
     // list (ListItem.view). "Delete for me" is a DeleteActionItem, which the system puts last.
     contextActions: [
         ActionSet {
-            title: item.msg.deleted ? "" : (item.msg.text != "" ? item.msg.text : item.msg.label)
+            title: item.msg.deleted ? "" : (item.msg.text != "" ? item.msg.text : (item.msg.summary || item.msg.label))
             ActionItem {
                 title: qsTr("Reply")
                 imageSource: "file:///usr/share/icons/bb_action_reply.png"
@@ -125,6 +125,16 @@ Container {
                 delegateActive: item.msg.voice
                 sourceComponent: ComponentDefinition {
                     VoiceBubble {
+                        msg: item.msg
+                        view: item.ListItem.view
+                    }
+                }
+            }
+            // Built only for photos, videos, audio files and documents, as the voice one is.
+            ControlDelegate {
+                delegateActive: item.msg.media != ""
+                sourceComponent: ComponentDefinition {
+                    MediaBubble {
                         msg: item.msg
                         view: item.ListItem.view
                     }

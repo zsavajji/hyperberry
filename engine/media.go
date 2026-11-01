@@ -23,8 +23,20 @@ type mediaInfo struct {
 	Mimetype      string `json:"mimetype"`
 }
 
-// message rebuilds the part of the AudioMessage that hypermeow's Download reads.
-func (m mediaInfo) message() *waE2E.AudioMessage {
+// message rebuilds the part of the message that hypermeow's Download reads; its type picks the
+// media type, so it follows the row's kind (voice notes and audio files are both audio).
+func (m mediaInfo) message(kind int) whatsmeow.DownloadableMessage {
+	switch kind {
+	case msgPhoto:
+		return &waE2E.ImageMessage{DirectPath: &m.DirectPath, MediaKey: m.MediaKey, FileEncSHA256: m.FileEncSHA256,
+			FileSHA256: m.FileSHA256, FileLength: &m.FileLength, Mimetype: &m.Mimetype}
+	case msgVideo:
+		return &waE2E.VideoMessage{DirectPath: &m.DirectPath, MediaKey: m.MediaKey, FileEncSHA256: m.FileEncSHA256,
+			FileSHA256: m.FileSHA256, FileLength: &m.FileLength, Mimetype: &m.Mimetype}
+	case msgDoc:
+		return &waE2E.DocumentMessage{DirectPath: &m.DirectPath, MediaKey: m.MediaKey, FileEncSHA256: m.FileEncSHA256,
+			FileSHA256: m.FileSHA256, FileLength: &m.FileLength, Mimetype: &m.Mimetype}
+	}
 	return &waE2E.AudioMessage{DirectPath: &m.DirectPath, MediaKey: m.MediaKey, FileEncSHA256: m.FileEncSHA256,
 		FileSHA256: m.FileSHA256, FileLength: &m.FileLength, Mimetype: &m.Mimetype}
 }
@@ -54,7 +66,7 @@ func (st *Store) downloadVoice(ctx context.Context, cli *whatsmeow.Client, dir s
 		if err := json.Unmarshal([]byte(row.Media), &info); err != nil {
 			return err
 		}
-		data, err := cli.Download(ctx, info.message())
+		data, err := cli.Download(ctx, info.message(msgVoice))
 		if err != nil {
 			return err
 		}
@@ -73,12 +85,12 @@ func (st *Store) downloadVoice(ctx context.Context, cli *whatsmeow.Client, dir s
 	return err
 }
 
-// liveVoice downloads a note that just arrived.
-func (st *Store) liveVoice(cli *whatsmeow.Client, row msgRow) {
+// liveMedia downloads a voice note or a photo that just arrived.
+func (st *Store) liveMedia(cli *whatsmeow.Client, row msgRow) {
 	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
 	defer cancel()
-	if err := st.downloadVoice(ctx, cli, st.srv.dir, row); err != nil {
-		st.log.Warnf("voice note %s: %v", row.ID, err)
+	if _, err := st.downloadMedia(ctx, cli, st.srv.dir, row); err != nil {
+		st.log.Warnf("media %s: %v", row.ID, err)
 	}
 }
 
@@ -149,6 +161,7 @@ func (st *Store) playVoice(dir string, r voiceReq, fetch, notify func(msgRow) er
 
 func registerMedia(srv *Server, s *Session) {
 	srv.Handle("voice.play", s.handleVoicePlay)
+	srv.Handle("media.get", s.handleMediaGet)
 }
 
 func (s *Session) handleVoicePlay(req json.RawMessage) (any, error) {

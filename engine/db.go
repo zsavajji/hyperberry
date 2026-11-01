@@ -26,6 +26,7 @@ const (
 	msgSticker
 	msgService
 	msgOther
+	msgAudio // audio that isn't a voice note (step 6.1); appended: the iota is never reordered
 )
 
 const (
@@ -69,6 +70,13 @@ ALTER TABLE messages ADD COLUMN waveform BLOB;
 ALTER TABLE messages ADD COLUMN media TEXT;
 ALTER TABLE messages ADD COLUMN media_state INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE messages ADD COLUMN played INTEGER NOT NULL DEFAULT 0;`,
+	// Photos, videos, audio files and documents (step 6.1). thumb is a JPEG: the inline one,
+	// then the 320 px preview once a photo is here. path is the downloaded file.
+	`ALTER TABLE messages ADD COLUMN thumb BLOB;
+ALTER TABLE messages ADD COLUMN width INTEGER;
+ALTER TABLE messages ADD COLUMN height INTEGER;
+ALTER TABLE messages ADD COLUMN size INTEGER;
+ALTER TABLE messages ADD COLUMN path TEXT;`,
 }
 
 // openChats opens chats.db in WAL mode and migrates it to the newest schema.

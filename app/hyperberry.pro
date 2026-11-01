@@ -10,8 +10,8 @@ LIBS += -lbbcascades -lbbdata -lbbsystem -lbbplatform -lbb -lbbutilityi18n -lslo
 QMAKE_LFLAGS += -Wl,-rpath-link,$${QNX_DIR}/$${QNX_CPUDIR}/usr/lib/qt4/lib
 QMAKE_CXXFLAGS += -Wno-psabi
 
-SOURCES += src/main.cpp src/EngineLink.cpp src/ChatListModel.cpp src/EmojiModel.cpp src/MessageModel.cpp src/ChatController.cpp src/ContactInfo.cpp src/ContactPicker.cpp src/QrImage.cpp src/Waveform.cpp src/OpenRequests.cpp src/Settings.cpp $$PWD/../lib/qrcodegen/qrcodegen.c
-HEADERS += src/EngineLink.h src/ChatListModel.h src/EmojiModel.h src/emojiTable.h src/MessageModel.h src/ChatController.h src/ContactInfo.h src/ContactPicker.h src/Moves.h src/dates.h src/colors.h src/QrImage.h src/Waveform.h src/OpenRequests.h src/Settings.h
+SOURCES += src/main.cpp src/EngineLink.cpp src/ChatListModel.cpp src/EmojiModel.cpp src/MessageModel.cpp src/ChatController.cpp src/ContactInfo.cpp src/ContactPicker.cpp src/MediaData.cpp src/MediaOpener.cpp src/QrImage.cpp src/Waveform.cpp src/OpenRequests.cpp src/Settings.cpp $$PWD/../lib/qrcodegen/qrcodegen.c
+HEADERS += src/EngineLink.h src/ChatListModel.h src/EmojiModel.h src/emojiTable.h src/MessageModel.h src/ChatController.h src/ContactInfo.h src/ContactPicker.h src/MediaData.h src/MediaOpener.h src/Moves.h src/dates.h src/colors.h src/QrImage.h src/Waveform.h src/OpenRequests.h src/Settings.h
 
 DESTDIR = app
 OBJECTS_DIR = obj

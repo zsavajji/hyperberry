@@ -1,6 +1,7 @@
 #include "MessageModel.h"
 
 #include "EngineLink.h"
+#include "MediaData.h"
 #include "Moves.h"
 #include "colors.h"
 #include "dates.h"
@@ -29,7 +30,8 @@ static const int kPage = 50;
 #define QUOTED(col) "(SELECT " col " FROM messages q WHERE q.chat = messages.chat AND q.id = messages.quote_id)"
 static const char *const kColumns = "rowid, id, ts, out, state, sender, sender_name, kind, "
                                     "text, quote_preview, edited, deleted, "
-                                    QUOTED("out") ", " QUOTED("sender") ", " QUOTED("sender_name") ", duration, waveform, media_state, played";
+                                    QUOTED("out") ", " QUOTED("sender") ", " QUOTED("sender_name") ", duration, waveform, media_state, played, "
+                                    "thumb, width, height, size, path";
 #undef QUOTED
 
 bool MessageModel::lessThan(const Msg &a, const Msg &b)
@@ -95,14 +97,17 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
 
     const QLocale locale = m_region.locale();
     QString label, shown = text;
-    // Media show as their label until Phases 4 and 6 draw them.
+    // Photos, videos, audio files and documents are drawn by MediaBubble: no label, and a
+    // document's text (its name) is the bubble's. A caption stays in the text.
     switch (kind) {
-    case 1: label = tr("Photo"); break;
-    case 2: label = tr("Video"); break;
-    case 4: label = tr("Document"); break;
     case 5: label = tr("Sticker"); break;
     case 7: label = text; shown = QString(); break; // "Location", "Poll: …"
     }
+    if (MediaData::fill(m.data, deleted ? 0 : kind, text, q.value(19).toByteArray(),
+                        q.value(20).toInt(), q.value(21).toInt(), q.value(22).toLongLong(),
+                        q.value(15).toInt(), q.value(17).toInt(), q.value(23).toString(), locale)
+        && (kind == 4 || kind == 8))
+        shown = QString();
     if (deleted) {
         label = QString();
         shown = tr("This message was deleted");

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/polymorfa/hypermeow"
@@ -43,6 +44,9 @@ type Store struct {
 	// historyIn is called once a recent-chats history sync has committed: the session ends its
 	// "syncing" then (step 5.5, after the Q10 test). Set before the client connects.
 	historyIn func()
+	// dl holds a *sync.Mutex per message being downloaded, so a tap and the live download of a
+	// photo don't both write its file. ponytail: one small mutex per downloaded message, never pruned.
+	dl sync.Map
 }
 
 func newStore(db *sql.DB, srv *Server, log waLog.Logger) *Store {
@@ -106,11 +110,12 @@ func (st *Store) afterCommit(f func()) {
 }
 
 // wipe takes what is left of the old link once clear has committed: the Hub's account, the
-// voice notes and the decoded cache, and the deleted rows still in chats.db's free pages and
-// WAL. The UI's settings stay: they belong to the phone. Both folders come back on the next write.
+// voice notes, the photos and the decoded cache, and the deleted rows still in chats.db's free
+// pages and WAL. The UI's settings stay: they belong to the phone. So do Downloads' files, as
+// a browser's. The folders come back on the next write.
 func (st *Store) wipe() {
 	st.nt.unlink() // the Hub's account and items belong to the link too
-	for _, d := range []string{"voice", "cache"} {
+	for _, d := range []string{"voice", "cache", "media"} {
 		if err := os.RemoveAll(filepath.Join(st.srv.dir, d)); err != nil {
 			st.log.Warnf("wipe %s: %v", d, err)
 		}
@@ -364,12 +369,14 @@ func (t *storeTx) setArchived(jid string, v bool) {
 // It reports whether the message was new.
 func (t *storeTx) insertMessage(m msgRow) bool {
 	if t.exec(`INSERT OR IGNORE INTO messages(chat, id, ts, out, state, sender, sender_name, kind, text,
-quote_id, quote_preview, edited, deleted, duration, waveform, media, media_state, played)
+quote_id, quote_preview, edited, deleted, duration, waveform, media, media_state, played,
+thumb, width, height, size, path)
 VALUES(?, ?, ?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?, NULLIF(?, ''), NULLIF(?, ''), NULLIF(?, ''), ?, ?,
-NULLIF(?, 0), ?, NULLIF(?, ''), ?, ?)`,
+NULLIF(?, 0), ?, NULLIF(?, ''), ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, ''))`,
 		m.Chat, m.ID, m.TS, m.Out, m.State, m.Sender, m.SenderName, m.Kind, m.Text,
 		m.QuoteID, m.QuotePreview, m.Edited, m.Deleted,
-		m.Duration, blob(m.Waveform), m.Media, m.MediaState, m.Played) == 0 {
+		m.Duration, blob(m.Waveform), m.Media, m.MediaState, m.Played,
+		blob(m.Thumb), m.Width, m.Height, m.Size, m.Path) == 0 {
 		return false
 	}
 	t.changed(m.Chat, m.ID)

@@ -20,7 +20,8 @@ class EngineLink;
 // it opens at the newest message with no scroll call, each header shows above its day, and an
 // older page is appended at the model's end (the visual top) without moving the rows on
 // screen. itemType: "header" (data: the title), "msg", or "service" for kind 6. A "msg" is a
-// map of id, out, state, edited, deleted, revocable, time, label, text, quote, sender and senderColor.
+// map of id, out, state, edited, deleted, revocable, time, label, text, quote, sender and senderColor,
+// and media ("photo", "video", "doc", "audio" or "") with the keys MediaData.h lists.
 // The newest 50 load at once, older pages as the list nears its top; the loaded set always
 // holds whole days, so a page never lands inside a loaded day.
 class MessageModel : public bb::cascades::DataModel

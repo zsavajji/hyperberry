@@ -165,6 +165,9 @@ func simHistory(i int, now time.Time) []msgRow {
 			r.SenderName = people[rng.IntN(len(people))]
 			r.Sender = simMember(r.SenderName)
 		}
+		if i == simAudioChat && k == simAudioIndex {
+			simAudio(&r)
+		}
 		if k > 0 && rng.IntN(10) == 0 {
 			quote(&r, rng.IntN(k))
 		}

@@ -144,7 +144,7 @@ func (st *Store) apply(ctx context.Context, t *storeTx, cli *whatsmeow.Client, k
 		t.addUnread(key, 1)
 		t.notifyIncoming(key)
 	}
-	if live && fresh && row.MediaState == 1 {
-		go st.liveVoice(cli, row) // never in the writer: it is a network call
+	if live && fresh && row.MediaState == 1 && (row.Kind == msgVoice || row.Kind == msgPhoto) {
+		go st.liveMedia(cli, row) // never in the writer: it is a network call; the rest wait for a tap
 	}
 }

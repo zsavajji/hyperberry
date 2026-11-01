@@ -15,9 +15,10 @@ func (t *storeTx) messageByID(chat, id string) (msgRow, bool) {
 	var secs sql.NullInt64
 	var media sql.NullString
 	err := t.tx.QueryRow(`SELECT ts, out, state, sender, sender_name, kind, text, quote_id, quote_preview,
-edited, deleted, duration, waveform, media, media_state, played FROM messages WHERE chat = ? AND id = ?`, chat, id).
+edited, deleted, duration, waveform, media, media_state, played, thumb, COALESCE(width, 0), COALESCE(height, 0),
+COALESCE(size, 0), COALESCE(path, '') FROM messages WHERE chat = ? AND id = ?`, chat, id).
 		Scan(&r.TS, &r.Out, &r.State, &sender, &name, &r.Kind, &text, &qid, &qprev, &r.Edited, &r.Deleted,
-			&secs, &r.Waveform, &media, &r.MediaState, &r.Played)
+			&secs, &r.Waveform, &media, &r.MediaState, &r.Played, &r.Thumb, &r.Width, &r.Height, &r.Size, &r.Path)
 	r.Sender, r.SenderName, r.Text, r.QuoteID, r.QuotePreview =
 		sender.String, name.String, text.String, qid.String, qprev.String
 	r.Duration, r.Media = int(secs.Int64), media.String
@@ -50,7 +51,7 @@ func (t *storeTx) deleteMessage(chat, id string) {
 }
 
 // clearChat is "clear chat", or with drop "delete chat": every message row goes, and the voice
-// notes' files once it has committed. A cleared chat keeps its row and last_ts, so its place in
+// notes' and photos' files once it has committed (not Downloads: those are the user's, as a browser's). A cleared chat keeps its row and last_ts, so its place in
 // the list, with no preview and nothing unread; a deleted one goes too.
 func (t *storeTx) clearChat(chat string, drop bool) {
 	rows, err := t.tx.Query("SELECT id, kind FROM messages WHERE chat = ?", chat)
@@ -58,14 +59,17 @@ func (t *storeTx) clearChat(chat string, drop bool) {
 		t.log.Warnf("clear chat: %v", err)
 		return
 	}
-	var voice []string
+	var voice, photos []string
 	for rows.Next() {
 		var id string
 		var kind int
 		if rows.Scan(&id, &kind) == nil {
 			t.changed(chat, id)
-			if kind == msgVoice {
+			switch kind {
+			case msgVoice:
 				voice = append(voice, id)
+			case msgPhoto:
+				photos = append(photos, id)
 			}
 		}
 	}
@@ -78,12 +82,15 @@ func (t *storeTx) clearChat(chat string, drop bool) {
 	} else if t.touch(chat, "UPDATE chats SET last_preview = NULL, unread = 0 WHERE jid = ?") {
 		t.hubItem(chat, false, false)
 	}
-	if t.st != nil && len(voice) > 0 { // st is nil in tests of single writes
+	if t.st != nil && len(voice)+len(photos) > 0 { // st is nil in tests of single writes
 		dir := t.st.srv.dir
 		t.after = append(t.after, func() {
 			for _, id := range voice {
 				os.Remove(oggPath(dir, id))
 				os.Remove(cachedWAV(dir, id))
+			}
+			for _, id := range photos {
+				os.Remove(photoPath(dir, id))
 			}
 		})
 	}
@@ -135,6 +142,16 @@ func blob(b []byte) any {
 func (t *storeTx) setMedia(chat, id string, state int, wf []byte) {
 	if t.exec("UPDATE messages SET media_state = ?, waveform = COALESCE(?, waveform) WHERE chat = ? AND id = ?",
 		state, blob(wf), chat, id) > 0 {
+		t.changed(chat, id)
+	}
+}
+
+// setFile records a downloaded file: the state, its path and, for a photo, the preview in place
+// of the inline thumbnail; the pixel size only when the message had none.
+func (t *storeTx) setFile(chat, id string, state int, path string, thumb []byte, w, h int) {
+	if t.exec(`UPDATE messages SET media_state = ?, path = COALESCE(NULLIF(?, ''), path), thumb = COALESCE(?, thumb),
+width = COALESCE(NULLIF(width, 0), NULLIF(?, 0)), height = COALESCE(NULLIF(height, 0), NULLIF(?, 0))
+WHERE chat = ? AND id = ?`, state, path, blob(thumb), w, h, chat, id) > 0 {
 		t.changed(chat, id)
 	}
 }

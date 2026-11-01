@@ -17,6 +17,8 @@ Page {
             deleteFailed.show()
         } else if (failedCmd == "voice.play") {
             player.fail(engine.failure.code)
+        } else if (failedCmd == "media.get") {
+            mediaFailed.show()
         }
     }
     onChatChanged: {
@@ -26,6 +28,8 @@ Page {
         }
         ctl.messages.itemAdded.connect(page.added)
         ctl.voiceReady.connect(player.ready)
+        media.ready.connect(page.mediaReady)
+        media.openFailed.connect(mediaFailed.show)
         ctl.voiceCancelled.connect(recorder.dropped)
     }
     attachedObjects: [
@@ -40,6 +44,16 @@ Page {
         ComponentDefinition {
             id: contactDef
             source: "ContactInfoPage.qml"
+        },
+        // A received photo, video, audio file or document (step 6.1): MediaOpener fetches the file
+        // and hands it to the system; a photo opens in our viewer instead.
+        MediaOpener {
+            id: media
+            link: engine
+        },
+        ComponentDefinition {
+            id: viewerDef
+            source: "PhotoViewer.qml"
         },
         // Added for people and groups only (ActionItem has no visible).
         ActionItem {
@@ -60,6 +74,10 @@ Page {
         Recorder {
             id: recorder
             onFailed: notSent.show()
+        },
+        SystemToast {
+            id: mediaFailed
+            body: qsTr("Couldn't open this file")
         },
         SystemToast {
             id: voiceFailed
@@ -197,6 +215,19 @@ Page {
         p.ctl = ctl
         nav.push(p)
     }
+    // A photo opens in our viewer, anything else in the system's app for its type.
+    function showMedia(kind, path) {
+        if (kind == "photo") {
+            var viewer = viewerDef.createObject()
+            viewer.path = path
+            nav.push(viewer)
+        } else if (!media.openFile(path)) {
+            mediaFailed.show()
+        }
+    }
+    function mediaReady(msgId, kind, path) {
+        showMedia(kind, path)
+    }
     // Called by ChatsPage once the page is pushed: every key, the first included, goes through the
     // input method (auto-capitals, Alt and Shift), which a KeyListener bypasses (bb10-pitfalls).
     function focusComposer() {
@@ -215,73 +246,10 @@ Page {
         composer.requestFocus()
         composer.editor.cursorPosition = composer.text.length
     }
-    titleBar: TitleBar {
-        kind: TitleBarKind.FreeForm
-        // The status line must stay; the default let the bar scroll away with the list (Q10).
-        scrollBehavior: TitleBarScrollBehavior.Sticky
-        // Sized as the stock Text Messages conversation (Q10, 2026-10-31): an 85 px bar, the
-        // picture 81 px square flush at the right, 2 px from the bar's edges and 7 px from the
-        // screen's.
-        kindProperties: FreeFormTitleBarKindProperties {
-            Container {
-                horizontalAlignment: HorizontalAlignment.Fill
-                verticalAlignment: VerticalAlignment.Fill
-                leftPadding: ui.du(1.5)
-                rightPadding: ui.px(7)
-                layout: StackLayout {
-                    orientation: LayoutOrientation.LeftToRight
-                }
-                gestureHandlers: TapHandler {
-                    onTapped: page.showInfo()
-                }
-                Container {
-                    verticalAlignment: VerticalAlignment.Center
-                    layoutProperties: StackLayoutProperties {
-                        spaceQuota: 1
-                    }
-                    // Two lines fit 85 px only without the labels' default margins (about 20 px),
-                    // and below the stock title's 25 px capitals (125 %; 100 % draws 20 px):
-                    // the name 22 px (110 %), the status 15 px (75 %). Q10, 2026-10-31.
-                    Label {
-                        bottomMargin: 0
-                        text: page.chat ? page.chat.name : ""
-                        textFormat: TextFormat.Plain
-                        textStyle.base: nav.emojiStyle
-                        textStyle.fontSize: FontSize.PercentageValue
-                        textStyle.fontSizeValue: 110
-                    }
-                    Label {
-                        visible: ctl.status != ""
-                        topMargin: 0
-                        text: ctl.status
-                        textFormat: TextFormat.Plain
-                        textStyle.base: nav.emojiStyle
-                        textStyle.fontSize: FontSize.PercentageValue
-                        textStyle.fontSizeValue: 75
-                        textStyle.color: ui.palette.secondaryTextOnPlain
-                    }
-                }
-                // The initials tile where the stock app has the picture; photos come in Phase 6.
-                Container {
-                    verticalAlignment: VerticalAlignment.Center
-                    leftMargin: ui.du(1.5)
-                    preferredWidth: ui.px(81)
-                    preferredHeight: ui.px(81)
-                    background: page.chat ? Color.create(page.chat.color) : Color.Transparent
-                    layout: DockLayout {}
-                    Label {
-                        horizontalAlignment: HorizontalAlignment.Center
-                        verticalAlignment: VerticalAlignment.Center
-                        text: page.chat ? page.chat.initials : ""
-                        textFormat: TextFormat.Plain
-                        textStyle.base: nav.emojiStyle
-                        textStyle.fontSize: FontSize.PercentageValue
-                        textStyle.fontSizeValue: 150
-                        textStyle.color: Color.White
-                    }
-                }
-            }
-        }
+    titleBar: ChatTitleBar {
+        chat: page.chat
+        status: ctl.status
+        onTapped: page.showInfo()
     }
     Container {
         horizontalAlignment: HorizontalAlignment.Fill
@@ -313,6 +281,13 @@ Page {
             }
             function playedWave(data, bars) {
                 return ctl.playedWave(data, bars)
+            }
+            // Photos, videos, audio files and documents: the message being fetched, for the bubbles
+            // (MediaBubble.qml). Always through media.get: it answers at once when the file is here,
+            // and fetches it again when the user moved it out of Downloads.
+            property string mediaLoadingId: media.loadingId
+            function openMedia(msg) {
+                media.get(page.chat.jid, msg.id, msg.media)
             }
             function deleteForMe(id) {
                 ctl.deleteForMe(id)

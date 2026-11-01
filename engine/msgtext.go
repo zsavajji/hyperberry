@@ -27,6 +27,12 @@ type msgRow struct {
 	Media      string
 	MediaState int
 	Played     bool
+	// Photos, videos, audio files and documents (step 6.1): a JPEG thumbnail, pixels, bytes, and
+	// the downloaded file once there is one.
+	Thumb         []byte
+	Width, Height int
+	Size          int64
+	Path          string
 }
 
 // content says what a message shows: its kind and text. ok is false for messages with nothing
@@ -48,7 +54,7 @@ func content(m *waE2E.Message) (kind int, text string, ok bool) {
 		if m.GetAudioMessage().GetPTT() {
 			return msgVoice, "", true
 		}
-		return msgOther, "Audio", true
+		return msgAudio, "", true
 	case m.GetDocumentMessage() != nil:
 		d := m.GetDocumentMessage()
 		if d.GetFileName() != "" {
@@ -127,7 +133,40 @@ func rowFromMessage(key string, e *events.Message, senderName string) (msgRow, b
 			}
 		}
 	}
+	fillMedia(&r, e.Message)
 	return r, true
+}
+
+// fillMedia adds what a photo, video, document or audio file row carries (step 6.1), as the
+// voice note's code above does for its own. Anything else, voice notes included, is left alone.
+func fillMedia(r *msgRow, m *waE2E.Message) {
+	var info mediaInfo
+	switch {
+	case m.GetImageMessage() != nil:
+		i := m.GetImageMessage()
+		r.Thumb, r.Width, r.Height = i.GetJPEGThumbnail(), int(i.GetWidth()), int(i.GetHeight())
+		info = mediaInfo{i.GetDirectPath(), i.GetMediaKey(), i.GetFileEncSHA256(), i.GetFileSHA256(), i.GetFileLength(), i.GetMimetype()}
+	case m.GetVideoMessage() != nil:
+		v := m.GetVideoMessage()
+		r.Thumb, r.Width, r.Height, r.Duration = v.GetJPEGThumbnail(), int(v.GetWidth()), int(v.GetHeight()), int(v.GetSeconds())
+		info = mediaInfo{v.GetDirectPath(), v.GetMediaKey(), v.GetFileEncSHA256(), v.GetFileSHA256(), v.GetFileLength(), v.GetMimetype()}
+	case m.GetDocumentMessage() != nil:
+		d := m.GetDocumentMessage()
+		r.Thumb = d.GetJPEGThumbnail()
+		info = mediaInfo{d.GetDirectPath(), d.GetMediaKey(), d.GetFileEncSHA256(), d.GetFileSHA256(), d.GetFileLength(), d.GetMimetype()}
+	case m.GetAudioMessage() != nil && !m.GetAudioMessage().GetPTT():
+		a := m.GetAudioMessage()
+		r.Duration = int(a.GetSeconds())
+		info = mediaInfo{a.GetDirectPath(), a.GetMediaKey(), a.GetFileEncSHA256(), a.GetFileSHA256(), a.GetFileLength(), a.GetMimetype()}
+	default:
+		return
+	}
+	r.Size = int64(info.FileLength)
+	if info.DirectPath != "" {
+		if b, err := json.Marshal(info); err == nil {
+			r.Media, r.MediaState = string(b), 1
+		}
+	}
 }
 
 // preview is the one-line form of a message, for chat rows and quotes.
@@ -145,6 +184,8 @@ func preview(kind int, text string, secs int) string {
 			return fmt.Sprintf("🎤 %d:%02d", secs/60, secs%60)
 		}
 		return "Voice message"
+	case msgAudio:
+		return "Audio"
 	case msgSticker:
 		return "Sticker"
 	case msgDoc:

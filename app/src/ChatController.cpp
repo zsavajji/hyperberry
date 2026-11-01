@@ -297,8 +297,8 @@ void ChatController::reply(const QVariantMap &msg)
     else
         m_replyName = m_name;
     m_replyText = msg["text"].toString();
-    if (m_replyText.isEmpty())
-        m_replyText = msg["label"].toString();
+    if (m_replyText.isEmpty()) // a photo or file with no caption has its summary (MediaData)
+        m_replyText = msg.value("summary", msg["label"]).toString();
     emit replyChanged();
 }
 

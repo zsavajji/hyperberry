@@ -142,87 +142,92 @@
 <context>
     <name>ChatPage</name>
     <message>
-        <location filename="../assets/ChatPage.qml" line="47"/>
+        <location filename="../assets/ChatPage.qml" line="60"/>
         <source>Contact info</source>
         <translation>Info contatto</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="47"/>
+        <location filename="../assets/ChatPage.qml" line="60"/>
         <source>Group info</source>
         <translation>Info gruppo</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="48"/>
+        <location filename="../assets/ChatPage.qml" line="65"/>
         <source>Not sent: HyperBerry is reconnecting. Try again in a moment.</source>
         <translation>Non inviato: HyperBerry si sta riconnettendo. Riprova tra un attimo.</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="62"/>
+        <location filename="../assets/ChatPage.qml" line="79"/>
+        <source>Couldn&apos;t open this file</source>
+        <translation>Impossibile aprire questo file</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChatPage.qml" line="83"/>
         <source>Couldn&apos;t play this voice note</source>
         <translation>Impossibile riprodurre questo messaggio vocale</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="66"/>
+        <location filename="../assets/ChatPage.qml" line="87"/>
         <source>Not deleted: HyperBerry is reconnecting. Try again in a moment.</source>
         <translation>Non eliminato: HyperBerry si sta riconnettendo. Riprova tra un attimo.</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="73"/>
+        <location filename="../assets/ChatPage.qml" line="94"/>
         <source>Message deleted</source>
         <translation>Messaggio eliminato</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="74"/>
+        <location filename="../assets/ChatPage.qml" line="95"/>
         <source>Undo</source>
         <translation>Annulla</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="87"/>
+        <location filename="../assets/ChatPage.qml" line="108"/>
         <source>Delete for everyone?</source>
         <translation>Eliminare per tutti?</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="88"/>
+        <location filename="../assets/ChatPage.qml" line="109"/>
         <source>It will be deleted for everyone in this chat.</source>
         <translation>Verrà eliminato per tutti i partecipanti di questa chat.</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="89"/>
+        <location filename="../assets/ChatPage.qml" line="110"/>
         <source>Delete</source>
         <translation>Elimina</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="90"/>
+        <location filename="../assets/ChatPage.qml" line="111"/>
         <source>Cancel</source>
         <translation>Annulla</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="104"/>
+        <location filename="../assets/ChatPage.qml" line="125"/>
         <source>Message</source>
         <translation>Messaggio</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="118"/>
+        <location filename="../assets/ChatPage.qml" line="136"/>
         <source>Discard</source>
         <translation>Scarta</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="118"/>
+        <location filename="../assets/ChatPage.qml" line="136"/>
         <source>Emoji</source>
         <translation>Emoji</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="128"/>
+        <location filename="../assets/ChatPage.qml" line="146"/>
         <source>Record</source>
         <translation>Registra</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="128"/>
+        <location filename="../assets/ChatPage.qml" line="146"/>
         <source>Send</source>
         <translation>Invia</translation>
     </message>
     <message>
-        <location filename="../assets/ChatPage.qml" line="431"/>
+        <location filename="../assets/ChatPage.qml" line="421"/>
         <source>Replying to %1</source>
         <translation>In risposta a %1</translation>
     </message>
@@ -603,29 +608,75 @@
     </message>
 </context>
 <context>
+    <name>MediaBubble</name>
+    <message>
+        <location filename="../assets/MediaBubble.qml" line="46"/>
+        <source>Video</source>
+        <translation>Video</translation>
+    </message>
+    <message>
+        <location filename="../assets/MediaBubble.qml" line="46"/>
+        <source>Photo</source>
+        <translation>Foto</translation>
+    </message>
+    <message>
+        <location filename="../assets/MediaBubble.qml" line="106"/>
+        <source>Audio file</source>
+        <translation>File audio</translation>
+    </message>
+    <message>
+        <location filename="../assets/MediaBubble.qml" line="106"/>
+        <source>Document</source>
+        <translation>Documento</translation>
+    </message>
+</context>
+<context>
+    <name>MediaData</name>
+    <message>
+        <location filename="../src/MediaData.cpp" line="49"/>
+        <source>Photo</source>
+        <translation>Foto</translation>
+    </message>
+    <message>
+        <location filename="../src/MediaData.cpp" line="50"/>
+        <source>Video</source>
+        <translation>Video</translation>
+    </message>
+    <message>
+        <location filename="../src/MediaData.cpp" line="50"/>
+        <source>Document</source>
+        <translation>Documento</translation>
+    </message>
+    <message>
+        <location filename="../src/MediaData.cpp" line="51"/>
+        <source>Audio file</source>
+        <translation>File audio</translation>
+    </message>
+</context>
+<context>
     <name>MessageItem</name>
     <message>
-        <location filename="../assets/MessageItem.qml" line="28"/>
+        <location filename="../assets/MessageItem.qml" line="30"/>
         <source>Reply</source>
         <translation>Rispondi</translation>
     </message>
     <message>
-        <location filename="../assets/MessageItem.qml" line="35"/>
+        <location filename="../assets/MessageItem.qml" line="37"/>
         <source>Copy</source>
         <translation>Copia</translation>
     </message>
     <message>
-        <location filename="../assets/MessageItem.qml" line="41"/>
+        <location filename="../assets/MessageItem.qml" line="43"/>
         <source>Delete for everyone</source>
         <translation>Elimina per tutti</translation>
     </message>
     <message>
-        <location filename="../assets/MessageItem.qml" line="47"/>
+        <location filename="../assets/MessageItem.qml" line="49"/>
         <source>Delete for me</source>
         <translation>Elimina per me</translation>
     </message>
     <message>
-        <location filename="../assets/MessageItem.qml" line="174"/>
+        <location filename="../assets/MessageItem.qml" line="186"/>
         <source>edited</source>
         <translation>modificato</translation>
     </message>
@@ -633,32 +684,17 @@
 <context>
     <name>MessageModel</name>
     <message>
-        <location filename="../src/MessageModel.cpp" line="100"/>
-        <source>Photo</source>
-        <translation>Foto</translation>
-    </message>
-    <message>
-        <location filename="../src/MessageModel.cpp" line="101"/>
-        <source>Video</source>
-        <translation>Video</translation>
-    </message>
-    <message>
-        <location filename="../src/MessageModel.cpp" line="102"/>
-        <source>Document</source>
-        <translation>Documento</translation>
-    </message>
-    <message>
         <location filename="../src/MessageModel.cpp" line="103"/>
         <source>Sticker</source>
         <translation>Sticker</translation>
     </message>
     <message>
-        <location filename="../src/MessageModel.cpp" line="108"/>
+        <location filename="../src/MessageModel.cpp" line="113"/>
         <source>This message was deleted</source>
         <translation>Questo messaggio è stato eliminato</translation>
     </message>
     <message>
-        <location filename="../src/MessageModel.cpp" line="150"/>
+        <location filename="../src/MessageModel.cpp" line="160"/>
         <source>You</source>
         <translation>Tu</translation>
     </message>
@@ -689,6 +725,14 @@
         <location filename="../assets/NewChatPage.qml" line="118"/>
         <source>No contact matches.</source>
         <translation>Nessun contatto corrisponde.</translation>
+    </message>
+</context>
+<context>
+    <name>PhotoViewer</name>
+    <message>
+        <location filename="../assets/PhotoViewer.qml" line="13"/>
+        <source>Share</source>
+        <translation>Condividi</translation>
     </message>
 </context>
 <context>
