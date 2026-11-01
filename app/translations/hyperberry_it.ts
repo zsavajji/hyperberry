@@ -394,6 +394,49 @@ Il telefono invia le chat recenti poco dopo il collegamento.</translation>
     </message>
 </context>
 <context>
+    <name>LedDropDown</name>
+    <message>
+        <location filename="../assets/LedDropDown.qml" line="12"/>
+        <source>Off</source>
+        <translation>Spento</translation>
+    </message>
+    <message>
+        <location filename="../assets/LedDropDown.qml" line="12"/>
+        <source>Red</source>
+        <translation>Rosso</translation>
+    </message>
+    <message>
+        <location filename="../assets/LedDropDown.qml" line="12"/>
+        <source>Green</source>
+        <translation>Verde</translation>
+    </message>
+    <message>
+        <location filename="../assets/LedDropDown.qml" line="12"/>
+        <source>Blue</source>
+        <translation>Blu</translation>
+    </message>
+    <message>
+        <location filename="../assets/LedDropDown.qml" line="12"/>
+        <source>Cyan</source>
+        <translation>Ciano</translation>
+    </message>
+    <message>
+        <location filename="../assets/LedDropDown.qml" line="13"/>
+        <source>Magenta</source>
+        <translation>Magenta</translation>
+    </message>
+    <message>
+        <location filename="../assets/LedDropDown.qml" line="13"/>
+        <source>Yellow</source>
+        <translation>Giallo</translation>
+    </message>
+    <message>
+        <location filename="../assets/LedDropDown.qml" line="13"/>
+        <source>White</source>
+        <translation>Bianco</translation>
+    </message>
+</context>
+<context>
     <name>LinkNumberPage</name>
     <message>
         <location filename="../assets/LinkNumberPage.qml" line="20"/>
@@ -662,6 +705,26 @@ Il telefono invia le chat recenti poco dopo il collegamento.</translation>
         <location filename="../assets/SettingsPage.qml" line="103"/>
         <source>Unlink this device</source>
         <translation>Scollega questo dispositivo</translation>
+    </message>
+    <message>
+        <location filename="../assets/SettingsPage.qml" line="103"/>
+        <source>LED colour</source>
+        <translation>Colore del LED</translation>
+    </message>
+    <message>
+        <location filename="../assets/SettingsPage.qml" line="107"/>
+        <source>Chats</source>
+        <translation>Chat</translation>
+    </message>
+    <message>
+        <location filename="../assets/SettingsPage.qml" line="111"/>
+        <source>Groups</source>
+        <translation>Gruppi</translation>
+    </message>
+    <message>
+        <location filename="../assets/SettingsPage.qml" line="115"/>
+        <source>Channels</source>
+        <translation>Canali</translation>
     </message>
 </context>
 <context>

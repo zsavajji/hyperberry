@@ -66,6 +66,7 @@
     <permission>access_internet</permission>
     <permission>run_when_backgrounded</permission>
     <permission>post_notification</permission>
+    <permission>access_led_control</permission>
     <permission>record_audio</permission>
     <permission>play_audio</permission>
     <env var="LD_LIBRARY_PATH" value="app/native/lib:/usr/lib/qt4/lib"/>

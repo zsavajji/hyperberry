@@ -98,6 +98,22 @@ Page {
                     onCheckedChanged: settings.notifyPreview = checked
                 }
             }
+            Label {
+                topMargin: ui.du(3)
+                text: qsTr("LED colour")
+            }
+            LedDropDown {
+                kind: 0
+                title: qsTr("Chats")
+            }
+            LedDropDown {
+                kind: 1
+                title: qsTr("Groups")
+            }
+            LedDropDown {
+                kind: 2
+                title: qsTr("Channels")
+            }
             Button {
                 topMargin: ui.du(4)
                 horizontalAlignment: HorizontalAlignment.Fill

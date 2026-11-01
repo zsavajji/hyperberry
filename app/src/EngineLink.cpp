@@ -180,9 +180,13 @@ void EngineLink::readLines()
                     emit connectedChanged();
                     sendUiState(); // a restart loses this device's availability
                     // The engine notifies while the UI is closed, so it keeps this itself.
+                    QSettings file(QDir::homePath() + "/settings.ini", QSettings::IniFormat);
                     QVariantMap prefs;
-                    prefs["notifyPreview"] = QSettings(QDir::homePath() + "/settings.ini", QSettings::IniFormat)
-                                                 .value("notifyPreview", true).toBool();
+                    prefs["notifyPreview"] = file.value("notifyPreview", true).toBool();
+                    QVariantList leds; // as Settings::leds
+                    for (int k = 0; k < 3; ++k)
+                        leds << file.value(QString("led%1").arg(k), 0xFF0000).toInt();
+                    prefs["led"] = leds;
                     request("prefs.set", prefs);
                     qDebug() << "engine: connected, link" << m_link["state"].toString()
                              << ", conn" << m_conn;

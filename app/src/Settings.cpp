@@ -23,6 +23,14 @@ bool Settings::enterSends() const { return m_file.value("enterSends", true).toBo
 bool Settings::notifyPreview() const { return m_file.value("notifyPreview", true).toBool(); }
 int Settings::textSize() const { return qBound(0, m_file.value("textSize", 1).toInt(), 3); }
 
+QVariantList Settings::leds() const
+{
+    QVariantList l;
+    for (int k = 0; k < 3; ++k)
+        l << m_file.value(QString("led%1").arg(k), 0xFF0000).toInt(); // red, as the system's
+    return l;
+}
+
 qreal Settings::textScale() const
 {
     static const qreal scales[] = { 0.9, 1.0, 1.2, 1.4 };
@@ -83,4 +91,18 @@ void Settings::setTextSize(int size)
         return;
     store("textSize", size);
     emit textSizeChanged();
+}
+
+void Settings::setLed(int kind, int rgb)
+{
+    if (kind < 0 || kind > 2 || rgb < 0 || rgb > 0xFFFFFF || rgb == leds().at(kind).toInt())
+        return;
+    store(QString("led%1").arg(kind).toLatin1().constData(), rgb);
+    // Not connected: the hello path sends them on the next connect.
+    if (m_engine->connected()) {
+        QVariantMap prefs;
+        prefs["led"] = leds();
+        m_engine->request("prefs.set", prefs);
+    }
+    emit ledsChanged();
 }

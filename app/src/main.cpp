@@ -1,6 +1,7 @@
 #include <bb/cascades/AbstractPane>
 #include <bb/cascades/Application>
 #include <bb/cascades/QmlDocument>
+#include <bb/platform/NotificationDefaultApplicationSettings>
 #include <bb/system/LocaleHandler>
 #include <QDir>
 #include <QFile>
@@ -79,6 +80,11 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     EmojiModel emojis(&app);
     QrImage qr(&app);
     Settings settings(&engine, &app);
+    // The engine lights the LED in the user's colours (step 5.6), so the system's own red for our
+    // notifications is off by default. apply() leaves alone settings the user has changed.
+    bb::platform::NotificationDefaultApplicationSettings notifyDefaults;
+    notifyDefaults.setLed(bb::platform::NotificationPolicy::Deny);
+    notifyDefaults.apply();
     OpenRequests openRequests(engine.invoker(), &app);
 
     qmlRegisterType<ChatController>("hyperberry", 1, 0, "ChatController");
