@@ -120,17 +120,47 @@ Page {
     Container {
         horizontalAlignment: HorizontalAlignment.Fill
         verticalAlignment: VerticalAlignment.Fill
-        TextField {
-            id: search
+        // The field and a ✕ that closes it in one tap: the Q10 has no Escape, and the menu's
+        // Search was the only other way out (Q10, 2026-11-01).
+        Container {
             visible: page.searching
-            hintText: qsTr("Search chats")
-            input.submitKey: SubmitKey.Search
-            onTextChanging: chats.setFilter(text)
-            keyListeners: KeyListener {
-                onKeyPressed: {
-                    if (event.key == 27) {
-                        page.closeSearch()
+            horizontalAlignment: HorizontalAlignment.Fill
+            layout: StackLayout {
+                orientation: LayoutOrientation.LeftToRight
+            }
+            TextField {
+                id: search
+                verticalAlignment: VerticalAlignment.Center
+                layoutProperties: StackLayoutProperties {
+                    spaceQuota: 1
+                }
+                hintText: qsTr("Search chats")
+                input.submitKey: SubmitKey.Search
+                onTextChanging: chats.setFilter(text)
+                keyListeners: KeyListener {
+                    onKeyPressed: {
+                        if (event.key == 27) {
+                            page.closeSearch()
+                        }
                     }
+                }
+            }
+            // A touch target the size of an action column (9 du), the ✕ as the reply bar's.
+            Container {
+                verticalAlignment: VerticalAlignment.Center
+                preferredWidth: ui.du(9)
+                preferredHeight: ui.du(9)
+                layout: DockLayout {
+                }
+                gestureHandlers: TapHandler {
+                    onTapped: page.closeSearch()
+                }
+                Label {
+                    horizontalAlignment: HorizontalAlignment.Center
+                    verticalAlignment: VerticalAlignment.Center
+                    text: "✕"
+                    textFormat: TextFormat.Plain
+                    textStyle.color: ui.palette.secondaryTextOnPlain
                 }
             }
         }
