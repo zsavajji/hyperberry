@@ -39,9 +39,11 @@ Container {
         }
     ]
 
+    // The row, its tile and the initials grow with the text size, so a row keeps Normal's
+    // proportions: at Larger the two lines filled the 9.4 du row edge to edge (Q10, 2026-11-01).
     Container {
         horizontalAlignment: HorizontalAlignment.Fill
-        minHeight: ui.du(9.4)
+        minHeight: ui.du(9.4 * row.ListItem.view.textScale)
         leftPadding: ui.du(1.5)
         rightPadding: ui.du(1.5)
         layout: StackLayout {
@@ -50,8 +52,8 @@ Container {
         // The initials tile; photos come in Phase 6.
         Container {
             verticalAlignment: VerticalAlignment.Center
-            preferredWidth: ui.du(7)
-            preferredHeight: ui.du(7)
+            preferredWidth: ui.du(7 * row.ListItem.view.textScale)
+            preferredHeight: ui.du(7 * row.ListItem.view.textScale)
             background: Color.create(row.chat.color)
             layout: DockLayout {}
             Label {
@@ -60,7 +62,7 @@ Container {
                 text: row.chat.initials
                 textStyle.base: row.ListItem.view.emojiStyle
                 textStyle.fontSize: FontSize.PercentageValue
-                textStyle.fontSizeValue: 118
+                textStyle.fontSizeValue: Math.round(118 * row.ListItem.view.textScale)
                 textStyle.color: Color.White
             }
         }
