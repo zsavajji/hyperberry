@@ -224,3 +224,22 @@ func TestClose(t *testing.T) {
 	}
 	c.wantEOF(t, "client after Close")
 }
+
+// A network failure, however deeply wrapped, reaches the UI as "offline"; other errors stay
+// "failed", and an *Error keeps its own code.
+func TestReplyOffline(t *testing.T) {
+	dns := &net.DNSError{Err: "i/o timeout", Name: "web.whatsapp.com", IsTimeout: true}
+	for err, want := range map[error]string{
+		fmt.Errorf("%w: %w", errors.New("failed to dial whatsapp web websocket"), fmt.Errorf("failed to WebSocket dial: %w", dns)): "offline",
+		errors.New("something else"):                     "failed",
+		&Error{"linked", "this device is already linked"}: "linked",
+	} {
+		var m struct{ Error struct{ Code string } }
+		if err := json.Unmarshal(reply("1", nil, err), &m); err != nil {
+			t.Fatal(err)
+		}
+		if m.Error.Code != want {
+			t.Errorf("%v: code %q, want %q", err, m.Error.Code, want)
+		}
+	}
+}

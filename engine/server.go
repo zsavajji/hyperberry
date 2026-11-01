@@ -200,6 +200,12 @@ func reply(id string, result any, err error) []byte {
 	}
 	if err != nil {
 		e := &Error{Code: "failed", Message: err.Error()}
+		// No network, or WhatsApp's servers out of reach (a failed dial, a DNS lookup): the UI
+		// says "offline" in words, not the dial's error (Q10, 0.0.1.125, Wi-Fi and data off).
+		var ne net.Error
+		if errors.As(err, &ne) {
+			e.Code = "offline"
+		}
 		errors.As(err, &e)
 		b, _ = json.Marshal(map[string]any{"@": id, "ok": false,
 			"error": map[string]string{"code": e.Code, "message": e.Message}})

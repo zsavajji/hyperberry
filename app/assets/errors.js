@@ -4,7 +4,7 @@ function errorText(f) {
     case "bad_phone":
         return qsTr("That doesn't look like a phone number. Type it with the country code, as in +39 333 123 4567.")
     case "offline":
-        return qsTr("WhatsApp didn't answer. Check the connection and try again.")
+        return qsTr("You're offline. Connect to use HyperBerry.")
     case "no_engine":
         return qsTr("HyperBerry's engine isn't running yet. Try again in a moment.")
     case "linked":

@@ -993,8 +993,8 @@
     </message>
     <message>
         <location filename="../assets/errors.js" line="7"/>
-        <source>WhatsApp didn&apos;t answer. Check the connection and try again.</source>
-        <translation>WhatsApp non ha risposto. Controlla la connessione e riprova.</translation>
+        <source>You&apos;re offline. Connect to use HyperBerry.</source>
+        <translation>Sei offline. Connettiti per usare HyperBerry.</translation>
     </message>
     <message>
         <location filename="../assets/errors.js" line="9"/>
