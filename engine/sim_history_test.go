@@ -17,8 +17,9 @@ func linkedSim(t *testing.T) (*Sim, *Store, *conn) {
 	next(t, c, "link")
 	s.handleLink(nil)
 	next(t, c, "link") // linking
-	next(t, c, "link") // ready
+	next(t, c, "link") // ready, syncing
 	next(t, c, "chats")
+	next(t, c, "link") // the seed is in: syncing ends
 	eventually(t, st, 600, "SELECT count(*) FROM messages WHERE chat = ?", simChats[0].jid)
 	return s, st, c
 }

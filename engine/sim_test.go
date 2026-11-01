@@ -77,10 +77,14 @@ func TestSimLinkMessageRemove(t *testing.T) {
 	if m := next(t, c, "link"); m["state"] != linkLinking {
 		t.Errorf("after sim.link: %v", m)
 	}
-	if m := next(t, c, "link"); m["state"] != linkReady || m["conn"] != "ready" {
+	if m := next(t, c, "link"); m["state"] != linkReady || m["conn"] != "ready" || m["syncing"] != true {
 		t.Errorf("then: %v", m)
 	}
 	next(t, c, "chats")
+	// The UI leaves the linking page once the seed has committed (the user's, 2026-11-01).
+	if m := next(t, c, "link"); m["state"] != linkReady || m["syncing"] != nil {
+		t.Errorf("after the seed: %v", m)
+	}
 	eventually(t, st, len(simChats), "SELECT count(*) FROM chats")
 	eventually(t, st, 1, "SELECT count(*) FROM chats WHERE archived = 1")
 	eventually(t, st, 1, "SELECT count(*) FROM messages WHERE deleted = 1 AND id LIKE 'SIMSEED%'")

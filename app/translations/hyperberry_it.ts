@@ -312,13 +312,6 @@
         <source>No chat matches.</source>
         <translation>Nessuna chat corrisponde.</translation>
     </message>
-    <message>
-        <location filename="../assets/ChatsPage.qml" line="157"/>
-        <source>No chats yet.
-Your phone sends your recent chats shortly after linking.</source>
-        <translation>Ancora nessuna chat.
-Il telefono invia le chat recenti poco dopo il collegamento.</translation>
-    </message>
 </context>
 <context>
     <name>CountryPage</name>
@@ -472,6 +465,11 @@ Il telefono invia le chat recenti poco dopo il collegamento.</translation>
         <location filename="../assets/LinkPage.qml" line="114"/>
         <source>Linking… Keep WhatsApp open on your phone.</source>
         <translation>Collegamento in corso… Tieni WhatsApp aperto sul telefono.</translation>
+    </message>
+    <message>
+        <location filename="../assets/LinkPage.qml" line="117"/>
+        <source>Getting your chats from your phone… This can take a few minutes.</source>
+        <translation>Scarico le chat dal telefono… Può richiedere qualche minuto.</translation>
     </message>
 </context>
 <context>

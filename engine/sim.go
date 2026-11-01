@@ -28,6 +28,8 @@ type Sim struct {
 	code string
 	run  int // counts the QR runs, so a stale one stops
 	rec  voiceRec
+	// syncing as Session's: from sim.link until the seed has committed.
+	syncing bool
 }
 
 // simCodes are how long each made-up QR code lasts, as WhatsApp's: 60 s, then five of 20 s,
@@ -84,6 +86,9 @@ func (s *Sim) hello() any {
 // body is the link body of docs/protocol.md.
 func (s *Sim) body() map[string]any {
 	b := map[string]any{"state": s.link, "conn": "offline"}
+	if s.syncing {
+		b["syncing"] = true
+	}
 	switch s.link {
 	case linkQR:
 		b["qr"] = s.qr
@@ -180,6 +185,7 @@ func (s *Sim) handleLink(json.RawMessage) (any, error) {
 	s.run++ // ends the codes
 	s.qr, s.code = "", ""
 	s.store.clear()
+	s.syncing = true
 	s.setLink(linkLinking)
 	delay := simDelay
 	go func() {
@@ -189,6 +195,7 @@ func (s *Sim) handleLink(json.RawMessage) (any, error) {
 		if s.link == linkLinking {
 			s.setLink(linkReady)
 			s.seed()
+			s.store.afterCommit(func() { go s.endSync() }) // off the writer: endSync takes s.mu
 		}
 	}()
 	return nil, nil
@@ -238,8 +245,19 @@ func (s *Sim) handleRemoved(json.RawMessage) (any, error) {
 	s.run++
 	s.qr, s.code = "", ""
 	s.store.clear()
+	s.syncing = false
 	s.setLink(linkUnlinked)
 	return nil, nil
+}
+
+// endSync ends sim.link's "syncing" and tells the UI.
+func (s *Sim) endSync() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.syncing {
+		s.syncing = false
+		s.setLink(s.link)
+	}
 }
 
 // seed writes simChats, each with its last message, in one transaction.

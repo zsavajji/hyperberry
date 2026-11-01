@@ -7,6 +7,7 @@ Page {
     id: page
     property bool up: engine.connected
     property string linkState: engine.link.state || ""
+    property bool syncing: engine.link.syncing || false
     // asked: this page already requested a code for this engine run. shown: a code was on screen.
     property bool asked: false
     property bool shown: false
@@ -110,8 +111,10 @@ Page {
             }
         }
         Busy {
-            running: !page.up || page.linkState == "linking"
-            text: !page.up ? qsTr("Starting…") : qsTr("Linking… Keep WhatsApp open on your phone.")
+            running: !page.up || page.linkState == "linking" || page.syncing
+            text: !page.up ? qsTr("Starting…")
+                : page.linkState == "ready" ? qsTr("Getting your chats from your phone… This can take a few minutes.")
+                : qsTr("Linking… Keep WhatsApp open on your phone.")
         }
     }
 }

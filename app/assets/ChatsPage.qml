@@ -176,30 +176,14 @@ Page {
                 smallSize: nav.smallSize
                 onChatTapped: page.openChat(chat)
             }
-            // The engine doesn't say when a history sync starts or ends, but linked with no chats
-            // is the wait for it: a spinner runs over the message until the first chats come
-            // (the user's request, 2026-11-01). ponytail: an account with no chats at all spins
-            // on; the engine could report the sync's progress (HistorySync) at the real link.
-            Container {
-                visible: chats.empty
+            // The wait for a new link's chats is on the linking page (main.qml), so an empty list
+            // here is an account with no chats, and shows nothing (the user's, 2026-11-01).
+            Label {
+                visible: chats.empty && page.searching
                 horizontalAlignment: HorizontalAlignment.Center
                 verticalAlignment: VerticalAlignment.Center
-                ActivityIndicator {
-                    visible: !page.searching && engine.linked
-                    running: visible
-                    horizontalAlignment: HorizontalAlignment.Center
-                    preferredWidth: ui.du(8)
-                    preferredHeight: ui.du(8)
-                    bottomMargin: ui.du(2)
-                }
-                Label {
-                    horizontalAlignment: HorizontalAlignment.Center
-                    multiline: true
-                    textStyle.textAlign: TextAlign.Center
-                    textStyle.color: ui.palette.secondaryTextOnPlain
-                    text: page.searching ? qsTr("No chat matches.")
-                        : qsTr("No chats yet.\nYour phone sends your recent chats shortly after linking.")
-                }
+                textStyle.color: ui.palette.secondaryTextOnPlain
+                text: qsTr("No chat matches.")
             }
         }
     }

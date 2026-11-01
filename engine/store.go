@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/polymorfa/hypermeow"
+	"github.com/polymorfa/hypermeow/proto/waHistorySync"
 	"github.com/polymorfa/hypermeow/types"
 	"github.com/polymorfa/hypermeow/types/events"
 	waLog "github.com/polymorfa/hypermeow/util/log"
@@ -31,6 +32,9 @@ type Store struct {
 	quit bool // only the writer touches it
 	ui   uiState
 	nt   *Notifier
+	// historyIn is called once a recent-chats history sync has committed: the session ends its
+	// "syncing" then (step 5.5, after the Q10 test). Set before the client connects.
+	historyIn func()
 }
 
 func newStore(db *sql.DB, srv *Server, log waLog.Logger) *Store {
@@ -83,6 +87,14 @@ fill:
 	if t.wipe {
 		st.wipe()
 	}
+	for _, f := range t.after {
+		f()
+	}
+}
+
+// afterCommit queues f to run once everything queued before it has committed.
+func (st *Store) afterCommit(f func()) {
+	st.ops <- func(t *storeTx) { t.after = append(t.after, f) }
 }
 
 // wipe takes what is left of the old link once clear has committed: the voice notes and the
@@ -103,7 +115,7 @@ func (st *Store) wipe() {
 
 // handle queues an event for the writer. It only enqueues: hypermeow calls it on its receive loop.
 func (st *Store) handle(cli *whatsmeow.Client, evt any) {
-	switch evt.(type) {
+	switch e := evt.(type) {
 	case *events.Connected:
 		go st.syncGroups(cli)
 		return
@@ -111,6 +123,12 @@ func (st *Store) handle(cli *whatsmeow.Client, evt any) {
 		*events.JoinedGroup, *events.Mute, *events.Pin, *events.Archive, *events.MarkChatAsRead,
 		*events.Receipt, *events.ChatPresence, *events.Presence, *events.DeleteForMe:
 		st.ops <- func(t *storeTx) { st.dispatch(t, cli, evt) }
+		if h, ok := e.(*events.HistorySync); ok && st.historyIn != nil {
+			switch h.Data.GetSyncType() {
+			case waHistorySync.HistorySync_INITIAL_BOOTSTRAP, waHistorySync.HistorySync_RECENT:
+				st.afterCommit(st.historyIn)
+			}
+		}
 	}
 }
 
@@ -236,6 +254,7 @@ type storeTx struct {
 	chats map[string]bool
 	msgs  map[string]map[string]bool // chat -> ids
 	wipe  bool                       // clear ran: wipe after the commit
+	after []func()                   // afterCommit's
 }
 
 // run runs one op; a failing or panicking op doesn't stop the batch.

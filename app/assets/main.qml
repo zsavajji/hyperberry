@@ -4,7 +4,9 @@ import bb.cascades 1.4
 // chat list when linked, else the linking page: not linked, the root is the linking page, not a sheet.
 NavigationPane {
     id: nav
-    property bool linked: engine.linked
+    // A new link stays on the linking page while the engine is syncing its recent chats, so the
+    // chat list opens full, or empty for an account with none (the user's, 2026-11-01).
+    property bool linked: engine.linked && !engine.link.syncing
     // The one shared emoji style (PLAN.md §7): a FontFaceRule's font reaches only the styles
     // built on it, and each rule loads the font again. Pages take it as nav.emojiStyle, list
     // items through a property on their ListView.

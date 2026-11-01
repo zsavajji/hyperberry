@@ -41,7 +41,14 @@ type Session struct {
 	stopQR func()        // ends the running QR channel
 	qrSeen chan struct{} // closed when the QR channel's first code arrives
 	rec    voiceRec      // the voice note being recorded
+	// syncing is true from a new link until its recent chats are in chats.db, or syncCap: the
+	// UI waits on the linking page meanwhile (the user's, 2026-11-01).
+	syncing bool
 }
+
+// syncCap ends "syncing" if the phone sends no recent-chats history: an account with no chats.
+// ponytail: a guess, untested until the real link.
+var syncCap = 90 * time.Second
 
 func newSession(container *sqlstore.Container, srv *Server, store *Store, log waLog.Logger) (*Session, error) {
 	device, err := container.GetFirstDevice(context.Background())
@@ -49,6 +56,7 @@ func newSession(container *sqlstore.Container, srv *Server, store *Store, log wa
 		return nil, err
 	}
 	s := &Session{container: container, srv: srv, store: store, log: log, link: linkUnlinked, conn: "offline"}
+	store.historyIn = func() { go s.endSync() } // off the writer: endSync takes s.mu
 	s.cli = s.newClient(device)
 	if s.cli.Store.ID != nil {
 		s.link, s.conn = linkReady, "connecting"
@@ -96,6 +104,9 @@ func (s *Session) hello() any {
 
 func (s *Session) linkBody() map[string]any {
 	b := map[string]any{"state": s.link, "conn": s.conn}
+	if s.syncing {
+		b["syncing"] = true
+	}
 	switch {
 	case s.link == linkQR:
 		b["qr"] = s.qr
@@ -112,6 +123,16 @@ func (s *Session) linkBody() map[string]any {
 func (s *Session) setLink(state string) {
 	s.link = state
 	s.srv.Emit("link", s.linkBody())
+}
+
+// endSync ends a new link's "syncing" and tells the UI.
+func (s *Session) endSync() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.syncing {
+		s.syncing = false
+		s.setLink(s.link)
+	}
 }
 
 func (s *Session) close() {
@@ -281,6 +302,7 @@ func (s *Session) reset() error {
 	}
 	s.cli.Disconnect()
 	s.store.clear()
+	s.syncing = false
 	s.cli = s.newClient(s.container.NewDevice())
 	s.stopQR, s.qr, s.code, s.conn = nil, "", "", "offline"
 	s.setLink(linkUnlinked)
@@ -298,7 +320,9 @@ func (s *Session) onEvent(cli *whatsmeow.Client, evt any) {
 		// A new link starts a new history: nothing from an older link, or from the simulated
 		// account (sim.go), stays in chats.db.
 		s.store.clear()
+		s.syncing = true
 		s.setLink(linkLinking)
+		time.AfterFunc(syncCap, s.endSync)
 	case *events.Connected:
 		s.conn = "ready"
 		if cli.Store.ID != nil {
