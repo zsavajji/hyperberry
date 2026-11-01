@@ -5,6 +5,8 @@
 #include "MessageModel.h"
 #include "Waveform.h"
 
+#include <bb/cascades/Application>
+#include <bb/cascades/Window>
 #include <bb/system/Clipboard>
 #include <bb/utility/i18n/Formatting>
 #include <QDate>
@@ -13,6 +15,16 @@
 #include <QLocale>
 
 using namespace bb::utility::i18n;
+
+// On while recording: the idle lock minimises the app, which drops the recording (Q10,
+// 2026-11-01: a note was lost 34 s in). Checked, since the page may outlive the window at exit.
+static void keepAwake(bool on)
+{
+    bb::cascades::Application *app = bb::cascades::Application::instance();
+    if (app && app->mainWindow())
+        app->mainWindow()->setScreenIdleMode(on ? bb::cascades::ScreenIdleMode::KeepAwake
+                                                : bb::cascades::ScreenIdleMode::Normal);
+}
 
 ChatController::ChatController(QObject *parent)
     : QObject(parent)
@@ -233,6 +245,7 @@ QString ChatController::startVoice()
     args["chat"] = m_jid;
     args["path"] = m_voicePath;
     m_engine->request("voice.start", args);
+    keepAwake(true);
     return m_voicePath;
 }
 
@@ -247,6 +260,7 @@ void ChatController::sendVoice()
         args["quote"] = m_quoteId;
     m_engine->request("voice.send", args);
     m_voicePath.clear();
+    keepAwake(false);
     cancelReply();
 }
 
@@ -260,6 +274,7 @@ void ChatController::cancelVoice()
         m_engine->request("voice.cancel", args);
     }
     m_voicePath.clear();
+    keepAwake(false);
 }
 
 QString ChatController::replyName() const
