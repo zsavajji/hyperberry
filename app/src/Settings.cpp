@@ -5,13 +5,18 @@
 #include <bb/cascades/ThemeSupport>
 #include <bb/cascades/VisualStyle>
 #include <QDir>
+#include <QDirIterator>
+#include <QFile>
+#include <QFileInfo>
 
 #include "EngineLink.h"
+#include "sizes.h"
 
 Settings::Settings(EngineLink *engine, QObject *parent)
     : QObject(parent),
       m_file(QDir::homePath() + "/settings.ini", QSettings::IniFormat),
-      m_engine(engine)
+      m_engine(engine),
+      m_region(bb::system::LocaleType::Region)
 {
     // Dark is the bar descriptor's theme (CASCADES_THEME): nothing to apply, and no reload.
     if (theme() == 1)
@@ -84,4 +89,46 @@ void Settings::setTextSize(int size)
         return;
     store("textSize", size);
     emit textSizeChanged();
+}
+
+// The cache is data/cache/ except upload/, which holds an upload in progress. Everything else in
+// it is made again when needed (a voice note's WAV on its next play, a photo's preview on its next
+// showing). Collected first, so nothing is deleted while the iterator is reading the directory.
+static QStringList cacheFiles()
+{
+    const QString root = QDir::homePath() + "/cache";
+    QStringList files;
+    QDirIterator it(root, QDir::Files | QDir::Hidden, QDirIterator::Subdirectories);
+    while (it.hasNext()) {
+        const QString path = it.next();
+        if (!path.startsWith(root + "/upload/"))
+            files << path;
+    }
+    return files;
+}
+
+// An empty cache reads "0 KB", not the empty text sizeText gives for an unknown size.
+static QString cacheText(qint64 bytes, const QLocale &locale)
+{
+    return bytes > 0 ? sizeText(bytes, locale) : QString("0 KB");
+}
+
+QString Settings::cacheSize()
+{
+    qint64 bytes = 0;
+    foreach (const QString &path, cacheFiles())
+        bytes += QFileInfo(path).size();
+    return cacheText(bytes, m_region.locale());
+}
+
+// Returns the size freed; a file that can't be removed is skipped. Empty directories stay.
+QString Settings::clearCache()
+{
+    qint64 freed = 0;
+    foreach (const QString &path, cacheFiles()) {
+        const qint64 size = QFileInfo(path).size();
+        if (QFile::remove(path))
+            freed += size;
+    }
+    return cacheText(freed, m_region.locale());
 }

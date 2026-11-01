@@ -4,20 +4,28 @@ import bb.system 1.2
 // Settings (step 5.4), saved as they change, so there's no Save button. Each lives in `settings`.
 Page {
     id: page
+    property string cacheText: ""
     titleBar: TitleBar {
         title: qsTr("Settings")
     }
-    attachedObjects: SystemDialog {
-        id: unlinkDialog
-        title: qsTr("Unlink this device?")
-        body: qsTr("This device is removed from your linked devices and its chats are deleted here.")
-        confirmButton.label: qsTr("Unlink")
-        cancelButton.label: qsTr("Cancel")
-        onFinished: {
-            if (value == SystemUiResult.ConfirmButtonSelection)
-                engine.request("link.logout", {})
+    // Read when the page opens and after a clear; the walk of data/cache/ is a few files.
+    onCreationCompleted: cacheText = settings.cacheSize()
+    attachedObjects: [
+        SystemDialog {
+            id: unlinkDialog
+            title: qsTr("Unlink this device?")
+            body: qsTr("This device is removed from your linked devices and its chats are deleted here.")
+            confirmButton.label: qsTr("Unlink")
+            cancelButton.label: qsTr("Cancel")
+            onFinished: {
+                if (value == SystemUiResult.ConfirmButtonSelection)
+                    engine.request("link.logout", {})
+            }
+        },
+        SystemToast {
+            id: clearedToast
         }
-    }
+    ]
     ScrollView {
         Container {
             topPadding: ui.du(2)
@@ -97,6 +105,42 @@ Page {
                     onCheckedChanged: settings.notifyPreview = checked
                 }
             }
+            Header {
+                topMargin: ui.du(3)
+                title: qsTr("Storage")
+            }
+            Container {
+                topMargin: ui.du(2)
+                layout: StackLayout {
+                    orientation: LayoutOrientation.LeftToRight
+                }
+                Label {
+                    layoutProperties: StackLayoutProperties {
+                        spaceQuota: 1
+                    }
+                    verticalAlignment: VerticalAlignment.Center
+                    text: qsTr("Cache: %1").arg(page.cacheText)
+                }
+                Button {
+                    verticalAlignment: VerticalAlignment.Center
+                    text: qsTr("Clear cache")
+                    onClicked: {
+                        // Nothing in the cache is lost, so no confirmation.
+                        var freed = settings.clearCache()
+                        page.cacheText = settings.cacheSize()
+                        clearedToast.body = qsTr("Cache cleared: %1 freed").arg(freed)
+                        clearedToast.show()
+                    }
+                }
+            }
+            Label {
+                topMargin: ui.du(1)
+                multiline: true
+                text: qsTr("Voice notes' decoded audio and photo previews; they're made again when needed.")
+                textStyle.base: SystemDefaults.TextStyles.SubtitleText
+                textStyle.color: ui.palette.secondaryTextOnPlain
+            }
+            // Last: the one action that ends the link.
             Button {
                 topMargin: ui.du(4)
                 horizontalAlignment: HorizontalAlignment.Fill

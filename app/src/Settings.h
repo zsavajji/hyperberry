@@ -1,6 +1,7 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
+#include <bb/system/LocaleHandler>
 #include <QObject>
 #include <QSettings>
 
@@ -28,6 +29,8 @@ public:
     void setEnterSends(bool on);
     void setNotifyPreview(bool on);
     void setTextSize(int size);
+    Q_INVOKABLE QString cacheSize();
+    Q_INVOKABLE QString clearCache();
 
 signals:
     void themeChanged();
@@ -40,6 +43,7 @@ private:
     void store(const char *key, const QVariant &value);
     QSettings m_file;
     EngineLink *m_engine;
+    bb::system::LocaleHandler m_region; // for the size text, as the chat models have it
 };
 
 #endif

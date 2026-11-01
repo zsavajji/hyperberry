@@ -1,4 +1,5 @@
 #include "MediaData.h"
+#include "sizes.h"
 
 #include <bb/cascades/Image>
 #include <QCoreApplication>
@@ -12,17 +13,6 @@
 static QString clock(int seconds)
 {
     return QString("%1:%2").arg(seconds / 60).arg(seconds % 60, 2, 10, QChar('0'));
-}
-
-// Whole KB under 1 MB (at least 1), else MB with one decimal in the phone's region; "" when the
-// size is unknown.
-static QString sizeText(qint64 bytes, const QLocale &locale)
-{
-    if (bytes <= 0)
-        return QString();
-    if (bytes < 1024 * 1024)
-        return QString("%1 KB").arg(qMax<qint64>(1, bytes / 1024));
-    return QString("%1 MB").arg(locale.toString(bytes / (1024.0 * 1024.0), 'f', 1));
 }
 
 // The bubble's picture for a downloaded photo (step 6.3): a JPEG of at most 320 px, made the first
