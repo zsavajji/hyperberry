@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -101,12 +102,25 @@ func TestSimLinkMessageRemove(t *testing.T) {
 		t.Error("sim.msg past the chats: want an error")
 	}
 
+	voice := filepath.Join(s.srv.dir, "voice")
+	if _, err := os.Stat(voice); err != nil {
+		t.Fatalf("the seed wrote no voice notes: %v", err)
+	}
 	s.handleRemoved(nil)
 	if m := next(t, c, "link"); m["state"] != linkUnlinked {
 		t.Errorf("after sim.removed: %v", m)
 	}
 	eventually(t, st, 0, "SELECT count(*) FROM chats")
 	eventually(t, st, 0, "SELECT count(*) FROM messages")
+	// The seed's voice notes go too (the wipe after the commit).
+	for end := time.Now().Add(2 * time.Second); ; time.Sleep(10 * time.Millisecond) {
+		if _, err := os.Stat(voice); os.IsNotExist(err) {
+			break
+		}
+		if time.Now().After(end) {
+			t.Fatal("data/voice is still there after sim.removed")
+		}
+	}
 }
 
 func TestSimCodesRunOut(t *testing.T) {

@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"database/sql"
+	"os"
+	"path/filepath"
 	"sort"
 	"time"
 
@@ -62,7 +64,8 @@ func (st *Store) batch(first func(*storeTx)) {
 	timer := time.NewTimer(batchTime)
 	defer timer.Stop()
 fill:
-	for n := 1; n < batchOps && !st.quit; n++ {
+	// A clear ends its batch, so its wipe runs before anything written after it (a re-link's seed).
+	for n := 1; n < batchOps && !st.quit && !t.wipe; n++ {
 		select {
 		case op := <-st.ops:
 			t.run(op)
@@ -77,6 +80,25 @@ fill:
 	}
 	t.emit(st.srv)
 	st.nt.send(t.notes)
+	if t.wipe {
+		st.wipe()
+	}
+}
+
+// wipe takes what is left of the old link once clear has committed: the voice notes and the
+// decoded cache, and the deleted rows still in chats.db's free pages and WAL. The UI's settings
+// stay: they belong to the phone. Both folders come back on the next write.
+func (st *Store) wipe() {
+	for _, d := range []string{"voice", "cache"} {
+		if err := os.RemoveAll(filepath.Join(st.srv.dir, d)); err != nil {
+			st.log.Warnf("wipe %s: %v", d, err)
+		}
+	}
+	for _, q := range []string{"VACUUM", "PRAGMA wal_checkpoint(TRUNCATE)"} {
+		if _, err := st.db.Exec(q); err != nil {
+			st.log.Warnf("wipe: %s: %v", q, err)
+		}
+	}
 }
 
 // handle queues an event for the writer. It only enqueues: hypermeow calls it on its receive loop.
@@ -179,9 +201,11 @@ func muteUntil(v int64) int64 {
 	return v
 }
 
-// clear drops every chat and message: a logout ends the link the history belonged to.
+// clear drops every chat and message, then wipes the rest (wipe): a logout ends the link the
+// history belonged to.
 func (st *Store) clear() {
 	st.ops <- func(t *storeTx) {
+		t.wipe = true
 		rows, err := t.tx.Query("SELECT jid FROM chats")
 		if err == nil {
 			for rows.Next() {
@@ -211,6 +235,7 @@ type storeTx struct {
 	log   waLog.Logger
 	chats map[string]bool
 	msgs  map[string]map[string]bool // chat -> ids
+	wipe  bool                       // clear ran: wipe after the commit
 }
 
 // run runs one op; a failing or panicking op doesn't stop the batch.

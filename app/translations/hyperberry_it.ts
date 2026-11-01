@@ -671,6 +671,11 @@ Il telefono invia le chat recenti poco dopo il collegamento.</translation>
         <source>Nothing new to see</source>
         <translation>Niente di nuovo</translation>
     </message>
+    <message>
+        <location filename="../assets/cover.qml" line="83"/>
+        <source>Not logged in</source>
+        <translation>Non collegato</translation>
+    </message>
 </context>
 <context>
     <name>errors</name>

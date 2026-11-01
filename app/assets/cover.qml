@@ -63,9 +63,9 @@ SceneCover {
                 bottomMargin: 0
             }
         }
-        // Nothing unread: centred, in small type, the name in the primary colour (the user's,
-        // 2026-11-01). The bar descriptor's primary, written out: a cover's scene may not share
-        // the app's palette.
+        // Nothing unread, or not linked: centred, in small type, the name in the primary colour
+        // (the user's, 2026-11-01). The bar descriptor's primary, written out: a cover's scene may
+        // not share the app's palette.
         Container {
             visible: chats.unreadTotal == 0
             horizontalAlignment: HorizontalAlignment.Center
@@ -80,7 +80,7 @@ SceneCover {
             }
             Label {
                 horizontalAlignment: HorizontalAlignment.Center
-                text: qsTr("Nothing new to see")
+                text: engine.linked ? qsTr("Nothing new to see") : qsTr("Not logged in")
                 textStyle.base: SystemDefaults.TextStyles.SmallText
                 textStyle.fontSize: FontSize.PercentageValue
                 textStyle.fontSizeValue: 85
