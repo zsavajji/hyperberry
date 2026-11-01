@@ -18,9 +18,6 @@ Container {
     property variant cells: []
     visible: !!msg
     horizontalAlignment: HorizontalAlignment.Fill
-    background: ui.palette.plain
-    // As the reply and search bars': the first tap target sat against the screen's edge.
-    leftPadding: ui.du(1.5)
     layout: StackLayout {
         orientation: LayoutOrientation.TopToBottom
     }
@@ -119,8 +116,14 @@ Container {
             id: whoToast
         }
     ]
+    // The row alone is grey: the full picker under it sits on the page, as the composer's does
+    // (Q10, 0.0.1.127: it was grey).
     Container {
         id: row
+        horizontalAlignment: HorizontalAlignment.Fill
+        background: ui.palette.plain
+        // As the reply and search bars': the first tap target sat against the screen's edge.
+        leftPadding: ui.du(1.5)
         layout: StackLayout {
             orientation: LayoutOrientation.LeftToRight
         }
