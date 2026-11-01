@@ -40,7 +40,7 @@ Container {
     ]
 
     // The row, its tile and the initials grow with the text size, so a row keeps Normal's
-    // proportions: at Larger the two lines filled the 9.4 du row edge to edge (Q10, 2026-11-01).
+    // proportions: at 140 % the two lines filled the 9.4 du row edge to edge (Q10, 2026-11-01).
     Container {
         horizontalAlignment: HorizontalAlignment.Fill
         minHeight: ui.du(9.4 * row.ListItem.view.textScale)

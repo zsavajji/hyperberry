@@ -16,7 +16,7 @@ Container {
     rightPadding: msg.out ? ui.du(1.5) : ui.du(7)
     // The gap goes above each card: in the bottom-to-top list that also spaces the first card
     // from its day's header (Q10, 2026-10-31: 1 du touched the header and was a little tight).
-    // It and the card's padding grow with the text size (Q10, 2026-11-01: Larger looked
+    // It and the card's padding grow with the text size (Q10, 2026-11-01: 140 % looked
     // cramped).
     topPadding: ui.du(1.5 * item.ListItem.view.textScale)
     // The long-press menu (step 3.3). The set is the same on every row, with items disabled

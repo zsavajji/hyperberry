@@ -37,8 +37,7 @@ Page {
                 options: [
                     Option { text: qsTr("Small"); selected: settings.textSize == 0 },
                     Option { text: qsTr("Normal"); selected: settings.textSize == 1 },
-                    Option { text: qsTr("Large"); selected: settings.textSize == 2 },
-                    Option { text: qsTr("Larger"); selected: settings.textSize == 3 }
+                    Option { text: qsTr("Large"); selected: settings.textSize == 2 }
                 ]
                 onSelectedIndexChanged: settings.textSize = selectedIndex
             }

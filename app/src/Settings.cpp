@@ -21,11 +21,12 @@ Settings::Settings(EngineLink *engine, QObject *parent)
 int Settings::theme() const { return m_file.value("theme", 0).toInt() == 1 ? 1 : 0; }
 bool Settings::enterSends() const { return m_file.value("enterSends", true).toBool(); }
 bool Settings::notifyPreview() const { return m_file.value("notifyPreview", true).toBool(); }
-int Settings::textSize() const { return qBound(0, m_file.value("textSize", 1).toInt(), 3); }
+// Larger (3, 140 %) went at the user's word (2026-11-01); a saved 3 reads as Large.
+int Settings::textSize() const { return qBound(0, m_file.value("textSize", 1).toInt(), 2); }
 
 qreal Settings::textScale() const
 {
-    static const qreal scales[] = { 0.9, 1.0, 1.2, 1.4 };
+    static const qreal scales[] = { 0.9, 1.0, 1.2 };
     return scales[textSize()];
 }
 
@@ -78,7 +79,7 @@ void Settings::setNotifyPreview(bool on)
 
 void Settings::setTextSize(int size)
 {
-    size = qBound(0, size, 3);
+    size = qBound(0, size, 2);
     if (size == textSize())
         return;
     store("textSize", size);

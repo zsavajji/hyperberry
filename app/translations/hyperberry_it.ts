@@ -634,11 +634,6 @@ Il telefono invia le chat recenti poco dopo il collegamento.</translation>
         <translation>Grande</translation>
     </message>
     <message>
-        <location filename="../assets/SettingsPage.qml" line="40"/>
-        <source>Larger</source>
-        <translation>Più grande</translation>
-    </message>
-    <message>
         <location filename="../assets/SettingsPage.qml" line="55"/>
         <source>Enter sends</source>
         <translation>Invio invia il messaggio</translation>
