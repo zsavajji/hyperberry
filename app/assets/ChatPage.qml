@@ -168,6 +168,12 @@ Page {
             imageSource: "asset:///images/attach_action.png"
             ActionBar.placement: ActionBarPlacement.InOverflow
             onTriggered: attachPicker.open()
+        },
+        ActionItem {
+            title: qsTr("Search")
+            imageSource: "asset:///images/search.png"
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            onTriggered: searchBar.open()
         }
     ]
     keyListeners: KeyListener {
@@ -261,6 +267,14 @@ Page {
             list.scrollToPosition(ScrollPosition.Beginning, ScrollAnimation.None)
         }
     }
+    // A search match (step 5.10): its day is loaded if it wasn't, then it's scrolled to and tinted.
+    function jump(id) {
+        list.foundId = id
+        var i = ctl.messages.reveal(id)
+        if (i >= 0) {
+            list.scrollToItem([i], ScrollAnimation.None)
+        }
+    }
     // The info page of a person or a group. A person's page asks the engine itself, with a fresh
     // row for the mute state; a group's gets the controller, so it reads what the chat page already
     // asked for. The chat page stays under it, so it outlives the info page.
@@ -323,6 +337,12 @@ Page {
         layout: StackLayout {
             orientation: LayoutOrientation.TopToBottom
         }
+        SearchBar {
+            id: searchBar
+            jid: page.chat ? page.chat.jid : ""
+            onJump: page.jump(id)
+            onClosed: list.foundId = ""
+        }
         // The list, and over it the note of an empty chat.
         Container {
             layoutProperties: StackLayoutProperties {
@@ -346,6 +366,8 @@ Page {
                 }
                 // Voice notes: the player's state, for the bubbles (VoicePlayer.qml).
                 property string playingId: player.playingId
+                // The search match, tinted (SearchBar.qml).
+                property string foundId
                 property string loadingId: player.loadingId
                 property bool paused: player.paused
                 property int posMs: player.posMs

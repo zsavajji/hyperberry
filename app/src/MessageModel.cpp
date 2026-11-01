@@ -253,6 +253,28 @@ void MessageModel::nearTop(const QVariantList &firstVisible)
         loadPage();
 }
 
+// The entry index of a message to jump to, -1 when it isn't shown. One older than what is loaded
+// brings in every message back to its day first.
+// ponytail: a match far back loads every message in between, one itemAdded each; a window around
+// the match if that is slow.
+int MessageModel::reveal(const QString &id)
+{
+    const int at = keys().indexOf(id);
+    if (at >= 0 || m_atStart || m_all.isEmpty())
+        return at;
+    const QList<Msg> target = select("AND id = ?", QVariantList() << id, 1);
+    if (target.isEmpty())
+        return -1;
+    // Every day from the match's to the oldest loaded one, so the loaded set stays whole days
+    // with no gap, as loadPage keeps it.
+    const Msg o = m_all.first();
+    const uint midnight =
+        QDateTime(QDateTime::fromTime_t(target.first().ts).date(), QTime(0, 0)).toTime_t();
+    merge(QStringList(), select("AND ts >= ? AND (ts < ? OR (ts = ? AND rowid < ?))",
+                                QVariantList() << midnight << o.ts << o.ts << o.rowid, -1), true);
+    return keys().indexOf(id);
+}
+
 void MessageModel::onMsgs(const QString &chat, const QStringList &ids)
 {
     if (chat != m_chat)

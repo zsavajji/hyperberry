@@ -233,6 +233,11 @@
         <translation>Invia</translation>
     </message>
     <message>
+        <location filename="../assets/ChatPage.qml" line="173"/>
+        <source>Search</source>
+        <translation>Cerca</translation>
+    </message>
+    <message>
         <location filename="../assets/ChatPage.qml" line="426"/>
         <source>No messages here</source>
         <translation>Nessun messaggio qui</translation>
@@ -838,6 +843,14 @@
         <location filename="../assets/ReplyBar.qml" line="35"/>
         <source>Replying to %1</source>
         <translation>In risposta a %1</translation>
+    </message>
+</context>
+<context>
+    <name>SearchBar</name>
+    <message>
+        <location filename="../assets/SearchBar.qml" line="65"/>
+        <source>Search in chat</source>
+        <translation>Cerca nella chat</translation>
     </message>
 </context>
 <context>

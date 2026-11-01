@@ -6,6 +6,7 @@
 #include <bb/utility/i18n/RelativeDateFormatter>
 #include <QList>
 #include <QString>
+#include <QStringList>
 #include <QTimer>
 #include <QVariantMap>
 
@@ -37,6 +38,8 @@ public:
     QString unreadChats() const { return m_unreadChats; }
     // The chat's map as the rows have it, archived chats included; empty when there is none.
     Q_INVOKABLE QVariantMap chat(const QString &jid);
+    // The ids of the chat's messages whose text has text in it, any case, newest first (step 5.10).
+    Q_INVOKABLE QStringList findMessages(const QString &jid, const QString &text);
     // Shows only the chats whose name has a word starting with text; "" shows all.
     Q_INVOKABLE void setFilter(const QString &text);
 

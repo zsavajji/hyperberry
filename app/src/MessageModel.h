@@ -41,6 +41,10 @@ public:
     // entries of the visual top (in a bottom-to-top list that is the model's end).
     Q_INVOKABLE void nearTop(const QVariantList &firstVisible);
 
+    // The entry index of the message for a jump, after loading older messages back to its day;
+    // -1 when it isn't shown (hidden by a pending delete, say).
+    Q_INVOKABLE int reveal(const QString &id);
+
     bool empty() const { return m_entries.isEmpty(); }
 
     // The chat's unread count as chats.db has it now.

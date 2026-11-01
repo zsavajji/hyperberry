@@ -54,7 +54,8 @@ Container {
 
     Container {
         horizontalAlignment: HorizontalAlignment.Fill
-        background: ui.palette.plain
+        // A search match: the primary colour at 25 % over the page, so it reads in both themes.
+        background: item.ListItem.view.foundId == item.msg.id ? Color.create("#401bd862") : ui.palette.plain
         // 2 px over 1.5 and 1 du: the text sat a little tight to the card's edges (Q10).
         leftPadding: ui.du(1.5 * item.ListItem.view.textScale) + ui.px(2)
         rightPadding: ui.du(1.5 * item.ListItem.view.textScale) + ui.px(2)
