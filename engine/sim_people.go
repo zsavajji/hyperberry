@@ -60,11 +60,14 @@ func (s *Sim) handleContactInfo(req json.RawMessage) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	if jid.Server != types.DefaultUserServer && jid.Server != types.HiddenUserServer {
+	if !isPerson(jid) {
 		return nil, &Error{"bad_chat", "not a person: " + r.Chat}
 	}
 	time.Sleep(simDelay)
 	out := contactInfo{About: "Hey there! I am using WhatsApp.", Groups: []groupRef{}}
+	s.mu.Lock()
+	out.Blocked = s.blocked[r.Chat]
+	s.mu.Unlock()
 	if jid.Server == types.DefaultUserServer {
 		out.Phone = "+" + jid.User
 	} else {

@@ -31,14 +31,42 @@ void ContactInfo::ask(const QString &jid)
 {
     if (!m_engine)
         return;
+    m_jid = jid;
     QVariantMap args;
     args["chat"] = jid;
     m_id = m_engine->request("contact.info", args);
 }
 
+void ContactInfo::block(bool on)
+{
+    if (!m_engine)
+        return;
+    QVariantMap args;
+    args["chat"] = m_jid;
+    args["block"] = on;
+    m_blockId = m_engine->request("contact.block", args);
+}
+
+void ContactInfo::exportChat()
+{
+    if (!m_engine)
+        return;
+    QVariantMap args;
+    args["chat"] = m_jid;
+    m_exportId = m_engine->request("chat.export", args);
+}
+
 // Gives each group the tile the chat list gives it: initials and the jid's colour.
 void ContactInfo::onReplied(const QString &id, const QString &cmd, const QVariant &result)
 {
+    if (cmd == "contact.block" && id == m_blockId) {
+        ask(m_jid); // info.blocked is read again with the rest
+        return;
+    }
+    if (cmd == "chat.export" && id == m_exportId) {
+        emit exported(result.toMap()["path"].toString());
+        return;
+    }
     if (cmd != "contact.info" || id != m_id)
         return;
     QVariantMap info = result.toMap();

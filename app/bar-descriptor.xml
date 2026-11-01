@@ -82,6 +82,8 @@
     <permission>post_notification</permission>
     <permission>record_audio</permission>
     <permission>play_audio</permission>
+    <!-- Downloads, for the chat export (step 5.8b) and Phase 6's files. -->
+    <permission>access_shared</permission>
     <!-- The Hub account (step 5.7). The name is from BBTelega's bar, an unsigned app with a
          working Hub account on the Q10. -->
     <permission system="true">_sys_access_pim_unified</permission>

@@ -27,9 +27,14 @@ public:
 
     // Asks the engine about a person's chat (a chat list row's jid); nothing without an engine.
     Q_INVOKABLE void ask(const QString &jid);
+    // Blocks or unblocks the person asked about (step 5.8b); info.blocked follows once it's done.
+    Q_INVOKABLE void block(bool on);
+    // Writes the chat as a text file into Downloads; exported() says where.
+    Q_INVOKABLE void exportChat();
 
 signals:
     void infoChanged();
+    void exported(const QString &path);
 
 private slots:
     void onReplied(const QString &id, const QString &cmd, const QVariant &result);
@@ -37,7 +42,10 @@ private slots:
 private:
     QPointer<EngineLink> m_engine;
     QVariantMap m_info;
+    QString m_jid; // the chat asked about
     QString m_id; // the contact.info request we wait for
+    QString m_blockId; // the contact.block request we wait for
+    QString m_exportId; // the chat.export request we wait for
 };
 
 #endif

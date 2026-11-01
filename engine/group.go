@@ -28,9 +28,10 @@ type groupRef struct {
 }
 
 type contactInfo struct {
-	Phone  string     `json:"phone"`
-	About  string     `json:"about"`
-	Groups []groupRef `json:"groups"`
+	Phone   string     `json:"phone"`
+	About   string     `json:"about"`
+	Groups  []groupRef `json:"groups"`
+	Blocked bool       `json:"blocked"`
 }
 
 func registerGroup(srv *Server, s *Session) {
@@ -133,7 +134,7 @@ func (s *Session) handleContactInfo(req json.RawMessage) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	if jid.Server != types.DefaultUserServer && jid.Server != types.HiddenUserServer {
+	if !isPerson(jid) {
 		return nil, &Error{"bad_chat", "not a person: " + r.Chat}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), netTimeout)
@@ -160,5 +161,10 @@ func (s *Session) handleContactInfo(req json.RawMessage) (any, error) {
 		return nil, err
 	}
 	out.Groups = commonGroups(groups, jid.User, pn.User)
+	bl, err := cli.GetBlocklist(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+	out.Blocked = isBlocked(bl, jid.User, pn.User)
 	return out, nil
 }

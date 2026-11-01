@@ -141,7 +141,7 @@ func (st *Store) handle(cli *whatsmeow.Client, evt any) {
 		return
 	case *events.HistorySync, *events.Message, *events.Contact, *events.PushName, *events.GroupInfo,
 		*events.JoinedGroup, *events.Mute, *events.Pin, *events.Archive, *events.MarkChatAsRead,
-		*events.Receipt, *events.ChatPresence, *events.Presence, *events.DeleteForMe:
+		*events.Receipt, *events.ChatPresence, *events.Presence, *events.DeleteForMe, *events.ClearChat, *events.DeleteChat:
 		st.ops <- func(t *storeTx) { st.dispatch(t, cli, evt) }
 		if h, ok := e.(*events.HistorySync); ok && st.historyIn != nil {
 			switch h.Data.GetSyncType() {
@@ -217,6 +217,15 @@ func (st *Store) dispatch(t *storeTx, cli *whatsmeow.Client, evt any) {
 	case *events.DeleteForMe:
 		// A delete on one of our other devices.
 		t.deleteMessage(chatKey(ctx, t, lids, e.ChatJID, types.EmptyJID), e.MessageID)
+	case *events.ClearChat:
+		// A full sync replays old clears, which would take the history that came after them.
+		if !e.FromFullSync {
+			t.clearChat(chatKey(ctx, t, lids, e.JID, types.EmptyJID), false)
+		}
+	case *events.DeleteChat:
+		if !e.FromFullSync {
+			t.clearChat(chatKey(ctx, t, lids, e.JID, types.EmptyJID), true)
+		}
 	}
 }
 

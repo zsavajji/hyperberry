@@ -1,9 +1,11 @@
 import bb.cascades 1.4
+import bb.system 1.2
 import hyperberry 1.0
 
-// A person's info (step 5.8), read-only but for the mute toggle. chat is a chat list row, set
-// right after createObject(). The page asks the engine itself (contact.info) through its own
-// ContactInfo, so the answer goes with the page.
+// A person's info (step 5.8), read-only but for the mute toggle and, in the action menu, the
+// account actions (step 5.8b). chat is a chat list row, set right after createObject(). The page
+// asks the engine itself (contact.info) through its own ContactInfo, so the answer goes with the
+// page.
 Page {
     id: page
     property variant chat
@@ -13,15 +15,60 @@ Page {
     // From info, not a method call: a binding isn't re-read when a method's result changes.
     property int groupCount: loaded ? info.groups.length : 0
     property bool muted: false
+    // As ChatPage: a failure of the page's own requests, once per failure.
+    property string failedCmd: engine.failure.cmd || ""
+    onFailedCmdChanged: {
+        if (failedCmd == "contact.block" || failedCmd == "chat.export") {
+            failedToast.show()
+        }
+    }
     onChatChanged: {
         // !!: a contact picked with no chat yet has no muted, and undefined fails a bool.
         muted = !!chat.muted
         contact.ask(chat.jid)
     }
     onInfoChanged: fill()
+    // Not a Connections: Cascades' QML has none. Both live and die with the page.
+    onCreationCompleted: contact.exported.connect(page.exported)
     titleBar: TitleBar {
         title: qsTr("Contact info")
     }
+    actions: [
+        ActionItem {
+            title: qsTr("Export chat")
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            onTriggered: {
+                contact.exportChat()
+            }
+        },
+        ActionItem {
+            title: qsTr("Clear chat")
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            onTriggered: {
+                clearDialog.show()
+            }
+        },
+        // Unblock asks nothing: it undoes the block, which is the confirmation.
+        ActionItem {
+            title: page.info.blocked ? qsTr("Unblock") : qsTr("Block")
+            enabled: page.loaded
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            onTriggered: {
+                if (page.info.blocked) {
+                    contact.block(false)
+                } else {
+                    blockDialog.show()
+                }
+            }
+        },
+        DeleteActionItem {
+            title: qsTr("Delete chat")
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            onTriggered: {
+                deleteDialog.show()
+            }
+        }
+    ]
     attachedObjects: [
         ContactInfo {
             id: contact
@@ -81,6 +128,51 @@ Page {
                     background: ui.palette.plain
                 }
             }
+        },
+        SystemDialog {
+            id: clearDialog
+            title: qsTr("Clear this chat?")
+            body: qsTr("Its messages will be deleted from this phone.")
+            confirmButton.label: qsTr("Clear")
+            cancelButton.label: qsTr("Cancel")
+            onFinished: {
+                if (value == SystemUiResult.ConfirmButtonSelection) {
+                    engine.request("chat.clear", {"chat": page.chat.jid})
+                }
+            }
+        },
+        SystemDialog {
+            id: blockDialog
+            title: qsTr("Block %1?").arg(page.chat ? page.chat.name : "")
+            body: qsTr("Blocked contacts can't call you or send you messages.")
+            confirmButton.label: qsTr("Block")
+            cancelButton.label: qsTr("Cancel")
+            onFinished: {
+                if (value == SystemUiResult.ConfirmButtonSelection) {
+                    contact.block(true)
+                }
+            }
+        },
+        SystemDialog {
+            id: deleteDialog
+            title: qsTr("Delete this chat?")
+            body: qsTr("Its messages will be deleted from this phone.")
+            confirmButton.label: qsTr("Delete")
+            cancelButton.label: qsTr("Cancel")
+            onFinished: {
+                if (value == SystemUiResult.ConfirmButtonSelection) {
+                    engine.request("chat.delete", {"chat": page.chat.jid})
+                    // The chat page under this one goes too: the chat is gone.
+                    nav.backToList()
+                }
+            }
+        },
+        SystemToast {
+            id: exportedToast
+        },
+        SystemToast {
+            id: failedToast
+            body: qsTr("Couldn't do that. Check the connection and try again.")
         }
     ]
     // ponytail: on mutes always; the list's menu offers 8 hours and a week too.
@@ -90,6 +182,11 @@ Page {
         }
         muted = on
         engine.request("chat.set", {"chat": chat.jid, "mute": on ? -1 : 0})
+    }
+    // The body is set when the export is done: it names the file.
+    function exported(path) {
+        exportedToast.body = qsTr("Saved to Downloads: %1").arg(path.substring(path.lastIndexOf("/") + 1))
+        exportedToast.show()
     }
     function fill() {
         groupsBox.removeAll()

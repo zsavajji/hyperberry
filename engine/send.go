@@ -33,6 +33,10 @@ func registerSend(srv *Server, s *Session) {
 	srv.Handle("msg.send", s.handleSend)
 	srv.Handle("msg.delete", s.handleDelete)
 	srv.Handle("chat.set", s.handleChatSet)
+	srv.Handle("contact.block", s.handleContactBlock)
+	srv.Handle("chat.clear", s.handleChatClear)
+	srv.Handle("chat.delete", s.handleChatDelete)
+	srv.Handle("chat.export", s.store.handleExport)
 }
 
 func (s *Session) handleSend(req json.RawMessage) (any, error) {

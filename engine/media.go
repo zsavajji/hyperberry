@@ -42,6 +42,9 @@ func writeFile(path string, data []byte) error {
 
 func oggPath(dir, id string) string { return filepath.Join(dir, "voice", id+".ogg") }
 
+// cachedWAV is the decoded copy voice.play plays.
+func cachedWAV(dir, id string) string { return filepath.Join(dir, "cache", "voice", id+".wav") }
+
 // downloadVoice fetches a note, decrypted, into voice/<id>.ogg and moves its media_state to 2,
 // or to 3 on a failure. A note with no waveform gets one from the decoded audio.
 func (st *Store) downloadVoice(ctx context.Context, cli *whatsmeow.Client, dir string, row msgRow) error {
@@ -116,7 +119,7 @@ func (st *Store) playVoice(dir string, r voiceReq, fetch, notify func(msgRow) er
 	if err != nil {
 		return nil, err
 	}
-	ogg, wav := oggPath(dir, r.ID), filepath.Join(dir, "cache", "voice", r.ID+".wav")
+	ogg, wav := oggPath(dir, r.ID), cachedWAV(dir, r.ID)
 	if _, err := os.Stat(ogg); err != nil {
 		if err := fetch(row); err != nil {
 			return nil, &Error{"download_failed", err.Error()}

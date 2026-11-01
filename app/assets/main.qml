@@ -90,11 +90,16 @@ NavigationPane {
         pendingChat = ""
         if (!chat.jid)
             return
+        backToList()
+        at(0).openChat(chat)
+    }
+
+    // Every page above the list goes out. Deleting a chat (step 5.8b) uses it too.
+    function backToList() {
         while (count() > 1) {
             var old = at(count() - 1)
             remove(old)
             old.destroy()
         }
-        at(0).openChat(chat)
     }
 }

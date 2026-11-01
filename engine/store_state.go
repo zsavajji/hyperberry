@@ -1,6 +1,9 @@
 package main
 
-import "database/sql"
+import (
+	"database/sql"
+	"os"
+)
 
 // unreadMsg is an incoming message to mark read: its id and, in groups, its sender key.
 type unreadMsg struct{ ID, Sender string }
@@ -44,6 +47,46 @@ func (t *storeTx) deleteMessage(chat, id string) {
 		p = "This message was deleted"
 	}
 	t.exec("UPDATE chats SET last_preview = ?, last_out = ?, last_state = ? WHERE jid = ?", p, r.Out, r.State, chat)
+}
+
+// clearChat is "clear chat", or with drop "delete chat": every message row goes, and the voice
+// notes' files once it has committed. A cleared chat keeps its row and last_ts, so its place in
+// the list, with no preview and nothing unread; a deleted one goes too.
+func (t *storeTx) clearChat(chat string, drop bool) {
+	rows, err := t.tx.Query("SELECT id, kind FROM messages WHERE chat = ?", chat)
+	if err != nil {
+		t.log.Warnf("clear chat: %v", err)
+		return
+	}
+	var voice []string
+	for rows.Next() {
+		var id string
+		var kind int
+		if rows.Scan(&id, &kind) == nil {
+			t.changed(chat, id)
+			if kind == msgVoice {
+				voice = append(voice, id)
+			}
+		}
+	}
+	rows.Close()
+	t.exec("DELETE FROM messages WHERE chat = ?", chat)
+	if drop {
+		if t.exec("DELETE FROM chats WHERE jid = ?", chat) > 0 {
+			t.chats[chat] = true
+		}
+	} else if t.touch(chat, "UPDATE chats SET last_preview = NULL, unread = 0 WHERE jid = ?") {
+		t.hubItem(chat, false, false)
+	}
+	if t.st != nil && len(voice) > 0 { // st is nil in tests of single writes
+		dir := t.st.srv.dir
+		t.after = append(t.after, func() {
+			for _, id := range voice {
+				os.Remove(oggPath(dir, id))
+				os.Remove(cachedWAV(dir, id))
+			}
+		})
+	}
 }
 
 // setState only raises the state of one of our messages: receipts arrive out of order, and a

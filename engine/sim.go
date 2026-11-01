@@ -30,6 +30,7 @@ type Sim struct {
 	rec  voiceRec
 	// syncing as Session's: from sim.link until the seed has committed.
 	syncing bool
+	blocked map[string]bool // contact.block's flags by chat; nil until the first
 }
 
 // simCodes are how long each made-up QR code lasts, as WhatsApp's: 60 s, then five of 20 s,
@@ -68,6 +69,10 @@ func newSim(srv *Server, st *Store, log waLog.Logger) *Sim {
 	srv.Handle("msg.delete", s.handleDelete)
 	srv.Handle("chat.read", s.handleRead)
 	srv.Handle("chat.set", s.handleChatSet)
+	srv.Handle("contact.block", s.handleContactBlock)
+	srv.Handle("chat.clear", s.handleChatClear)
+	srv.Handle("chat.delete", s.handleChatDelete)
+	srv.Handle("chat.export", st.handleExport)
 	srv.Handle("chat.open", s.handleOpen)
 	srv.Handle("chat.typing", s.handleChatTyping)
 	srv.Handle("group.info", s.handleGroupInfo)

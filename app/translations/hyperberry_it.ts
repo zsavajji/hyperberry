@@ -321,7 +321,7 @@
 <context>
     <name>ContactInfo</name>
     <message>
-        <location filename="../src/ContactInfo.cpp" line="49"/>
+        <location filename="../src/ContactInfo.cpp" line="77"/>
         <source>Unnamed group</source>
         <translation>Gruppo senza nome</translation>
     </message>
@@ -329,37 +329,116 @@
 <context>
     <name>ContactInfoPage</name>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="22"/>
+        <location filename="../assets/ContactInfoPage.qml" line="34"/>
         <source>Contact info</source>
         <translation>Info contatto</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="154"/>
+        <location filename="../assets/ContactInfoPage.qml" line="38"/>
+        <source>Export chat</source>
+        <translation>Esporta chat</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="45"/>
+        <source>Clear chat</source>
+        <translation>Svuota chat</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="53"/>
+        <source>Unblock</source>
+        <translation>Sblocca</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="53"/>
+        <location filename="../assets/ContactInfoPage.qml" line="148"/>
+        <source>Block</source>
+        <translation>Blocca</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="65"/>
+        <source>Delete chat</source>
+        <translation>Elimina chat</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="134"/>
+        <source>Clear this chat?</source>
+        <translation>Svuotare questa chat?</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="135"/>
+        <location filename="../assets/ContactInfoPage.qml" line="159"/>
+        <source>Its messages will be deleted from this phone.</source>
+        <translation>I suoi messaggi saranno eliminati da questo telefono.</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="136"/>
+        <source>Clear</source>
+        <translation>Svuota</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="137"/>
+        <location filename="../assets/ContactInfoPage.qml" line="149"/>
+        <location filename="../assets/ContactInfoPage.qml" line="161"/>
+        <source>Cancel</source>
+        <translation>Annulla</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="146"/>
+        <source>Block %1?</source>
+        <translation>Bloccare %1?</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="147"/>
+        <source>Blocked contacts can&apos;t call you or send you messages.</source>
+        <translation>I contatti bloccati non possono chiamarti né inviarti messaggi.</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="158"/>
+        <source>Delete this chat?</source>
+        <translation>Eliminare questa chat?</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="160"/>
+        <source>Delete</source>
+        <translation>Elimina</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="175"/>
+        <source>Couldn&apos;t do that. Check the connection and try again.</source>
+        <translation>Non è stato possibile. Controlla la connessione e riprova.</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="188"/>
+        <source>Saved to Downloads: %1</source>
+        <translation>Salvato in Download: %1</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="252"/>
         <source>Loading…</source>
         <translation>Caricamento…</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="163"/>
+        <location filename="../assets/ContactInfoPage.qml" line="261"/>
         <source>Couldn&apos;t load the contact&apos;s info. Check the connection and try again.</source>
         <translation>Impossibile caricare le info del contatto. Controlla la connessione e riprova.</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="167"/>
+        <location filename="../assets/ContactInfoPage.qml" line="265"/>
         <source>About</source>
         <translation>Info</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="201"/>
+        <location filename="../assets/ContactInfoPage.qml" line="299"/>
         <source>Mute notifications</source>
         <translation>Disattiva notifiche</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="211"/>
+        <location filename="../assets/ContactInfoPage.qml" line="309"/>
         <source>1 group in common</source>
         <translation>1 gruppo in comune</translation>
     </message>
     <message>
-        <location filename="../assets/ContactInfoPage.qml" line="211"/>
+        <location filename="../assets/ContactInfoPage.qml" line="309"/>
         <source>%1 groups in common</source>
         <translation>%1 gruppi in comune</translation>
     </message>
