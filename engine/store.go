@@ -152,6 +152,10 @@ func (st *Store) handle(cli *whatsmeow.Client, evt any) {
 	case *events.OfflineSyncCompleted:
 		st.ops <- (*storeTx).endBacklog
 		return
+	case *events.UndecryptableMessage: // only this kind is a line; the rest stay in the log
+		if e.IsUnavailable && e.UnavailableType == events.UnavailableTypeViewOnce {
+			st.ops <- func(t *storeTx) { st.dispatch(t, cli, evt) }
+		}
 	case *events.HistorySync, *events.Message, *events.Contact, *events.PushName, *events.GroupInfo,
 		*events.JoinedGroup, *events.Mute, *events.Pin, *events.Archive, *events.MarkChatAsRead,
 		*events.Receipt, *events.ChatPresence, *events.Presence, *events.DeleteForMe, *events.ClearChat, *events.DeleteChat:
@@ -190,6 +194,8 @@ func (st *Store) dispatch(t *storeTx, cli *whatsmeow.Client, evt any) {
 		st.history(ctx, t, cli, e)
 	case *events.Message:
 		st.message(ctx, t, cli, e)
+	case *events.UndecryptableMessage:
+		st.viewOnceStub(ctx, t, cli, e)
 	case *events.Contact:
 		alt, _ := types.ParseJID(e.Action.GetLidJID())
 		if alt.IsEmpty() {

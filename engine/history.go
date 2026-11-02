@@ -106,6 +106,17 @@ func (st *Store) message(ctx context.Context, t *storeTx, cli *whatsmeow.Client,
 	st.apply(ctx, t, cli, key, e, true)
 }
 
+// viewOnceStub is the line for a view-once message: WhatsApp gives linked devices no media for
+// it, only an "unavailable" stanza. It goes the way of a live message, as the notice
+// rowFromMessage makes of one; the empty photo is there for content() to find something to show.
+func (st *Store) viewOnceStub(ctx context.Context, t *storeTx, cli *whatsmeow.Client, e *events.UndecryptableMessage) {
+	st.message(ctx, t, cli, &events.Message{Info: e.Info, IsViewOnce: true,
+		Message: &waE2E.Message{ImageMessage: &waE2E.ImageMessage{}}})
+}
+
+// isViewOnce is whether r is the notice of a view-once message.
+func isViewOnce(r msgRow) bool { return r.Kind == msgNotice && r.Text == "view_once" }
+
 // apply writes one message event, live or from history: a new message, an edit, a revoke, a
 // reaction or a poll vote (its row, and the chat preview).
 func (st *Store) apply(ctx context.Context, t *storeTx, cli *whatsmeow.Client, key string, e *events.Message, live bool) {
@@ -148,9 +159,11 @@ func (st *Store) apply(ctx context.Context, t *storeTx, cli *whatsmeow.Client, k
 	}
 	// The answer to msg.resend replaces the row of the same id. The user has seen that one, so
 	// nothing is unread or alerts again; an answer to a request hypermeow made by itself finds
-	// no row and is a new message.
-	if e.UnavailableRequestID != "" {
-		if _, had := t.messageByID(key, e.Info.ID); had {
+	// no row and is a new message. So does a real message under the id of a view-once stub
+	// (viewOnceStub), answer or not.
+	answer := e.UnavailableRequestID != ""
+	if answer || live && !isViewOnce(row) {
+		if old, had := t.messageByID(key, e.Info.ID); had && (answer || isViewOnce(old)) {
 			t.deleteMessage(key, e.Info.ID)
 			live = false
 		}
