@@ -136,7 +136,11 @@ Page {
                 // Off, Enter is a new line: the key still submits, so the field keeps its focus.
                 onSubmitted: settings.enterSends ? page.send() : composer.editor.insertPlainText("\n")
             }
-            onTextChanging: ctl.composing(text)
+            // composer.text notifies only when committed (as SearchBar's field), so mic follows this.
+            onTextChanging: {
+                page.typed = /\S/.test(text)
+                ctl.composing(text)
+            }
         },
         ActionItem {
             title: recorder.recording ? qsTr("Discard") : qsTr("Emoji")
@@ -191,7 +195,8 @@ Page {
         emojis.use(emoji)
         composer.requestFocus()
     }
-    property bool mic: !recorder.recording && staged == "" && !/\S/.test(composer.text)
+    property bool typed: false
+    property bool mic: !recorder.recording && staged == "" && !typed
     // A staged file goes instead of a text (step 6.4).
     function send() {
         var text = composer.text.trim()
