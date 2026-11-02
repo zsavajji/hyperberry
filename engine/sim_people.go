@@ -51,6 +51,17 @@ func (s *Sim) handleGroupInfo(req json.RawMessage) (any, error) {
 	return out, nil
 }
 
+// handleGroupParticipants accepts any change after a round trip.
+// ponytail: the sim's members are made up per group.info, so the list doesn't change; keep
+// per-group members if the sim must show adds and removes.
+func (s *Sim) handleGroupParticipants(req json.RawMessage) (any, error) {
+	if _, _, _, err := participantReq(req); err != nil {
+		return nil, err
+	}
+	time.Sleep(simDelay)
+	return nil, nil
+}
+
 // handleContactInfo answers contact.info after a round trip: Anna is in every group, Marco in
 // the band's, the rest in none.
 func (s *Sim) handleContactInfo(req json.RawMessage) (any, error) {

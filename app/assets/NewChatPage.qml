@@ -7,8 +7,10 @@ import hyperberry 1.0
 Page {
     id: page
     signal picked(variant chat)
+    // Group info's Add participant picks with it too.
+    property string title: qsTr("New chat")
     titleBar: TitleBar {
-        title: qsTr("New chat")
+        title: page.title
     }
     attachedObjects: ContactPicker {
         id: picker

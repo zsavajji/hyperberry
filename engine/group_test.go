@@ -27,3 +27,13 @@ func TestCommonGroups(t *testing.T) {
 		t.Errorf("no user: %#v, want an empty array", got)
 	}
 }
+
+func TestParticipantReq(t *testing.T) {
+	chat, jid, a, err := participantReq([]byte(`{"chat":"1@g.us","jid":"2@lid","action":"promote"}`))
+	if err != nil || chat != "1@g.us" || jid != "2@lid" || a != "promote" {
+		t.Errorf("got %q %q %q %v", chat, jid, a, err)
+	}
+	if _, _, _, err := participantReq([]byte(`{"chat":"1@g.us","jid":"2@lid","action":"kick"}`)); err == nil {
+		t.Error("kick: no error")
+	}
+}

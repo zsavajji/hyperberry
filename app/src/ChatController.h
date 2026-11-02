@@ -81,6 +81,9 @@ public:
     Q_INVOKABLE void commitDelete();
     // False when the engine isn't connected: nothing was sent.
     Q_INVOKABLE bool deleteForEveryone(const QString &id);
+    // A group's member changed by an admin: action is add, remove, promote or demote. groupInfo
+    // is asked again once WhatsApp agrees; a refusal shows in the engine's failure.
+    Q_INVOKABLE void changeParticipant(const QString &jid, const QString &action);
 
 signals:
     void messagesChanged();
@@ -119,6 +122,7 @@ private:
     QString m_replyText;
     QVariantMap m_groupInfo;
     QString m_infoId; // the group.info request we wait for
+    QString m_changeId; // the group.participants request we wait for
     QString m_participants; // "N participants", the status line of a group
     QStringList m_pending;
     bool m_group;

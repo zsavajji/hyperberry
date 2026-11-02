@@ -112,12 +112,27 @@ void ChatController::askGroupInfo()
     m_infoId = m_engine->request("group.info", args);
 }
 
+void ChatController::changeParticipant(const QString &jid, const QString &action)
+{
+    if (!m_group || !m_engine)
+        return;
+    QVariantMap args;
+    args["chat"] = m_jid;
+    args["jid"] = jid;
+    args["action"] = action;
+    m_changeId = m_engine->request("group.participants", args);
+}
+
 // Adds what the page draws to each participant: the tile's initials and the colour the name
 // has in the chat.
 void ChatController::onReplied(const QString &id, const QString &cmd, const QVariant &result)
 {
     if (cmd == "voice.play") {
         emit voiceReady(id, result.toMap()["path"].toString());
+        return;
+    }
+    if (cmd == "group.participants" && id == m_changeId) {
+        askGroupInfo();
         return;
     }
     if (cmd != "group.info" || id != m_infoId)

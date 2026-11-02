@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"sort"
+	"strconv"
 	"strings"
 
+	"github.com/polymorfa/hypermeow"
 	"github.com/polymorfa/hypermeow/types"
 )
 
@@ -38,7 +40,50 @@ type contactInfo struct {
 
 func registerGroup(srv *Server, s *Session) {
 	srv.Handle("group.info", s.handleGroupInfo)
+	srv.Handle("group.participants", s.handleGroupParticipants)
 	srv.Handle("contact.info", s.handleContactInfo)
+}
+
+// participantReq is group.participants' request, its action checked.
+func participantReq(req json.RawMessage) (chat, jid string, action whatsmeow.ParticipantChange, err error) {
+	var r struct{ Chat, JID, Action string }
+	json.Unmarshal(req, &r)
+	switch a := whatsmeow.ParticipantChange(r.Action); a {
+	case whatsmeow.ParticipantChangeAdd, whatsmeow.ParticipantChangeRemove,
+		whatsmeow.ParticipantChangePromote, whatsmeow.ParticipantChangeDemote:
+		return r.Chat, r.JID, a, nil
+	}
+	return "", "", "", &Error{"bad_request", "action is add, remove, promote or demote: " + r.Action}
+}
+
+// handleGroupParticipants adds, removes, promotes or demotes one member. WhatsApp answers per
+// member: a refusal (403 their privacy, 409 already in, and the like) is the error "refused"
+// with the number as its message.
+func (s *Session) handleGroupParticipants(req json.RawMessage) (any, error) {
+	chat, who, action, err := participantReq(req)
+	if err != nil {
+		return nil, err
+	}
+	cli, jid, err := s.linked(chat)
+	if err != nil {
+		return nil, err
+	}
+	member, err := types.ParseJID(who)
+	if jid.Server != types.GroupServer || err != nil || member.IsEmpty() {
+		return nil, &Error{"bad_chat", "not a group and a member: " + chat + ", " + who}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
+	defer cancel()
+	res, err := cli.UpdateGroupParticipants(ctx, jid, []types.JID{member}, action)
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range res {
+		if p.Error != 0 {
+			return nil, &Error{"refused", strconv.Itoa(p.Error)}
+		}
+	}
+	return nil, nil
 }
 
 // sortParticipants puts us first, then the admins, then everyone by name, ignoring case.

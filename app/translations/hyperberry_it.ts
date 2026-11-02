@@ -552,6 +552,61 @@
         <source>Couldn&apos;t load the group&apos;s info. Check the connection and try again.</source>
         <translation>Impossibile caricare le info del gruppo. Controlla la connessione e riprova.</translation>
     </message>
+    <message>
+        <location filename="../assets/GroupInfoPage.qml" line="56"/>
+        <source>Add participant</source>
+        <translation>Aggiungi partecipante</translation>
+    </message>
+    <message>
+        <location filename="../assets/GroupInfoPage.qml" line="62"/>
+        <source>Remove %1 from the group?</source>
+        <translation>Rimuovere %1 dal gruppo?</translation>
+    </message>
+    <message>
+        <location filename="../assets/GroupInfoPage.qml" line="63"/>
+        <source>Remove</source>
+        <translation>Rimuovi</translation>
+    </message>
+    <message>
+        <location filename="../assets/GroupInfoPage.qml" line="64"/>
+        <source>Cancel</source>
+        <translation>Annulla</translation>
+    </message>
+    <message>
+        <location filename="../assets/GroupInfoPage.qml" line="79"/>
+        <source>Their privacy settings don&apos;t let you add them. Invite them with the group&apos;s link from your main phone.</source>
+        <translation>Le sue impostazioni della privacy non permettono di aggiungerlo. Invitalo con il link del gruppo dal telefono principale.</translation>
+    </message>
+    <message>
+        <location filename="../assets/GroupInfoPage.qml" line="82"/>
+        <source>They&apos;re already in the group.</source>
+        <translation>È già nel gruppo.</translation>
+    </message>
+    <message>
+        <location filename="../assets/GroupInfoPage.qml" line="85"/>
+        <source>WhatsApp refused that (%1).</source>
+        <translation>WhatsApp ha rifiutato (%1).</translation>
+    </message>
+    <message>
+        <location filename="../assets/GroupInfoPage.qml" line="87"/>
+        <source>Couldn&apos;t do that. Check the connection and try again.</source>
+        <translation>Non è stato possibile. Controlla la connessione e riprova.</translation>
+    </message>
+    <message>
+        <location filename="../assets/GroupInfoPage.qml" line="251"/>
+        <source>Dismiss as admin</source>
+        <translation>Rimuovi come amministratore</translation>
+    </message>
+    <message>
+        <location filename="../assets/GroupInfoPage.qml" line="251"/>
+        <source>Make group admin</source>
+        <translation>Nomina amministratore</translation>
+    </message>
+    <message>
+        <location filename="../assets/GroupInfoPage.qml" line="256"/>
+        <source>Remove from group</source>
+        <translation>Rimuovi dal gruppo</translation>
+    </message>
 </context>
 <context>
     <name>LinkNumberPage</name>
