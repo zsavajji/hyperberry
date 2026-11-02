@@ -16,7 +16,9 @@ QString clock(int seconds);
 // deleted row. A downloaded photo's thumb is its 320 px preview, made here from the file (step 6.3), a
 // sticker's its 180 px picture (Sticker.h, step 6.5b), else the row's thumbnail; a location's is its map
 // picture, its ratio from the JPEG's own size (step 6.5c). A contact (step 6.5d) is media too, drawn as
-// a row; its summary is the names, and MessageKinds adds its vcard and contactInfo.
+// a row; its summary is the names, and MessageKinds adds its vcard and contactInfo. A text (kind 0, also
+// a deleted row's) gets linkThumb, an Image of the row's thumbnail (empty without one), and hasLinkThumb
+// for its link preview (step 6.5f); MessageKinds has the preview's text.
 // media: "photo", "video", "doc", "sticker", "audio", "location" or "contact", "" for any other kind
 // (always set, so QML never reads undefined); the rest (thumb, hasThumb, ratio, mediaState, path,
 // sizeText, durationText, fileName) only for media. Returns whether it is media.

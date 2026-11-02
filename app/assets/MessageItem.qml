@@ -175,6 +175,16 @@ Container {
                 textStyle.fontStyle: item.msg.deleted ? FontStyle.Italic : FontStyle.Default
                 textStyle.color: item.msg.deleted ? ui.palette.secondaryTextOnPlain : ui.palette.textOnPlain
             }
+            // Built only for texts with a link preview, as the voice one is, after the text (step 6.5f).
+            ControlDelegate {
+                delegateActive: item.msg.linkTitle != "" && !item.msg.deleted
+                sourceComponent: ComponentDefinition {
+                    LinkPreview {
+                        msg: item.msg
+                        view: item.ListItem.view
+                    }
+                }
+            }
             // Built only for polls, as the voice one is, after the question: the options (step 6.5e).
             ControlDelegate {
                 delegateActive: item.msg.poll && !item.msg.deleted

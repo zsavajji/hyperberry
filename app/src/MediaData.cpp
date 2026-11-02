@@ -68,6 +68,13 @@ bool MediaData::fill(QVariantMap &data, const QString &id, int kind, const QStri
     case 10: media = "contact"; break;
     }
     data["media"] = media;
+    // A text's link preview picture (step 6.5f), before the return below: kind 0 is no media. An
+    // Image even when empty, as thumb below, so a recycled card never keeps another row's.
+    if (kind == 0) {
+        data["linkThumb"] = QVariant::fromValue(thumb.isEmpty() ? bb::cascades::Image()
+                                                                : bb::cascades::Image(thumb));
+        data["hasLinkThumb"] = !thumb.isEmpty();
+    }
     if (media.isEmpty())
         return false;
     // The inline thumbnail stands in when there is no readable photo or sticker.

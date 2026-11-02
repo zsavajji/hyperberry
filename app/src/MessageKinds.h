@@ -17,7 +17,9 @@ namespace MessageKinds {
 // joined by "\r\n", for MediaOpener::importContact) and contactInfo (the first number, "N contacts"
 // for several; step 6.5d). A poll (11) keeps the question as shown; its label says whether one option
 // or several can be chosen, and data gets Polls::fill's keys for PollBubble (step 6.5e). data["poll"]
-// is set for every kind (true for 11), so QML never reads undefined.
+// is set for every kind (true for 11), so QML never reads undefined. So are linkTitle, linkDesc and
+// linkUrl, a text's (kind 0) link preview from extra for LinkPreview ("" without one; step 6.5f);
+// MediaData::fill adds its picture.
 // Returns true for a service line (kinds 6 and 13): then shown is the whole line and label is not used.
 bool fill(int kind, const QString &chat, const QString &id, const QString &text,
           const QString &extra, bool out, const QString &sender, const QString &time,

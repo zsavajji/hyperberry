@@ -63,6 +63,12 @@ bool MessageKinds::fill(int kind, const QString &chat, const QString &id, const 
             extra = doc.toMap();
     }
 
+    // A text's link preview (step 6.5f), drawn by LinkPreview; always set, so QML never reads undefined.
+    const bool preview = kind == 0 && !extra.value("title").toString().isEmpty();
+    data["linkTitle"] = preview ? extra.value("title").toString() : QString();
+    data["linkDesc"] = preview ? extra.value("desc").toString() : QString();
+    data["linkUrl"] = preview ? extra.value("url").toString() : QString();
+
     QStringList lines;
     data["poll"] = kind == 11; // always set, so QML never reads undefined
     switch (kind) {
