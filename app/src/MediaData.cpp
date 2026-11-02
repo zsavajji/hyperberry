@@ -53,6 +53,19 @@ static QByteArray preview(const QString &id, const QString &path, int &width, in
     return f.open(QIODevice::ReadOnly) ? f.readAll() : QByteArray();
 }
 
+// What a reply and the long-press menu show for a message whose text is empty.
+QString MediaData::kindName(int kind)
+{
+    static const char *const names[] = { "", QT_TRANSLATE_NOOP("MediaData", "Photo"),
+        QT_TRANSLATE_NOOP("MediaData", "Video"), "", QT_TRANSLATE_NOOP("MediaData", "Document"),
+        QT_TRANSLATE_NOOP("MediaData", "Sticker"), "", "", QT_TRANSLATE_NOOP("MediaData", "Audio file"),
+        QT_TRANSLATE_NOOP("MediaData", "Location"),
+        QT_TRANSLATE_NOOP("MediaData", "Contact") };
+    if (kind < 0 || kind >= int(sizeof names / sizeof *names) || !*names[kind])
+        return QString();
+    return QCoreApplication::translate("MediaData", names[kind]);
+}
+
 bool MediaData::fill(QVariantMap &data, const QString &id, int kind, const QString &text,
                      const QByteArray &thumb, int width, int height, qint64 size, int duration,
                      int mediaState, const QString &path, const QLocale &locale)
@@ -104,14 +117,7 @@ bool MediaData::fill(QVariantMap &data, const QString &id, int kind, const QStri
     data["sizeText"] = sizeText(size, locale);
     data["durationText"] = (kind == 2 || kind == 8) && duration > 0 ? clock(duration) : QString();
     data["fileName"] = kind == 4 ? text : QString();
-    // What a reply and the long-press menu show for a message whose text is empty.
-    static const char *const names[] = { "", QT_TRANSLATE_NOOP("MediaData", "Photo"),
-        QT_TRANSLATE_NOOP("MediaData", "Video"), "", QT_TRANSLATE_NOOP("MediaData", "Document"),
-        QT_TRANSLATE_NOOP("MediaData", "Sticker"), "", "", QT_TRANSLATE_NOOP("MediaData", "Audio file"),
-        QT_TRANSLATE_NOOP("MediaData", "Location"),
-        QT_TRANSLATE_NOOP("MediaData", "Contact") };
     // A contact's text is its names (step 6.5d).
-    data["summary"] = (kind == 4 || kind == 10) && !text.isEmpty()
-        ? text : QCoreApplication::translate("MediaData", names[kind]);
+    data["summary"] = (kind == 4 || kind == 10) && !text.isEmpty() ? text : kindName(kind);
     return true;
 }

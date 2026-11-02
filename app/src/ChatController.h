@@ -1,6 +1,8 @@
 #ifndef CHATCONTROLLER_H
 #define CHATCONTROLLER_H
 
+#include "Pins.h"
+
 #include <bb/cascades/DataModel>
 #include <bb/system/LocaleHandler>
 #include <QObject>
@@ -8,6 +10,7 @@
 #include <QString>
 #include <QStringList>
 #include <QTimer>
+#include <QVariantList>
 #include <QVariantMap>
 
 class EngineLink;
@@ -69,6 +72,8 @@ public:
     // The reply's message id, "" when not replying: a file sent as the reply carries it (step 6.4).
     Q_INVOKABLE QString quoteId() const { return m_quoteId; }
     Q_INVOKABLE void copy(const QString &text);
+    // The messages pinned now, newest pin first: maps of id and preview (Pins.h, step 6.5h).
+    Q_INVOKABLE QVariantList pins() const { return Pins::current(m_jid); }
     // Delete for me waits for the Undo toast: the card hides at once, the request goes with
     // commitDelete (the toast closed, or the page going away).
     Q_INVOKABLE void deleteForMe(const QString &id);

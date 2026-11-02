@@ -49,14 +49,6 @@ Page {
             id: ctl
             link: engine
         },
-        ComponentDefinition {
-            id: infoDef
-            source: "GroupInfoPage.qml"
-        },
-        ComponentDefinition {
-            id: contactDef
-            source: "ContactInfoPage.qml"
-        },
         // A received photo, video, audio file or document (step 6.1): MediaOpener fetches the file
         // and hands it to the system; a photo opens in our viewer instead (nav.showPhoto).
         MediaOpener {
@@ -68,11 +60,11 @@ Page {
             id: maps
         },
         // Added for people and groups only (ActionItem has no visible).
-        ActionItem {
+        InfoAction {
             id: infoAction
             title: page.chat && page.chat.kind == 0 ? qsTr("Contact info") : qsTr("Group info")
-            imageSource: "asset:///images/contacts_action.png"
-            onTriggered: page.showInfo()
+            chat: page.chat
+            chatCtl: ctl
         },
         SystemToast {
             id: notSent
@@ -174,6 +166,10 @@ Page {
             imageSource: "asset:///images/search.png"
             ActionBar.placement: ActionBarPlacement.InOverflow
             onTriggered: searchBar.open()
+        },
+        PinnedAction {
+            chatCtl: ctl
+            onJump: page.jump(id)
         }
     ]
     keyListeners: KeyListener {
@@ -272,26 +268,6 @@ Page {
             list.scrollToItem([i], ScrollAnimation.None)
         }
     }
-    // The info page of a person or a group. A person's page asks the engine itself, with a fresh
-    // row for the mute state; a group's gets the controller, so it reads what the chat page already
-    // asked for. The chat page stays under it, so it outlives the info page.
-    function showInfo() {
-        if (!chat || chat.kind > 1) {
-            return
-        }
-        if (chat.kind == 0) {
-            var c = contactDef.createObject()
-            var row = chats.chat(chat.jid)
-            // No row for a contact picked with no chat yet.
-            c.chat = row.jid ? row : page.chat
-            nav.push(c)
-            return
-        }
-        var p = infoDef.createObject()
-        p.chat = page.chat
-        p.ctl = ctl
-        nav.push(p)
-    }
     // A photo opens in our viewer, anything else in the system's app for its type.
     function showMedia(kind, path) {
         if (kind == "photo") {
@@ -328,7 +304,7 @@ Page {
     titleBar: ChatTitleBar {
         chat: page.chat
         status: ctl.status
-        onTapped: page.showInfo()
+        onTapped: infoAction.showInfo()
     }
     Container {
         horizontalAlignment: HorizontalAlignment.Fill

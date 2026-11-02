@@ -206,7 +206,13 @@ func fillExtra(r *msgRow, m *waE2E.Message) {
 		keep(x, "expires", g.GetInviteExpiration())
 		r.Thumb = g.GetJPEGThumbnail()
 	case m.GetPinInChatMessage() != nil:
-		keep(x, "msg", m.GetPinInChatMessage().GetKey().GetID())
+		pin := m.GetPinInChatMessage()
+		keep(x, "msg", pin.GetKey().GetID())
+		// The pin lasts as long as the main phone set; an unpin needs no end. m keeps its
+		// MessageContextInfo through flatten.
+		if secs := m.GetMessageContextInfo().GetMessageAddOnDurationInSecs(); pin.GetType() == waE2E.PinInChatMessage_PIN_FOR_ALL && secs > 0 {
+			x["until"] = r.TS + int64(secs)
+		}
 	case m.GetCallLogMesssage() != nil:
 		keep(x, "secs", m.GetCallLogMesssage().GetDurationSecs())
 	}

@@ -12,6 +12,10 @@ namespace MediaData {
 // "m:ss", also for a call notice's length (MessageKinds).
 QString clock(int seconds);
 
+// A kind's name as a reply and the long-press menu word a message with no text: "Photo", "Video",
+// "Document", "Sticker", "Audio file", "Location" or "Contact"; "" for any other kind.
+QString kindName(int kind);
+
 // Sets data's media keys from the row's columns; id is the message's, kind is messages.kind, 0 for a
 // deleted row. A downloaded photo's thumb is its 320 px preview, made here from the file (step 6.3), a
 // sticker's its 180 px picture (Sticker.h, step 6.5b), else the row's thumbnail; a location's is its map

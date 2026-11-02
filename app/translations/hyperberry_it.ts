@@ -939,6 +939,42 @@
     </message>
 </context>
 <context>
+    <name>PinnedAction</name>
+    <message>
+        <location filename="../assets/PinnedAction.qml" line="14"/>
+        <source>Pinned message</source>
+        <translation>Messaggio fissato</translation>
+    </message>
+    <message>
+        <location filename="../assets/PinnedAction.qml" line="45"/>
+        <source>No pinned messages</source>
+        <translation>Nessun messaggio fissato</translation>
+    </message>
+    <message>
+        <location filename="../assets/PinnedAction.qml" line="49"/>
+        <source>This pinned message isn&apos;t on this phone</source>
+        <translation>Questo messaggio fissato non è su questo telefono</translation>
+    </message>
+    <message>
+        <location filename="../assets/PinnedAction.qml" line="55"/>
+        <source>Pinned messages</source>
+        <translation>Messaggi fissati</translation>
+    </message>
+    <message>
+        <location filename="../assets/PinnedAction.qml" line="57"/>
+        <source>Cancel</source>
+        <translation>Annulla</translation>
+    </message>
+</context>
+<context>
+    <name>Pins</name>
+    <message>
+        <location filename="../src/Pins.cpp" line="42"/>
+        <source>Voice message</source>
+        <translation>Messaggio vocale</translation>
+    </message>
+</context>
+<context>
     <name>PollBubble</name>
     <message>
         <location filename="../assets/PollBubble.qml" line="79"/>

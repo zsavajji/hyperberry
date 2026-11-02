@@ -28,6 +28,11 @@ func TestMoreKinds(t *testing.T) {
 	pin := func(typ waE2E.PinInChatMessage_Type) *waE2E.Message {
 		return &waE2E.Message{PinInChatMessage: &waE2E.PinInChatMessage{Type: typ.Enum(), Key: &waCommon.MessageKey{ID: proto.String("PINNED")}}}
 	}
+	// A pin lasts as long as the main phone set, in the message's context (the test's clock is 100).
+	lasting := func(m *waE2E.Message, secs uint32) *waE2E.Message {
+		m.MessageContextInfo = &waE2E.MessageContextInfo{MessageAddOnDurationInSecs: proto.Uint32(secs)}
+		return m
+	}
 	call := func(outcome waE2E.CallLogMessage_CallOutcome, video bool, secs int64) *waE2E.Message {
 		return &waE2E.Message{CallLogMesssage: &waE2E.CallLogMessage{CallOutcome: outcome.Enum(), IsVideo: proto.Bool(video), DurationSecs: proto.Int64(secs)}}
 	}
@@ -93,6 +98,9 @@ func TestMoreKinds(t *testing.T) {
 			msgInvite, "Family\nJoin us", "Group invite: Family", `{"group":"120363@g.us","code":"ABC","expires":1800000000}`, false},
 		{"pin", pin(waE2E.PinInChatMessage_PIN_FOR_ALL), msgNotice, "pin", "Pinned a message", `{"msg":"PINNED"}`, false},
 		{"unpin", pin(waE2E.PinInChatMessage_UNPIN_FOR_ALL), msgNotice, "unpin", "Unpinned a message", `{"msg":"PINNED"}`, false},
+		{"pin for a week", lasting(pin(waE2E.PinInChatMessage_PIN_FOR_ALL), 604800), msgNotice, "pin", "Pinned a message", `{"msg":"PINNED","until":604900}`, false},
+		{"pin of no length", lasting(pin(waE2E.PinInChatMessage_PIN_FOR_ALL), 0), msgNotice, "pin", "Pinned a message", `{"msg":"PINNED"}`, false},
+		{"unpin with a length", lasting(pin(waE2E.PinInChatMessage_UNPIN_FOR_ALL), 604800), msgNotice, "unpin", "Unpinned a message", `{"msg":"PINNED"}`, false},
 		{"call", call(waE2E.CallLogMessage_CONNECTED, false, 65), msgNotice, "call", "Voice call", `{"secs":65}`, false},
 		{"video call", call(waE2E.CallLogMessage_CONNECTED, true, 0), msgNotice, "video_call", "Video call", "", false},
 		{"call answered elsewhere", call(waE2E.CallLogMessage_ACCEPTED_ELSEWHERE, false, 0), msgNotice, "call", "Voice call", "", false},
