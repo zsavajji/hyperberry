@@ -386,11 +386,14 @@ Page {
                 }
                 // Photos, videos, audio files and documents: the message being fetched, for the bubbles
                 // (MediaBubble.qml). Always through media.get: it answers at once when the file is here,
-                // and fetches it again when the user moved it out of Downloads. A location has no file.
+                // and fetches it again when the user moved it out of Downloads. A location and a contact
+                // have no file.
                 property string mediaLoadingId: media.loadingId
                 function openMedia(msg) {
                     if (msg.media == "location") {
                         maps.choose(msg.lat, msg.lon, msg.place)
+                    } else if (msg.media == "contact") {
+                        media.importContact(msg.vcard)
                     } else {
                         media.get(page.chat.jid, msg.id, msg.media)
                     }
@@ -450,17 +453,8 @@ Page {
                 ]
             }
             // ctl.messages is null until the page opens the chat, hence the first test.
-            Label {
+            EmptyNote {
                 visible: !!ctl.messages && ctl.messages.empty
-                horizontalAlignment: HorizontalAlignment.Center
-                verticalAlignment: VerticalAlignment.Center
-                multiline: false
-                text: qsTr("No messages here")
-                textFormat: TextFormat.Plain
-                textStyle.base: nav.emojiStyle
-                textStyle.fontSize: FontSize.PercentageValue
-                textStyle.fontSizeValue: nav.bodySize
-                textStyle.color: ui.palette.secondaryTextOnPlain
             }
         }
         ReactBar {

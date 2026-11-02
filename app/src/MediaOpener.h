@@ -32,6 +32,9 @@ public:
     // Hands the file to the system (bb.action.OPEN); false when the system gave no reply. Whether
     // an app opens it is not known.
     Q_INVOKABLE bool openFile(const QString &path);
+    // Opens the Contacts app's import screen on a shared contact's vCard text (step 6.5d). A failure
+    // is logged, and shows as openFailed().
+    Q_INVOKABLE void importContact(const QString &vcard);
     // Copies a photo into Pictures (shared/photos/HyperBerry/); the copy's path, "" on failure.
     Q_INVOKABLE QString saveToPictures(const QString &path);
     // What media.send is given with a photo (step 6.3), since the engine decodes no picture: for a

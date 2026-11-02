@@ -15,10 +15,11 @@ QString clock(int seconds);
 // Sets data's media keys from the row's columns; id is the message's, kind is messages.kind, 0 for a
 // deleted row. A downloaded photo's thumb is its 320 px preview, made here from the file (step 6.3), a
 // sticker's its 180 px picture (Sticker.h, step 6.5b), else the row's thumbnail; a location's is its map
-// picture, its ratio from the JPEG's own size (step 6.5c).
-// media: "photo", "video", "doc", "sticker", "audio" or "location", "" for any other kind (always set, so QML
-// never reads undefined); the rest (thumb, hasThumb, ratio, mediaState, path, sizeText, durationText,
-// fileName) only for media. Returns whether it is media.
+// picture, its ratio from the JPEG's own size (step 6.5c). A contact (step 6.5d) is media too, drawn as
+// a row; its summary is the names, and MessageKinds adds its vcard and contactInfo.
+// media: "photo", "video", "doc", "sticker", "audio", "location" or "contact", "" for any other kind
+// (always set, so QML never reads undefined); the rest (thumb, hasThumb, ratio, mediaState, path,
+// sizeText, durationText, fileName) only for media. Returns whether it is media.
 bool fill(QVariantMap &data, const QString &id, int kind, const QString &text,
           const QByteArray &thumb, int width, int height, qint64 size, int duration,
           int mediaState, const QString &path, const QLocale &locale);

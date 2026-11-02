@@ -79,19 +79,29 @@ bool MessageKinds::fill(int kind, const QString &text, const QString &json, bool
         data["lon"] = extra.value("lon").toDouble();
         data["place"] = text.section('\n', 0, 0);
         break;
-    case 10:
-        label = QCoreApplication::translate("MessageKinds", "Contact");
-        // Each name, then its numbers, one to a line.
-        foreach (const QVariant &c, extra.value("contacts").toList()) {
+    case 10: {
+        // MediaBubble draws the card: the names are MediaData's summary, contactInfo the second line (the
+        // first number, or the count). No label and no text, so Copy is off. A tap hands vcard to the
+        // Contacts app (MediaOpener::importContact): every card, as one stream.
+        const QVariantList cards = extra.value("contacts").toList();
+        QStringList vcards;
+        QString tel;
+        foreach (const QVariant &c, cards) {
             const QVariantMap card = c.toMap();
-            lines << card.value("name").toString();
-            foreach (const QVariant &tel, card.value("tel").toList())
-                lines << tel.toString();
+            const QString vcard = card.value("vcard").toString().trimmed();
+            if (!vcard.isEmpty())
+                vcards << vcard;
+            const QVariantList tels = card.value("tel").toList();
+            if (tel.isEmpty() && !tels.isEmpty())
+                tel = tels.first().toString();
         }
-        lines.removeAll(QString());
-        if (!lines.isEmpty())
-            shown = lines.join("\n");
+        data["vcard"] = vcards.join("\r\n");
+        data["contactInfo"] = cards.size() > 1 ? QCoreApplication::translate("MessageKinds", "%n contacts", 0,
+                                                      QCoreApplication::CodecForTr, cards.size())
+                                               : tel;
+        shown = QString();
         break;
+    }
     case 11:
         label = QCoreApplication::translate("MessageKinds", "Poll");
         lines << text;

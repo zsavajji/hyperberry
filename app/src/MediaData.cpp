@@ -65,6 +65,7 @@ bool MediaData::fill(QVariantMap &data, const QString &id, int kind, const QStri
     case 5: media = "sticker"; break;
     case 8: media = "audio"; break;
     case 9: media = "location"; break;
+    case 10: media = "contact"; break;
     }
     data["media"] = media;
     if (media.isEmpty())
@@ -100,8 +101,10 @@ bool MediaData::fill(QVariantMap &data, const QString &id, int kind, const QStri
     static const char *const names[] = { "", QT_TRANSLATE_NOOP("MediaData", "Photo"),
         QT_TRANSLATE_NOOP("MediaData", "Video"), "", QT_TRANSLATE_NOOP("MediaData", "Document"),
         QT_TRANSLATE_NOOP("MediaData", "Sticker"), "", "", QT_TRANSLATE_NOOP("MediaData", "Audio file"),
-        QT_TRANSLATE_NOOP("MediaData", "Location") };
-    data["summary"] = kind == 4 && !text.isEmpty() ? text
-                                                    : QCoreApplication::translate("MediaData", names[kind]);
+        QT_TRANSLATE_NOOP("MediaData", "Location"),
+        QT_TRANSLATE_NOOP("MediaData", "Contact") };
+    // A contact's text is its names (step 6.5d).
+    data["summary"] = (kind == 4 || kind == 10) && !text.isEmpty()
+        ? text : QCoreApplication::translate("MediaData", names[kind]);
     return true;
 }

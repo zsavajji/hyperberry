@@ -103,6 +103,26 @@ bool MediaOpener::openFile(const QString &path)
     return true;
 }
 
+// The Contacts app's manifest (read on the Q10) takes bb.action.OPEN with text/vcard as data in the
+// request, and answers with its import screen: the name and every number. Replies like openFile's.
+// ponytail: with several contacts it may import only the first; a list to pick one if it shows.
+void MediaOpener::importContact(const QString &vcard)
+{
+    if (vcard.isEmpty())
+        return;
+    InvokeRequest request;
+    request.setTarget("sys.pim.contacts.app");
+    request.setAction("bb.action.OPEN");
+    request.setMimeType("text/vcard");
+    request.setData(vcard.toUtf8());
+    InvokeTargetReply *reply = m_invoker.invoke(request);
+    if (!reply) {
+        qWarning() << "media: no reply from the system to the contact import";
+        return;
+    }
+    connect(reply, SIGNAL(finished()), this, SLOT(onInvoked()));
+}
+
 void MediaOpener::onInvoked()
 {
     InvokeTargetReply *reply = qobject_cast<InvokeTargetReply *>(sender());

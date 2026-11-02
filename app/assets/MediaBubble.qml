@@ -1,20 +1,25 @@
 import bb.cascades 1.4
 
-// A photo, video, audio file, document, sticker or location in a card (step 6.1). A picture is the
+// A photo, video, audio file, document, sticker, location or contact in a card (step 6.1). A picture is the
 // message's thumbnail, a video with a play mark and its length; a file is a row of an icon, its name and
 // its size. A tap opens it. view is the chat page's list, which holds the fetch (mediaLoadingId) and
 // opens the file (openMedia). A sticker (step 6.5b) is its picture alone, small, with no caption and
 // no tap: the model fetches its file by itself. A location (6.5c) is its map picture as a photo's, or
 // without one a row to tap; the card's label and text under it are MessageItem's, and a tap asks which
-// maps app opens it.
+// maps app opens it. A contact (6.5d) is a row of the system's add-contact icon, its names and its
+// number (or "N contacts"); a tap imports it into the Contacts app.
 Container {
     id: bubble
     property variant msg
     property variant view
     property bool location: msg.media == "location"
+    property bool contact: msg.media == "contact"
     property bool picture: msg.media == "photo" || msg.media == "video" || (location && msg.hasThumb)
     property bool sticker: msg.media == "sticker"
     property bool loading: view.mediaLoadingId == msg.id
+    // The system's icon in the emoji's place; "" for the files, which are not loaded then.
+    property string icon: contact ? "file:///usr/share/icons/ic_add_contact.png"
+                                  : location ? "file:///usr/share/icons/ic_map_all.png" : ""
     // A caption follows a picture, with no margin of its own.
     topMargin: 0
     bottomMargin: msg.text != "" ? ui.du(0.5) : 0
@@ -122,17 +127,16 @@ Container {
         layout: StackLayout {
             orientation: LayoutOrientation.LeftToRight
         }
-        // The system's map icon, in the emoji's place; not loaded for the other files.
         ImageView {
-            visible: bubble.location
+            visible: bubble.icon != ""
             verticalAlignment: VerticalAlignment.Center
             preferredWidth: ui.du(5)
             preferredHeight: ui.du(5)
-            imageSource: bubble.location ? "file:///usr/share/icons/ic_map_all.png" : ""
+            imageSource: bubble.icon
             scalingMethod: ScalingMethod.AspectFit
         }
         Label {
-            visible: !bubble.location
+            visible: bubble.icon == ""
             verticalAlignment: VerticalAlignment.Center
             text: bubble.msg.media == "audio" ? "🎵" : "📄"
             textFormat: TextFormat.Plain
@@ -149,19 +153,19 @@ Container {
             Label {
                 bottomMargin: 0
                 multiline: false
-                text: bubble.location ? qsTr("Show on map") : bubble.msg.media == "audio" ? qsTr("Audio file") : (bubble.msg.fileName || qsTr("Document"))
+                text: bubble.contact ? bubble.msg.summary : bubble.location ? qsTr("Show on map") : bubble.msg.media == "audio" ? qsTr("Audio file") : (bubble.msg.fileName || qsTr("Document"))
                 textFormat: TextFormat.Plain
                 textStyle.base: bubble.view.emojiStyle
                 textStyle.fontSize: FontSize.PercentageValue
                 textStyle.fontSizeValue: bubble.view.bodySize
             }
-            // The size, and the length of an audio file when it is known.
+            // The size, and the length of an audio file when it is known; a contact's number.
             Label {
-                visible: !bubble.location
+                visible: !bubble.location && (!bubble.contact || bubble.msg.contactInfo != "")
                 topMargin: 0
                 bottomMargin: 0
                 multiline: false
-                text: [bubble.msg.sizeText, bubble.msg.durationText].filter(function (s) {
+                text: bubble.contact ? bubble.msg.contactInfo : [bubble.msg.sizeText, bubble.msg.durationText].filter(function (s) {
                     return s != ""
                 }).join(" · ")
                 textFormat: TextFormat.Plain

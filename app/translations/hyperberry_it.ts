@@ -242,11 +242,6 @@
         <source>Search</source>
         <translation>Cerca</translation>
     </message>
-    <message>
-        <location filename="../assets/ChatPage.qml" line="456"/>
-        <source>No messages here</source>
-        <translation>Nessun messaggio qui</translation>
-    </message>
 </context>
 <context>
     <name>ChatRow</name>
@@ -491,6 +486,14 @@
     </message>
 </context>
 <context>
+    <name>EmptyNote</name>
+    <message>
+        <location filename="../assets/EmptyNote.qml" line="8"/>
+        <source>No messages here</source>
+        <translation>Nessun messaggio qui</translation>
+    </message>
+</context>
+<context>
     <name>EngineLink</name>
     <message>
         <location filename="../src/EngineLink.cpp" line="260"/>
@@ -706,6 +709,11 @@
         <source>Location</source>
         <translation>Posizione</translation>
     </message>
+    <message>
+        <location filename="../src/MediaData.cpp" line="105"/>
+        <source>Contact</source>
+        <translation>Contatto</translation>
+    </message>
 </context>
 <context>
     <name>MessageItem</name>
@@ -827,10 +835,13 @@
         <source>Location</source>
         <translation>Posizione</translation>
     </message>
-    <message>
-        <location filename="../src/MessageKinds.cpp" line="82"/>
-        <source>Contact</source>
-        <translation>Contatto</translation>
+    <message numerus="yes">
+        <location filename="../src/MessageKinds.cpp" line="99"/>
+        <source>%n contacts</source>
+        <translation>
+            <numerusform>%n contatto</numerusform>
+            <numerusform>%n contatti</numerusform>
+        </translation>
     </message>
     <message>
         <location filename="../src/MessageKinds.cpp" line="95"/>
