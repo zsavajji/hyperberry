@@ -24,6 +24,13 @@ namespace MessageKinds {
 bool fill(int kind, const QString &chat, const QString &id, const QString &text,
           const QString &extra, bool out, const QString &sender, const QString &time,
           const QLocale &locale, QVariantMap &data, QString &label, QString &shown);
+
+// The bubble's text as HTML, when `extra` (the JSON, "" when NULL) has mentions with a page to open
+// and `shown` (the text the bubble finally shows, so after fill and MediaData) has their "@name":
+// escaped, a newline a <br/>, U+20E3 dropped as the Label does, each "@name" an anchor to
+// "hbmention:<key>" (MessageItem.qml opens that person's page). "" otherwise: the Label then shows
+// `shown` as plain text. MessageRows::read sets it as data["html"] beside data["text"], for every row.
+QString html(const QString &shown, const QString &extra);
 }
 
 #endif

@@ -60,6 +60,7 @@ func (st *Store) history(ctx context.Context, t *storeTx, cli *whatsmeow.Client,
 		for _, ev := range evs {
 			if ev.SourceWebMsg.GetKey().GetID() != ev.Info.ID { // ParseWebMessage turned an edit into its target
 				if _, text, ok := content(ev.Message); ok {
+					text, _ = mentionNames(ctx, t, cli, contextInfo(ev.Message), text)
 					t.editMessage(key, ev.Info.ID, text)
 				}
 				continue
@@ -131,6 +132,8 @@ func (st *Store) apply(ctx context.Context, t *storeTx, cli *whatsmeow.Client, k
 			t.revokeMessage(key, pm.GetKey().GetID())
 		case waE2E.ProtocolMessage_MESSAGE_EDIT:
 			if _, text, ok := content(pm.GetEditedMessage()); ok {
+				// ponytail: an edit's new mentions show the name but no link, as extra keeps the original's.
+				text, _ = mentionNames(ctx, t, cli, contextInfo(pm.GetEditedMessage()), text)
 				t.editMessage(key, pm.GetKey().GetID(), text)
 			}
 		}
@@ -153,6 +156,12 @@ func (st *Store) apply(ctx context.Context, t *storeTx, cli *whatsmeow.Client, k
 	row, ok := rowFromMessage(key, e, name)
 	if !ok {
 		return
+	}
+	if ci := contextInfo(m); len(ci.GetMentionedJID()) > 0 {
+		var ms []mention
+		if row.Text, ms = mentionNames(ctx, t, cli, ci, row.Text); len(ms) > 0 {
+			row.Extra = withMentions(row.Extra, ms)
+		}
 	}
 	if row.Kind == msgOther && row.Text == unknownText {
 		st.log.Warnf("unknown message type: %s", fieldNames(m))

@@ -344,6 +344,10 @@ Page {
                 function copy(text) {
                     ctl.copy(text)
                 }
+                // A mention's link in a card: the person's page.
+                function openPerson(jid, name) {
+                    infoAction.showPerson(jid, name)
+                }
                 // Reactions (step 5.11): the bar over the composer, and the chip's who-reacted toast.
                 function react(msg) {
                     reactBar.open(msg)

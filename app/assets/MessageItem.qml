@@ -197,11 +197,23 @@ Container {
                 // Without U+20E3, a keycap's frame. The renderer draws a digit and its marks from one
                 // font, and none has both: ours has no digits, the system's no frame. So a keycap one
                 // lost its "1" (Q10, 2026-10-31). Only the shown text: the message and Copy keep it.
-                text: item.msg.text.replace(/\u20E3/g, "")
-                textFormat: TextFormat.Plain
+                // With mentions the engine's html has them linked (MessageKinds::html, which drops the
+                // keycaps too); else the plain text.
+                text: item.msg.html ? item.msg.html : item.msg.text.replace(/\u20E3/g, "")
+                textFormat: item.msg.html ? TextFormat.Html : TextFormat.Plain
                 // Links, numbers and addresses are tappable, opened by the system (the user's
                 // request, 0.0.1.132: a YouTube link did nothing). Not on a deleted message's note.
                 content.flags: item.msg.deleted ? TextContentFlag.Default : TextContentFlag.ActiveText
+                // A mention's link is ours: the system can't open it, so the page does.
+                activeTextHandler: ActiveTextHandler {
+                    onTriggered: {
+                        var h = event.href.toString()
+                        if (h.indexOf("hbmention:") == 0) {
+                            event.abort() // ours: the system can't open it
+                            item.ListItem.view.openPerson(h.substring(10), event.text)
+                        }
+                    }
+                }
                 textStyle.base: item.ListItem.view.emojiStyle
                 textStyle.fontSize: FontSize.PercentageValue
                 textStyle.fontSizeValue: item.ListItem.view.bodySize

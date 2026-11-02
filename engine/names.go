@@ -3,8 +3,12 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"sort"
+	"strings"
 
 	"github.com/polymorfa/hypermeow"
+	"github.com/polymorfa/hypermeow/proto/waE2E"
 	"github.com/polymorfa/hypermeow/types"
 )
 
@@ -154,4 +158,69 @@ func (st *Store) renameAll(ctx context.Context, t *storeTx, cli *whatsmeow.Clien
 // written once at store time.
 func (t *storeTx) renameSender(key, name string) {
 	t.exec("UPDATE messages SET sender_name = ?1 WHERE sender = ?2 AND sender_name IS NOT ?1", name, key)
+}
+
+// mention is a person an "@" in a message's text points at: their key as chats and group
+// senders have it (the page the UI opens), "" for ourselves, and the name the text now carries.
+type mention struct {
+	JID  string `json:"jid"`
+	Name string `json:"name"`
+}
+
+// mentionNames turns the "@<number>" WhatsApp sends for each mentioned person into "@name", and
+// lists the people it named. A mention whose "@<number>" isn't in the text is dropped.
+func mentionNames(ctx context.Context, t *storeTx, cli *whatsmeow.Client, ci *waE2E.ContextInfo, text string) (string, []mention) {
+	var ms []mention
+	byUser := map[string]string{}
+	for _, s := range ci.GetMentionedJID() {
+		j, err := types.ParseJID(s)
+		if _, dup := byUser[j.User]; err != nil || j.IsEmpty() || dup || !strings.Contains(text, "@"+j.User) {
+			continue
+		}
+		m := mention{}
+		if isUs(cli.Store.ID, j) || isUs(&cli.Store.LID, j) {
+			m.Name = cli.Store.PushName // no link: our own page is the profile's
+		} else {
+			m.JID = chatKey(ctx, t, cli.Store.LIDs, j, types.EmptyJID)
+			m.Name = resolveName(ctx, cli, j, types.EmptyJID, "")
+		}
+		if m.Name == "" {
+			m.Name = j.User
+		}
+		byUser[j.User] = m.Name
+		ms = append(ms, m)
+	}
+	return atNames(text, byUser), ms
+}
+
+// atNames replaces each "@<user>" of text with "@<name>". The longest user goes first, so
+// "@123" never eats the start of "@1234".
+func atNames(text string, byUser map[string]string) string {
+	users := make([]string, 0, len(byUser))
+	for u := range byUser {
+		users = append(users, u)
+	}
+	sort.Slice(users, func(i, j int) bool { return len(users[i]) > len(users[j]) })
+	var pairs []string // a Replacer tries these in order, in one pass over text
+	for _, u := range users {
+		pairs = append(pairs, "@"+u, "@"+byUser[u])
+	}
+	return strings.NewReplacer(pairs...).Replace(text)
+}
+
+// withMentions adds the mentions to a row's extra, a JSON object or "". Other keys stay as they were.
+func withMentions(extra string, ms []mention) string {
+	x := map[string]json.RawMessage{}
+	if extra != "" && json.Unmarshal([]byte(extra), &x) != nil {
+		return extra
+	}
+	b, err := json.Marshal(ms)
+	if err != nil {
+		return extra
+	}
+	x["mentions"] = b
+	if b, err = json.Marshal(x); err != nil {
+		return extra
+	}
+	return string(b)
 }

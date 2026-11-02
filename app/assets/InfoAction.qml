@@ -40,4 +40,27 @@ ActionItem {
         p.ctl = chatCtl
         nav.push(p)
     }
+    // A mention's link in a message (MessageItem): the person's page, with the row built as
+    // GroupInfoPage's openPerson does: the one-to-one chat's, else one like the contact picker's.
+    // A member brings the initials and colour; for someone who isn't one (any more) the name is the
+    // link's "@name" and the tile one initial on a fixed colour.
+    // ponytail: that tile is plain; the controller's initials() and pickColor() if it shows.
+    function showPerson(jid, name) {
+        var row = chats.chat(jid)
+        if (!row.jid) {
+            var ps = chatCtl && chatCtl.groupInfo.participants ? chatCtl.groupInfo.participants : []
+            var p = {}
+            for (var i = 0; i < ps.length; i++) {
+                if (ps[i].jid == jid) {
+                    p = ps[i]
+                }
+            }
+            var n = p.name || name.replace(/^@/, "")
+            row = {"kind": 0, "jid": jid, "name": n, "initials": p.initials || n.charAt(0).toUpperCase() || "#",
+                   "color": p.color || "#087099"}
+        }
+        var c = contactDef.createObject()
+        c.chat = row
+        nav.push(c)
+    }
 }

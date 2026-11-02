@@ -58,6 +58,7 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
                                    q.value(6).toString(), time, locale, m.data, label, shown);
     if (m.service) {
         m.data["text"] = shown;
+        m.data["html"] = QString(); // set on every row (below too), so QML never reads undefined
         return m;
     }
     // Photos, videos, stickers, audio files and documents are drawn by MediaBubble: no label, and a
@@ -113,6 +114,8 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
         m.data["waveData"] = wave;
     }
     m.data["text"] = shown;
+    // The same text with its mentions linked, "" for none (MessageKinds::html).
+    m.data["html"] = MessageKinds::html(shown, q.value(26).toString());
     m.data["quote"] = q.value(9).toString();
     m.data["sender"] = sender;
     QString color;

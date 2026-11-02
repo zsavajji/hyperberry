@@ -8,6 +8,8 @@
 #include <bb/utility/i18n/Formatting>
 #include <QCoreApplication>
 #include <QDateTime>
+#include <QMap>
+#include <QRegExp>
 #include <QStringList>
 #include <QVariantMap>
 
@@ -48,6 +50,62 @@ static QString notice(const QString &code, int secs, bool out, const QString &se
     if (code == "on_phone")
         return QCoreApplication::translate("MessageKinds", "This message can only be seen on your phone.");
     return QCoreApplication::translate("MessageKinds", "Message");
+}
+
+// The text as rich text needs it: its own markup escaped, a newline a <br/>.
+static QString escaped(QString s)
+{
+    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;");
+    return s.replace('\n', "<br/>");
+}
+
+static bool longer(const QString &a, const QString &b)
+{
+    return a.size() > b.size();
+}
+
+QString MessageKinds::html(const QString &shown, const QString &json)
+{
+    if (!json.contains("\"mentions\""))
+        return QString();
+    JsonDataAccess parser;
+    const QVariant doc = parser.loadFromBuffer(json.toUtf8());
+    if (parser.hasError() || doc.type() != QVariant::Map)
+        return QString();
+
+    // "@name" -> the key of the page it opens. Ours has no key (the profile is another page), so
+    // it stays plain text. Two people of one name share a link: the last wins.
+    QMap<QString, QString> pages;
+    foreach (const QVariant &v, doc.toMap().value("mentions").toList()) {
+        const QVariantMap m = v.toMap();
+        if (!m.value("jid").toString().isEmpty() && !m.value("name").toString().isEmpty())
+            pages.insert("@" + m.value("name").toString(), m.value("jid").toString());
+    }
+    if (pages.isEmpty())
+        return QString();
+
+    // One pass over the text, longest name first, so "@Ann" never takes the start of "@Anna" and a
+    // name can't match inside an anchor already made. The text is cut around the hits and each
+    // piece escaped, so the anchors are the only markup.
+    QStringList names = pages.keys();
+    qSort(names.begin(), names.end(), longer);
+    QStringList alternatives;
+    foreach (const QString &n, names)
+        alternatives << QRegExp::escape(n);
+    const QRegExp any(alternatives.join("|"));
+
+    const QString text = QString(shown).remove(QChar(0x20E3)); // as the bubble's plain text drops it
+    QString out;
+    int from = 0, at;
+    bool linked = false;
+    while ((at = any.indexIn(text, from)) != -1) {
+        const QString hit = any.cap(0);
+        out += escaped(text.mid(from, at - from)) + "<a href=\"hbmention:" + escaped(pages.value(hit))
+               + "\">" + escaped(hit) + "</a>";
+        from = at + hit.length();
+        linked = true;
+    }
+    return linked ? out + escaped(text.mid(from)) : QString();
 }
 
 bool MessageKinds::fill(int kind, const QString &chat, const QString &id, const QString &text,

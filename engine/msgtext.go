@@ -97,8 +97,8 @@ func fieldNames(m *waE2E.Message) string {
 	return strings.Join(names, ", ")
 }
 
-// quoteOf returns the id and a one-line preview of the message a reply answers.
-func quoteOf(m *waE2E.Message) (id, prev string) {
+// contextInfo returns the ContextInfo of a message (its reply, its mentions), nil for none.
+func contextInfo(m *waE2E.Message) *waE2E.ContextInfo {
 	// Whichever field is set carries the ContextInfo: any kind can be a reply.
 	var ci *waE2E.ContextInfo
 	flatten(m).ProtoReflect().Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
@@ -109,6 +109,12 @@ func quoteOf(m *waE2E.Message) (id, prev string) {
 		}
 		return ci == nil
 	})
+	return ci
+}
+
+// quoteOf returns the id and a one-line preview of the message a reply answers.
+func quoteOf(m *waE2E.Message) (id, prev string) {
+	ci := contextInfo(m)
 	if ci.GetStanzaID() == "" {
 		return "", ""
 	}
