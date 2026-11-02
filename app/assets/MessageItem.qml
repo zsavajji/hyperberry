@@ -177,6 +177,9 @@ Container {
                 // lost its "1" (Q10, 2026-10-31). Only the shown text: the message and Copy keep it.
                 text: item.msg.text.replace(/\u20E3/g, "")
                 textFormat: TextFormat.Plain
+                // Links, numbers and addresses are tappable, opened by the system (the user's
+                // request, 0.0.1.132: a YouTube link did nothing). Not on a deleted message's note.
+                content.flags: item.msg.deleted ? TextContentFlag.Default : TextContentFlag.ActiveText
                 textStyle.base: item.ListItem.view.emojiStyle
                 textStyle.fontSize: FontSize.PercentageValue
                 textStyle.fontSizeValue: item.ListItem.view.bodySize
