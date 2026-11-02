@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/polymorfa/hypermeow"
+	"github.com/polymorfa/hypermeow/appstate"
 	"github.com/polymorfa/hypermeow/proto/waHistorySync"
 	"github.com/polymorfa/hypermeow/types"
 	"github.com/polymorfa/hypermeow/types/events"
@@ -156,8 +157,8 @@ func (st *Store) handle(cli *whatsmeow.Client, evt any) {
 		if e.IsUnavailable && e.UnavailableType == events.UnavailableTypeViewOnce {
 			st.ops <- func(t *storeTx) { st.dispatch(t, cli, evt) }
 		}
-	case *events.HistorySync, *events.Message, *events.Contact, *events.PushName, *events.GroupInfo,
-		*events.JoinedGroup, *events.Mute, *events.Pin, *events.Archive, *events.MarkChatAsRead,
+	case *events.HistorySync, *events.Message, *events.Contact, *events.LIDContact, *events.AppStateSyncComplete,
+		*events.PushName, *events.GroupInfo, *events.JoinedGroup, *events.Mute, *events.Pin, *events.Archive, *events.MarkChatAsRead,
 		*events.Receipt, *events.ChatPresence, *events.Presence, *events.DeleteForMe, *events.ClearChat, *events.DeleteChat:
 		st.ops <- func(t *storeTx) { st.dispatch(t, cli, evt) }
 		if h, ok := e.(*events.HistorySync); ok && st.historyIn != nil {
@@ -183,6 +184,7 @@ func (st *Store) syncGroups(cli *whatsmeow.Client) {
 			t.setName(g.JID.String(), g.Name)
 		}
 		sweep(ctx, t, cli.Store.LIDs)
+		st.renameAll(ctx, t, cli) // the address book a link brings in comes with no event
 	}
 }
 
@@ -202,6 +204,13 @@ func (st *Store) dispatch(t *storeTx, cli *whatsmeow.Client, evt any) {
 			alt, _ = types.ParseJID(e.Action.GetPnJID())
 		}
 		st.rename(ctx, t, cli, e.JID, alt)
+	case *events.LIDContact: // a contact saved by LID: the action carries no phone number
+		st.rename(ctx, t, cli, e.JID, types.EmptyJID)
+	case *events.AppStateSyncComplete:
+		// The contact list is in this patch; the link's bulk insert of it emits no Contact.
+		if e.Name == appstate.WAPatchCriticalUnblockLow {
+			st.renameAll(ctx, t, cli)
+		}
 	case *events.PushName:
 		st.rename(ctx, t, cli, e.JID, e.JIDAlt)
 	case *events.GroupInfo:
@@ -248,11 +257,12 @@ func (st *Store) dispatch(t *storeTx, cli *whatsmeow.Client, evt any) {
 	}
 }
 
-// rename re-resolves the name of a person's chat, if there is one.
+// rename re-resolves the name of a person, on their chat if there is one and on their messages.
 func (st *Store) rename(ctx context.Context, t *storeTx, cli *whatsmeow.Client, jid, alt types.JID) {
 	key := chatKey(ctx, t, cli.Store.LIDs, jid, alt)
-	if t.hasChat(key) {
-		t.setName(key, displayName(ctx, cli, jid, alt))
+	if name := displayName(ctx, cli, jid, alt); name != "" {
+		t.setName(key, name) // does nothing without that chat
+		t.renameSender(key, name)
 	}
 }
 
