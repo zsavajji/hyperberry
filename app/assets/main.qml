@@ -58,6 +58,10 @@ NavigationPane {
             id: viewerDef
             source: "PhotoViewer.qml"
         },
+        ComponentDefinition {
+            id: albumDef
+            source: "AlbumPage.qml"
+        },
         TextStyleDefinition {
             id: emoji
             fontFamily: "sans-serif, HBEmoji"
@@ -123,6 +127,16 @@ NavigationPane {
         var viewer = viewerDef.createObject()
         viewer.path = path
         push(viewer)
+    }
+
+    // An album's page (step 6.5g): members are its messages' maps, list the chat's ListView, whose
+    // openMedia opens one. Here and not in the card: a list item sees no nav, and a page made by a
+    // card that is recycled meanwhile would lose its bindings.
+    function showAlbum(list, members) {
+        var album = albumDef.createObject()
+        album.view = list
+        album.members = members
+        push(album)
     }
 
     // Every page above the list goes out. Deleting a chat (step 5.8b) uses it too.

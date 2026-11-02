@@ -3,6 +3,14 @@
 <TS version="2.0" language="it_IT">
 <defaultcodec>UTF-8</defaultcodec>
 <context>
+    <name>AlbumPage</name>
+    <message>
+        <location filename="../assets/AlbumPage.qml" line="21"/>
+        <source>Album</source>
+        <translation>Album</translation>
+    </message>
+</context>
+<context>
     <name>ArchivedPage</name>
     <message>
         <location filename="../assets/ArchivedPage.qml" line="14"/>

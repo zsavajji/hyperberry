@@ -156,6 +156,16 @@ Container {
                     }
                 }
             }
+            // Built only for an album (step 6.5g), in MediaBubble's place: its media is "".
+            ControlDelegate {
+                delegateActive: item.msg.album.length > 0
+                sourceComponent: ComponentDefinition {
+                    AlbumBubble {
+                        msg: item.msg
+                        view: item.ListItem.view
+                    }
+                }
+            }
             Label {
                 visible: item.msg.label != ""
                 topMargin: 0

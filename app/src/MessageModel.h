@@ -23,7 +23,10 @@ class EngineLink;
 // words it). A "msg" is a map of id, out, state, edited, deleted, revocable, time, label, text, quote,
 // sender and senderColor, and media ("photo", "video", "doc", "sticker", "audio" or "") with the keys
 // MediaData.h lists. Reading a sticker row that is still on the server asks the engine for its file,
-// once per page.
+// once per page. Every "msg" has album, a list: empty, or for an album (step 6.5g, Albums.h's rule) the
+// members' maps oldest first. An album is ONE entry, keyed "album:" and its first member's id, whose
+// map is that first member's plus album, albumCount, media "" (so MediaBubble isn't built) and the
+// last member's time and state, since the card shows when it ended.
 // The newest 50 load at once, older pages as the list nears its top; the loaded set always
 // holds whole days, so a page never lands inside a loaded day.
 class MessageModel : public bb::cascades::DataModel
@@ -73,14 +76,18 @@ private:
         qint64 ts;
         qint64 rowid;
         QString id;
+        int kind;      // messages.kind
+        QString who;   // messages.sender (else its name): the sender Albums compares
         bool service;
         QVariantMap data;
     };
     struct Entry
     {
-        QString key;   // the message id, or "day:" and the julian day
-        QString title; // a header's
-        int msg;       // index into m_all; -1 for a header
+        QString key;       // the message id, "album:" and the first member's id, or "day:" and the julian day
+        QString title;     // a header's
+        int msg;           // index into m_all; -1 for a header, an album's first member
+        QList<int> members; // an album's, in m_all; empty for a message
+        QString sig;       // an album's member ids joined: refresh tells a changed album by it
     };
 
     static bool lessThan(const Msg &a, const Msg &b);
@@ -90,6 +97,8 @@ private:
     void merge(const QStringList &asked, const QList<Msg> &fresh, bool older);
     void rebuild();
     QStringList keys() const;
+    int entryOf(const QString &id) const;
+    QVariantMap albumData(const Entry &e) const;
     void refresh(const QStringList &old, const QSet<QString> &updated);
 
     QPointer<EngineLink> m_engine;

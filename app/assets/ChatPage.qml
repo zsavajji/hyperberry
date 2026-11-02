@@ -381,6 +381,9 @@ Page {
                         media.get(page.chat.jid, msg.id, msg.media)
                     }
                 }
+                function showAlbum(members) {
+                    nav.showAlbum(list, members)
+                }
                 function deleteForMe(id) {
                     ctl.deleteForMe(id)
                     deletedToast.show()
