@@ -2,8 +2,8 @@ import bb.cascades 1.4
 import bb.system 1.2
 
 // A group's info (PLAN.md §7, step 3.5). A tap on a participant opens their contact page (step
-// 5.8). An admin also adds people (the action bar) and removes, promotes and demotes them (a
-// participant's long-press menu). ctl is the chat page's ChatController, which asked the engine
+// 5.8). An admin also adds people (the action bar), as does anyone when the group lets every
+// member add, and removes, promotes and demotes them (a participant's long-press menu). ctl is the chat page's ChatController, which asked the engine
 // for group.info; the chat page stays under this one, so ctl outlives it.
 Page {
     id: page
@@ -16,13 +16,15 @@ Page {
     property bool hasPicture: !!info.picture
     // We are one of the group's admins; set by fill().
     property bool amAdmin: false
+    // The group's "Add other members" setting, else admins only.
+    property bool canAdd: amAdmin || !!info.membersAdd
     // The participant the remove dialog asks about.
     property variant target
     onInfoChanged: fill()
     onCtlChanged: fill()
-    // ActionItem has no visible: Add participant is on the bar for admins only.
-    onAmAdminChanged: {
-        if (amAdmin) {
+    // ActionItem has no visible: Add participant is on the bar only for those who may add.
+    onCanAddChanged: {
+        if (canAdd) {
             addAction(addItem, ActionBarPlacement.OnBar)
         } else {
             removeAction(addItem)

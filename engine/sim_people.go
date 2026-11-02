@@ -28,6 +28,7 @@ func (s *Sim) handleGroupInfo(req json.RawMessage) (any, error) {
 	switch i := simIndex(r.Chat); {
 	case i == 1:
 		out.Description = "Sunday lunches and everything else 🍝"
+		out.MembersAdd = true // Sim isn't an admin here, yet may add
 		for _, n := range []string{"Mum", "Dad", "Luca", "Giorgia", "Marco"} {
 			add(n, n == "Mum" || n == "Dad")
 		}

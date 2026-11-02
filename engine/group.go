@@ -22,7 +22,8 @@ type groupInfo struct {
 	Subject      string        `json:"subject"`
 	Description  string        `json:"description"`
 	Participants []participant `json:"participants"`
-	Picture      string        `json:"picture"` // the full-size picture's path, "" when none
+	Picture      string        `json:"picture"`    // the full-size picture's path, "" when none
+	MembersAdd   bool          `json:"membersAdd"` // every member may add people, not only admins
 }
 
 type groupRef struct {
@@ -129,7 +130,8 @@ func (s *Session) handleGroupInfo(req json.RawMessage) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := groupInfo{Subject: info.Name, Description: info.Topic, Participants: []participant{}}
+	out := groupInfo{Subject: info.Name, Description: info.Topic, Participants: []participant{},
+		MembersAdd: info.MemberAddMode == types.GroupMemberAddModeAllMember}
 	for _, p := range info.Participants {
 		// LID first: the chat's sender keys are, so the colours match.
 		key, alt := p.JID, p.PhoneNumber
