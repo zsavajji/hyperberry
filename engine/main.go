@@ -71,7 +71,11 @@ func main() {
 
 	identity(*osName, *days)
 	ctx := context.Background()
-	db := "file:" + filepath.Join(*data, "session.db") + "?_foreign_keys=on"
+	// WAL, as chats.db: in the rollback journal a read held over 5 s on one of hypermeow's
+	// connections failed another's write ("database is locked", the link's history, 2026-11-01).
+	// Immediate transactions, as WAL fails a read-then-write one (decryption) at once if another
+	// write landed between.
+	db := "file:" + filepath.Join(*data, "session.db") + "?_foreign_keys=on&_journal_mode=WAL&_busy_timeout=5000&_txlock=immediate"
 	container, err := sqlstore.New(ctx, "sqlite3", db, log.Sub("db"))
 	if err != nil {
 		fatal("open store:", err)
