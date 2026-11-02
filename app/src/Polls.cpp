@@ -57,13 +57,17 @@ void Polls::fill(const QString &chat, const QString &id, const QVariantList &nam
     }
 
     QVariantList options;
+    QStringList all; // the long-press menu's View votes: "Si (2): You, Andrea", one option a line
     for (int i = 0; i < n; ++i) {
         QVariantMap o;
         o["name"] = names[i].toString();
         o["count"] = counts[i];
         o["voters"] = voters[i].join("\n");
         options << o;
+        all << QString("%1 (%2)").arg(names[i].toString()).arg(counts[i])
+                   + (voters[i].isEmpty() ? QString() : ": " + voters[i].join(", "));
     }
+    data["votesText"] = all.join("\n");
     data["max"] = max;
     data["mine"] = mine;
     data["voted"] = voted;

@@ -723,6 +723,11 @@
         <translation>Rispondi</translation>
     </message>
     <message>
+        <location filename="../assets/MessageItem.qml" line="45"/>
+        <source>View votes</source>
+        <translation>Vedi voti</translation>
+    </message>
+    <message>
         <location filename="../assets/MessageItem.qml" line="37"/>
         <source>React</source>
         <translation>Reagisci</translation>

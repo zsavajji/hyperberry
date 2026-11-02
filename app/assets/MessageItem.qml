@@ -39,6 +39,14 @@ Container {
                 enabled: !item.msg.deleted
                 onTriggered: item.ListItem.view.react(item.msg)
             }
+            // Who chose what in a poll (the user's request, 0.0.1.132), as the counts' tap shows it
+            // per option.
+            ActionItem {
+                title: qsTr("View votes")
+                imageSource: "file:///usr/share/icons/ic_accept.png"
+                enabled: item.msg.poll && !item.msg.deleted
+                onTriggered: item.ListItem.view.showVoters(item.msg.votesText)
+            }
             // /usr/share/icons has no copy icon: this one is the stock Text Messages app's.
             ActionItem {
                 title: qsTr("Copy")

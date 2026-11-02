@@ -172,7 +172,10 @@ Container {
                     layout: StackLayout {
                         orientation: LayoutOrientation.LeftToRight
                     }
+                    // A part with no share is hidden, not given a quota of 0: Cascades sized a 0 like
+                    // a 1 (Q10, 0.0.1.132: one vote of one filled half the bar, two of two 2/3).
                     Container {
+                        visible: row.count > 0
                         verticalAlignment: VerticalAlignment.Fill
                         background: ui.palette.primary
                         layoutProperties: StackLayoutProperties {
@@ -180,6 +183,7 @@ Container {
                         }
                     }
                     Container {
+                        visible: row.total == 0 || row.count < row.total
                         verticalAlignment: VerticalAlignment.Fill
                         background: ui.palette.secondaryTextOnPlain
                         opacity: 0.3
