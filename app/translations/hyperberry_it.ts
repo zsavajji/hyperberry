@@ -629,6 +629,19 @@
     </message>
 </context>
 <context>
+    <name>MapChooser</name>
+    <message>
+        <location filename="../src/MapChooser.cpp" line="79"/>
+        <source>Open with</source>
+        <translation>Apri con</translation>
+    </message>
+    <message>
+        <location filename="../src/MapChooser.cpp" line="81"/>
+        <source>Cancel</source>
+        <translation>Annulla</translation>
+    </message>
+</context>
+<context>
     <name>MediaBubble</name>
     <message>
         <location filename="../assets/MediaBubble.qml" line="46"/>
@@ -654,6 +667,11 @@
         <location filename="../assets/MediaBubble.qml" line="106"/>
         <source>Document</source>
         <translation>Documento</translation>
+    </message>
+    <message>
+        <location filename="../assets/MediaBubble.qml" line="152"/>
+        <source>Show on map</source>
+        <translation>Mostra sulla mappa</translation>
     </message>
 </context>
 <context>
@@ -682,6 +700,11 @@
         <location filename="../src/MediaData.cpp" line="51"/>
         <source>Audio file</source>
         <translation>File audio</translation>
+    </message>
+    <message>
+        <location filename="../src/MediaData.cpp" line="103"/>
+        <source>Location</source>
+        <translation>Posizione</translation>
     </message>
 </context>
 <context>

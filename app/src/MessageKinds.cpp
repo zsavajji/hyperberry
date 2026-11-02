@@ -51,7 +51,7 @@ static QString notice(const QString &code, int secs, bool out, const QString &se
 
 bool MessageKinds::fill(int kind, const QString &text, const QString &json, bool out,
                         const QString &sender, const QString &time, const QLocale &locale,
-                        QString &label, QString &shown)
+                        QVariantMap &data, QString &label, QString &shown)
 {
     // Only rows that have details; a damaged one reads as none.
     QVariantMap extra;
@@ -74,6 +74,10 @@ bool MessageKinds::fill(int kind, const QString &text, const QString &json, bool
     case 9:
         label = extra.value("live").toBool() ? QCoreApplication::translate("MessageKinds", "Live location")
                                               : QCoreApplication::translate("MessageKinds", "Location");
+        // What a tap on the card opens (MapChooser); the name is the text's first line.
+        data["lat"] = extra.value("lat").toDouble();
+        data["lon"] = extra.value("lon").toDouble();
+        data["place"] = text.section('\n', 0, 0);
         break;
     case 10:
         label = QCoreApplication::translate("MessageKinds", "Contact");

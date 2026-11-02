@@ -3,6 +3,7 @@
 #include "sizes.h"
 
 #include <bb/cascades/Image>
+#include <QBuffer>
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
@@ -63,6 +64,7 @@ bool MediaData::fill(QVariantMap &data, const QString &id, int kind, const QStri
     case 4: media = "doc"; break;
     case 5: media = "sticker"; break;
     case 8: media = "audio"; break;
+    case 9: media = "location"; break;
     }
     data["media"] = media;
     if (media.isEmpty())
@@ -73,6 +75,15 @@ bool MediaData::fill(QVariantMap &data, const QString &id, int kind, const QStri
         const QByteArray p = kind == 1 ? preview(id, path, width, height) : Sticker::picture(id, path);
         if (!p.isEmpty())
             shown = p;
+    }
+    // A location has no width or height columns: its map picture is a JPEG, sized by its own header.
+    if (kind == 9 && !thumb.isEmpty()) {
+        QBuffer buffer;
+        buffer.setData(thumb);
+        buffer.open(QIODevice::ReadOnly);
+        const QSize size = QImageReader(&buffer).size();
+        width = size.width();
+        height = size.height();
     }
     // Always an Image, an empty one without a thumbnail: a recycled card assigned undefined would
     // keep the picture of the row it showed before.
@@ -88,7 +99,8 @@ bool MediaData::fill(QVariantMap &data, const QString &id, int kind, const QStri
     // What a reply and the long-press menu show for a message whose text is empty.
     static const char *const names[] = { "", QT_TRANSLATE_NOOP("MediaData", "Photo"),
         QT_TRANSLATE_NOOP("MediaData", "Video"), "", QT_TRANSLATE_NOOP("MediaData", "Document"),
-        QT_TRANSLATE_NOOP("MediaData", "Sticker"), "", "", QT_TRANSLATE_NOOP("MediaData", "Audio file") };
+        QT_TRANSLATE_NOOP("MediaData", "Sticker"), "", "", QT_TRANSLATE_NOOP("MediaData", "Audio file"),
+        QT_TRANSLATE_NOOP("MediaData", "Location") };
     data["summary"] = kind == 4 && !text.isEmpty() ? text
                                                     : QCoreApplication::translate("MediaData", names[kind]);
     return true;

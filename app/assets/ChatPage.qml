@@ -63,6 +63,10 @@ Page {
             id: media
             link: engine
         },
+        // A location (step 6.5c): asks which maps app opens it, every time.
+        MapChooser {
+            id: maps
+        },
         // Added for people and groups only (ActionItem has no visible).
         ActionItem {
             id: infoAction
@@ -382,10 +386,14 @@ Page {
                 }
                 // Photos, videos, audio files and documents: the message being fetched, for the bubbles
                 // (MediaBubble.qml). Always through media.get: it answers at once when the file is here,
-                // and fetches it again when the user moved it out of Downloads.
+                // and fetches it again when the user moved it out of Downloads. A location has no file.
                 property string mediaLoadingId: media.loadingId
                 function openMedia(msg) {
-                    media.get(page.chat.jid, msg.id, msg.media)
+                    if (msg.media == "location") {
+                        maps.choose(msg.lat, msg.lon, msg.place)
+                    } else {
+                        media.get(page.chat.jid, msg.id, msg.media)
+                    }
                 }
                 function deleteForMe(id) {
                     ctl.deleteForMe(id)

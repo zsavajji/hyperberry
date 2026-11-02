@@ -17,6 +17,7 @@
 #include "ContactPicker.h"
 #include "EmojiModel.h"
 #include "EngineLink.h"
+#include "MapChooser.h"
 #include "MediaOpener.h"
 #include "OpenRequests.h"
 #include "Profile.h"
@@ -96,6 +97,7 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     qmlRegisterType<ChatController>("hyperberry", 1, 0, "ChatController");
     qmlRegisterType<ContactInfo>("hyperberry", 1, 0, "ContactInfo");
     qmlRegisterType<ContactPicker>("hyperberry", 1, 0, "ContactPicker");
+    qmlRegisterType<MapChooser>("hyperberry", 1, 0, "MapChooser");
     qmlRegisterType<MediaOpener>("hyperberry", 1, 0, "MediaOpener");
     qmlRegisterType<Profile>("hyperberry", 1, 0, "Profile");
     QmlDocument *document = QmlDocument::create("asset:///main.qml").parent(&app);
