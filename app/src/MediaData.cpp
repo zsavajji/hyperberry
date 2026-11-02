@@ -1,4 +1,5 @@
 #include "MediaData.h"
+#include "Sticker.h"
 #include "sizes.h"
 
 #include <bb/cascades/Image>
@@ -60,15 +61,16 @@ bool MediaData::fill(QVariantMap &data, const QString &id, int kind, const QStri
     case 1: media = "photo"; break;
     case 2: media = "video"; break;
     case 4: media = "doc"; break;
+    case 5: media = "sticker"; break;
     case 8: media = "audio"; break;
     }
     data["media"] = media;
     if (media.isEmpty())
         return false;
-    // The inline thumbnail stands in when there is no readable photo.
+    // The inline thumbnail stands in when there is no readable photo or sticker.
     QByteArray shown = thumb;
-    if (kind == 1 && mediaState == 2 && !path.isEmpty()) {
-        const QByteArray p = preview(id, path, width, height);
+    if ((kind == 1 || kind == 5) && mediaState == 2 && !path.isEmpty()) {
+        const QByteArray p = kind == 1 ? preview(id, path, width, height) : Sticker::picture(id, path);
         if (!p.isEmpty())
             shown = p;
     }
@@ -85,8 +87,8 @@ bool MediaData::fill(QVariantMap &data, const QString &id, int kind, const QStri
     data["fileName"] = kind == 4 ? text : QString();
     // What a reply and the long-press menu show for a message whose text is empty.
     static const char *const names[] = { "", QT_TRANSLATE_NOOP("MediaData", "Photo"),
-        QT_TRANSLATE_NOOP("MediaData", "Video"), "", QT_TRANSLATE_NOOP("MediaData", "Document"), "", "", "",
-        QT_TRANSLATE_NOOP("MediaData", "Audio file") };
+        QT_TRANSLATE_NOOP("MediaData", "Video"), "", QT_TRANSLATE_NOOP("MediaData", "Document"),
+        QT_TRANSLATE_NOOP("MediaData", "Sticker"), "", "", QT_TRANSLATE_NOOP("MediaData", "Audio file") };
     data["summary"] = kind == 4 && !text.isEmpty() ? text
                                                     : QCoreApplication::translate("MediaData", names[kind]);
     return true;

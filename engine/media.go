@@ -94,7 +94,7 @@ func (st *Store) downloadVoice(ctx context.Context, cli *whatsmeow.Client, dir s
 	return err
 }
 
-// liveMedia downloads a voice note or a photo that just arrived.
+// liveMedia downloads a voice note, a photo or a sticker that just arrived.
 func (st *Store) liveMedia(cli *whatsmeow.Client, row msgRow) {
 	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
 	defer cancel()

@@ -6,6 +6,7 @@
 #include <QElapsedTimer>
 #include <QHash>
 #include <QObject>
+#include <QSet>
 #include <QString>
 #include <QStringList>
 #include <QTcpSocket>
@@ -56,6 +57,10 @@ public:
     // Sends a request (docs/protocol.md "Requests"); a failure shows in failure. Returns the
     // request id, "" when the engine isn't connected.
     Q_INVOKABLE QString request(const QString &cmd, const QVariantMap &args);
+    // request() for something the user didn't ask for (a sticker fetched as its row is drawn): a
+    // failure, and an engine that's down, are logged but never put in failure, so no page shows them.
+    // Returns the request id, "" when the engine isn't connected (then nothing was sent).
+    QString requestQuiet(const QString &cmd, const QVariantMap &args);
 
 signals:
     void connectedChanged();
@@ -89,6 +94,7 @@ private slots:
 
 private:
     void startEngine();
+    QString post(const QString &cmd, const QVariantMap &args);
     void send(const QVariantMap &map);
     void setLink(const QVariantMap &link);
     void setConn(const QString &conn);
@@ -104,6 +110,7 @@ private:
     int m_counter;
     QString m_helloId;
     QHash<QString, QString> m_pending;
+    QSet<QString> m_quiet; // the ids in m_pending that requestQuiet sent
     bool m_connected;
     QVariantMap m_link;
     QString m_conn;

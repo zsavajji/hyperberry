@@ -195,7 +195,11 @@ void EngineLink::readLines()
                 }
             } else {
                 const QString cmd = m_pending.take(id);
-                if (!ok)
+                const bool quiet = m_quiet.remove(id);
+                if (!ok && quiet)
+                    qWarning() << "engine:" << cmd << "failed:" << error["code"].toString()
+                               << error["message"].toString();
+                else if (!ok)
                     fail(cmd, error["code"].toString(), error["message"].toString());
                 else
                     emit replied(id, cmd, map["result"]);
@@ -256,8 +260,11 @@ void EngineLink::lost()
     }
     const QHash<QString, QString> pending = m_pending;
     m_pending.clear();
-    foreach (const QString &cmd, pending)
-        fail(cmd, "no_engine", tr("The engine isn't running."));
+    for (QHash<QString, QString>::const_iterator it = pending.begin(); it != pending.end(); ++it) {
+        if (!m_quiet.contains(it.key()))
+            fail(it.value(), "no_engine", tr("The engine isn't running."));
+    }
+    m_quiet.clear();
     setConn("offline");
     // The m_link stays as it was: the next hello replaces it, so the UI doesn't flash back to
     // the linking page during a restart.
@@ -285,6 +292,20 @@ QString EngineLink::request(const QString &cmd, const QVariantMap &args)
         fail(cmd, "no_engine", tr("The engine isn't running."));
         return QString();
     }
+    return post(cmd, args);
+}
+
+QString EngineLink::requestQuiet(const QString &cmd, const QVariantMap &args)
+{
+    if (!m_connected)
+        return QString();
+    const QString id = post(cmd, args);
+    m_quiet.insert(id);
+    return id;
+}
+
+QString EngineLink::post(const QString &cmd, const QVariantMap &args)
+{
     QVariantMap map = args;
     const QString id = QString::number(++m_counter);
     map["@"] = id;

@@ -21,8 +21,9 @@ class EngineLink;
 // older page is appended at the model's end (the visual top) without moving the rows on
 // screen. itemType: "header" (data: the title), "msg", or "service" for kinds 6 and 13 (MessageKinds
 // words it). A "msg" is a map of id, out, state, edited, deleted, revocable, time, label, text, quote,
-// sender and senderColor, and media ("photo", "video", "doc", "audio" or "") with the keys
-// MediaData.h lists.
+// sender and senderColor, and media ("photo", "video", "doc", "sticker", "audio" or "") with the keys
+// MediaData.h lists. Reading a sticker row that is still on the server asks the engine for its file,
+// once per page.
 // The newest 50 load at once, older pages as the list nears its top; the loaded set always
 // holds whole days, so a page never lands inside a loaded day.
 class MessageModel : public bb::cascades::DataModel
@@ -97,6 +98,7 @@ private:
     bool m_atStart; // the oldest message is loaded
     QList<Msg> m_all;
     QSet<QString> m_hidden;
+    QSet<QString> m_asked; // the sticker ids asked for from the engine (Sticker::fetch)
     QList<Entry> m_entries;
     bb::utility::i18n::RelativeDateFormatter m_days;
     bb::system::LocaleHandler m_region;

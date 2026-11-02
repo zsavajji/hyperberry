@@ -5,3 +5,4 @@ app/assets/emoji/
 lib/qrcodegen/
 app/assets/translations/
 .DS_Store
+lib/libwebp/

@@ -4,6 +4,7 @@
 #include "MediaData.h"
 #include "MessageKinds.h"
 #include "Moves.h"
+#include "Sticker.h"
 #include "colors.h"
 #include "dates.h"
 #include "Waveform.h"
@@ -97,7 +98,7 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
     const QLocale locale = m_region.locale();
     const QString time = locale.toString(QDateTime::fromTime_t(m.ts).time(),
                                          timeFormat(locale, DateFormat::Short));
-    // The wording of kinds 5, 6, 7 and 9 to 14 (kind 6 and 13 are service lines).
+    // The wording of kinds 6, 7 and 9 to 14 (kind 6 and 13 are service lines).
     QString label, shown = text;
     m.service = MessageKinds::fill(kind, text, q.value(26).toString(), out, q.value(6).toString(),
                                    time, locale, label, shown);
@@ -105,8 +106,10 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
         m.data["text"] = shown;
         return m;
     }
-    // Photos, videos, audio files and documents are drawn by MediaBubble: no label, and a
+    // Photos, videos, stickers, audio files and documents are drawn by MediaBubble: no label, and a
     // document's text (its name) is the bubble's. A caption stays in the text.
+    if (kind == 5 && !deleted && q.value(17).toInt() == 1)
+        Sticker::fetch(m_engine, m_chat, m.id, m_asked); // a history sticker, asked once per page
     if (MediaData::fill(m.data, m.id, deleted ? 0 : kind, text, q.value(19).toByteArray(),
                         q.value(20).toInt(), q.value(21).toInt(), q.value(22).toLongLong(),
                         q.value(15).toInt(), q.value(17).toInt(), q.value(23).toString(), locale)
@@ -313,6 +316,7 @@ void MessageModel::onConnected()
 {
     if (!m_engine || !m_engine->connected())
         return;
+    m_asked.clear(); // a fetch the engine lost with its restart is asked again
     if (m_all.isEmpty()) {
         loadPage();
         return;

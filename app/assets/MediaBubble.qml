@@ -1,23 +1,28 @@
 import bb.cascades 1.4
 
-// A photo, video, audio file or document in a card (step 6.1). A picture is the message's
+// A photo, video, audio file, document or sticker in a card (step 6.1). A picture is the message's
 // thumbnail, a video with a play mark and its length; a file is a row of an icon, its name and its
 // size. A tap opens it. view is the chat page's list, which holds the fetch (mediaLoadingId) and
-// opens the file (openMedia).
+// opens the file (openMedia). A sticker (step 6.5b) is its picture alone, small, with no caption and
+// no tap: the model fetches its file by itself.
 Container {
     id: bubble
     property variant msg
     property variant view
     property bool picture: msg.media == "photo" || msg.media == "video"
+    property bool sticker: msg.media == "sticker"
     property bool loading: view.mediaLoadingId == msg.id
     // A caption follows a picture, with no margin of its own.
     topMargin: 0
     bottomMargin: msg.text != "" ? ui.du(0.5) : 0
     // Air above and below a picture, so it doesn't touch the card's name line or caption (user).
-    topPadding: picture ? ui.du(1) : 0
-    bottomPadding: picture ? ui.du(1) : 0
+    topPadding: picture || sticker ? ui.du(1) : 0
+    bottomPadding: picture || sticker ? ui.du(1) : 0
     gestureHandlers: TapHandler {
-        onTapped: bubble.view.openMedia(bubble.msg)
+        onTapped: {
+            if (!bubble.sticker)
+                bubble.view.openMedia(bubble.msg)
+        }
     }
 
     Container {
@@ -82,8 +87,33 @@ Container {
         }
     }
 
+    // The sticker's picture, fit in a square; always an Image in thumb, an empty one without a picture,
+    // as for a photo, so a recycled card never keeps the previous row's.
+    ImageView {
+        visible: bubble.sticker && bubble.msg.hasThumb
+        topMargin: 0
+        preferredWidth: ui.du(20)
+        preferredHeight: ui.du(20)
+        image: bubble.msg.thumb
+        scalingMethod: ScalingMethod.AspectFit
+        loadEffect: ImageViewLoadEffect.None
+    }
+    // Until it is here: no picture and no thumbnail.
+    Label {
+        visible: bubble.sticker && !bubble.msg.hasThumb
+        topMargin: 0
+        bottomMargin: 0
+        text: qsTr("Sticker")
+        textFormat: TextFormat.Plain
+        textStyle.base: bubble.view.emojiStyle
+        textStyle.fontSize: FontSize.PercentageValue
+        textStyle.fontSizeValue: bubble.view.bodySize
+        textStyle.fontStyle: FontStyle.Italic
+        textStyle.color: ui.palette.secondaryTextOnPlain
+    }
+
     Container {
-        visible: !bubble.picture
+        visible: !bubble.picture && !bubble.sticker
         // Fills the card, so a long name is cut by the column and the spinner is at the right.
         horizontalAlignment: HorizontalAlignment.Fill
         layout: StackLayout {

@@ -642,6 +642,11 @@
     </message>
     <message>
         <location filename="../assets/MediaBubble.qml" line="106"/>
+        <source>Sticker</source>
+        <translation>Sticker</translation>
+    </message>
+    <message>
+        <location filename="../assets/MediaBubble.qml" line="106"/>
         <source>Audio file</source>
         <translation>File audio</translation>
     </message>
@@ -667,6 +672,11 @@
         <location filename="../src/MediaData.cpp" line="50"/>
         <source>Document</source>
         <translation>Documento</translation>
+    </message>
+    <message>
+        <location filename="../src/MediaData.cpp" line="91"/>
+        <source>Sticker</source>
+        <translation>Sticker</translation>
     </message>
     <message>
         <location filename="../src/MediaData.cpp" line="51"/>
@@ -783,11 +793,6 @@
         <location filename="../src/MessageKinds.cpp" line="49"/>
         <source>Message</source>
         <translation>Messaggio</translation>
-    </message>
-    <message>
-        <location filename="../src/MessageKinds.cpp" line="68"/>
-        <source>Sticker</source>
-        <translation>Sticker</translation>
     </message>
     <message>
         <location filename="../src/MessageKinds.cpp" line="78"/>

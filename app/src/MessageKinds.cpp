@@ -64,9 +64,6 @@ bool MessageKinds::fill(int kind, const QString &text, const QString &json, bool
 
     QStringList lines;
     switch (kind) {
-    case 5:
-        label = QCoreApplication::translate("MessageKinds", "Sticker");
-        break;
     case 6:
         shown = text;
         return true;
