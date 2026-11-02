@@ -94,21 +94,32 @@ Container {
                 textStyle.fontWeight: FontWeight.Bold
                 textStyle.color: Color.create(item.msg.senderColor || "#FFFFFF")
             }
-            // The message this one replies to.
+            // The message this one replies to, on a tint a little off the card's colour.
             Container {
                 visible: item.msg.quote != ""
+                horizontalAlignment: HorizontalAlignment.Fill
                 topMargin: 0
                 bottomMargin: ui.du(0.5)
+                background: Color.create(item.ListItem.view.quoteTint)
                 layout: StackLayout {
                     orientation: LayoutOrientation.LeftToRight
                 }
                 Container {
                     verticalAlignment: VerticalAlignment.Fill
-                    preferredWidth: ui.du(0.5)
+                    minWidth: ui.du(0.5)
+                    maxWidth: ui.du(0.5)
                     background: ui.palette.primary
                 }
+                // The quota leaves the bar its width: a two-line quote squeezed it to nothing
+                // (0.0.1.136, Q10).
                 Container {
                     leftMargin: ui.du(1)
+                    rightPadding: ui.du(1)
+                    topPadding: ui.du(0.5)
+                    bottomPadding: ui.du(0.5)
+                    layoutProperties: StackLayoutProperties {
+                        spaceQuota: 1
+                    }
                     // Whose message it was, in groups.
                     Label {
                         visible: item.msg.quoteName != ""

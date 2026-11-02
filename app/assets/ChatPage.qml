@@ -402,6 +402,9 @@ Page {
                 property int bodySize: nav.bodySize
                 property int smallSize: nav.smallSize
                 property real textScale: settings.textScale
+                // A quote's background: white at 8 % lifts it off a dark card, black at 5 % off
+                // a bright one.
+                property string quoteTint: settings.theme == 1 ? "#0D000000" : "#14FFFFFF"
                 dataModel: ctl.messages
                 // Bottom to top: the model is newest first, so the list opens at the newest message
                 // with no scroll call, and an older page is appended at the visual top without
