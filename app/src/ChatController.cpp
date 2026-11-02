@@ -232,7 +232,7 @@ void ChatController::nearTop(const QVariantList &firstVisible)
         m_messages->nearTop(firstVisible);
 }
 
-bool ChatController::send(const QString &text)
+bool ChatController::send(const QString &text, const QVariantList &mentions)
 {
     if (!m_engine || !m_engine->connected())
         return false;
@@ -242,6 +242,8 @@ bool ChatController::send(const QString &text)
     args["text"] = text;
     if (!m_quoteId.isEmpty())
         args["quote"] = m_quoteId;
+    if (!mentions.isEmpty())
+        args["mentions"] = mentions;
     m_engine->request("msg.send", args);
     cancelReply();
     return true;

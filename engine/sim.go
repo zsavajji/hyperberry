@@ -368,7 +368,10 @@ func (s *Sim) handleUIState(req json.RawMessage) (any, error) {
 // handleSend is msg.send: the row as sending, then sent, delivered and read at simTicks. A text
 // starting with "fail" ends failed. Like the real one it blocks for the round trip.
 func (s *Sim) handleSend(req json.RawMessage) (any, error) {
-	var r struct{ Chat, Text, Quote string }
+	var r struct {
+		Chat, Text, Quote string
+		Mentions          []mention
+	}
 	if err := json.Unmarshal(req, &r); err != nil || strings.TrimSpace(r.Text) == "" {
 		return nil, &Error{"bad_request", "msg.send needs chat and non-empty text"}
 	}
@@ -377,7 +380,11 @@ func (s *Sim) handleSend(req json.RawMessage) (any, error) {
 		return nil, err
 	}
 	id, ops := fmt.Sprintf("SIMOUT%d", time.Now().UnixNano()), s.store.ops
-	_, created := s.store.queueOutgoing(jid, r.Chat, id, r.Text, r.Quote, time.Now().Unix())
+	extra := "" // as the real one's row: the text as typed, and the mentions that would have been sent
+	if _, jids := mentionWire(r.Text, r.Mentions); len(jids) > 0 {
+		extra = withMentions("", r.Mentions)
+	}
+	_, created := s.store.queueOutgoing(jid, r.Chat, id, r.Text, r.Quote, extra, time.Now().Unix())
 	if created && chatKind(jid) == chatUser {
 		name := simBookName(r.Chat)
 		s.store.ops <- func(t *storeTx) { t.setName(r.Chat, name) }

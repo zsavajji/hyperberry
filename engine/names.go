@@ -208,6 +208,33 @@ func atNames(text string, byUser map[string]string) string {
 	return strings.NewReplacer(pairs...).Replace(text)
 }
 
+// mentionWire turns the text of a message we send ("@Anna Lee", as the bubble shows it) into what
+// WhatsApp takes: "@<number>", the user part of the person's JID, and lists those JIDs. A mention
+// whose JID doesn't parse, or whose "@name" isn't in the text any more, is skipped.
+// ponytail: the JIDs are the UI's chat keys, LID first, sent even in a group addressed by phone
+// number; send the phone number there if Android shows such a mention wrong.
+func mentionWire(text string, ms []mention) (wire string, jids []string) {
+	sorted := append([]mention(nil), ms...) // longest name first, so "@Ann" never takes the start of "@Anna"
+	sort.SliceStable(sorted, func(i, j int) bool { return len(sorted[i].Name) > len(sorted[j].Name) })
+	var pairs []string // one pass over the text, in this order
+	seen := map[string]bool{}
+	for _, m := range sorted {
+		j, err := types.ParseJID(m.JID)
+		if err != nil || j.IsEmpty() || m.Name == "" || !strings.Contains(text, "@"+m.Name) {
+			continue
+		}
+		pairs = append(pairs, "@"+m.Name, "@"+j.User)
+		if !seen[j.String()] {
+			seen[j.String()] = true
+			jids = append(jids, j.String())
+		}
+	}
+	if len(pairs) == 0 {
+		return text, nil
+	}
+	return strings.NewReplacer(pairs...).Replace(text), jids
+}
+
 // withMentions adds the mentions to a row's extra, a JSON object or "". Other keys stay as they were.
 func withMentions(extra string, ms []mention) string {
 	x := map[string]json.RawMessage{}

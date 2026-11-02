@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"reflect"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -22,6 +24,27 @@ func TestAtNames(t *testing.T) {
 	}
 	if got := atNames("no mentions", nil); got != "no mentions" {
 		t.Errorf("got %q", got)
+	}
+}
+
+func TestMentionWire(t *testing.T) {
+	ms := []mention{
+		{"55@lid", "Anna"}, {"99887766@lid", "Anna Lee"}, // the longer name must win at "@Anna Lee"
+		{"4915700000002@s.whatsapp.net", "Bob"},
+		{"", "Me"},              // ours has no jid: stays text
+		{"not a jid@@@", "Zed"}, // a bad one is skipped
+		{"77@lid", "Gone"},      // no longer in the text
+	}
+	wire, jids := mentionWire("hi @Anna Lee, @Anna and @Bob @Me @Zed", ms)
+	if want := "hi @99887766, @55 and @4915700000002 @Me @Zed"; wire != want {
+		t.Errorf("wire %q, want %q", wire, want)
+	}
+	sort.Strings(jids)
+	if want := []string{"4915700000002@s.whatsapp.net", "55@lid", "99887766@lid"}; !reflect.DeepEqual(jids, want) {
+		t.Errorf("jids %v, want %v", jids, want)
+	}
+	if wire, jids := mentionWire("plain", nil); wire != "plain" || jids != nil {
+		t.Errorf("no mentions: %q %v", wire, jids)
 	}
 }
 

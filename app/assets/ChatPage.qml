@@ -139,6 +139,7 @@ Page {
             // composer.text notifies only when committed (as SearchBar's field), so mic follows this.
             onTextChanging: {
                 page.typed = /\S/.test(text)
+                mentionBar.find(text)
                 ctl.composing(text)
             }
         },
@@ -204,7 +205,7 @@ Page {
             return
         }
         // Cleared only once the engine has it: it writes the row before it replies, so nothing typed is lost.
-        if (!(staged == "" ? ctl.send(composer.text) : page.sendStaged(text))) {
+        if (!(staged == "" ? ctl.send(composer.text, mentionBar.take(composer.text)) : page.sendStaged(text))) {
             notSent.show()
             return
         }
@@ -459,6 +460,11 @@ Page {
         ReactBar {
             id: reactBar
             jid: page.chat ? page.chat.jid : ""
+        }
+        MentionBar {
+            id: mentionBar
+            people: page.chat && page.chat.kind == 1 && ctl.groupInfo.participants ? ctl.groupInfo.participants : []
+            field: composer
         }
         ReplyBar {
             name: ctl.replyName

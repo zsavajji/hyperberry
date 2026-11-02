@@ -43,7 +43,10 @@ func registerSend(srv *Server, s *Session) {
 }
 
 func (s *Session) handleSend(req json.RawMessage) (any, error) {
-	var r struct{ Chat, Text, Quote string }
+	var r struct {
+		Chat, Text, Quote string
+		Mentions          []mention
+	}
 	if err := json.Unmarshal(req, &r); err != nil || strings.TrimSpace(r.Text) == "" {
 		return nil, &Error{"bad_request", "msg.send needs chat and non-empty text"}
 	}
@@ -53,12 +56,23 @@ func (s *Session) handleSend(req json.RawMessage) (any, error) {
 	}
 	id, now := cli.GenerateMessageID(), time.Now().Unix()
 
-	q, created := s.store.queueOutgoing(jid, r.Chat, id, r.Text, r.Quote, now)
+	// Our row keeps the text as typed ("@Anna Lee") and the mentions, so its bubble links them as a
+	// received one does; the wire message has "@<number>".
+	wire, jids := mentionWire(r.Text, r.Mentions)
+	extra := ""
+	if len(jids) > 0 {
+		extra = withMentions("", r.Mentions)
+	}
+	q, created := s.store.queueOutgoing(jid, r.Chat, id, r.Text, r.Quote, extra, now)
 	s.nameNew(cli, jid, r.Chat, created)
 	msg := &waE2E.Message{Conversation: &r.Text}
-	if q.ID != "" {
-		msg = &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: &r.Text,
-			ContextInfo: quoteInfo(cli, r.Chat, q)}}
+	if q.ID != "" || len(jids) > 0 {
+		ci := &waE2E.ContextInfo{}
+		if q.ID != "" {
+			ci = quoteInfo(cli, r.Chat, q)
+		}
+		ci.MentionedJID = jids
+		msg = &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: &wire, ContextInfo: ci}}
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
@@ -196,8 +210,9 @@ func deleteForMePatch(chat types.JID, rows []msgRow) appstate.PatchInfo {
 	return p
 }
 
-func (st *Store) queueOutgoing(jid types.JID, chat, id, text, quote string, now int64) (msgRow, bool) {
-	return st.queueRow(jid, chat, quote, msgRow{Chat: chat, ID: id, TS: now, Out: true, State: stateSending, Kind: msgText, Text: text})
+// queueOutgoing queues our text; extra is the row's (its mentions), "" for none.
+func (st *Store) queueOutgoing(jid types.JID, chat, id, text, quote, extra string, now int64) (msgRow, bool) {
+	return st.queueRow(jid, chat, quote, msgRow{Chat: chat, ID: id, TS: now, Out: true, State: stateSending, Kind: msgText, Text: text, Extra: extra})
 }
 
 // queueRow puts our message in as sending, so the UI shows the bubble while the send is in

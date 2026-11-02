@@ -122,6 +122,13 @@ func TestSimSend(t *testing.T) {
 	}
 	eventually(t, st, 1, "SELECT count(*) FROM messages WHERE chat = ? AND text = 'yes' AND quote_id = 'SIMH1.0' AND quote_preview != ''", g)
 
+	// A mention keeps the text as typed and lists who, for the bubble's links.
+	if _, err := s.handleSend([]byte(`{"chat":"` + g + `","text":"hey @Anna Lee","mentions":[{"jid":"99@lid","name":"Anna Lee"}]}`)); err != nil {
+		t.Fatal(err)
+	}
+	eventually(t, st, 1, `SELECT count(*) FROM messages WHERE chat = ? AND text = 'hey @Anna Lee'
+AND extra = '{"mentions":[{"jid":"99@lid","name":"Anna Lee"}]}'`, g)
+
 	for req, code := range map[string]string{
 		`{"chat":"` + chat + `","text":"  "}`: "bad_request",
 		`{"chat":"","text":"hi"}`:             "bad_chat",
