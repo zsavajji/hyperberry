@@ -54,6 +54,10 @@ NavigationPane {
             id: coverDef
             source: "cover.qml"
         },
+        ComponentDefinition {
+            id: viewerDef
+            source: "PhotoViewer.qml"
+        },
         TextStyleDefinition {
             id: emoji
             fontFamily: "sans-serif, HBEmoji"
@@ -112,6 +116,13 @@ NavigationPane {
     function openRow(row) {
         backToList()
         at(0).openChat(row)
+    }
+
+    // A photo full screen (step 6.1): a received one, or an info page's picture.
+    function showPhoto(path) {
+        var viewer = viewerDef.createObject()
+        viewer.path = path
+        push(viewer)
     }
 
     // Every page above the list goes out. Deleting a chat (step 5.8b) uses it too.

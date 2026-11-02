@@ -252,6 +252,9 @@ Page {
                         imageSource: page.hasPicture ? "file://" + page.info.picture : ""
                         scalingMethod: ScalingMethod.AspectFill
                         loadEffect: ImageViewLoadEffect.None
+                        gestureHandlers: TapHandler {
+                            onTapped: nav.showPhoto(page.info.picture)
+                        }
                     }
                 }
                 Label {

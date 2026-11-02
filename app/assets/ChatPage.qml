@@ -58,14 +58,10 @@ Page {
             source: "ContactInfoPage.qml"
         },
         // A received photo, video, audio file or document (step 6.1): MediaOpener fetches the file
-        // and hands it to the system; a photo opens in our viewer instead.
+        // and hands it to the system; a photo opens in our viewer instead (nav.showPhoto).
         MediaOpener {
             id: media
             link: engine
-        },
-        ComponentDefinition {
-            id: viewerDef
-            source: "PhotoViewer.qml"
         },
         // Added for people and groups only (ActionItem has no visible).
         ActionItem {
@@ -295,9 +291,7 @@ Page {
     // A photo opens in our viewer, anything else in the system's app for its type.
     function showMedia(kind, path) {
         if (kind == "photo") {
-            var viewer = viewerDef.createObject()
-            viewer.path = path
-            nav.push(viewer)
+            nav.showPhoto(path)
         } else if (!media.openFile(path)) {
             mediaFailed.show()
         }
