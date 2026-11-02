@@ -66,6 +66,7 @@ func (st *Store) history(ctx context.Context, t *storeTx, cli *whatsmeow.Client,
 			}
 			st.apply(ctx, t, cli, key, ev, false)
 			historyReactions(ctx, t, cli, key, chat, alt, ev)
+			historyVotes(ctx, t, cli, key, chat, alt, ev)
 		}
 
 		unread := int(conv.GetUnreadCount())
@@ -105,8 +106,8 @@ func (st *Store) message(ctx context.Context, t *storeTx, cli *whatsmeow.Client,
 	st.apply(ctx, t, cli, key, e, true)
 }
 
-// apply writes one message event, live or from history: a new message, an edit, a revoke or
-// a reaction (its row, and the chat preview).
+// apply writes one message event, live or from history: a new message, an edit, a revoke, a
+// reaction or a poll vote (its row, and the chat preview).
 func (st *Store) apply(ctx context.Context, t *storeTx, cli *whatsmeow.Client, key string, e *events.Message, live bool) {
 	// A business message is written as what it wraps (msgflat.go). On a copy: the event is
 	// hypermeow's, and this runs on the writer after the handlers returned.
@@ -132,6 +133,12 @@ func (st *Store) apply(ctx context.Context, t *storeTx, cli *whatsmeow.Client, k
 		liveReaction(ctx, t, cli, key, e, r, name)
 		return
 	}
+	if m.GetPollUpdateMessage() != nil { // a vote: no row, no unread, no preview (polls.go)
+		if live { // history carries them decrypted, with the poll
+			st.liveVote(ctx, t, cli, key, e, name)
+		}
+		return
+	}
 	row, ok := rowFromMessage(key, e, name)
 	if !ok {
 		return
@@ -153,7 +160,9 @@ func (st *Store) apply(ctx context.Context, t *storeTx, cli *whatsmeow.Client, k
 	}
 	fresh := t.insertMessage(row)
 	t.setLast(key, row.TS, chatPreview(row), row.Out, row.State)
-	if live && fresh && !row.Out {
+	// A pin is a line in the chat, not news: WhatsApp doesn't alert for it either.
+	pin := row.Kind == msgNotice && (row.Text == "pin" || row.Text == "unpin")
+	if live && fresh && !row.Out && !pin {
 		t.addUnread(key, 1)
 		t.notifyIncoming(key)
 	}

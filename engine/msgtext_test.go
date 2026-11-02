@@ -32,7 +32,7 @@ func TestContent(t *testing.T) {
 		{"audio", &waE2E.Message{AudioMessage: &waE2E.AudioMessage{}}, msgAudio, "", "", "Audio", true},
 		{"document", &waE2E.Message{DocumentMessage: &waE2E.DocumentMessage{FileName: proto.String("a.pdf")}}, msgDoc, "a.pdf", "", "Document: a.pdf", true},
 		{"sticker", &waE2E.Message{StickerMessage: &waE2E.StickerMessage{}}, msgSticker, "", "", "Sticker", true},
-		{"poll", &waE2E.Message{PollCreationMessage: &waE2E.PollCreationMessage{Name: proto.String("Pizza?")}}, msgOther, "Poll: Pizza?", "", "Poll: Pizza?", true},
+		{"poll", &waE2E.Message{PollCreationMessage: &waE2E.PollCreationMessage{Name: proto.String("Pizza?")}}, msgPoll, "Pizza?", "", "Poll: Pizza?", true},
 		{"reaction", &waE2E.Message{ReactionMessage: &waE2E.ReactionMessage{Text: proto.String("x")}}, 0, "", "", "", false},
 		{"empty", &waE2E.Message{MessageContextInfo: &waE2E.MessageContextInfo{}}, 0, "", "", "", false},
 	}

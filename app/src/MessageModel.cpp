@@ -2,6 +2,7 @@
 
 #include "EngineLink.h"
 #include "MediaData.h"
+#include "MessageKinds.h"
 #include "Moves.h"
 #include "colors.h"
 #include "dates.h"
@@ -35,7 +36,7 @@ static const char *const kColumns = "rowid, id, ts, out, state, sender, sender_n
                                     QUOTED("out") ", " QUOTED("sender") ", " QUOTED("sender_name") ", duration, waveform, media_state, played, "
                                     "thumb, width, height, size, path, "
                                     "(SELECT group_concat(emoji, ' ') FROM reactions r WHERE r.chat = messages.chat AND r.msg = messages.id), "
-                                    "(SELECT emoji FROM reactions r WHERE r.chat = messages.chat AND r.msg = messages.id AND r.sender = '')";
+                                    "(SELECT emoji FROM reactions r WHERE r.chat = messages.chat AND r.msg = messages.id AND r.sender = ''), extra";
 #undef QUOTED
 
 bool MessageModel::lessThan(const Msg &a, const Msg &b)
@@ -93,20 +94,19 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
     const int kind = q.value(7).toInt();
     const QString text = q.value(8).toString();
     const bool deleted = q.value(11).toInt() != 0;
-    m.service = kind == 6;
+    const QLocale locale = m_region.locale();
+    const QString time = locale.toString(QDateTime::fromTime_t(m.ts).time(),
+                                         timeFormat(locale, DateFormat::Short));
+    // The wording of kinds 5, 6, 7 and 9 to 14 (kind 6 and 13 are service lines).
+    QString label, shown = text;
+    m.service = MessageKinds::fill(kind, text, q.value(26).toString(), out, q.value(6).toString(),
+                                   time, locale, label, shown);
     if (m.service) {
-        m.data["text"] = text;
+        m.data["text"] = shown;
         return m;
     }
-
-    const QLocale locale = m_region.locale();
-    QString label, shown = text;
     // Photos, videos, audio files and documents are drawn by MediaBubble: no label, and a
     // document's text (its name) is the bubble's. A caption stays in the text.
-    switch (kind) {
-    case 5: label = tr("Sticker"); break;
-    case 7: label = text; shown = QString(); break; // "Location", "Poll: …"
-    }
     if (MediaData::fill(m.data, m.id, deleted ? 0 : kind, text, q.value(19).toByteArray(),
                         q.value(20).toInt(), q.value(21).toInt(), q.value(22).toLongLong(),
                         q.value(15).toInt(), q.value(17).toInt(), q.value(23).toString(), locale)
@@ -140,8 +140,7 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
     const int state = q.value(4).toInt();
     m.data["revocable"] = out && !deleted && state >= 1 && state <= 3
                           && QDateTime::currentDateTime().toTime_t() - m.ts < 60 * 3600;
-    m.data["time"] = locale.toString(QDateTime::fromTime_t(m.ts).time(),
-                                     timeFormat(locale, DateFormat::Short));
+    m.data["time"] = time;
     m.data["label"] = label;
     const bool voice = kind == 3 && !deleted;
     m.data["voice"] = voice;

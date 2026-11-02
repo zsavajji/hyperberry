@@ -10,7 +10,7 @@
 #include <QImageReader>
 
 // "m:ss"
-static QString clock(int seconds)
+QString MediaData::clock(int seconds)
 {
     return QString("%1:%2").arg(seconds / 60).arg(seconds % 60, 2, 10, QChar('0'));
 }

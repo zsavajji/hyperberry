@@ -13,15 +13,15 @@ func (t *storeTx) messageByID(chat, id string) (msgRow, bool) {
 	r := msgRow{Chat: chat, ID: id}
 	var sender, name, text, qid, qprev sql.NullString
 	var secs sql.NullInt64
-	var media sql.NullString
+	var media, extra sql.NullString
 	err := t.tx.QueryRow(`SELECT ts, out, state, sender, sender_name, kind, text, quote_id, quote_preview,
 edited, deleted, duration, waveform, media, media_state, played, thumb, COALESCE(width, 0), COALESCE(height, 0),
-COALESCE(size, 0), COALESCE(path, '') FROM messages WHERE chat = ? AND id = ?`, chat, id).
+COALESCE(size, 0), COALESCE(path, ''), extra FROM messages WHERE chat = ? AND id = ?`, chat, id).
 		Scan(&r.TS, &r.Out, &r.State, &sender, &name, &r.Kind, &text, &qid, &qprev, &r.Edited, &r.Deleted,
-			&secs, &r.Waveform, &media, &r.MediaState, &r.Played, &r.Thumb, &r.Width, &r.Height, &r.Size, &r.Path)
+			&secs, &r.Waveform, &media, &r.MediaState, &r.Played, &r.Thumb, &r.Width, &r.Height, &r.Size, &r.Path, &extra)
 	r.Sender, r.SenderName, r.Text, r.QuoteID, r.QuotePreview =
 		sender.String, name.String, text.String, qid.String, qprev.String
-	r.Duration, r.Media = int(secs.Int64), media.String
+	r.Duration, r.Media, r.Extra = int(secs.Int64), media.String, extra.String
 	return r, err == nil
 }
 
@@ -35,6 +35,7 @@ func (t *storeTx) deleteMessage(chat, id string) {
 	}
 	t.changed(chat, id)
 	t.exec("DELETE FROM reactions WHERE chat = ? AND msg = ?", chat, id)
+	t.exec("DELETE FROM poll_votes WHERE chat = ? AND msg = ?", chat, id)
 	if !wasLast {
 		return
 	}
@@ -52,7 +53,7 @@ func (t *storeTx) deleteMessage(chat, id string) {
 }
 
 // clearChat is "clear chat", or with drop "delete chat": every message row goes, and the voice
-// notes' and photos' files once it has committed (not Downloads: those are the user's, as a browser's). A cleared chat keeps its row and last_ts, so its place in
+// notes', photos' and stickers' files once it has committed (not Downloads: those are the user's, as a browser's). A cleared chat keeps its row and last_ts, so its place in
 // the list, with no preview and nothing unread; a deleted one goes too.
 func (t *storeTx) clearChat(chat string, drop bool) {
 	rows, err := t.tx.Query("SELECT id, kind FROM messages WHERE chat = ?", chat)
@@ -60,7 +61,7 @@ func (t *storeTx) clearChat(chat string, drop bool) {
 		t.log.Warnf("clear chat: %v", err)
 		return
 	}
-	var voice, photos []string
+	var voice, photos, stickers []string
 	for rows.Next() {
 		var id string
 		var kind int
@@ -71,12 +72,15 @@ func (t *storeTx) clearChat(chat string, drop bool) {
 				voice = append(voice, id)
 			case msgPhoto:
 				photos = append(photos, id)
+			case msgSticker:
+				stickers = append(stickers, id)
 			}
 		}
 	}
 	rows.Close()
 	t.exec("DELETE FROM messages WHERE chat = ?", chat)
 	t.exec("DELETE FROM reactions WHERE chat = ?", chat)
+	t.exec("DELETE FROM poll_votes WHERE chat = ?", chat)
 	if drop {
 		if t.exec("DELETE FROM chats WHERE jid = ?", chat) > 0 {
 			t.chats[chat] = true
@@ -85,7 +89,7 @@ func (t *storeTx) clearChat(chat string, drop bool) {
 	} else if t.touch(chat, "UPDATE chats SET last_preview = NULL, unread = 0 WHERE jid = ?") {
 		t.hubItem(chat, false, false)
 	}
-	if t.st != nil && len(voice)+len(photos) > 0 { // st is nil in tests of single writes
+	if t.st != nil && len(voice)+len(photos)+len(stickers) > 0 { // st is nil in tests of single writes
 		dir := t.st.srv.dir
 		t.after = append(t.after, func() {
 			for _, id := range voice {
@@ -94,6 +98,9 @@ func (t *storeTx) clearChat(chat string, drop bool) {
 			}
 			for _, id := range photos {
 				os.Remove(photoPath(dir, id))
+			}
+			for _, id := range stickers {
+				os.Remove(stickerPath(dir, id))
 			}
 		})
 	}

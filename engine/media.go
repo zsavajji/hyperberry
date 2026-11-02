@@ -30,6 +30,9 @@ func (m mediaInfo) message(kind int) whatsmeow.DownloadableMessage {
 	case msgPhoto:
 		return &waE2E.ImageMessage{DirectPath: &m.DirectPath, MediaKey: m.MediaKey, FileEncSHA256: m.FileEncSHA256,
 			FileSHA256: m.FileSHA256, FileLength: &m.FileLength, Mimetype: &m.Mimetype}
+	case msgSticker: // downloaded as an image: hypermeow's media type for stickers is the photos'
+		return &waE2E.StickerMessage{DirectPath: &m.DirectPath, MediaKey: m.MediaKey, FileEncSHA256: m.FileEncSHA256,
+			FileSHA256: m.FileSHA256, FileLength: &m.FileLength, Mimetype: &m.Mimetype}
 	case msgVideo:
 		return &waE2E.VideoMessage{DirectPath: &m.DirectPath, MediaKey: m.MediaKey, FileEncSHA256: m.FileEncSHA256,
 			FileSHA256: m.FileSHA256, FileLength: &m.FileLength, Mimetype: &m.Mimetype}

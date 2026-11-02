@@ -277,6 +277,7 @@ func (st *Store) clear() {
 		}
 		t.exec("DELETE FROM messages")
 		t.exec("DELETE FROM reactions")
+		t.exec("DELETE FROM poll_votes")
 		t.exec("DELETE FROM chats")
 	}
 }
@@ -379,13 +380,13 @@ func (t *storeTx) setArchived(jid string, v bool) {
 func (t *storeTx) insertMessage(m msgRow) bool {
 	if t.exec(`INSERT OR IGNORE INTO messages(chat, id, ts, out, state, sender, sender_name, kind, text,
 quote_id, quote_preview, edited, deleted, duration, waveform, media, media_state, played,
-thumb, width, height, size, path)
+thumb, width, height, size, path, extra)
 VALUES(?, ?, ?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?, NULLIF(?, ''), NULLIF(?, ''), NULLIF(?, ''), ?, ?,
-NULLIF(?, 0), ?, NULLIF(?, ''), ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, ''))`,
+NULLIF(?, 0), ?, NULLIF(?, ''), ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, ''), NULLIF(?, ''))`,
 		m.Chat, m.ID, m.TS, m.Out, m.State, m.Sender, m.SenderName, m.Kind, m.Text,
 		m.QuoteID, m.QuotePreview, m.Edited, m.Deleted,
 		m.Duration, blob(m.Waveform), m.Media, m.MediaState, m.Played,
-		blob(m.Thumb), m.Width, m.Height, m.Size, m.Path) == 0 {
+		blob(m.Thumb), m.Width, m.Height, m.Size, m.Path, m.Extra) == 0 {
 		return false
 	}
 	t.changed(m.Chat, m.ID)
@@ -410,6 +411,7 @@ func (t *storeTx) revokeMessage(chat, id string) {
 	if t.exec("UPDATE messages SET deleted = 1, text = NULL WHERE chat = ? AND id = ?", chat, id) > 0 {
 		t.changed(chat, id)
 		t.exec("DELETE FROM reactions WHERE chat = ? AND msg = ?", chat, id)
+		t.exec("DELETE FROM poll_votes WHERE chat = ? AND msg = ?", chat, id)
 		t.refreshLast(chat, id, true)
 	}
 }

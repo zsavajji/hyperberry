@@ -176,9 +176,10 @@ func TestHubSilentItems(t *testing.T) {
 		if x.item.alert {
 			t.Errorf("a muted chat alerts: %+v", x.item)
 		}
-	}
-	if c[0].item.unread != 42 {
-		t.Errorf("unread %d, want 42", c[0].item.unread)
+		// The batch's notes come in map order, so the item is found by its id.
+		if x.item.id == hubItemID(simChats[11].jid) && x.item.unread != 42 {
+			t.Errorf("unread %d, want 42", x.item.unread)
+		}
 	}
 	chat := simChats[0].jid
 	s.handleUIState([]byte(`{"fullscreen":true,"openChat":"` + chat + `"}`))

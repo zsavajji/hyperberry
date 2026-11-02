@@ -1,7 +1,7 @@
 import bb.cascades 1.4
 
-// A service line in a chat ("service" rows of MessageModel, kind 6; msg has the text), moved out
-// of ChatPage.qml to keep it under 500 lines. A chip, like a button that isn't one (Q10,
+// A service line in a chat ("service" rows of MessageModel, kinds 6 and 13; msg has the text),
+// moved out of ChatPage.qml to keep it under 500 lines. A chip, like a button that isn't one (Q10,
 // 2026-10-31). Containers have no border: the outer one's colour shows 2 px around the inner one.
 // A list item is as wide as its content, so Center alone left it on the left: the spacers'
 // spaceQuota stretches the row across the list, as the cards' text column does.

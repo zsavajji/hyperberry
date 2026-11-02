@@ -96,7 +96,7 @@ func TestFlatten(t *testing.T) {
 	loc := &waE2E.Message{InteractiveMessage: &waE2E.InteractiveMessage{
 		Header: &waE2E.InteractiveMessage_Header{Media: &waE2E.InteractiveMessage_Header_LocationMessage{
 			LocationMessage: &waE2E.LocationMessage{Name: proto.String("Shop")}}}}}
-	if kind, text, _ := content(loc); kind != msgOther || text != "Location" {
+	if kind, text, _ := content(loc); kind != msgLocation || text != "Shop" {
 		t.Errorf("location: %d %q", kind, text)
 	}
 

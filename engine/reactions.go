@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/polymorfa/hypermeow"
+	"github.com/polymorfa/hypermeow/proto/waCommon"
 	"github.com/polymorfa/hypermeow/proto/waE2E"
 	"github.com/polymorfa/hypermeow/types"
 	"github.com/polymorfa/hypermeow/types/events"
@@ -56,21 +57,30 @@ func (t *storeTx) reactedByUs(chat, msg, emoji string, ts int64) {
 	}
 }
 
-// liveReaction stores a reaction message (live, or one that history carries as a message) and
-// leaves its preview on the chat. In a 1:1 chat the reactor is the chat, so the chat's own key
+// actorKey is the key of whoever sent a live reaction or poll vote, as the reactions and
+// poll_votes tables have it: "" for us. In a 1:1 chat the actor is the chat, so the chat's own key
 // stands for them: history addresses them by the chat's JID alone (ParseWebMessage), and
 // chatKey(Sender, SenderAlt) would not always find the LID the chat is keyed by.
+func actorKey(ctx context.Context, t *storeTx, cli *whatsmeow.Client, key string, e *events.Message) string {
+	switch {
+	case e.Info.IsFromMe:
+		return ""
+	case e.Info.IsGroup:
+		return chatKey(ctx, t, cli.Store.LIDs, e.Info.Sender, e.Info.SenderAlt)
+	}
+	return key
+}
+
+// liveReaction stores a reaction message (live, or one that history carries as a message) and
+// leaves its preview on the chat.
 func liveReaction(ctx context.Context, t *storeTx, cli *whatsmeow.Client, key string, e *events.Message, r *waE2E.ReactionMessage, name string) {
 	ts := r.GetSenderTimestampMS() / 1000
 	if ts == 0 {
 		ts = e.Info.Timestamp.Unix()
 	}
-	sender, who := "", "You"
+	sender, who := actorKey(ctx, t, cli, key, e), "You"
 	if !e.Info.IsFromMe {
-		sender, who = key, firstWord(name)
-		if e.Info.IsGroup {
-			sender = chatKey(ctx, t, cli.Store.LIDs, e.Info.Sender, e.Info.SenderAlt)
-		}
+		who = firstWord(name)
 	}
 	t.setReaction(key, r.GetKey().GetID(), sender, name, r.GetText(), ts)
 	if r.GetText() != "" {
@@ -89,22 +99,29 @@ func historyReactions(ctx context.Context, t *storeTx, cli *whatsmeow.Client, ke
 		if ts == 0 {
 			ts = ev.Info.Timestamp.Unix()
 		}
-		sender, name := "", ""
-		if !r.GetKey().GetFromMe() {
-			who, whoAlt := chat, alt
-			sender = key
-			if chat.Server == types.GroupServer {
-				p, err := types.ParseJID(r.GetKey().GetParticipant())
-				if err != nil || p.IsEmpty() {
-					continue
-				}
-				who, whoAlt = p, types.EmptyJID
-				sender = chatKey(ctx, t, cli.Store.LIDs, p, types.EmptyJID)
-			}
-			name = resolveName(ctx, cli, who, whoAlt, "")
+		if sender, name, ok := historyActor(ctx, t, cli, key, chat, alt, r.GetKey()); ok {
+			t.setReaction(key, ev.Info.ID, sender, name, r.GetText(), ts)
 		}
-		t.setReaction(key, ev.Info.ID, sender, name, r.GetText(), ts)
 	}
+}
+
+// historyActor says who a reaction or poll vote of a history message is by, from its key: FromMe
+// is us, Participant the sender in a group. ok is false for a group's with no sender.
+func historyActor(ctx context.Context, t *storeTx, cli *whatsmeow.Client, key string, chat, alt types.JID, k *waCommon.MessageKey) (sender, name string, ok bool) {
+	if k.GetFromMe() {
+		return "", "", true
+	}
+	who, whoAlt := chat, alt
+	sender = key
+	if chat.Server == types.GroupServer {
+		p, err := types.ParseJID(k.GetParticipant())
+		if err != nil || p.IsEmpty() {
+			return "", "", false
+		}
+		who, whoAlt = p, types.EmptyJID
+		sender = chatKey(ctx, t, cli.Store.LIDs, p, types.EmptyJID)
+	}
+	return sender, resolveName(ctx, cli, who, whoAlt, ""), true
 }
 
 // moveReactions takes the phone-number chat's reactions to the LID chat (mergeChat). In a 1:1

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -38,6 +39,8 @@ type msgRow struct {
 	Width, Height int
 	Size          int64
 	Path          string
+	// Step 6.5: each kind's own details as JSON (msgkinds.go), "" for none.
+	Extra string
 }
 
 // content says what a message shows: its kind and text. ok is false for messages with nothing
@@ -70,15 +73,9 @@ func content(m *waE2E.Message) (kind int, text string, ok bool) {
 		return msgDoc, d.GetTitle(), true
 	case m.GetStickerMessage() != nil:
 		return msgSticker, "", true
-	case m.GetLocationMessage() != nil || m.GetLiveLocationMessage() != nil:
-		return msgOther, "Location", true
-	case m.GetContactMessage() != nil || m.GetContactsArrayMessage() != nil:
-		return msgOther, "Contact", true
 	}
-	for _, p := range []interface{ GetName() string }{m.GetPollCreationMessage(), m.GetPollCreationMessageV2(), m.GetPollCreationMessageV3()} {
-		if n := p.GetName(); n != "" {
-			return msgOther, "Poll: " + n, true
-		}
+	if k, t, ok, done := moreKinds(m); done {
+		return k, t, ok
 	}
 	c := proto.Clone(m).(*waE2E.Message)
 	c.MessageContextInfo, c.SenderKeyDistributionMessage = nil, nil
@@ -102,21 +99,16 @@ func fieldNames(m *waE2E.Message) string {
 
 // quoteOf returns the id and a one-line preview of the message a reply answers.
 func quoteOf(m *waE2E.Message) (id, prev string) {
+	// Whichever field is set carries the ContextInfo: any kind can be a reply.
 	var ci *waE2E.ContextInfo
-	switch {
-	case m.GetExtendedTextMessage() != nil:
-		ci = m.GetExtendedTextMessage().GetContextInfo()
-	case m.GetImageMessage() != nil:
-		ci = m.GetImageMessage().GetContextInfo()
-	case m.GetVideoMessage() != nil:
-		ci = m.GetVideoMessage().GetContextInfo()
-	case m.GetAudioMessage() != nil:
-		ci = m.GetAudioMessage().GetContextInfo()
-	case m.GetDocumentMessage() != nil:
-		ci = m.GetDocumentMessage().GetContextInfo()
-	case m.GetStickerMessage() != nil:
-		ci = m.GetStickerMessage().GetContextInfo()
-	}
+	flatten(m).ProtoReflect().Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
+		if fd.Message() != nil && !fd.IsList() && !fd.IsMap() {
+			if g, ok := v.Message().Interface().(interface{ GetContextInfo() *waE2E.ContextInfo }); ok {
+				ci = g.GetContextInfo()
+			}
+		}
+		return ci == nil
+	})
 	if ci.GetStanzaID() == "" {
 		return "", ""
 	}
@@ -141,8 +133,13 @@ func rowFromMessage(key string, e *events.Message, senderName string) (msgRow, b
 	if e.Info.IsGroup {
 		r.SenderName = senderName
 	}
-	r.QuoteID, r.QuotePreview = quoteOf(e.Message)
-	if a := e.Message.GetAudioMessage(); a != nil && a.GetPTT() {
+	m := flatten(e.Message)
+	r.QuoteID, r.QuotePreview = quoteOf(m)
+	if e.IsViewOnce { // WhatsApp's companions don't show view-once media either
+		r.Kind, r.Text = msgNotice, "view_once"
+		return r, true
+	}
+	if a := m.GetAudioMessage(); a != nil && a.GetPTT() {
 		r.Duration, r.Waveform = int(a.GetSeconds()), a.GetWaveform()
 		if a.GetDirectPath() != "" {
 			info := mediaInfo{a.GetDirectPath(), a.GetMediaKey(), a.GetFileEncSHA256(), a.GetFileSHA256(),
@@ -152,12 +149,14 @@ func rowFromMessage(key string, e *events.Message, senderName string) (msgRow, b
 			}
 		}
 	}
-	fillMedia(&r, e.Message)
+	fillMedia(&r, m)
+	fillExtra(&r, m)
 	return r, true
 }
 
-// fillMedia adds what a photo, video, document or audio file row carries (step 6.1), as the
-// voice note's code above does for its own. Anything else, voice notes included, is left alone.
+// fillMedia adds what a photo, video, sticker, document or audio file row carries (step 6.1),
+// as the voice note's code above does for its own. Anything else, voice notes included, is left
+// alone.
 func fillMedia(r *msgRow, m *waE2E.Message) {
 	var info mediaInfo
 	switch {
@@ -169,6 +168,10 @@ func fillMedia(r *msgRow, m *waE2E.Message) {
 		v := m.GetVideoMessage()
 		r.Thumb, r.Width, r.Height, r.Duration = v.GetJPEGThumbnail(), int(v.GetWidth()), int(v.GetHeight()), int(v.GetSeconds())
 		info = mediaInfo{v.GetDirectPath(), v.GetMediaKey(), v.GetFileEncSHA256(), v.GetFileSHA256(), v.GetFileLength(), v.GetMimetype()}
+	case m.GetStickerMessage() != nil: // the thumbnail is a PNG
+		s := m.GetStickerMessage()
+		r.Thumb, r.Width, r.Height = s.GetPngThumbnail(), int(s.GetWidth()), int(s.GetHeight())
+		info = mediaInfo{s.GetDirectPath(), s.GetMediaKey(), s.GetFileEncSHA256(), s.GetFileSHA256(), s.GetFileLength(), s.GetMimetype()}
 	case m.GetDocumentMessage() != nil:
 		d := m.GetDocumentMessage()
 		r.Thumb = d.GetJPEGThumbnail()
@@ -192,12 +195,24 @@ func fillMedia(r *msgRow, m *waE2E.Message) {
 // A voice note shows its length when known.
 func preview(kind int, text string, secs int) string {
 	line := clip(firstLine(text), 100)
-	label := ""
+	label, sep := "", " "
 	switch kind {
 	case msgPhoto:
 		label = "Photo"
 	case msgVideo:
 		label = "Video"
+	case msgLocation:
+		label = "Location"
+	case msgContact:
+		label, sep = "Contact", ": "
+	case msgPoll:
+		label, sep = "Poll", ": "
+	case msgEvent:
+		label, sep = "Event", ": "
+	case msgInvite:
+		label, sep = "Group invite", ": "
+	case msgNotice:
+		return cmp.Or(noticeWords[text], unknownText)
 	case msgVoice:
 		if secs > 0 {
 			return fmt.Sprintf("🎤 %d:%02d", secs/60, secs%60)
@@ -218,7 +233,7 @@ func preview(kind int, text string, secs int) string {
 	if line == "" {
 		return label
 	}
-	return label + " " + line
+	return label + sep + line
 }
 
 // chatPreview is the chat list line: "You: hi", "Anna: Photo".

@@ -63,7 +63,7 @@ func TestMigrateReactions(t *testing.T) {
 	var v, msgs int
 	db.QueryRow("PRAGMA user_version").Scan(&v)
 	db.QueryRow("SELECT count(*) FROM messages").Scan(&msgs)
-	if v != 4 || msgs != 1 {
+	if v != len(migrations) || msgs != 1 {
 		t.Fatalf("version %d, %d messages", v, msgs)
 	}
 	ins := `INSERT INTO reactions(chat, msg, sender, sender_name, emoji, ts) VALUES('a@lid', 'm1', ?, NULL, '👍', 5)`

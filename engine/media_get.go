@@ -23,6 +23,9 @@ import (
 // photoPath is where a photo lives: in the sandbox, for our own viewer.
 func photoPath(dir, id string) string { return filepath.Join(dir, "media", id+".jpg") }
 
+// stickerPath is where a sticker lives: WebP, which the UI decodes itself (step 6.5b).
+func stickerPath(dir, id string) string { return filepath.Join(dir, "media", id+".webp") }
+
 // mediaExts are the extensions of what WhatsApp sends, since the phone has no mime database;
 // anything else is asked of mime, then falls back by kind.
 var mediaExts = map[string]string{
@@ -47,13 +50,15 @@ func mediaExt(mimeType string, kind int) string {
 	return ".bin"
 }
 
-// mediaTarget is the file a download of row is written to: a photo in media/, a voice note as
+// mediaTarget is the file a download of row is written to: a photo or sticker in media/, a voice note as
 // voice.play has it, the rest in Downloads under the document's own name or <id>.<ext>. A name
 // already taken there gets the message id in front.
 func mediaTarget(dir string, row msgRow, mimeType string) string {
 	switch row.Kind {
 	case msgPhoto:
 		return photoPath(dir, row.ID)
+	case msgSticker:
+		return stickerPath(dir, row.ID)
 	case msgVoice:
 		return oggPath(dir, row.ID)
 	}

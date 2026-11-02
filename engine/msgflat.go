@@ -26,8 +26,9 @@ type bizMsg struct {
 // interactive, template and buttons messages (a video with a title, a text and a button), and
 // the Q10 can't act on their buttons (they open the phone's own settings or a business's
 // flows). So they show as what they wrap, a photo, video, document or text, with the title, the
-// text, the footer and the button labels as its caption. Anything else, and a business message
-// with nothing to show, comes back as it was.
+// text, the footer and the button labels as its caption. Lists, their replies, products and
+// orders do the same (msgbiz.go), which also unwraps round video notes and the future-proof
+// wrappers. Anything else, and a business message with nothing to show, comes back as it was.
 func flatten(m *waE2E.Message) *waE2E.Message {
 	var b bizMsg
 	switch {
@@ -38,7 +39,10 @@ func flatten(m *waE2E.Message) *waE2E.Message {
 	case m.GetButtonsMessage() != nil:
 		b = fromButtons(m.GetButtonsMessage())
 	default:
-		return m
+		var ok bool
+		if b, ok = moreBiz(m); !ok {
+			return unwrap(m) // msgbiz.go
+		}
 	}
 	if out := b.message(); out != nil {
 		return out
@@ -131,7 +135,7 @@ func (b bizMsg) message() *waE2E.Message {
 		}
 		return &waE2E.Message{DocumentMessage: d}
 	case b.loc != nil:
-		// ponytail: a location shows as "Location" only, so its text is dropped.
+		// ponytail: a location shows its own name and address, so the business's text is dropped.
 		l := proto.Clone(b.loc).(*waE2E.LocationMessage)
 		l.ContextInfo = cmp.Or(l.ContextInfo, b.ci)
 		return &waE2E.Message{LocationMessage: l}

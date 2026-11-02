@@ -708,19 +708,132 @@
     </message>
 </context>
 <context>
-    <name>MessageModel</name>
+    <name>MessageKinds</name>
     <message>
-        <location filename="../src/MessageModel.cpp" line="107"/>
+        <location filename="../src/MessageKinds.cpp" line="23"/>
+        <source>Voice call, %1</source>
+        <translation>Chiamata vocale, %1</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageKinds.cpp" line="24"/>
+        <source>Voice call</source>
+        <translation>Chiamata vocale</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageKinds.cpp" line="26"/>
+        <source>Video call, %1</source>
+        <translation>Videochiamata, %1</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageKinds.cpp" line="27"/>
+        <source>Video call</source>
+        <translation>Videochiamata</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageKinds.cpp" line="29"/>
+        <source>Missed voice call</source>
+        <translation>Chiamata vocale persa</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageKinds.cpp" line="31"/>
+        <source>Missed video call</source>
+        <translation>Videochiamata persa</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageKinds.cpp" line="36"/>
+        <source>You pinned a message</source>
+        <translation>Hai fissato un messaggio</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageKinds.cpp" line="37"/>
+        <source>%1 pinned a message</source>
+        <translation>%1 ha fissato un messaggio</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageKinds.cpp" line="38"/>
+        <source>A message was pinned</source>
+        <translation>È stato fissato un messaggio</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageKinds.cpp" line="41"/>
+        <source>You unpinned a message</source>
+        <translation>Hai tolto un messaggio fissato</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageKinds.cpp" line="42"/>
+        <source>%1 unpinned a message</source>
+        <translation>%1 ha tolto un messaggio fissato</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageKinds.cpp" line="43"/>
+        <source>A message was unpinned</source>
+        <translation>È stato tolto un messaggio fissato</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageKinds.cpp" line="46"/>
+        <source>View once message. Open it on your phone.</source>
+        <translation>Messaggio da visualizzare una volta. Aprilo sul telefono.</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageKinds.cpp" line="48"/>
+        <source>This message can only be seen on your phone.</source>
+        <translation>Questo messaggio si può vedere solo sul telefono.</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageKinds.cpp" line="49"/>
+        <source>Message</source>
+        <translation>Messaggio</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageKinds.cpp" line="68"/>
         <source>Sticker</source>
         <translation>Sticker</translation>
     </message>
+    <message>
+        <location filename="../src/MessageKinds.cpp" line="78"/>
+        <source>Live location</source>
+        <translation>Posizione in tempo reale</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageKinds.cpp" line="79"/>
+        <source>Location</source>
+        <translation>Posizione</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageKinds.cpp" line="82"/>
+        <source>Contact</source>
+        <translation>Contatto</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageKinds.cpp" line="95"/>
+        <source>Poll</source>
+        <translation>Sondaggio</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageKinds.cpp" line="103"/>
+        <source>Event canceled</source>
+        <translation>Evento annullato</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageKinds.cpp" line="104"/>
+        <source>Event</source>
+        <translation>Evento</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageKinds.cpp" line="122"/>
+        <source>Group invite</source>
+        <translation>Invito al gruppo</translation>
+    </message>
+</context>
+<context>
+    <name>MessageModel</name>
     <message>
         <location filename="../src/MessageModel.cpp" line="117"/>
         <source>This message was deleted</source>
         <translation>Questo messaggio è stato eliminato</translation>
     </message>
     <message>
-        <location filename="../src/MessageModel.cpp" line="174"/>
+        <location filename="../src/MessageModel.cpp" line="173"/>
         <source>You</source>
         <translation>Tu</translation>
     </message>

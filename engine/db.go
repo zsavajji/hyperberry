@@ -27,6 +27,13 @@ const (
 	msgService
 	msgOther
 	msgAudio // audio that isn't a voice note (step 6.1); appended: the iota is never reordered
+	// Step 6.5: a kind per type the UI words itself (docs/protocol.md). Appended, like msgAudio.
+	msgLocation
+	msgContact
+	msgPoll
+	msgEvent
+	msgNotice // a service line the UI words: text is a code (noticeWords)
+	msgInvite
 )
 
 const (
@@ -86,6 +93,18 @@ ALTER TABLE messages ADD COLUMN path TEXT;`,
   sender TEXT NOT NULL,
   sender_name TEXT,
   emoji TEXT NOT NULL,
+  ts INTEGER NOT NULL,
+  PRIMARY KEY(chat, msg, sender));`,
+	// Every message type (step 6.5). extra is each kind's own details as JSON (docs/protocol.md),
+	// NULL when there are none. poll_votes is one row per voter and poll, keyed as reactions are:
+	// msg is the poll's id, sender '' is us, options is the chosen options' indices joined by ","
+	// ("0,2"); a vote that chooses nothing deletes the row. A plain table: the UI's SQLite is Qt 4.8's.
+	`ALTER TABLE messages ADD COLUMN extra TEXT;
+CREATE TABLE poll_votes(
+  chat TEXT NOT NULL, msg TEXT NOT NULL,
+  sender TEXT NOT NULL,
+  sender_name TEXT,
+  options TEXT NOT NULL,
   ts INTEGER NOT NULL,
   PRIMARY KEY(chat, msg, sender));`,
 }
