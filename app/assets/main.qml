@@ -17,6 +17,11 @@ NavigationPane {
     // through properties on their ListView, as they reach emojiStyle.
     property int bodySize: Math.round(105 * settings.textScale)
     property int smallSize: Math.round(85 * settings.textScale)
+    // A pressed row, card or tappable line (the user's ask, 2026-11-02: rows gave no feedback,
+    // the action bar does): a step off ui.palette.plain (#323232 dark, #F0F0F0 bright in the
+    // 10.3 palette), so it shows on the message cards as well as on the bare page. List items
+    // reach it through a property on their ListView, as they reach emojiStyle.
+    property string pressColor: settings.theme == 1 ? "#DCDCDC" : "#464646"
     // The chat a notification tap asked for, until the chat list is up to open it.
     property string pendingChat
     Menu.definition: MenuDefinition {

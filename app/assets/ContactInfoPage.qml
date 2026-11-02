@@ -100,10 +100,14 @@ Page {
             Container {
                 id: row
                 property variant group
+                property bool pressed: false
                 horizontalAlignment: HorizontalAlignment.Fill
+                background: pressed ? Color.create(nav.pressColor) : Color.Transparent
                 gestureHandlers: TapHandler {
                     onTapped: nav.openRequested(row.group.jid)
                 }
+                onTouch: row.pressed = event.isDown() || event.isMove()
+                onTouchExit: row.pressed = false
                 Container {
                     horizontalAlignment: HorizontalAlignment.Fill
                     minHeight: ui.du(9.4)

@@ -52,6 +52,7 @@ Page {
                 property variant emojiStyle: nav.emojiStyle
                 property int bodySize: nav.bodySize
                 property int smallSize: nav.smallSize
+                property string pressColor: nav.pressColor
                 dataModel: picker.model
                 onTriggered: page.picked(dataModel.data(indexPath))
                 listItemComponents: ListItemComponent {
@@ -59,6 +60,7 @@ Page {
                     Container {
                         id: row
                         horizontalAlignment: HorizontalAlignment.Fill
+                        background: row.ListItem.active ? Color.create(row.ListItem.view.pressColor) : Color.Transparent
                         Container {
                             horizontalAlignment: HorizontalAlignment.Fill
                             minHeight: ui.du(9.4)

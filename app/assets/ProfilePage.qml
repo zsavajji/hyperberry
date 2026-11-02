@@ -150,8 +150,11 @@ Page {
                 }
                 // The name and its hint are one target.
                 Container {
+                    id: nameBox
+                    property bool pressed: false
                     visible: page.loaded
                     horizontalAlignment: HorizontalAlignment.Fill
+                    background: pressed ? Color.create(nav.pressColor) : Color.Transparent
                     Label {
                         horizontalAlignment: HorizontalAlignment.Center
                         bottomMargin: 0
@@ -173,6 +176,8 @@ Page {
                     gestureHandlers: TapHandler {
                         onTapped: page.editName()
                     }
+                    onTouch: nameBox.pressed = event.isDown() || event.isMove()
+                    onTouchExit: nameBox.pressed = false
                 }
                 // Read-only: the number is the account's.
                 Label {
@@ -207,8 +212,11 @@ Page {
             }
             // Padding, not margins: margins only space siblings, never from the container's edge.
             Container {
+                id: aboutBox
+                property bool pressed: false
                 visible: page.loaded
                 horizontalAlignment: HorizontalAlignment.Fill
+                background: pressed ? Color.create(nav.pressColor) : Color.Transparent
                 topPadding: ui.du(1.5)
                 leftPadding: ui.du(1.5)
                 rightPadding: ui.du(1.5)
@@ -232,6 +240,8 @@ Page {
                 gestureHandlers: TapHandler {
                     onTapped: page.editAbout()
                 }
+                onTouch: aboutBox.pressed = event.isDown() || event.isMove()
+                onTouchExit: aboutBox.pressed = false
             }
         }
     }

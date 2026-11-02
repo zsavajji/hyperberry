@@ -221,6 +221,7 @@ Page {
                 property variant emojiStyle: nav.emojiStyle
                 property int bodySize: nav.bodySize
                 property int smallSize: nav.smallSize
+                property string pressColor: nav.pressColor
                 // The rows' long-press menu reaches the page through the view, as MessageItem's do.
                 property bool admin: page.amAdmin
                 function change(p, action) {
@@ -237,6 +238,7 @@ Page {
                         id: row
                         property variant person: ListItemData
                         horizontalAlignment: HorizontalAlignment.Fill
+                        background: row.ListItem.active ? Color.create(row.ListItem.view.pressColor) : Color.Transparent
                         // Only an admin changes members, and not themselves: no menu at all
                         // otherwise. The set is the same on every row (rows are recycled).
                         contextMenuHandler: ContextMenuHandler {

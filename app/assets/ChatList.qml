@@ -10,6 +10,7 @@ ListView {
     property int bodySize
     property int smallSize
     property real textScale: settings.textScale
+    property string pressColor: nav.pressColor
     // True on the Archived page, where "Archive" reads "Unarchive".
     property bool archivedList: false
     signal chatTapped(variant chat)

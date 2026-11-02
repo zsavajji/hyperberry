@@ -45,6 +45,7 @@ Page {
         }
         ListView {
             property variant emojiStyle: nav.emojiStyle
+            property string pressColor: nav.pressColor
             layoutProperties: StackLayoutProperties {
                 spaceQuota: 1
             }
@@ -55,6 +56,7 @@ Page {
                 Container {
                     id: item
                     horizontalAlignment: HorizontalAlignment.Fill
+                    background: item.ListItem.active ? Color.create(item.ListItem.view.pressColor) : Color.Transparent
                     Container {
                         horizontalAlignment: HorizontalAlignment.Fill
                         minHeight: ui.du(9)

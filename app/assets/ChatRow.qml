@@ -12,6 +12,7 @@ Container {
     property bool unread: chat.unread != 0
     property bool hasPhoto: !!chat.photo
     horizontalAlignment: HorizontalAlignment.Fill
+    background: row.ListItem.active ? Color.create(row.ListItem.view.pressColor) : Color.Transparent
     // The long-press menu (step 5.3): the work is the list's (ListItem.view). ActionItem has no
     // visible, so each title follows the row's state.
     contextActions: [
