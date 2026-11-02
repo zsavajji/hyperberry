@@ -44,8 +44,19 @@ Container {
         close()
     }
     function who(id) {
-        whoToast.body = chats.reactionsText(jid, id)
+        say(chats.reactionsText(jid, id))
+    }
+    // The who-reacted toast with any text: who voted for a poll's option (step 6.5e) and a vote that
+    // didn't go, which sit here because ChatPage.qml is at its limit of 500 lines.
+    function say(text) {
+        whoToast.body = text
         whoToast.show()
+    }
+    property string failedCmd: engine.failure.cmd || ""
+    onFailedCmdChanged: {
+        if (failedCmd == "poll.vote") {
+            say(qsTr("Vote not sent"))
+        }
     }
     onPickingChanged: {
         if (!picking) {
@@ -111,7 +122,7 @@ Container {
             id: notSent
             body: qsTr("Not sent: HyperBerry is reconnecting. Try again in a moment.")
         },
-        // Who reacted, one per line (ChatListModel.reactionsText).
+        // Who reacted, one per line (ChatListModel.reactionsText); say() puts other text in it.
         SystemToast {
             id: whoToast
         }

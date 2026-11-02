@@ -370,6 +370,13 @@ Page {
                 function whoReacted(id) {
                     reactBar.who(id)
                 }
+                // Polls (step 6.5e): a vote, and the toast of who chose an option, ReactBar's.
+                function vote(id, options) {
+                    engine.request("poll.vote", {"chat": page.chat.jid, "id": id, "options": options})
+                }
+                function showVoters(text) {
+                    reactBar.say(text)
+                }
                 // Voice notes: the player's state, for the bubbles (VoicePlayer.qml).
                 property string playingId: player.playingId
                 // The search match, tinted (SearchBar.qml).

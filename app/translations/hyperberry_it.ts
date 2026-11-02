@@ -844,9 +844,14 @@
         </translation>
     </message>
     <message>
-        <location filename="../src/MessageKinds.cpp" line="95"/>
+        <location filename="../src/MessageKinds.cpp" line="110"/>
         <source>Poll</source>
         <translation>Sondaggio</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageKinds.cpp" line="111"/>
+        <source>Poll, choose several</source>
+        <translation>Sondaggio, scelta multipla</translation>
     </message>
     <message>
         <location filename="../src/MessageKinds.cpp" line="103"/>
@@ -929,6 +934,22 @@
     </message>
 </context>
 <context>
+    <name>PollBubble</name>
+    <message>
+        <location filename="../assets/PollBubble.qml" line="79"/>
+        <source>Nobody yet</source>
+        <translation>Ancora nessuno</translation>
+    </message>
+</context>
+<context>
+    <name>Polls</name>
+    <message>
+        <location filename="../src/Polls.cpp" line="40"/>
+        <source>You</source>
+        <translation>Tu</translation>
+    </message>
+</context>
+<context>
     <name>ProfilePage</name>
     <message>
         <location filename="../assets/ProfilePage.qml" line="20"/>
@@ -994,7 +1015,12 @@
 <context>
     <name>ReactBar</name>
     <message>
-        <location filename="../assets/ReactBar.qml" line="115"/>
+        <location filename="../assets/ReactBar.qml" line="58"/>
+        <source>Vote not sent</source>
+        <translation>Voto non inviato</translation>
+    </message>
+    <message>
+        <location filename="../assets/ReactBar.qml" line="123"/>
         <source>Not sent: HyperBerry is reconnecting. Try again in a moment.</source>
         <translation>Non inviato: HyperBerry si sta riconnettendo. Riprova tra un attimo.</translation>
     </message>

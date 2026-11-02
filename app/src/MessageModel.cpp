@@ -100,8 +100,8 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
                                          timeFormat(locale, DateFormat::Short));
     // The wording of kinds 6, 7 and 9 to 14 (kind 6 and 13 are service lines).
     QString label, shown = text;
-    m.service = MessageKinds::fill(kind, text, q.value(26).toString(), out, q.value(6).toString(),
-                                   time, locale, m.data, label, shown);
+    m.service = MessageKinds::fill(kind, m_chat, m.id, text, q.value(26).toString(), out,
+                                   q.value(6).toString(), time, locale, m.data, label, shown);
     if (m.service) {
         m.data["text"] = shown;
         return m;

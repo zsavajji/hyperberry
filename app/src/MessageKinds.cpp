@@ -1,6 +1,7 @@
 #include "MessageKinds.h"
 
 #include "MediaData.h"
+#include "Polls.h"
 #include "dates.h"
 
 #include <bb/data/JsonDataAccess>
@@ -49,9 +50,9 @@ static QString notice(const QString &code, int secs, bool out, const QString &se
     return QCoreApplication::translate("MessageKinds", "Message");
 }
 
-bool MessageKinds::fill(int kind, const QString &text, const QString &json, bool out,
-                        const QString &sender, const QString &time, const QLocale &locale,
-                        QVariantMap &data, QString &label, QString &shown)
+bool MessageKinds::fill(int kind, const QString &chat, const QString &id, const QString &text,
+                        const QString &json, bool out, const QString &sender, const QString &time,
+                        const QLocale &locale, QVariantMap &data, QString &label, QString &shown)
 {
     // Only rows that have details; a damaged one reads as none.
     QVariantMap extra;
@@ -63,6 +64,7 @@ bool MessageKinds::fill(int kind, const QString &text, const QString &json, bool
     }
 
     QStringList lines;
+    data["poll"] = kind == 11; // always set, so QML never reads undefined
     switch (kind) {
     case 6:
         shown = text;
@@ -102,14 +104,14 @@ bool MessageKinds::fill(int kind, const QString &text, const QString &json, bool
         shown = QString();
         break;
     }
-    case 11:
-        label = QCoreApplication::translate("MessageKinds", "Poll");
-        lines << text;
-        foreach (const QVariant &o, extra.value("options").toList())
-            lines << QString::fromUtf8("• ") + o.toString();
-        lines.removeAll(QString());
-        shown = lines.join("\n");
+    case 11: {
+        // PollBubble draws the options (Polls); the text is the question alone.
+        const int max = extra.value("max").toInt();
+        label = max == 1 ? QCoreApplication::translate("MessageKinds", "Poll")
+                         : QCoreApplication::translate("MessageKinds", "Poll, choose several");
+        Polls::fill(chat, id, extra.value("options").toList(), max, data);
         break;
+    }
     case 12: {
         label = extra.value("canceled").toBool() ? QCoreApplication::translate("MessageKinds", "Event canceled")
                                                   : QCoreApplication::translate("MessageKinds", "Event");

@@ -175,6 +175,16 @@ Container {
                 textStyle.fontStyle: item.msg.deleted ? FontStyle.Italic : FontStyle.Default
                 textStyle.color: item.msg.deleted ? ui.palette.secondaryTextOnPlain : ui.palette.textOnPlain
             }
+            // Built only for polls, as the voice one is, after the question: the options (step 6.5e).
+            ControlDelegate {
+                delegateActive: item.msg.poll && !item.msg.deleted
+                sourceComponent: ComponentDefinition {
+                    PollBubble {
+                        msg: item.msg
+                        view: item.ListItem.view
+                    }
+                }
+            }
         }
         // The time ("edited" before it) and our message's state, as in ChatRow: sending, sent,
         // delivered, read, or a red "!" when it failed. Top-aligned boxes put the time's baseline
