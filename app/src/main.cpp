@@ -9,7 +9,11 @@
 #include <QTextCodec>
 #include <QTranslator>
 #include <QtDeclarative>
+#include <cstdio>
 #include <sys/slog2.h>
+#include <sys/time.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "ChatController.h"
 #include "ChatListModel.h"
@@ -27,15 +31,30 @@
 using namespace bb::cascades;
 
 // qDebug and qWarning, QML's errors included, go nowhere on the phone by themselves: they go to
-// the system log, where `slog2info -b hyperberry` shows them.
+// the system log, where `slog2info -b hyperberry` shows them, and to data/logs/ui.log. The file
+// outlives the process: the system recycles a closed app's log within minutes, and a freeze on
+// 0.0.1.132 left nothing to read (Q10, 2026-11-02).
 static slog2_buffer_t logBuffer;
+static bool toSlog = false;
+static FILE *logFile = 0;
 
-static void toSystemLog(QtMsgType type, const char *msg)
+static void writeLog(QtMsgType type, const char *msg)
 {
-    slog2c(logBuffer, 0, type == QtDebugMsg ? SLOG2_INFO : SLOG2_WARNING, msg);
+    if (toSlog)
+        slog2c(logBuffer, 0, type == QtDebugMsg ? SLOG2_INFO : SLOG2_WARNING, msg);
+    if (!logFile)
+        return;
+    timeval now;
+    gettimeofday(&now, 0);
+    tm local;
+    localtime_r(&now.tv_sec, &local);
+    char stamp[32];
+    strftime(stamp, sizeof stamp, "%b %d %H:%M:%S", &local); // slog2info's form, phone time
+    fprintf(logFile, "%s.%03d %s\n", stamp, int(now.tv_usec / 1000), msg);
+    fflush(logFile); // with the OS at once: a freeze or a kill keeps every line before it
 }
 
-static void logToSystem()
+static void startLog()
 {
     slog2_buffer_set_config_t config = {};
     config.num_buffers = 1;
@@ -43,8 +62,17 @@ static void logToSystem()
     config.verbosity_level = SLOG2_INFO;
     config.buffer_config[0].buffer_name = "ui";
     config.buffer_config[0].num_pages = 4;
-    if (slog2_register(&config, &logBuffer, 0) == 0)
-        qInstallMsgHandler(toSystemLog);
+    toSlog = slog2_register(&config, &logBuffer, 0) == 0;
+    const QString path = QDir::homePath() + "/logs/ui.log";
+    QDir().mkpath(QFileInfo(path).path());
+    // ponytail: rotated at start only, so one long run can pass 256 KB; the UI writes little.
+    if (QFileInfo(path).size() > 256 * 1024) {
+        QFile::remove(path + ".1");
+        QFile::rename(path, path + ".1");
+    }
+    logFile = fopen(QFile::encodeName(path).constData(), "a");
+    qInstallMsgHandler(writeLog);
+    qDebug("UI started, pid %d", int(getpid()));
 }
 
 // A QML error otherwise quits the app at start with nothing to show: write it where the user
@@ -66,7 +94,7 @@ static bool loaded(QmlDocument *document, const char *name)
 Q_DECL_EXPORT int main(int argc, char **argv)
 {
     Application app(argc, argv);
-    logToSystem();
+    startLog();
     // The sources are UTF-8; Qt 4 reads tr() and C-string literals as Latin-1 unless told, and
     // "typing…" showed as "typingà|" (Q10, 2026-10-31).
     QTextCodec::setCodecForTr(QTextCodec::codecForName("UTF-8"));
