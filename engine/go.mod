@@ -5,6 +5,7 @@ go 1.27.2
 replace golang.org/x/sys => github.com/XIAZY/go-sys-qnx v0.0.0-20261016215730-6348336c2429
 
 require (
+	github.com/coder/websocket v1.8.15
 	github.com/mattn/go-sqlite3 v1.14.52
 	github.com/polymorfa/hypermeow v0.0.0-20261026020717-7852ff1c1718
 	github.com/rs/zerolog v1.35.1
@@ -14,7 +15,6 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.2.0 // indirect
-	github.com/coder/websocket v1.8.15 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect

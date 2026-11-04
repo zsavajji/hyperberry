@@ -1,0 +1,28 @@
+--- a/socket/framesocket.go
++++ b/socket/framesocket.go
+@@ -190,8 +190,9 @@
+ 					msg = msg[length:]
+ 					fs.frameComplete()
+ 				} else {
+-					fs.incoming = make([]byte, length)
+-					copy(fs.incoming, msg)
++					// HyperBerry: a length is only a claim until its bytes arrive. A 4-byte message
++					// after a stream end claims 8.9 MB, more than the phone can map for the engine.
++					fs.incoming = append(make([]byte, 0, len(msg)), msg...)
+ 					msg = nil
+ 				}
+ 			} else {
+@@ -201,11 +202,11 @@
+ 			}
+ 		} else {
+ 			if fs.receivedLength+len(msg) >= fs.incomingLength {
+-				copy(fs.incoming[fs.receivedLength:], msg[:fs.incomingLength-fs.receivedLength])
++				fs.incoming = append(fs.incoming, msg[:fs.incomingLength-fs.receivedLength]...)
+ 				msg = msg[fs.incomingLength-fs.receivedLength:]
+ 				fs.frameComplete()
+ 			} else {
+-				copy(fs.incoming[fs.receivedLength:], msg)
++				fs.incoming = append(fs.incoming, msg...)
+ 				fs.receivedLength += len(msg)
+ 				msg = nil
+ 			}

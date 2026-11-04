@@ -13,6 +13,8 @@ docker run --rm -v "$ROOT:/src" -v "$CACHE:/cache" -w /src/engine \
 	hyperberry-build sh -euc '
 		# libunifieddatasourcec.so NEEDs the Qt libraries: only the linker looks for them here.
 		export CGO_LDFLAGS="-Wl,-rpath-link,$QNX_TARGET/armle-v7/usr/lib/qt4/lib"
+		work=$(sh /src/scripts/hypermeow-work.sh)
+		export GOWORK=$work
 		go build -trimpath -ldflags="-s -w" -o /src/build/hyperberryd .
 		L=$QNX_TARGET/armle-v7/lib
 		for l in $L/libc.so.3 $L/libm.so.2 $L/libsocket.so.3 $L/../usr/lib/libbps.so.3 \

@@ -24,3 +24,6 @@ RUN cd /tmp && tar xzf opus.tar.gz && cd opus-1.6.1 \
 	&& ./configure CC=cc $flags --prefix=/usr/local >/dev/null \
 	&& make -j"$(nproc)" >/dev/null && make install >/dev/null \
 	&& cd / && rm -rf /tmp/opus*
+
+# For engine/framesocket.patch (scripts/hypermeow-work.sh).
+RUN apt-get update >/dev/null && apt-get install -y --no-install-recommends patch >/dev/null

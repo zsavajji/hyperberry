@@ -9,4 +9,7 @@ docker build -q -t hyperberry-build "$ROOT/docker" >/dev/null
 docker run --rm -v "$ROOT:/src" -v "$CACHE:/cache" -w /src/engine \
 	-e GOPATH=/cache/gopath -e GOCACHE=/cache/build \
 	-e CGO_ENABLED=1 -e CC=cc \
-	hyperberry-build sh -euc 'go vet ./... && go test ./...'
+	hyperberry-build sh -euc '
+		work=$(sh /src/scripts/hypermeow-work.sh)
+		export GOWORK=$work
+		go vet ./... && go test ./...'
