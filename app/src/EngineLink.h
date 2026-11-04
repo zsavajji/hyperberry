@@ -104,6 +104,7 @@ private:
 
     QTcpSocket m_socket;
     QTimer m_retry;
+    int m_retryDelay; // ms; see RetryMinMs in EngineLink.cpp
     bb::system::InvokeManager *m_invoker;
     QElapsedTimer m_invokedAt;
     QString m_token;

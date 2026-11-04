@@ -13,8 +13,15 @@
 using namespace bb::data;
 using namespace bb::system;
 
+// The wait before the next try at reaching the engine. A background app can't invoke, so while
+// the engine was down a try every 500 ms kept the phone busy for 18 hours (Q10, 2026-11-03: 55,560
+// refused STARTs). Each refusal doubles the wait, and coming back to fullscreen retries at once.
+static const int RetryMinMs = 500;
+static const int RetryMaxMs = 60000;
+
 EngineLink::EngineLink(QObject *parent)
     : QObject(parent)
+    , m_retryDelay(RetryMinMs)
     , m_invoker(new InvokeManager(this))
     , m_counter(0)
     , m_connected(false)
@@ -27,7 +34,6 @@ EngineLink::EngineLink(QObject *parent)
     m_invokedAt.invalidate();
     m_linked = QSettings(QDir::homePath() + "/settings.ini", QSettings::IniFormat).value("linked").toBool();
     m_retry.setSingleShot(true);
-    m_retry.setInterval(500);
     connect(&m_retry, SIGNAL(timeout()), this, SLOT(tryConnect()));
     connect(&m_socket, SIGNAL(connected()), this, SLOT(socketConnected()));
     connect(&m_socket, SIGNAL(readyRead()), this, SLOT(readLines()));
@@ -62,7 +68,16 @@ void EngineLink::start()
     tryConnect();
 }
 
-void EngineLink::onFullscreen() { setFullscreen(true); }
+void EngineLink::onFullscreen()
+{
+    setFullscreen(true);
+    m_retryDelay = RetryMinMs;
+    if (m_retry.isActive()) {
+        m_retry.stop();
+        tryConnect();
+    }
+}
+
 void EngineLink::onNotFullscreen() { setFullscreen(false); }
 
 void EngineLink::setFullscreen(bool on)
@@ -112,7 +127,7 @@ void EngineLink::tryConnect()
     }
     if (port == 0) {
         startEngine();
-        m_retry.start();
+        m_retry.start(m_retryDelay);
         return;
     }
     m_socket.connectToHost(QHostAddress(QHostAddress::LocalHost), port);
@@ -154,8 +169,10 @@ void EngineLink::invokeFinished()
     InvokeTargetReply *reply = qobject_cast<InvokeTargetReply *>(sender());
     if (!reply)
         return;
-    if (reply->error() != InvokeReplyError::None)
+    if (reply->error() != InvokeReplyError::None) {
         qWarning() << "engine: START failed, error" << reply->error();
+        m_retryDelay = qMin(m_retryDelay * 2, RetryMaxMs);
+    }
     reply->deleteLater();
 }
 
@@ -176,6 +193,7 @@ void EngineLink::readLines()
                 if (ok) {
                     m_connected = true;
                     m_invokedAt.invalidate();
+                    m_retryDelay = RetryMinMs;
                     setLink(map["result"].toMap());
                     emit connectedChanged();
                     sendUiState(); // a restart loses this device's availability
@@ -269,7 +287,7 @@ void EngineLink::lost()
     // The m_link stays as it was: the next hello replaces it, so the UI doesn't flash back to
     // the linking page during a restart.
     startEngine();
-    m_retry.start();
+    m_retry.start(m_retryDelay);
 }
 
 void EngineLink::fail(const QString &cmd, const QString &code, const QString &message)
