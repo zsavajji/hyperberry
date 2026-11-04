@@ -84,6 +84,9 @@
     <permission>post_notification</permission>
     <permission>record_audio</permission>
     <permission>play_audio</permission>
+    <!-- The phone's address book, read by the UI (src/ContactBook.cpp) and handed to the engine, so
+         a person saved on the Q10 shows under that name. -->
+    <permission>access_pimdomain_contacts</permission>
     <!-- Downloads, for the chat export (step 5.8b) and Phase 6's files. -->
     <permission>access_shared</permission>
     <!-- The Hub account (step 5.7). The name is from BBTelega's bar, an unsigned app with a

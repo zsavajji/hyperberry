@@ -17,6 +17,7 @@
 
 #include "ChatController.h"
 #include "ChatListModel.h"
+#include "ContactBook.h"
 #include "ContactInfo.h"
 #include "ContactPicker.h"
 #include "EmojiModel.h"
@@ -106,6 +107,7 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     if (translator.load("hyperberry_" + language, QCoreApplication::applicationDirPath() + "/assets/translations"))
         app.installTranslator(&translator);
     EngineLink engine(&app);
+    ContactBook book(&engine, &app);
     ChatListModel chats(&engine, false, &app);
     ChatListModel archivedChats(&engine, true, &app);
     // One for the run: the picker's table is built once, not per chat.
