@@ -44,6 +44,7 @@ func runEngine(container *sqlstore.Container, dataDir string, log waLog.Logger, 
 	if err != nil {
 		fatal("server:", err)
 	}
+	phoneBook.load(filepath.Join(dataDir, "book.json")) // before the store names anyone
 	st := newStore(db, srv, log.Sub("store"))
 	closeSession := func() {}
 	if sim {

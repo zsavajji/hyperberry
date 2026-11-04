@@ -16,6 +16,24 @@ type contact struct {
 
 func registerContacts(srv *Server, s *Session) {
 	srv.Handle("contacts.list", s.handleContacts)
+	srv.Handle("contacts.book", s.handleBook)
+}
+
+// handleBook is contacts.book: the phone's address book, which names people before WhatsApp's
+// does. It works unlinked (the UI sends it on every connect); once linked, a changed book renames
+// the chats and group messages at once. An empty list is the UI's decision and is taken as such.
+// Only counts are logged: the book is names and numbers.
+func (s *Session) handleBook(req json.RawMessage) (any, error) {
+	var r struct{ Entries []bookEntry }
+	if err := json.Unmarshal(req, &r); err != nil {
+		return nil, &Error{"bad_request", "contacts.book needs entries"}
+	}
+	changed := phoneBook.set(r.Entries)
+	s.log.Infof("contact book: %d numbers, changed %v", len(r.Entries), changed)
+	if cli := s.client(); changed && cli.Store.ID != nil {
+		s.store.ops <- func(t *storeTx) { s.store.renameAll(context.Background(), t, cli) }
+	}
+	return nil, nil
 }
 
 // sortContacts orders by name, ignoring case.

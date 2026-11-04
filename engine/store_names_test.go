@@ -11,23 +11,31 @@ import (
 	waLog "github.com/polymorfa/hypermeow/util/log"
 )
 
-// A contact name that landed without an event (the bulk insert at link time) reaches the
-// person's chat and their group messages; a person we know no name of keeps what they had.
-func TestRenameAll(t *testing.T) {
+// savedClient is a client of a device saved as number me, so it has its stores.
+func savedClient(t *testing.T, me string) *whatsmeow.Client {
+	t.Helper()
 	ctx := context.Background()
 	container, err := sqlstore.New(ctx, "sqlite3", "file:"+t.TempDir()+"/s.db?_foreign_keys=on", waLog.Noop)
 	if err != nil {
 		t.Fatal(err)
 	}
-	me := types.NewJID("4915700000009", types.DefaultUserServer)
+	jid := types.NewJID(me, types.DefaultUserServer)
 	dev := container.NewDevice()
-	dev.ID = &me
+	dev.ID = &jid
 	dev.Account = &waAdv.ADVSignedDeviceIdentity{ // the device row's NOT NULL and length checks
 		Details: []byte{0}, AccountSignature: make([]byte, 64), AccountSignatureKey: make([]byte, 32), DeviceSignature: make([]byte, 64)}
 	if err := container.PutDevice(ctx, dev); err != nil { // this also gives the device its stores
 		t.Fatal(err)
 	}
-	cli := whatsmeow.NewClient(dev, waLog.Noop)
+	return whatsmeow.NewClient(dev, waLog.Noop)
+}
+
+// A contact name that landed without an event (the bulk insert at link time) reaches the
+// person's chat and their group messages; a person we know no name of keeps what they had.
+func TestRenameAll(t *testing.T) {
+	ctx := context.Background()
+	cli := savedClient(t, "4915700000009")
+	dev := cli.Store
 	anna := types.NewJID("99887766", types.HiddenUserServer)
 	if err := dev.Contacts.PutContactName(ctx, anna, "First", "Full Name"); err != nil {
 		t.Fatal(err)

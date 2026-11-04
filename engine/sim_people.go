@@ -134,3 +134,7 @@ func (s *Sim) handleContacts(json.RawMessage) (any, error) {
 	sortContacts(book)
 	return book, nil
 }
+
+// handleBook answers contacts.book with ok and keeps nothing: the sim's people have made-up
+// numbers. Not handleLogged, which would put the whole address book in the log.
+func (s *Sim) handleBook(json.RawMessage) (any, error) { return nil, nil }

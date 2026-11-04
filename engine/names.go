@@ -12,8 +12,9 @@ import (
 	"github.com/polymorfa/hypermeow/types"
 )
 
-// displayName is the name to show for a person: the contact name, else the push name, else
-// the phone number. alt is the other address (phone or LID) the caller knows, if any.
+// displayName is the name to show for a person: the name in the phone's own address book, else
+// WhatsApp's contact name, else the push name, else the phone number. alt is the other address
+// (phone or LID) the caller knows, if any.
 func displayName(ctx context.Context, cli *whatsmeow.Client, jid, alt types.JID) string {
 	return resolveName(ctx, cli, jid, alt, "")
 }
@@ -47,16 +48,16 @@ func resolveName(ctx context.Context, cli *whatsmeow.Client, jid, alt types.JID,
 	return ""
 }
 
-// storedName is the name the contact store holds for a person (saved name, business name or
-// push name), "" for none: no phone-number placeholder, so it never replaces a push name
-// a message brought.
+// storedName is the name the phone's address book or the contact store holds for a person (saved
+// name, business name or push name), "" for none: no phone-number placeholder, so it never
+// replaces a push name a message brought.
 func storedName(ctx context.Context, cli *whatsmeow.Client, jid, alt types.JID) string {
 	name, _, _ := lookupName(ctx, cli, jid, alt)
 	return name
 }
 
 // lookupName is storedName with the addresses and contact cards it looked at, for resolveName's
-// fallbacks.
+// fallbacks. The phone's book comes first, by any phone number the person has.
 func lookupName(ctx context.Context, cli *whatsmeow.Client, jid, alt types.JID) (name string, ids []types.JID, infos []types.ContactInfo) {
 	for _, j := range []types.JID{jid.ToNonAD(), alt.ToNonAD()} {
 		if j.IsEmpty() {
@@ -78,6 +79,17 @@ func lookupName(ctx context.Context, cli *whatsmeow.Client, jid, alt types.JID) 
 	for _, j := range ids {
 		if ci, err := cli.Store.Contacts.GetContact(ctx, j); err == nil {
 			infos = append(infos, ci)
+		}
+	}
+	own := ""
+	if cli.Store.ID != nil { // nil while unlinked
+		own = cli.Store.ID.User
+	}
+	for _, j := range ids {
+		if j.Server == types.DefaultUserServer {
+			if n := phoneBook.name(j.User, own); n != "" {
+				return n, ids, infos
+			}
 		}
 	}
 	for _, pick := range []func(types.ContactInfo) string{

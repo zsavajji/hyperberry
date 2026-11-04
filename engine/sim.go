@@ -84,6 +84,7 @@ func newSim(srv *Server, st *Store, log waLog.Logger) *Sim {
 	srv.Handle("group.participants", s.handleGroupParticipants)
 	srv.Handle("contact.info", s.handleContactInfo)
 	srv.Handle("contacts.list", s.handleContacts)
+	srv.Handle("contacts.book", s.handleBook)
 	srv.Handle("chat.close", s.handleLogged)
 	srv.Handle("ui.state", s.handleUIState)
 	return s
