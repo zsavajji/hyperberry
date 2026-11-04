@@ -70,6 +70,7 @@ ChatListModel::ChatListModel(EngineLink *engine, bool archived, QObject *parent)
     , m_archived(archived)
     , m_dbName(archived ? "chats-archived" : kDb)
     , m_unreadTotal(0)
+    , m_revision(0)
     , m_days(RelativeDateFormat::NonTimeCritical)
     , m_region(bb::system::LocaleType::Region)
 {
@@ -309,6 +310,8 @@ void ChatListModel::reload()
     }
     if (wasEmpty != m_groups.isEmpty())
         emit emptyChanged();
+    ++m_revision;
+    emit revisionChanged();
     if (!m_archived)
         updateFrame();
 }

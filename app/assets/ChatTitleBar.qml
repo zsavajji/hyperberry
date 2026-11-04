@@ -36,7 +36,8 @@ TitleBar {
                 // the name 22 px (110 %), the status 15 px (75 %). Q10, 2026-10-31.
                 Label {
                     bottomMargin: 0
-                    text: bar.chat ? bar.chat.name : ""
+                    // Saved in the address book while open: the chat keeps the row it opened with.
+                    text: bar.chat ? (chats.revision >= 0 && chats.chat(bar.chat.jid).name) || bar.chat.name : ""
                     textFormat: TextFormat.Plain
                     textStyle.base: nav.emojiStyle
                     textStyle.fontSize: FontSize.PercentageValue

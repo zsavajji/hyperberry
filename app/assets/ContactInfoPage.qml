@@ -265,7 +265,8 @@ Page {
                     horizontalAlignment: HorizontalAlignment.Center
                     multiline: true
                     textStyle.textAlign: TextAlign.Center
-                    text: page.chat ? page.chat.name : ""
+                    // Saved in the address book while open: the chat keeps the row it opened with.
+                    text: page.chat ? (chats.revision >= 0 && chats.chat(page.chat.jid).name) || page.chat.name : ""
                     textFormat: TextFormat.Plain
                     textStyle.base: nav.emojiStyle
                     textStyle.fontSize: FontSize.PercentageValue

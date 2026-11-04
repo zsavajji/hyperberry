@@ -25,6 +25,8 @@ class ChatListModel : public bb::cascades::DataModel
     // incoming "Name: preview". Only recomputed while the app isn't fullscreen.
     Q_PROPERTY(int unreadTotal READ unreadTotal NOTIFY frameChanged)
     Q_PROPERTY(QString unreadChats READ unreadChats NOTIFY frameChanged)
+    // Bumped after each reload, so a QML binding that calls chat() is evaluated again.
+    Q_PROPERTY(int revision READ revision NOTIFY revisionChanged)
 public:
     // archived: only the archived chats, and no frame work (the Archived page).
     explicit ChatListModel(EngineLink *engine, bool archived = false, QObject *parent = 0);
@@ -36,6 +38,7 @@ public:
     bool empty() const;
     int unreadTotal() const { return m_unreadTotal; }
     QString unreadChats() const { return m_unreadChats; }
+    int revision() const { return m_revision; }
     // The chat's map as the rows have it, archived chats included; empty when there is none.
     Q_INVOKABLE QVariantMap chat(const QString &jid);
     // The ids of the chat's messages whose text has text in it, any case, newest first (step 5.10).
@@ -48,6 +51,7 @@ public:
 signals:
     void emptyChanged();
     void frameChanged();
+    void revisionChanged();
 
 private slots:
     void reloadSoon();
@@ -67,6 +71,7 @@ private:
     QList<Group> m_groups;
     int m_unreadTotal;
     QString m_unreadChats;
+    int m_revision;
     QString m_filter;
     QTimer m_soon;
     bb::utility::i18n::RelativeDateFormatter m_days;
