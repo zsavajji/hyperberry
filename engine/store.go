@@ -394,8 +394,14 @@ func (t *storeTx) setPinned(jid string, v bool) {
 	t.touch(jid, "UPDATE chats SET pinned = ?1 WHERE pinned != ?1 AND jid = ?2", v)
 }
 
+// setArchived takes the chat's Hub item with it. Coming back, the chat gets its item now, silently,
+// only if something is unread; otherwise with its next message.
 func (t *storeTx) setArchived(jid string, v bool) {
-	t.touch(jid, "UPDATE chats SET archived = ?1 WHERE archived != ?1 AND jid = ?2", v)
+	if t.touch(jid, "UPDATE chats SET archived = ?1 WHERE archived != ?1 AND jid = ?2", v) {
+		var unread int
+		t.tx.QueryRow("SELECT unread FROM chats WHERE jid = ?", jid).Scan(&unread)
+		t.hubItem(jid, !v && unread != 0, false)
+	}
 }
 
 // insertMessage is INSERT OR IGNORE since history and live can deliver the same message.

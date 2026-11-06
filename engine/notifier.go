@@ -50,8 +50,8 @@ func (u *uiState) openChat() string {
 
 // note is what a committed transaction wants done to one chat's Hub item. add: a live incoming
 // message, so the item may be created; otherwise only an existing item changes. alert: the Hub
-// alerts (sound, LED, the instant preview). gone: the chat is deleted, so its item goes and
-// nothing else is done. ts is unix seconds.
+// alerts (sound, LED, the instant preview). gone: the chat is deleted or archived, so its item
+// goes and nothing else is done. ts is unix seconds.
 type note struct {
 	add, alert, gone bool
 	title, preview   string
@@ -61,7 +61,8 @@ type note struct {
 
 // hubItem queues the chat's item as the chat is now: its name, last message and unread count.
 // alert asks for the Hub's alert, which stays only for a chat with unread messages that is
-// neither muted, archived nor on screen. Call it after the row has its new values.
+// neither muted nor on screen. An archived chat has no item at all (the user's, 2026-11-06), so this
+// takes away any it has. Call it after the row has its new values.
 func (t *storeTx) hubItem(chat string, add, alert bool) {
 	var name, preview sql.NullString
 	var last sql.NullInt64
@@ -73,7 +74,11 @@ func (t *storeTx) hubItem(chat string, add, alert bool) {
 	if err != nil {
 		return
 	}
-	alert = alert && unread > 0 && !archived && muted <= time.Now().Unix() && !t.st.ui.seen(chat)
+	if archived {
+		t.note(chat, note{gone: true})
+		return
+	}
+	alert = alert && unread > 0 && muted <= time.Now().Unix() && !t.st.ui.seen(chat)
 	title := name.String
 	if title == "" {
 		title, _, _ = strings.Cut(chat, "@")

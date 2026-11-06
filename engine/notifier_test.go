@@ -192,7 +192,9 @@ func TestHubSilentItems(t *testing.T) {
 	item(t, only(t, h.take(), "update"), 0, "unseen", 2, true)
 }
 
-func TestHubArchivedSilent(t *testing.T) {
+// An archived chat has no Hub item: its messages add none, archiving takes the item away, and
+// unarchiving brings it back, silently, only with something unread.
+func TestHubArchivedNoItem(t *testing.T) {
 	s, st, _, h := hubSim(t)
 	n := -1
 	for i, c := range simChats {
@@ -204,9 +206,55 @@ func TestHubArchivedSilent(t *testing.T) {
 	if n < 0 {
 		t.Fatal("no archived chat in the sim")
 	}
+	jid := simChats[n].jid
+	archive := func(v bool) {
+		st.ops <- func(tx *storeTx) { tx.setArchived(jid, v) }
+		flush(t, st)
+	}
+	none := func(when string) {
+		t.Helper()
+		if c := h.take(); len(c) != 0 {
+			t.Fatalf("%s: calls %q; want none", when, ops(c))
+		}
+	}
 	msg(s, n, "hush")
 	flush(t, st)
+	none("a message while archived")
+
+	archive(false)
 	item(t, only(t, h.take(), "add"), n, "hush", 1, false)
+
+	archive(true)
+	only(t, h.take(), "remove")
+
+	msg(s, n, "still hush")
+	flush(t, st)
+	none("a message after archiving again")
+
+	st.ops <- func(tx *storeTx) { tx.setUnread(jid, 0) }
+	flush(t, st)
+	none("a read while archived")
+	archive(false)
+	none("unarchiving with nothing unread")
+
+	msg(s, n, "back")
+	flush(t, st)
+	item(t, only(t, h.take(), "add"), n, "back", 1, true)
+}
+
+// What a build before this rule left: an archived chat that still has its item goes at the next connect.
+func TestHubArchivedItemTidied(t *testing.T) {
+	s, st, _, h := hubSim(t)
+	msg(s, 2, "an item")
+	flush(t, st)
+	only(t, h.take(), "add")
+	jid := simChats[2].jid
+	st.ops <- func(tx *storeTx) {
+		tx.exec("UPDATE chats SET archived = 1 WHERE jid = ?", jid) // not through setArchived
+		tx.dropArchivedItems()
+	}
+	flush(t, st)
+	only(t, h.take(), "remove")
 }
 
 func TestHubReadAndSend(t *testing.T) {
