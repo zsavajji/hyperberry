@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
+	"time"
 
 	"github.com/polymorfa/hypermeow/store/sqlstore"
 	waLog "github.com/polymorfa/hypermeow/util/log"
@@ -65,6 +66,7 @@ func runEngine(container *sqlstore.Container, dataDir string, log waLog.Logger, 
 			log.Errorf("server: %v", err)
 		}
 	}()
+	go pruneCache(dataDir, cacheCap, "", time.Now(), log)
 	log.Infof("serving the UI")
 	<-stop
 	srv.Close()

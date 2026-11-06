@@ -143,7 +143,6 @@ func parseVoice(req json.RawMessage) (voiceReq, error) {
 
 // playVoice is voice.play for both the real and the simulated account: fetch gets the OGG when
 // it isn't here, notify sends the played receipt the first time one of theirs is played.
-// ponytail: the cache of WAVs is never pruned; Phase 8 caps it.
 func (st *Store) playVoice(dir string, r voiceReq, fetch, notify func(msgRow) error) (any, error) {
 	row, ok := st.row(r.Chat, r.ID)
 	if !ok || row.Kind != msgVoice {
@@ -171,6 +170,7 @@ func (st *Store) playVoice(dir string, r voiceReq, fetch, notify func(msgRow) er
 		if err := writeFile(wav, writeWAV(pcm, 48000)); err != nil {
 			return nil, err
 		}
+		go pruneCache(dir, cacheCap, wav, time.Now(), st.log)
 	}
 	if !row.Out && !row.Played {
 		if err := notify(row); err != nil {

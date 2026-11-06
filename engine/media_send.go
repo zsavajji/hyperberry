@@ -178,7 +178,7 @@ func (s *Session) handleMediaSend(req json.RawMessage) (any, error) {
 
 // uploadTemp makes the file the upload encrypts into, under <data dir>/cache/upload/, and the
 // func that closes and removes it. A crash leaves the file there until the cache goes.
-// ponytail: stale ones are never swept; Phase 8's cache cap can.
+// pruneCache sweeps the stale ones after a day.
 func uploadTemp(dir string) (*os.File, func(), error) {
 	d := filepath.Join(dir, "cache", "upload")
 	if err := os.MkdirAll(d, 0o755); err != nil {
