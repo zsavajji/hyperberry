@@ -29,14 +29,14 @@ Container {
             ActionItem {
                 title: qsTr("Reply")
                 imageSource: "file:///usr/share/icons/bb_action_reply.png"
-                enabled: !item.msg.deleted
+                enabled: !item.msg.deleted && !item.msg.readOnly
                 onTriggered: item.ListItem.view.reply(item.msg)
             }
             // The icon is the emoji picker's action (step 5.11); the bar opens over the composer.
             ActionItem {
                 title: qsTr("React")
                 imageSource: "asset:///images/emoji.png"
-                enabled: !item.msg.deleted
+                enabled: !item.msg.deleted && !item.msg.readOnly
                 onTriggered: item.ListItem.view.react(item.msg)
             }
             // Who chose what in a poll (the user's request, 0.0.1.132), as the counts' tap shows it
@@ -62,6 +62,7 @@ Container {
             }
             DeleteActionItem {
                 title: qsTr("Delete for me")
+                enabled: !item.msg.readOnly
                 onTriggered: item.ListItem.view.deleteForMe(item.msg.id)
             }
         }

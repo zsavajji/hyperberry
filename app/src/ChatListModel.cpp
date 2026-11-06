@@ -64,11 +64,11 @@ static QVariantMap baseRow(const QSqlQuery &q, qint64 now)
     return row;
 }
 
-ChatListModel::ChatListModel(EngineLink *engine, bool archived, QObject *parent)
+ChatListModel::ChatListModel(EngineLink *engine, Mode mode, QObject *parent)
     : DataModel(parent)
     , m_engine(engine)
-    , m_archived(archived)
-    , m_dbName(archived ? "chats-archived" : kDb)
+    , m_mode(mode)
+    , m_dbName(mode == Archived ? "chats-archived" : mode == Channels ? "chats-channels" : kDb)
     , m_unreadTotal(0)
     , m_revision(0)
     , m_days(RelativeDateFormat::NonTimeCritical)
@@ -88,7 +88,7 @@ ChatListModel::ChatListModel(EngineLink *engine, bool archived, QObject *parent)
     // Events sent while the link was down are lost; the database has what they said.
     connect(engine, SIGNAL(connectedChanged()), this, SLOT(reloadSoon()));
     // Nobody sees the frame while the app is fullscreen: it's computed when the app leaves it.
-    if (!m_archived)
+    if (m_mode == Chats)
         connect(engine, SIGNAL(fullscreenChanged()), this, SLOT(updateFrame()));
     // A cold start draws what chats.db already has, before the engine answers (PLAN.md §12).
     reload();
@@ -238,8 +238,10 @@ void ChatListModel::reload()
     if (!db.isOpen() && !db.open())
         return;
     QSqlQuery q(db);
-    if (!q.exec(QString("SELECT %1 FROM chats WHERE archived = %2 ORDER BY pinned DESC, last_ts DESC")
-                    .arg(kRowColumns).arg(m_archived ? 1 : 0))) {
+    // Channels have their own list: WhatsApp keeps them apart too.
+    const QString where = m_mode == Channels ? QString("kind = 3")
+                                             : QString("kind != 3 AND archived = %1").arg(m_mode == Archived ? 1 : 0);
+    if (!q.exec(QString("SELECT %1 FROM chats WHERE %2 ORDER BY pinned DESC, last_ts DESC").arg(kRowColumns).arg(where))) {
         qWarning() << "chats:" << q.lastError().text();
         return;
     }
@@ -312,7 +314,7 @@ void ChatListModel::reload()
         emit emptyChanged();
     ++m_revision;
     emit revisionChanged();
-    if (!m_archived)
+    if (m_mode == Chats)
         updateFrame();
 }
 
@@ -331,7 +333,7 @@ void ChatListModel::updateFrame()
     QStringList names;
     QSqlQuery q(db);
     // ponytail: the first 10 names are more than the frame's three lines hold.
-    q.prepare("SELECT name, jid, unread FROM chats WHERE muted_until <= ? AND unread != 0 AND archived = 0 "
+    q.prepare("SELECT name, jid, unread FROM chats WHERE muted_until <= ? AND unread != 0 AND archived = 0 AND kind != 3 "
               "ORDER BY last_ts DESC");
     q.addBindValue(now);
     if (q.exec()) {

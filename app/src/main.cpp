@@ -110,8 +110,9 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     EngineLink engine(&app);
     engine.setLanguage(language); // before engine.start() below: the hello sends it
     ContactBook book(&engine, &app);
-    ChatListModel chats(&engine, false, &app);
-    ChatListModel archivedChats(&engine, true, &app);
+    ChatListModel chats(&engine, ChatListModel::Chats, &app);
+    ChatListModel archivedChats(&engine, ChatListModel::Archived, &app);
+    ChatListModel channelChats(&engine, ChatListModel::Channels, &app);
     // One for the run: the picker's table is built once, not per chat.
     EmojiModel emojis(&app);
     QrImage qr(&app);
@@ -139,6 +140,7 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     document->setContextProperty("engine", &engine);
     document->setContextProperty("chats", &chats);
     document->setContextProperty("archivedChats", &archivedChats);
+    document->setContextProperty("channelChats", &channelChats);
     document->setContextProperty("emojis", &emojis);
     document->setContextProperty("qr", &qr);
     document->setContextProperty("settings", &settings);

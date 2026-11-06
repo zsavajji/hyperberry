@@ -21,6 +21,10 @@ Page {
         ComponentDefinition {
             id: archivedDef
             source: "ArchivedPage.qml"
+        },
+        ComponentDefinition {
+            id: channelsDef
+            source: "ChannelsPage.qml"
         }
     ]
     actions: [
@@ -70,6 +74,12 @@ Page {
             imageSource: "file:///usr/share/icons/bb_action_archive.png"
             ActionBar.placement: ActionBarPlacement.InOverflow
             onTriggered: nav.push(archivedDef.createObject())
+        },
+        ActionItem {
+            title: qsTr("Channels")
+            imageSource: "file:///usr/share/icons/bb_action_openbbmchannel.png"
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            onTriggered: nav.push(channelsDef.createObject())
         }
     ]
     function openChat(chat) {

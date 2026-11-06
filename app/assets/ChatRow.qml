@@ -26,16 +26,18 @@ Container {
             ActionItem {
                 title: row.chat.pinned ? qsTr("Unpin") : qsTr("Pin")
                 imageSource: "asset:///images/pin_action.png"
+                enabled: !row.ListItem.view.channelList
                 onTriggered: row.ListItem.view.togglePin(row.chat)
             }
             ActionItem {
                 title: row.chat.muted ? qsTr("Unmute") : qsTr("Mute…")
                 imageSource: "asset:///images/mute_action.png"
+                enabled: !row.ListItem.view.channelList
                 onTriggered: row.ListItem.view.toggleMute(row.chat)
             }
             ActionItem {
-                title: row.ListItem.view.archivedList ? qsTr("Unarchive") : qsTr("Archive")
-                imageSource: "file:///usr/share/icons/bb_action_archive.png"
+                title: row.ListItem.view.channelList ? qsTr("Unfollow") : row.ListItem.view.archivedList ? qsTr("Unarchive") : qsTr("Archive")
+                imageSource: row.ListItem.view.channelList ? "file:///usr/share/icons/bb_action_delete.png" : "file:///usr/share/icons/bb_action_archive.png"
                 onTriggered: row.ListItem.view.toggleArchive(row.chat)
             }
         }

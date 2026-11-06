@@ -13,6 +13,8 @@ ListView {
     property string pressColor: nav.pressColor
     // True on the Archived page, where "Archive" reads "Unarchive".
     property bool archivedList: false
+    // True on the Channels page: the row's menu has Unfollow for Archive, and no pin or mute.
+    property bool channelList: false
     signal chatTapped(variant chat)
 
     function set(jid, args) {
@@ -26,6 +28,12 @@ ListView {
         set(chat.jid, {"pin": !chat.pinned})
     }
     function toggleArchive(chat) {
+        if (channelList) {
+            unfollowDialog.jid = chat.jid
+            unfollowDialog.body = chat.name
+            unfollowDialog.show()
+            return
+        }
         set(chat.jid, {"archive": !archivedList})
     }
     function toggleMute(chat) {
@@ -45,6 +53,18 @@ ListView {
         }
     }
     attachedObjects: [
+        SystemDialog {
+            id: unfollowDialog
+            property string jid
+            title: qsTr("Unfollow this channel?")
+            confirmButton.label: qsTr("Unfollow")
+            cancelButton.label: qsTr("Cancel")
+            onFinished: {
+                if (value == SystemUiResult.ConfirmButtonSelection) {
+                    engine.request("channel.unfollow", {"chat": jid})
+                }
+            }
+        },
         SystemListDialog {
             id: muteDialog
             property string jid

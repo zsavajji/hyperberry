@@ -54,6 +54,9 @@ Container {
     // ponytail: from the vote last drawn, so two taps before the engine answers act on the same
     // state; an optimistic copy of mine if that shows.
     function choose(i) {
+        if (msg.readOnly) {
+            return
+        }
         var mine = msg.mine
         var on = chosen(i)
         var next = []

@@ -139,8 +139,15 @@ func (st *Store) handle(cli *whatsmeow.Client, evt any) {
 	switch e := evt.(type) {
 	case *events.Connected:
 		go st.syncGroups(cli)
+		go st.syncChannels(cli)
 		go st.hist.resume(cli) // the chunks a crash or a failure left on disk
 		st.ops <- func(t *storeTx) { t.tidy(cli) }
+		return
+	case *events.NewsletterJoin: // followed on another device, or here
+		go st.syncChannels(cli)
+		return
+	case *events.NewsletterLeave:
+		st.ops <- func(t *storeTx) { t.clearChat(e.ID.String(), true) }
 		return
 	case *events.OfflineSyncPreview: // not through dispatch: cli may be nil
 		st.ops <- func(*storeTx) {

@@ -50,8 +50,6 @@ func inviteErr(err error) error {
 	return err
 }
 
-var errChannels = &Error{"bad_request", "channels come with step 6.6g"}
-
 type inviteInfo struct {
 	Kind   string `json:"kind"`
 	Code   string `json:"code"`
@@ -70,15 +68,19 @@ func (s *Session) handleInviteInfo(req json.RawMessage) (any, error) {
 	if !ok {
 		return nil, &Error{"bad_request", "not an invite link: " + r.URL}
 	}
-	if kind == inviteChannel {
-		return nil, errChannels
-	}
 	cli, err := s.ready()
 	if err != nil {
 		return nil, err
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), netTimeout)
 	defer cancel()
+	if kind == inviteChannel {
+		m, err := cli.GetNewsletterInfoWithInvite(ctx, code)
+		if err != nil {
+			return nil, inviteErr(err)
+		}
+		return inviteInfo{kind, code, m.ID.String(), m.ThreadMeta.Name.Text, m.ThreadMeta.SubscriberCount, s.store.hasChatRow(m.ID.String())}, nil
+	}
 	info, err := cli.GetGroupInfoFromLink(ctx, code)
 	if err != nil {
 		return nil, inviteErr(err)
@@ -95,8 +97,8 @@ func (s *Session) handleInviteAccept(req json.RawMessage) (any, error) {
 	if err := json.Unmarshal(req, &r); err != nil || r.Code == "" {
 		return nil, &Error{"bad_request", "invite.accept needs kind and code"}
 	}
-	if r.Kind != inviteGroup {
-		return nil, errChannels
+	if r.Kind != inviteGroup && r.Kind != inviteChannel {
+		return nil, &Error{"bad_request", "unknown invite kind: " + r.Kind}
 	}
 	cli, err := s.ready()
 	if err != nil {
@@ -104,6 +106,18 @@ func (s *Session) handleInviteAccept(req json.RawMessage) (any, error) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
 	defer cancel()
+	if r.Kind == inviteChannel {
+		jid, err := types.ParseJID(r.JID)
+		if err != nil || jid.Server != types.NewsletterServer {
+			return nil, &Error{"bad_request", "not a channel: " + r.JID}
+		}
+		if err := cli.FollowNewsletter(ctx, jid); err != nil {
+			return nil, inviteErr(err)
+		}
+		s.store.madeChat(jid.String(), chatNewsletter, r.Name)
+		go s.store.channelPosts(cli, jid)
+		return map[string]string{"jid": jid.String()}, nil
+	}
 	jid, err := cli.JoinGroupWithLink(ctx, r.Code)
 	if err != nil {
 		return nil, inviteErr(err)

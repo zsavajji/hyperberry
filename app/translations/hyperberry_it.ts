@@ -24,6 +24,49 @@
     </message>
 </context>
 <context>
+    <name>ChannelsPage</name>
+    <message>
+        <location filename="../assets/ChannelsPage.qml" line="12"/>
+        <source>Channels</source>
+        <translation>Canali</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChannelsPage.qml" line="40"/>
+        <source>Follow</source>
+        <translation>Segui</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChannelsPage.qml" line="13"/>
+        <source>Follow a channel</source>
+        <translation>Segui un canale</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChannelsPage.qml" line="14"/>
+        <source>Paste the channel's link</source>
+        <translation>Incolla il link del canale</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChannelsPage.qml" line="16"/>
+        <source>Next</source>
+        <translation>Avanti</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChannelsPage.qml" line="17"/>
+        <source>Cancel</source>
+        <translation>Annulla</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChannelsPage.qml" line="15"/>
+        <source>That isn't a channel link</source>
+        <translation>Questo non è un link a un canale</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChannelsPage.qml" line="70"/>
+        <source>No channels. Follow one by its link, or on your phone.</source>
+        <translation>Nessun canale. Seguine uno dal suo link o sul telefono.</translation>
+    </message>
+</context>
+<context>
     <name>ChatController</name>
     <message>
         <location filename="../src/ChatController.cpp" line="116"/>
@@ -112,6 +155,16 @@
         <location filename="../assets/ChatList.qml" line="47"/>
         <source>Always</source>
         <translation>Sempre</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChatList.qml" line="58"/>
+        <source>Unfollow this channel?</source>
+        <translation>Non seguire più questo canale?</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChatList.qml" line="60"/>
+        <source>Unfollow</source>
+        <translation>Non seguire più</translation>
     </message>
 </context>
 <context>
@@ -293,6 +346,11 @@
         <source>Archive</source>
         <translation>Archivia</translation>
     </message>
+    <message>
+        <location filename="../assets/ChatRow.qml" line="38"/>
+        <source>Unfollow</source>
+        <translation>Non seguire più</translation>
+    </message>
 </context>
 <context>
     <name>ChatsPage</name>
@@ -340,6 +398,11 @@
         <location filename="../assets/ChatsPage.qml" line="156"/>
         <source>No chat matches.</source>
         <translation>Nessuna chat corrisponde.</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChatsPage.qml" line="80"/>
+        <source>Channels</source>
+        <translation>Canali</translation>
     </message>
 </context>
 <context>

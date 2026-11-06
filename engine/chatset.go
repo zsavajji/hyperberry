@@ -7,6 +7,7 @@ import (
 
 	"github.com/polymorfa/hypermeow/appstate"
 	"github.com/polymorfa/hypermeow/proto/waCommon"
+	"github.com/polymorfa/hypermeow/types"
 )
 
 // chatSetReq is chat.set; every field but Chat is optional, and a field that is absent is left alone.
@@ -67,6 +68,10 @@ func (s *Session) handleChatSet(req json.RawMessage) (any, error) {
 		return nil, err
 	}
 	s.store.applyChatSet(r)
+	// Local only: WhatsApp's app state has no channels.
+	if jid.Server == types.NewsletterServer {
+		return nil, nil
+	}
 	var patches []appstate.PatchInfo
 	if r.Pin != nil {
 		patches = append(patches, appstate.BuildPin(jid, *r.Pin))

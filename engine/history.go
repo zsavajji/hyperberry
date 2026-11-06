@@ -127,6 +127,13 @@ func (st *Store) apply(ctx context.Context, t *storeTx, cli *whatsmeow.Client, k
 	c := *e
 	c.Message = flatten(e.Message)
 	e, m := &c, c.Message
+	// A channel's edit isn't wrapped as others' are: it's the new content under the original id.
+	if e.NewsletterMeta != nil && !e.NewsletterMeta.EditTS.IsZero() {
+		if _, text, ok := content(m); ok {
+			t.editMessage(key, e.Info.ID, text)
+		}
+		return
+	}
 	if pm := m.GetProtocolMessage(); pm != nil {
 		switch pm.GetType() {
 		case waE2E.ProtocolMessage_REVOKE:
@@ -192,7 +199,7 @@ func (st *Store) apply(ctx context.Context, t *storeTx, cli *whatsmeow.Client, k
 		t.addUnread(key, 1)
 		t.notifyIncoming(key)
 	}
-	if live && fresh && row.MediaState == 1 && (row.Kind == msgVoice || row.Kind == msgPhoto || row.Kind == msgSticker) {
-		go st.liveMedia(cli, row) // never in the writer: it is a network call; the rest wait for a tap
+	if live && fresh && row.MediaState == 1 && !isChannel(key) && (row.Kind == msgVoice || row.Kind == msgPhoto || row.Kind == msgSticker) {
+		go st.liveMedia(cli, row) // never in the writer: it is a network call; the rest, and a channel's media, wait for a tap
 	}
 }

@@ -12,7 +12,7 @@
 
 class EngineLink;
 
-// The chat list (PLAN.md §7, step 2.4): chats.db's chats that aren't archived (or, for the Archived page, only those), pinned first,
+// The chat list (PLAN.md §7, step 2.4): chats.db's chats that aren't archived or channels (or, for the Archived and Channels pages, only those), pinned first,
 // then newest first. Headers ("Pinned", "Today", "Yesterday", "Monday", "Jan 20") are the top
 // level ([g]), and the chats are their children ([g, i]): a map of jid, kind, name, initials,
 // color, preview, time, out, state, unread, muted, pinned and photo (a file path, or "").
@@ -28,8 +28,9 @@ class ChatListModel : public bb::cascades::DataModel
     // Bumped after each reload, so a QML binding that calls chat() is evaluated again.
     Q_PROPERTY(int revision READ revision NOTIFY revisionChanged)
 public:
-    // archived: only the archived chats, and no frame work (the Archived page).
-    explicit ChatListModel(EngineLink *engine, bool archived = false, QObject *parent = 0);
+    // Which chats a list shows: the chat list, the Archived page or the Channels page (step 6.6g). Only the chat list does frame work.
+    enum Mode { Chats, Archived, Channels };
+    explicit ChatListModel(EngineLink *engine, Mode mode = Chats, QObject *parent = 0);
 
     int childCount(const QVariantList &indexPath);
     bool hasChildren(const QVariantList &indexPath);
@@ -66,7 +67,7 @@ private:
         QList<QVariantMap> rows;
     };
     EngineLink *m_engine;
-    bool m_archived;
+    Mode m_mode;
     QString m_dbName;
     QList<Group> m_groups;
     int m_unreadTotal;

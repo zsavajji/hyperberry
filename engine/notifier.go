@@ -92,6 +92,10 @@ func (t *storeTx) hubItem(chat string, add, alert bool) {
 // on-screen chat gets it without the alert. During the offline backlog the chat waits for
 // endBacklog. Call it after addUnread and setLast.
 func (t *storeTx) notifyIncoming(chat string) {
+	// Channels never alert, and have no Hub item.
+	if isChannel(chat) {
+		return
+	}
 	if t.st.backlog != nil {
 		t.st.backlog[chat] = true
 		return

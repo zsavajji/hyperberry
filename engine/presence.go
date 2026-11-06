@@ -32,6 +32,10 @@ func (s *Session) handleRead(req json.RawMessage) (any, error) {
 		got <- t.unreadIncoming(r.Chat)
 		t.setUnread(r.Chat, 0)
 	}
+	// Read here only: a channel takes no read receipts.
+	if jid.Server == types.NewsletterServer {
+		return nil, nil
+	}
 	// One receipt per sender: WhatsApp takes a batch only from a single sender.
 	bySender := map[string][]types.MessageID{}
 	for _, m := range <-got {
@@ -89,6 +93,11 @@ func (s *Session) handleOpen(req json.RawMessage) (any, error) {
 	}
 	// A chat that appeared since the last round, or whose picture changed unseen, gets it now.
 	s.photos.add(r.Chat)
+	// A channel has no presence; it gets the news as it opens.
+	if jid.Server == types.NewsletterServer {
+		go s.store.channelPosts(cli, jid)
+		return nil, nil
+	}
 	if jid.Server == types.GroupServer { // groups have no online status
 		return nil, nil
 	}

@@ -31,6 +31,8 @@ Page {
             addAction(infoAction, ActionBarPlacement.InOverflow)
             addAction(pollAction, ActionBarPlacement.InOverflow)
         }
+        // A channel is read-only (step 6.6g): the first four actions are the composer, Emoji, Send and Attach.
+        for (var a = 0; chat.kind == 3 && a < 4; a++) actionAt(a).enabled = false
         ctl.messages.itemAdded.connect(page.added)
         ctl.voiceReady.connect(player.ready)
         media.ready.connect(page.mediaReady)
@@ -287,15 +289,15 @@ Page {
     // Called by ChatsPage once the page is pushed: every key, the first included, goes through the
     // input method (auto-capitals, Alt and Shift), which a KeyListener bypasses (bb10-pitfalls).
     function focusComposer() {
-        composer.requestFocus()
+        if (chat.kind != 3) composer.requestFocus()
     }
     // On the Q10, typing anywhere on the page goes to the field (step 3.2). A key reaches the page only
     // when the field doesn't have the focus: it goes in at the end, and the field takes over from the
     // next key. Modifiers, Sym and Delete arrive cut to their low byte with a keycap of 0xE000 or more
     // (bb10-pitfalls); control characters (Enter, Backspace) and Ctrl shortcuts aren't text.
     function typeKey(event) {
-        // The search field is inside the page, so its keys come here too (Q10, 0.0.1.122).
-        if (searchBar.typing) {
+        // The search field is inside the page, so its keys come here too (Q10, 0.0.1.122); and a channel has no composer.
+        if (searchBar.typing || page.chat.kind == 3) {
             return
         }
         var c = event.unicode
