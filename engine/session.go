@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 	"sync"
 	"time"
@@ -62,9 +63,6 @@ func newSession(container *sqlstore.Container, srv *Server, store *Store, log wa
 	s.cli = s.newClient(device)
 	if s.cli.Store.ID != nil {
 		s.link, s.conn = linkReady, "connecting"
-		if err := s.cli.Connect(); err != nil {
-			return nil, err
-		}
 	}
 	srv.Handle("link.qr", s.handleQR)
 	srv.Handle("link.code", s.handleCode)
@@ -79,7 +77,39 @@ func newSession(container *sqlstore.Container, srv *Server, store *Store, log wa
 	registerMedia(srv, s)
 	registerVoiceSend(srv, s)
 	srv.Handle("media.send", s.handleMediaSend)
+	if s.cli.Store.ID != nil {
+		// Not waited for: the UI gets its answers at once, whatever the network is doing.
+		cli := s.cli
+		go connectUntil(cli.Connect, func() bool { return cli != s.client() }, time.Minute, s.log)
+	}
 	return s, nil
+}
+
+// reconnectCap is the failures at which hypermeow's wait, 2 s for each, stops growing: 2 minutes.
+// Left alone, three days offline means 17 minutes before it looks again.
+const reconnectCap = 60
+
+// configureReconnect has a first connect with no network retry as a later one does. hypermeow's
+// default returns the error, which a reboot with no network would meet every time.
+func configureReconnect(cli *whatsmeow.Client) {
+	cli.InitialAutoReconnect = true
+	cli.AutoReconnectHook = func(error) bool {
+		cli.AutoReconnectErrors = min(cli.AutoReconnectErrors, reconnectCap)
+		return true
+	}
+}
+
+// connectUntil runs the first connect. A network failure doesn't reach here (configureReconnect),
+// but anything else would leave the engine connecting for ever, so it tries again. stale says a logout replaced this client.
+func connectUntil(connect func() error, stale func() bool, pause time.Duration, log waLog.Logger) {
+	for !stale() {
+		err := connect()
+		if err == nil || errors.Is(err, whatsmeow.ErrAlreadyConnected) {
+			return
+		}
+		log.Errorf("connect: %v", err)
+		time.Sleep(pause)
+	}
 }
 
 func (s *Session) newClient(device *store.Device) *whatsmeow.Client {
@@ -88,6 +118,7 @@ func (s *Session) newClient(device *store.Device) *whatsmeow.Client {
 	// It only dispatches the notification now; the Store works it and sends the receipt itself.
 	cli.ManualHistorySyncDownload = true
 	cli.DisableManualHistorySyncReceipt = true
+	configureReconnect(cli)
 	cli.AddEventHandler(func(evt any) { s.onEvent(cli, evt) })
 	cli.AddEventHandler(func(evt any) { s.store.handle(cli, evt) })
 	return cli

@@ -6,6 +6,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	rdebug "runtime/debug"
@@ -56,6 +57,7 @@ func main() {
 		if err != nil {
 			fatal("log:", err)
 		}
+		fatalOut = w
 		log = newLogger(w, level)
 		// A panic or a fatal error (out of memory among them) goes to stderr, which nothing
 		// reads on the phone: crash.log keeps a copy. A kill from outside leaves nothing there.
@@ -98,7 +100,10 @@ func identity(osName string, days uint) {
 	}
 }
 
+// fatalOut is where fatal says why: stderr, which nothing reads on the phone, until main has the log.
+var fatalOut io.Writer = os.Stderr
+
 func fatal(v ...any) {
-	fmt.Fprintln(os.Stderr, v...)
+	fmt.Fprintln(fatalOut, v...)
 	os.Exit(1)
 }
