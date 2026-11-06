@@ -4,10 +4,20 @@
 #include <bb/cascades/Color>
 #include <bb/cascades/ThemeSupport>
 #include <bb/cascades/VisualStyle>
+#include <bb/system/InvokeDateTime>
+#include <bb/system/InvokeManager>
+#include <bb/system/InvokeRecurrenceRule>
+#include <bb/system/InvokeRecurrenceRuleFrequency>
+#include <bb/system/InvokeReply>
+#include <bb/system/InvokeReplyError>
+#include <bb/system/InvokeTimerRequest>
+#include <QDate>
+#include <QDebug>
 #include <QDir>
 #include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
+#include <QTime>
 
 #include "EngineLink.h"
 #include "sizes.h"
@@ -21,11 +31,15 @@ Settings::Settings(EngineLink *engine, QObject *parent)
     // Dark is the bar descriptor's theme (CASCADES_THEME): nothing to apply, and no reload.
     if (theme() == 1)
         applyTheme();
+    // A new registration replaces the old one (navigator_invoke.h), so this also covers a reinstall.
+    if (startAtBoot())
+        applyBootTimer(true);
 }
 
 int Settings::theme() const { return m_file.value("theme", 0).toInt() == 1 ? 1 : 0; }
 bool Settings::enterSends() const { return m_file.value("enterSends", true).toBool(); }
 bool Settings::notifyPreview() const { return m_file.value("notifyPreview", true).toBool(); }
+bool Settings::startAtBoot() const { return m_file.value("startAtBoot", false).toBool(); }
 bool Settings::mediaOnMobile() const { return m_file.value("mediaOnMobile", true).toBool(); }
 // Larger (3, 140 %) went at the user's word (2026-11-01); a saved 3 reads as Large.
 int Settings::textSize() const { return qBound(0, m_file.value("textSize", 1).toInt(), 2); }
@@ -81,6 +95,58 @@ void Settings::setNotifyPreview(bool on)
         m_engine->request("prefs.set", prefs);
     }
     emit notifyPreviewChanged();
+}
+
+void Settings::setStartAtBoot(bool on)
+{
+    if (on == startAtBoot())
+        return;
+    store("startAtBoot", on);
+    applyBootTimer(on);
+    emit startAtBootChanged();
+}
+
+// Start at boot (step 8.2). It can't happen at boot itself: an unsigned app runs only once root is
+// up. So a recurring timer on the engine's headless target, which survives reboots
+// (navigator_invoke.h): the fires before root is up fail, the first after starts the engine, and one
+// that finds it running does nothing, so a killed engine comes back too. Every 6 minutes is the
+// shortest the service takes (InvokeRecurrenceRule.hpp).
+static const char *const kBootTimer = "hyperberry-boot";
+
+void Settings::applyBootTimer(bool on)
+{
+    bb::system::InvokeManager *invoker = m_engine->invoker();
+    bb::system::InvokeReply *reply = 0;
+    if (on) {
+        bb::system::InvokeRecurrenceRule rule(bb::system::InvokeRecurrenceRuleFrequency::Minutely,
+                                              bb::system::InvokeDateTime(QDate::currentDate(), QTime(0, 0)));
+        rule.setInterval(6);
+        if (!rule.isValid()) {
+            qWarning() << "boot timer: the rule is not valid";
+            return;
+        }
+        reply = invoker->registerTimer(bb::system::InvokeTimerRequest(kBootTimer, rule, "com.zsavajji.hyperberry.service"));
+    } else {
+        reply = invoker->deregisterTimer(kBootTimer);
+    }
+    if (!reply) {
+        qWarning() << "boot timer: request not sent";
+        return;
+    }
+    reply->setProperty("on", on);
+    connect(reply, SIGNAL(finished()), this, SLOT(bootTimerReplied()));
+}
+
+void Settings::bootTimerReplied()
+{
+    bb::system::InvokeReply *reply = qobject_cast<bb::system::InvokeReply *>(sender());
+    if (!reply)
+        return;
+    if (reply->error() == bb::system::InvokeReplyError::None)
+        qDebug() << "boot timer:" << (reply->property("on").toBool() ? "registered" : "removed");
+    else
+        qWarning() << "boot timer: failed," << int(reply->error()) << reply->errorCode();
+    reply->deleteLater();
 }
 
 void Settings::setMediaOnMobile(bool on)

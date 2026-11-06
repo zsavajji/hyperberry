@@ -1375,6 +1375,16 @@
         <translation>Se disattivato, la notifica mostra &quot;Nuovo messaggio&quot; invece del testo.</translation>
     </message>
     <message>
+        <location filename="../assets/SettingsPage.qml" line="116"/>
+        <source>Start at boot</source>
+        <translation>Avvia all&apos;accensione</translation>
+    </message>
+    <message>
+        <location filename="../assets/SettingsPage.qml" line="120"/>
+        <source>Brings HyperBerry back within 6 minutes of a reboot, or if it stops, with the app closed.</source>
+        <translation>Riporta HyperBerry in funzione entro 6 minuti da un riavvio o da un arresto, ad app chiusa.</translation>
+    </message>
+    <message>
         <location filename="../assets/SettingsPage.qml" line="110"/>
         <source>Storage</source>
         <translation>Spazio</translation>

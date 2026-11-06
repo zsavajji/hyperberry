@@ -48,6 +48,12 @@
             <mime-type>*</mime-type>
             <property var="uris" value="data://local"/>
         </filter>
+        <!-- Start at boot (step 8.2): a fire starts the engine, or finds it running and does nothing. -->
+        <filter>
+            <action>bb.action.system.TIMER_FIRED</action>
+            <mime-type>*</mime-type>
+            <property var="uris" value="data://local"/>
+        </filter>
         <!-- The Hub items' Mark as read, Mark as unread and Delete. -->
         <filter>
             <action>com.zsavajji.hyperberry.MARKREAD</action>

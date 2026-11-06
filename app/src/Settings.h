@@ -15,6 +15,7 @@ class Settings : public QObject
     Q_PROPERTY(int theme READ theme WRITE setTheme NOTIFY themeChanged)             // 0 Dark, 1 Bright
     Q_PROPERTY(bool enterSends READ enterSends WRITE setEnterSends NOTIFY enterSendsChanged)
     Q_PROPERTY(bool notifyPreview READ notifyPreview WRITE setNotifyPreview NOTIFY notifyPreviewChanged)
+    Q_PROPERTY(bool startAtBoot READ startAtBoot WRITE setStartAtBoot NOTIFY startAtBootChanged)
     Q_PROPERTY(bool mediaOnMobile READ mediaOnMobile WRITE setMediaOnMobile NOTIFY mediaOnMobileChanged)
     Q_PROPERTY(int textSize READ textSize WRITE setTextSize NOTIFY textSizeChanged) // 0..2
     Q_PROPERTY(qreal textScale READ textScale NOTIFY textSizeChanged)
@@ -24,12 +25,14 @@ public:
     int theme() const;
     bool enterSends() const;
     bool notifyPreview() const;
+    bool startAtBoot() const;
     bool mediaOnMobile() const;
     int textSize() const;
     qreal textScale() const;
     void setTheme(int theme);
     void setEnterSends(bool on);
     void setNotifyPreview(bool on);
+    void setStartAtBoot(bool on);
     void setMediaOnMobile(bool on);
     void setTextSize(int size);
     Q_INVOKABLE QString cacheSize();
@@ -39,11 +42,16 @@ signals:
     void themeChanged();
     void enterSendsChanged();
     void notifyPreviewChanged();
+    void startAtBootChanged();
     void mediaOnMobileChanged();
     void textSizeChanged();
 
+private slots:
+    void bootTimerReplied();
+
 private:
     void applyTheme();
+    void applyBootTimer(bool on);
     void store(const char *key, const QVariant &value);
     QSettings m_file;
     EngineLink *m_engine;

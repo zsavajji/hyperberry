@@ -57,7 +57,7 @@ func hubChat(s string) string {
 func hubActions(srv *Server, in <-chan invocation, remove func(chat string), log waLog.Logger) {
 	for inv := range in {
 		if inv.action != hubMarkRead && inv.action != hubMarkUnread && inv.action != hubDelete {
-			continue // START and the like need nothing
+			continue // START, TIMER_FIRED and the like need nothing
 		}
 		log.Infof("%s mime %q uri %q data %q", inv.action, inv.mime, inv.uri, inv.data)
 		chat := hubChat(inv.uri + " " + string(inv.data))

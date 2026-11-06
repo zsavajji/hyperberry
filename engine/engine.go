@@ -17,7 +17,7 @@ func runEngine(container *sqlstore.Container, dataDir string, log waLog.Logger, 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	// First, before anything slow: the navigator gives a headless app 6 s.
-	// The launch itself is the start; a START sent to a running engine needs nothing. The
+	// The launch itself is the start; a START or a boot timer's fire sent to a running engine needs nothing. The
 	// Hub's actions wait in invokes for hubActions; the callback runs on the BPS thread, so it
 	// drops what doesn't fit.
 	invokes := make(chan invocation, 16)
