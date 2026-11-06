@@ -4,8 +4,8 @@ retry discs, and the Hub's: the item menu's tick_action, unread_action and delet
 the account's hub.png (the app's green with message.png, which this script doesn't make, on it).
 The phone has only the trash can among the info page's and chat menu's icons (user's choice,
 2026-11-01), so these are drawn as action icons too: contacts_action (two people), save_action
-(a floppy disk), block_action (the "forbidden" sign), attach_action (a paperclip) and plus_action
-(a plus, which the phone has only beside a contact, a place or an event).
+(a floppy disk), block_action (the "forbidden" sign), attach_action (a paperclip), plus_action
+(a plus, which the phone has only beside a contact, a place or an event) and megaphone_action.
 
 They're white on transparent, so QML tints them with ImageView.filterColor (grey, or the
 primary colour for read). Each is drawn at 8x and scaled down to its size on the Q10: 3 du,
@@ -129,6 +129,13 @@ def main(out):
     d.line(pts((0.5, 0.12), (0.5, 0.88)), white, o)
     d.line(pts((0.12, 0.5), (0.88, 0.5)), white, o)
     action(img, out, "plus")
+
+    # A megaphone, for Channels (the user's, 2026-11-06): the horn, its grip and one sound wave.
+    img, d = canvas(H)
+    d.polygon(pts((0.08, 0.40), (0.26, 0.40), (0.70, 0.14), (0.70, 0.86), (0.26, 0.60), (0.08, 0.60)), fill=white)
+    d.line(pts((0.22, 0.58), (0.31, 0.88)), white, o)
+    d.line(pts((0.84, 0.34), (0.84, 0.66)), white, o)
+    action(img, out, "megaphone")
 
     # A paperclip, drawn upright as one wire (outer left up, over the top, down the right, round
     # the bottom, up the inside, a small turn, down to the free end) and turned 45 degrees.

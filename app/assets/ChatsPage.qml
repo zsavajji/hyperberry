@@ -77,7 +77,7 @@ Page {
         },
         ActionItem {
             title: qsTr("Channels")
-            imageSource: "file:///usr/share/icons/bb_action_openbbmchannel.png"
+            imageSource: "asset:///images/megaphone_action.png"
             ActionBar.placement: ActionBarPlacement.InOverflow
             onTriggered: nav.push(channelsDef.createObject())
         }
