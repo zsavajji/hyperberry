@@ -739,6 +739,11 @@
         <source>Show on map</source>
         <translation>Mostra sulla mappa</translation>
     </message>
+    <message>
+        <location filename="../assets/MediaBubble.qml" line="75"/>
+        <source>Spoiler</source>
+        <translation>Spoiler</translation>
+    </message>
 </context>
 <context>
     <name>MediaData</name>

@@ -17,6 +17,7 @@ struct Row
     bool deleted;
     bool text;          // has a caption (what the card shows as text)
     bool quote;         // quotes a message
+    bool spoiler;       // under its cover: never in an album
     bool out;
     std::string sender; // messages.sender: in a group, who sent it
 };

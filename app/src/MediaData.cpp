@@ -53,6 +53,23 @@ static QByteArray preview(const QString &id, const QString &path, int &width, in
     return f.open(QIODevice::ReadOnly) ? f.readAll() : QByteArray();
 }
 
+// A spoiler's picture under its cover (step 6.6d): down to 12 px and up again, Qt's smooth scaling
+// twice, so there's no filter of our own to write. Empty when it can't be read: the bubble then shows
+// its plain box, never the sharp picture.
+// ponytail: blurred again each time its row is read; keep the bytes if a chat of many spoilers stutters.
+static QByteArray blurred(const QByteArray &picture)
+{
+    const QImage in = QImage::fromData(picture);
+    if (in.isNull())
+        return QByteArray();
+    const QImage out = in.scaled(12, 12, Qt::KeepAspectRatio, Qt::SmoothTransformation)
+                           .scaled(160, 160, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    QByteArray bytes;
+    QBuffer buffer(&bytes);
+    buffer.open(QIODevice::WriteOnly);
+    return out.save(&buffer, "JPEG", 70) ? bytes : QByteArray();
+}
+
 // What a reply and the long-press menu show for a message whose text is empty.
 QString MediaData::kindName(int kind)
 {
@@ -68,7 +85,7 @@ QString MediaData::kindName(int kind)
 
 bool MediaData::fill(QVariantMap &data, const QString &id, int kind, const QString &text,
                      const QByteArray &thumb, int width, int height, qint64 size, int duration,
-                     int mediaState, const QString &path, const QLocale &locale)
+                     int mediaState, const QString &path, const QLocale &locale, bool blur)
 {
     QString media;
     switch (kind) {
@@ -97,6 +114,8 @@ bool MediaData::fill(QVariantMap &data, const QString &id, int kind, const QStri
         if (!p.isEmpty())
             shown = p;
     }
+    if (blur)
+        shown = blurred(shown);
     // A location has no width or height columns: its map picture is a JPEG, sized by its own header.
     if (kind == 9 && !thumb.isEmpty()) {
         QBuffer buffer;

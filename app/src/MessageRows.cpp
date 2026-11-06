@@ -65,9 +65,13 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
     // document's text (its name) is the bubble's. A caption stays in the text.
     if (kind == 5 && !deleted && q.value(17).toInt() == 1)
         Sticker::fetch(m_engine, m_chat, m.id, m_asked); // a history sticker, asked once per page
+    // Covered until a tap takes the cover off (unspoil), for as long as this chat stays open.
+    const bool covered = m.data["spoiler"].toBool() && !deleted && !m_revealed.contains(m.id);
+    m.data["spoiler"] = covered;
     if (MediaData::fill(m.data, m.id, deleted ? 0 : kind, text, q.value(19).toByteArray(),
                         q.value(20).toInt(), q.value(21).toInt(), q.value(22).toLongLong(),
-                        q.value(15).toInt(), q.value(17).toInt(), q.value(23).toString(), locale)
+                        q.value(15).toInt(), q.value(17).toInt(), q.value(23).toString(), locale,
+                        covered)
         && (kind == 4 || kind == 8))
         shown = QString();
     if (deleted) {

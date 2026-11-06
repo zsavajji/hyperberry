@@ -149,6 +149,12 @@ int MessageModel::reveal(const QString &id)
     return entryOf(id);
 }
 
+void MessageModel::unspoil(const QString &id)
+{
+    m_revealed.insert(id);
+    onMsgs(m_chat, QStringList(id));
+}
+
 void MessageModel::onMsgs(const QString &chat, const QStringList &ids)
 {
     if (chat != m_chat)
@@ -356,6 +362,7 @@ void MessageModel::rebuild()
         r.kind = m.kind;
         r.deleted = m.data["deleted"].toBool();
         r.text = !m.data["text"].toString().isEmpty();
+        r.spoiler = m.data["spoiler"].toBool();
         r.quote = !m.data["quote"].toString().isEmpty();
         r.out = m.data["out"].toBool();
         r.sender = m.who.toUtf8().constData();

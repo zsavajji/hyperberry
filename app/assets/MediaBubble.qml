@@ -7,7 +7,9 @@ import bb.cascades 1.4
 // no tap: the model fetches its file by itself. A location (6.5c) is its map picture as a photo's, or
 // without one a row to tap; the card's label and text under it are MessageItem's, and a tap asks which
 // maps app opens it. A contact (6.5d) is a row of the system's add-contact icon, its names and its
-// number (or "N contacts"); a tap imports it into the Contacts app.
+// number (or "N contacts"); a tap imports it into the Contacts app. A spoiler (6.6d) is a photo or video
+// under a blurred cover with "Spoiler" on it and no play mark or length: a tap takes the cover off
+// (the model's unspoil), the next opens it.
 Container {
     id: bubble
     property variant msg
@@ -28,8 +30,11 @@ Container {
     bottomPadding: picture || sticker ? ui.du(1) : 0
     gestureHandlers: TapHandler {
         onTapped: {
-            if (!bubble.sticker)
+            if (bubble.msg.spoiler) {
+                bubble.view.dataModel.unspoil(bubble.msg.id) // the cover comes off; the next tap opens it
+            } else if (!bubble.sticker) {
                 bubble.view.openMedia(bubble.msg)
+            }
         }
     }
 
@@ -69,7 +74,7 @@ Container {
             }
         }
         Label {
-            visible: bubble.msg.media == "video"
+            visible: bubble.msg.media == "video" && !bubble.msg.spoiler
             horizontalAlignment: HorizontalAlignment.Center
             verticalAlignment: VerticalAlignment.Center
             text: "▶"
@@ -79,13 +84,30 @@ Container {
             textStyle.color: Color.White
         }
         Label {
-            visible: bubble.msg.media == "video" && bubble.msg.durationText != ""
+            visible: bubble.msg.media == "video" && bubble.msg.durationText != "" && !bubble.msg.spoiler
             horizontalAlignment: HorizontalAlignment.Right
             verticalAlignment: VerticalAlignment.Bottom
             text: bubble.msg.durationText
             textFormat: TextFormat.Plain
             textStyle.base: SystemDefaults.TextStyles.SmallText
             textStyle.color: Color.White
+        }
+        // A spoiler (step 6.6d): the picture under this is blurred (MediaData) until a tap.
+        Container {
+            visible: bubble.msg.spoiler
+            horizontalAlignment: HorizontalAlignment.Fill
+            verticalAlignment: VerticalAlignment.Fill
+            background: Color.create("#66000000")
+            layout: DockLayout {
+            }
+            Label {
+                horizontalAlignment: HorizontalAlignment.Center
+                verticalAlignment: VerticalAlignment.Center
+                text: qsTr("Spoiler")
+                textFormat: TextFormat.Plain
+                textStyle.fontWeight: FontWeight.Bold
+                textStyle.color: Color.White
+            }
         }
         ActivityIndicator {
             visible: bubble.loading

@@ -121,6 +121,7 @@ func isViewOnce(r msgRow) bool { return r.Kind == msgNotice && r.Text == "view_o
 // apply writes one message event, live or from history: a new message, an edit, a revoke, a
 // reaction or a poll vote (its row, and the chat preview).
 func (st *Store) apply(ctx context.Context, t *storeTx, cli *whatsmeow.Client, key string, e *events.Message, live bool) {
+	spoiler := e.Message.GetSpoilerMessage() != nil // before flatten opens the wrapper
 	// A business message is written as what it wraps (msgflat.go). On a copy: the event is
 	// hypermeow's, and this runs on the writer after the handlers returned.
 	c := *e
@@ -156,6 +157,9 @@ func (st *Store) apply(ctx context.Context, t *storeTx, cli *whatsmeow.Client, k
 	row, ok := rowFromMessage(key, e, name)
 	if !ok {
 		return
+	}
+	if spoiler && (row.Kind == msgPhoto || row.Kind == msgVideo) {
+		row.Extra = withSpoiler(row.Extra)
 	}
 	if ci := contextInfo(m); len(ci.GetMentionedJID()) > 0 {
 		var ms []mention

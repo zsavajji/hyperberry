@@ -25,10 +25,11 @@ QString kindName(int kind);
 // for its link preview (step 6.5f); MessageKinds has the preview's text.
 // media: "photo", "video", "doc", "sticker", "audio", "location" or "contact", "" for any other kind
 // (always set, so QML never reads undefined); the rest (thumb, hasThumb, ratio, mediaState, path,
-// sizeText, durationText, fileName) only for media. Returns whether it is media.
+// sizeText, durationText, fileName) only for media. Returns whether it is media. blur (step 6.6d) shows
+// the picture blurred, for a spoiler under its cover.
 bool fill(QVariantMap &data, const QString &id, int kind, const QString &text,
           const QByteArray &thumb, int width, int height, qint64 size, int duration,
-          int mediaState, const QString &path, const QLocale &locale);
+          int mediaState, const QString &path, const QLocale &locale, bool blur);
 }
 
 #endif

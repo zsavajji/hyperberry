@@ -49,6 +49,8 @@ public:
     // The entry index of the message for a jump, after loading older messages back to its day;
     // -1 when it isn't shown (hidden by a pending delete, say).
     Q_INVOKABLE int reveal(const QString &id);
+    // A tap on a spoiler (step 6.6d): reads its row again, now uncovered.
+    Q_INVOKABLE void unspoil(const QString &id);
 
     bool empty() const { return m_entries.isEmpty(); }
 
@@ -107,6 +109,7 @@ private:
     bool m_atStart; // the oldest message is loaded
     QList<Msg> m_all;
     QSet<QString> m_hidden;
+    QSet<QString> m_revealed; // the spoilers tapped open (unspoil)
     QSet<QString> m_asked; // the sticker ids asked for from the engine (Sticker::fetch)
     QList<Entry> m_entries;
     bb::utility::i18n::RelativeDateFormatter m_days;
