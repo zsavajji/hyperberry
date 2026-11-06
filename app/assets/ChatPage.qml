@@ -448,7 +448,7 @@ Page {
             }
             // ctl.messages is null until the page opens the chat, hence the first test.
             EmptyNote {
-                visible: !!ctl.messages && ctl.messages.empty
+                model: ctl.messages
             }
         }
         ReactBar {

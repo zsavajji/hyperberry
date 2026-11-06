@@ -34,6 +34,8 @@ class MessageModel : public bb::cascades::DataModel
     Q_OBJECT
     // True when there is nothing to show: the page says so (a cleared chat, a new one).
     Q_PROPERTY(bool empty READ empty NOTIFY emptyChanged)
+    // True from opening the chat until its first page is in: the page shows a spinner meanwhile.
+    Q_PROPERTY(bool loading READ loading NOTIFY loadingChanged)
 public:
     MessageModel(EngineLink *engine, const QString &chat, bool group, QObject *parent = 0);
 
@@ -53,6 +55,7 @@ public:
     Q_INVOKABLE void unspoil(const QString &id);
 
     bool empty() const { return m_entries.isEmpty(); }
+    bool loading() const { return m_loading; }
 
     // The chat's unread count as chats.db has it now.
     int unread() const;
@@ -64,11 +67,13 @@ public:
 
 signals:
     void emptyChanged();
+    void loadingChanged();
     // A merge added a message that isn't ours and wasn't there before (not a first load or an
     // older page): the controller decides whether it was seen.
     void incoming();
 
 private slots:
+    void loadFirst();
     void onMsgs(const QString &chat, const QStringList &ids);
     void onConnected();
 
@@ -107,6 +112,7 @@ private:
     QString m_chat;
     bool m_group;
     bool m_atStart; // the oldest message is loaded
+    bool m_loading;
     QList<Msg> m_all;
     QSet<QString> m_hidden;
     QSet<QString> m_revealed; // the spoilers tapped open (unspoil)

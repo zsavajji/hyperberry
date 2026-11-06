@@ -8,6 +8,8 @@
 #include <bb/utility/i18n/Formatting>
 #include <QDateTime>
 #include <QDebug>
+#include <QElapsedTimer>
+#include <QTimer>
 #include <QHash>
 #include <QLocale>
 #include <QSet>
@@ -16,6 +18,8 @@ using namespace bb::cascades;
 using namespace bb::utility::i18n;
 
 static const int kPage = 50;
+// Long enough for the page's push to reach the system before the first page takes the UI thread.
+static const int kFirstLoadMs = 50;
 
 bool MessageModel::lessThan(const Msg &a, const Msg &b)
 {
@@ -28,6 +32,7 @@ MessageModel::MessageModel(EngineLink *engine, const QString &chat, bool group, 
     , m_chat(chat)
     , m_group(group)
     , m_atStart(false)
+    , m_loading(true)
     , m_days(RelativeDateFormat::NonTimeCritical)
     , m_region(bb::system::LocaleType::Region)
 {
@@ -35,7 +40,20 @@ MessageModel::MessageModel(EngineLink *engine, const QString &chat, bool group, 
     connect(engine, SIGNAL(msgsChanged(QString, QStringList)), this,
             SLOT(onMsgs(QString, QStringList)));
     connect(engine, SIGNAL(connectedChanged()), this, SLOT(onConnected()));
+    QTimer::singleShot(kFirstLoadMs, this, SLOT(loadFirst()));
+}
+
+// The first page and its cards hold the UI thread for most of a second, which used to come before
+// the page moved at all (the user, 2026-11-06). So the page goes first, with a spinner: the system
+// runs the slide by itself, so this doesn't stop it.
+void MessageModel::loadFirst()
+{
+    QElapsedTimer took;
+    took.start();
     loadPage();
+    m_loading = false;
+    emit loadingChanged();
+    qDebug() << "chat: first page," << m_all.size() << "messages in" << took.elapsed() << "ms";
 }
 
 int MessageModel::childCount(const QVariantList &indexPath)
@@ -102,7 +120,6 @@ void MessageModel::loadPage()
     QList<Msg> rows;
     if (m_all.isEmpty()) {
         rows = select(QString(), QVariantList(), kPage);
-        qDebug() << "chat: first page," << rows.size() << "messages";
     } else {
         const Msg &o = m_all.first();
         rows = select("AND (ts < ? OR (ts = ? AND rowid < ?))",
@@ -159,7 +176,7 @@ void MessageModel::unspoil(const QString &id)
 
 void MessageModel::onMsgs(const QString &chat, const QStringList &ids)
 {
-    if (chat != m_chat)
+    if (chat != m_chat || m_loading) // the first page reads it anyway
         return;
     // The sim's seed names 600 ids at once; SQLite binds 999 at most.
     QList<Msg> fresh;
@@ -180,7 +197,7 @@ void MessageModel::onMsgs(const QString &chat, const QStringList &ids)
 // on again (not the newest N: messages that came meanwhile would push loaded ones out).
 void MessageModel::onConnected()
 {
-    if (!m_engine || !m_engine->connected())
+    if (!m_engine || !m_engine->connected() || m_loading)
         return;
     m_asked.clear(); // a fetch the engine lost with its restart is asked again
     if (m_all.isEmpty()) {
