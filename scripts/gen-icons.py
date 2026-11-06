@@ -6,6 +6,7 @@ The phone has only the trash can among the info page's and chat menu's icons (us
 2026-11-01), so these are drawn as action icons too: contacts_action (two people), save_action
 (a floppy disk), block_action (the "forbidden" sign), attach_action (a paperclip), plus_action
 (a plus, which the phone has only beside a contact, a place or an event) and megaphone_action.
+It also draws the app's icon, in every size.
 
 They're white on transparent, so QML tints them with ImageView.filterColor (grey, or the
 primary colour for read). Each is drawn at 8x and scaled down to its size on the Q10: 3 du,
@@ -13,9 +14,12 @@ primary colour for read). Each is drawn at 8x and scaled down to its size on the
     docker run --rm -v "$PWD:/src" hyperberry-font python -I /src/scripts/gen-icons.py /src/app/assets/images
 """
 import math
+import re
 import sys
 
 from PIL import Image, ImageDraw
+
+HANDSET = "M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"
 
 S = 8  # supersampling
 H = 27  # 3 du on the Q10
@@ -226,6 +230,43 @@ def main(out):
     m = m.resize((side, round(side * m.height / m.width)), Image.LANCZOS)
     img.paste(m, ((B * S - m.width) // 2, (B * S - m.height) // 2), m)
     img.resize((B, B), Image.LANCZOS).save(f"{out}/hub.png")
+
+    # The app's icon (the user's design, 2026-11-06): the green tile, the white bubble of the New chat icon
+    # (message.png's proportions: 55 by 38, its tail a fifth of the width from the left, and nearly square
+    # corners), and WhatsApp's handset in it. Every size BB10 picks from (bb10-devices).
+    def app_icon(px):
+        n = 1024
+        img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        green, bubble = (0x1B, 0xD8, 0x62, 255), (255, 255, 255, 255)
+        d.rounded_rectangle((0, 0, n - 1, n - 1), round(0.18 * n), green)
+        d.rounded_rectangle((0.15 * n, 0.19 * n, 0.85 * n, 0.674 * n), round(0.02 * n), bubble)
+        d.polygon([(0.276 * n, 0.66 * n), (0.276 * n, 0.83 * n), (0.42 * n, 0.66 * n)], bubble)
+        # WhatsApp's handset (the user's choice, 2026-11-06), a trace of WhatsApp in BlackBerry's bubble: the
+        # first subpath of its mark in simple-icons 9.0.0. Fine on the user's phone; a public release should
+        # draw another. Curves as points, as Pillow draws no paths.
+        points, x, y = [], 0.0, 0.0
+        nums = [float(v) for v in re.findall(r"-?\d*\.?\d+", HANDSET)]
+        x, y = nums[0], nums[1]
+        points.append((x, y))
+        for k in range(2, len(nums) - 5, 6):
+            x1, y1, x2, y2, ex, ey = [x + v if t % 2 == 0 else y + v for t, v in enumerate(nums[k:k + 6])]
+            for t in (u / 12 for u in range(1, 13)):
+                c = 1 - t
+                points.append((c ** 3 * x + 3 * c * c * t * x1 + 3 * c * t * t * x2 + t ** 3 * ex,
+                               c ** 3 * y + 3 * c * c * t * y1 + 3 * c * t * t * y2 + t ** 3 * ey))
+            x, y = ex, ey
+        phone = Image.new("RGBA", (n, n), (0, 0, 0, 0))
+        ImageDraw.Draw(phone).polygon([(a * n / 24, b * n / 24) for a, b in points], green)
+        phone = phone.crop(phone.getbbox())
+        # Fitted into the bubble, centred: it fills most of the bubble's height with air around it.
+        side = round(0.37 * n)
+        phone = phone.resize((side, round(side * phone.height / phone.width)), Image.LANCZOS)
+        img.paste(phone, ((n - phone.width) // 2, round(0.432 * n) - phone.height // 2), phone)
+        return img.resize((px, px), Image.LANCZOS)
+
+    for px in (86, 90, 96, 110, 144):
+        app_icon(px).save(f"{out}/icon-{px}.png")
 
 
 if __name__ == "__main__":
