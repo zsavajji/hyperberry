@@ -97,6 +97,7 @@ Q_DECL_EXPORT int main(int argc, char **argv)
 {
     Application app(argc, argv);
     startLog();
+    qDebug() << "ui: main";
     // The sources are UTF-8; Qt 4 reads tr() and C-string literals as Latin-1 unless told, and
     // "typing…" showed as "typingà|" (Q10, 2026-10-31).
     QTextCodec::setCodecForTr(QTextCodec::codecForName("UTF-8"));

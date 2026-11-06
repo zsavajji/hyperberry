@@ -314,8 +314,18 @@ void ChatListModel::reload()
         emit emptyChanged();
     ++m_revision;
     emit revisionChanged();
-    if (m_mode == Chats)
+    if (m_mode == Chats) {
+        // Once per run: with "ui: main" and the Hub tap's line it times a cold start.
+        static bool first = true;
+        if (first) {
+            first = false;
+            int chats = 0;
+            foreach (const Group &g, m_groups)
+                chats += g.rows.size();
+            qDebug() << "chat list: first draw," << chats << "chats";
+        }
         updateFrame();
+    }
 }
 
 // A chat marked unread (unread < 0, step 5.3) counts as 1. 2^40 in muted_until is forever.

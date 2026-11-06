@@ -7,6 +7,7 @@
 
 #include <bb/utility/i18n/Formatting>
 #include <QDateTime>
+#include <QDebug>
 #include <QHash>
 #include <QLocale>
 #include <QSet>
@@ -101,6 +102,7 @@ void MessageModel::loadPage()
     QList<Msg> rows;
     if (m_all.isEmpty()) {
         rows = select(QString(), QVariantList(), kPage);
+        qDebug() << "chat: first page," << rows.size() << "messages";
     } else {
         const Msg &o = m_all.first();
         rows = select("AND (ts < ? OR (ts = ? AND rowid < ?))",

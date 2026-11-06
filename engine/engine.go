@@ -68,6 +68,7 @@ func runEngine(container *sqlstore.Container, dataDir string, log waLog.Logger, 
 	}()
 	go pruneCache(dataDir, cacheCap, "", time.Now(), log)
 	log.Infof("serving the UI")
+	go logStats(log)
 	<-stop
 	srv.Close()
 	closeSession()
