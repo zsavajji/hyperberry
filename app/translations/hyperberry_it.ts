@@ -1529,4 +1529,27 @@
         <translation>Unisciti</translation>
     </message>
 </context>
+<context>
+    <name>RevokeDialog</name>
+    <message>
+        <location filename="../assets/RevokeDialog.qml" line="1"/>
+        <source>Delete for everyone?</source>
+        <translation>Eliminare per tutti?</translation>
+    </message>
+    <message>
+        <location filename="../assets/RevokeDialog.qml" line="1"/>
+        <source>It will be deleted for everyone in this chat.</source>
+        <translation>Verrà eliminato per tutti i partecipanti di questa chat.</translation>
+    </message>
+    <message>
+        <location filename="../assets/RevokeDialog.qml" line="1"/>
+        <source>Delete</source>
+        <translation>Elimina</translation>
+    </message>
+    <message>
+        <location filename="../assets/RevokeDialog.qml" line="1"/>
+        <source>Cancel</source>
+        <translation>Annulla</translation>
+    </message>
+</context>
 </TS>

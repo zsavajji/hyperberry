@@ -112,18 +112,10 @@ Page {
                 }
             }
         },
-        SystemDialog {
+        RevokeDialog {
             id: revokeDialog
-            property string msgId
-            title: qsTr("Delete for everyone?")
-            body: qsTr("It will be deleted for everyone in this chat.")
-            confirmButton.label: qsTr("Delete")
-            cancelButton.label: qsTr("Cancel")
-            onFinished: {
-                if (value == SystemUiResult.ConfirmButtonSelection && !ctl.deleteForEveryone(msgId)) {
-                    deleteFailed.show()
-                }
-            }
+            chatCtl: ctl
+            onNotSent: deleteFailed.show()
         }
     ]
     actions: [
