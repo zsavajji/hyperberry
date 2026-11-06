@@ -129,6 +129,9 @@ bool MessageKinds::fill(int kind, const QString &chat, const QString &id, const 
 
     QStringList lines;
     data["poll"] = kind == 11; // always set, so QML never reads undefined
+    // And an empty options list: a recycled card's PollBubble reads msg.options for its new row
+    // before the delegate holding it goes (Q10 ui.log, 2026-11-02 and 11-04, six TypeErrors).
+    data["options"] = QVariantList();
     switch (kind) {
     case 6:
         shown = text;
