@@ -1051,6 +1051,67 @@
     </message>
 </context>
 <context>
+    <name>PollAction</name>
+    <message>
+        <location filename="../assets/PollAction.qml" line="6"/>
+        <source>Create poll</source>
+        <translation>Crea sondaggio</translation>
+    </message>
+</context>
+<context>
+    <name>PollPage</name>
+    <message>
+        <location filename="../assets/PollPage.qml" line="10"/>
+        <source>Create poll</source>
+        <translation>Crea sondaggio</translation>
+    </message>
+    <message>
+        <location filename="../assets/PollPage.qml" line="10"/>
+        <source>Question</source>
+        <translation>Domanda</translation>
+    </message>
+    <message>
+        <location filename="../assets/PollPage.qml" line="10"/>
+        <source>Ask something</source>
+        <translation>Fai una domanda</translation>
+    </message>
+    <message>
+        <location filename="../assets/PollPage.qml" line="10"/>
+        <source>Options</source>
+        <translation>Opzioni</translation>
+    </message>
+    <message>
+        <location filename="../assets/PollPage.qml" line="10"/>
+        <source>Add option</source>
+        <translation>Aggiungi opzione</translation>
+    </message>
+    <message>
+        <location filename="../assets/PollPage.qml" line="10"/>
+        <source>Allow several answers</source>
+        <translation>Consenti più risposte</translation>
+    </message>
+    <message>
+        <location filename="../assets/PollPage.qml" line="10"/>
+        <source>Send</source>
+        <translation>Invia</translation>
+    </message>
+    <message>
+        <location filename="../assets/PollPage.qml" line="10"/>
+        <source>A poll needs a question and two options</source>
+        <translation>Un sondaggio richiede una domanda e due opzioni</translation>
+    </message>
+    <message>
+        <location filename="../assets/PollPage.qml" line="10"/>
+        <source>Not sent: HyperBerry is reconnecting. Try again in a moment.</source>
+        <translation>Non inviato: HyperBerry si sta riconnettendo. Riprova tra un attimo.</translation>
+    </message>
+    <message>
+        <location filename="../assets/PollPage.qml" line="10"/>
+        <source>Option %1</source>
+        <translation>Opzione %1</translation>
+    </message>
+</context>
+<context>
     <name>Polls</name>
     <message>
         <location filename="../src/Polls.cpp" line="40"/>
@@ -1127,6 +1188,11 @@
         <location filename="../assets/ReactBar.qml" line="58"/>
         <source>Vote not sent</source>
         <translation>Voto non inviato</translation>
+    </message>
+    <message>
+        <location filename="../assets/ReactBar.qml" line="60"/>
+        <source>Poll not sent</source>
+        <translation>Sondaggio non inviato</translation>
     </message>
     <message>
         <location filename="../assets/ReactBar.qml" line="123"/>

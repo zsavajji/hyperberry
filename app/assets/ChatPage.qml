@@ -29,6 +29,7 @@ Page {
         ctl.open(chat)
         if (chat.kind <= 1) {
             addAction(infoAction, ActionBarPlacement.InOverflow)
+            addAction(pollAction, ActionBarPlacement.InOverflow)
         }
         ctl.messages.itemAdded.connect(page.added)
         ctl.voiceReady.connect(player.ready)
@@ -66,6 +67,7 @@ Page {
             chat: page.chat
             chatCtl: ctl
         },
+        PollAction { id: pollAction; jid: page.chat ? page.chat.jid : "" },
         SystemToast {
             id: notSent
             body: qsTr("Not sent: HyperBerry is reconnecting. Try again in a moment.")
@@ -275,15 +277,12 @@ Page {
         }
     }
     // A photo opens in our viewer, anything else in the system's app for its type.
-    function showMedia(kind, path) {
+    function mediaReady(msgId, kind, path) {
         if (kind == "photo") {
             nav.showPhoto(path)
         } else if (!media.openFile(path)) {
             mediaFailed.show()
         }
-    }
-    function mediaReady(msgId, kind, path) {
-        showMedia(kind, path)
     }
     // Called by ChatsPage once the page is pushed: every key, the first included, goes through the
     // input method (auto-capitals, Alt and Shift), which a KeyListener bypasses (bb10-pitfalls).

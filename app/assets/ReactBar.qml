@@ -56,6 +56,8 @@ Container {
     onFailedCmdChanged: {
         if (failedCmd == "poll.vote") {
             say(qsTr("Vote not sent"))
+        } else if (failedCmd == "poll.create") {
+            say(qsTr("Poll not sent"))
         }
     }
     onPickingChanged: {
