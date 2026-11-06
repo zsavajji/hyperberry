@@ -174,6 +174,26 @@ int MessageModel::unread() const
     return q.exec() && q.next() ? q.value(0).toInt() : 0;
 }
 
+// The times select would read, with no row built: what deciding a page's size needs.
+QList<qint64> MessageModel::pageTimes(const QString &where, const QVariantList &args, int limit)
+{
+    QList<qint64> times;
+    QSqlDatabase db = database();
+    if (!db.isOpen())
+        return times;
+    QSqlQuery q(db);
+    q.prepare(QString("SELECT ts FROM messages WHERE chat = ? %1 ORDER BY ts DESC, rowid DESC LIMIT %2")
+                  .arg(where).arg(limit));
+    q.addBindValue(m_chat);
+    foreach (const QVariant &a, args)
+        q.addBindValue(a);
+    if (q.exec()) {
+        while (q.next())
+            times << q.value(0).toLongLong();
+    }
+    return times;
+}
+
 // Runs the messages query of this chat: "where" adds conditions on top of chat = ?, args are
 // bound after it. Newest first, then reversed to the order the list shows.
 QList<MessageModel::Msg> MessageModel::select(const QString &where, const QVariantList &args,

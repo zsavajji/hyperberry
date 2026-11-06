@@ -100,6 +100,7 @@ private:
     static bool lessThan(const Msg &a, const Msg &b);
     Msg read(QSqlQuery &q);
     QList<Msg> select(const QString &where, const QVariantList &args, int limit);
+    QList<qint64> pageTimes(const QString &where, const QVariantList &args, int limit);
     void loadPage();
     void merge(const QStringList &asked, const QList<Msg> &fresh, bool older);
     void rebuild();

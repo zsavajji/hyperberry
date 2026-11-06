@@ -18,6 +18,12 @@ using namespace bb::cascades;
 using namespace bb::utility::i18n;
 
 static const int kPage = 50;
+// What a page holds at least, when it stops at a day's end: more than the 13 cards the list makes.
+static const int kPageMin = 20;
+// How close to the top an older page is asked for, in entries. Not much more than a screen holds: from
+// the first page's top row on the screen, 25 asked for the next page with no scroll at all, and in a group
+// that was 103 rows and five more cards, holding the UI thread 1.4 s just after opening (Q10, 0.0.1.158).
+static const int kNearTop = 8;
 // Long enough for the page's push to reach the system before the first page takes the UI thread.
 static const int kFirstLoadMs = 50;
 
@@ -113,21 +119,29 @@ int MessageModel::entryOf(const QString &id) const
     return -1;
 }
 
-// The newest page, or the page older than the oldest loaded message. A full page also takes
-// the rest of its oldest row's day, so the loaded set holds whole days.
+// The newest page, or the page older than the oldest loaded message. A row is dear to read, about
+// 3 ms with its JSON and pictures (Q10, 0.0.1.156: 123 rows, 416 ms, for 13 cards), so a page stops at
+// the first day's end with kPageMin rows in it, found from the rows' times alone. With no day's end
+// in kPage rows it takes the rest of its oldest row's day. Either way the loaded set holds whole days.
 void MessageModel::loadPage()
 {
-    QList<Msg> rows;
-    if (m_all.isEmpty()) {
-        rows = select(QString(), QVariantList(), kPage);
-    } else {
+    QString where;
+    QVariantList args;
+    if (!m_all.isEmpty()) {
         const Msg &o = m_all.first();
-        rows = select("AND (ts < ? OR (ts = ? AND rowid < ?))",
-                      QVariantList() << o.ts << o.ts << o.rowid, kPage);
+        where = "AND (ts < ? OR (ts = ? AND rowid < ?))";
+        args << o.ts << o.ts << o.rowid;
     }
-    // A short page is the start of the chat.
-    m_atStart = rows.size() < kPage;
-    if (!m_atStart) {
+    const QList<qint64> times = pageTimes(where, args, kPage);
+    int cut = -1;
+    for (int i = kPageMin; i < times.size() && cut < 0; ++i) {
+        if (QDateTime::fromTime_t(times[i]).date() != QDateTime::fromTime_t(times[i - 1]).date())
+            cut = i;
+    }
+    // A short page with no cut is the start of the chat.
+    m_atStart = cut < 0 && times.size() < kPage;
+    QList<Msg> rows = select(where, args, cut >= 0 ? cut : kPage);
+    if (cut < 0 && !m_atStart && !rows.isEmpty()) {
         const Msg o = rows.first();
         const uint midnight =
             QDateTime(QDateTime::fromTime_t(o.ts).date(), QTime(0, 0)).toTime_t();
@@ -142,7 +156,7 @@ void MessageModel::nearTop(const QVariantList &firstVisible)
 {
     if (m_atStart || firstVisible.isEmpty())
         return;
-    if (firstVisible.value(0).toInt() >= m_entries.size() - 25)
+    if (firstVisible.value(0).toInt() >= m_entries.size() - kNearTop)
         loadPage();
 }
 
