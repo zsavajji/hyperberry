@@ -61,18 +61,19 @@ type note struct {
 
 // hubItem queues the chat's item as the chat is now: its name, last message and unread count.
 // alert asks for the Hub's alert, which stays only for a chat with unread messages that is
-// neither muted nor on screen. Call it after the row has its new values.
+// neither muted, archived nor on screen. Call it after the row has its new values.
 func (t *storeTx) hubItem(chat string, add, alert bool) {
 	var name, preview sql.NullString
 	var last sql.NullInt64
 	var unread int
 	var muted int64
-	err := t.tx.QueryRow("SELECT name, last_preview, unread, muted_until, last_ts FROM chats WHERE jid = ?", chat).
-		Scan(&name, &preview, &unread, &muted, &last)
+	var archived bool
+	err := t.tx.QueryRow("SELECT name, last_preview, unread, muted_until, archived, last_ts FROM chats WHERE jid = ?", chat).
+		Scan(&name, &preview, &unread, &muted, &archived, &last)
 	if err != nil {
 		return
 	}
-	alert = alert && unread > 0 && muted <= time.Now().Unix() && !t.st.ui.seen(chat)
+	alert = alert && unread > 0 && !archived && muted <= time.Now().Unix() && !t.st.ui.seen(chat)
 	title := name.String
 	if title == "" {
 		title, _, _ = strings.Cut(chat, "@")

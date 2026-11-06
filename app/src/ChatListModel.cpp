@@ -331,7 +331,7 @@ void ChatListModel::updateFrame()
     QStringList names;
     QSqlQuery q(db);
     // ponytail: the first 10 names are more than the frame's three lines hold.
-    q.prepare("SELECT name, jid, unread FROM chats WHERE muted_until <= ? AND unread != 0 "
+    q.prepare("SELECT name, jid, unread FROM chats WHERE muted_until <= ? AND unread != 0 AND archived = 0 "
               "ORDER BY last_ts DESC");
     q.addBindValue(now);
     if (q.exec()) {

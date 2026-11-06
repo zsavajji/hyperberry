@@ -174,12 +174,14 @@ Container {
                     }
                     // A part with no share is hidden, not given a quota of 0: Cascades sized a 0 like
                     // a 1 (Q10, 0.0.1.132: one vote of one filled half the bar, two of two 2/3).
+                    // A quota of 0 also logs "setSpaceQuota(): 0 is not a valid value", and row.count is 0
+                    // while the row is being built, so the quotas are never below 1.
                     Container {
                         visible: row.count > 0
                         verticalAlignment: VerticalAlignment.Fill
                         background: ui.palette.primary
                         layoutProperties: StackLayoutProperties {
-                            spaceQuota: row.count
+                            spaceQuota: Math.max(row.count, 1)
                         }
                     }
                     Container {
@@ -188,7 +190,7 @@ Container {
                         background: ui.palette.secondaryTextOnPlain
                         opacity: 0.3
                         layoutProperties: StackLayoutProperties {
-                            spaceQuota: row.total > 0 ? row.total - row.count : 1
+                            spaceQuota: row.total > 0 ? Math.max(row.total - row.count, 1) : 1
                         }
                     }
                 }

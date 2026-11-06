@@ -192,6 +192,23 @@ func TestHubSilentItems(t *testing.T) {
 	item(t, only(t, h.take(), "update"), 0, "unseen", 2, true)
 }
 
+func TestHubArchivedSilent(t *testing.T) {
+	s, st, _, h := hubSim(t)
+	n := -1
+	for i, c := range simChats {
+		if c.archived {
+			n = i
+			break
+		}
+	}
+	if n < 0 {
+		t.Fatal("no archived chat in the sim")
+	}
+	msg(s, n, "hush")
+	flush(t, st)
+	item(t, only(t, h.take(), "add"), n, "hush", 1, false)
+}
+
 func TestHubReadAndSend(t *testing.T) {
 	s, st, _, h := hubSim(t)
 	chat := simChats[2].jid // 3 unread, no item
