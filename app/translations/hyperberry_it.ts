@@ -1530,6 +1530,39 @@
     </message>
 </context>
 <context>
+    <name>TextCard</name>
+    <message>
+        <location filename="../assets/TextCard.qml" line="1"/>
+        <source>Reply</source>
+        <translation>Rispondi</translation>
+    </message>
+    <message>
+        <location filename="../assets/TextCard.qml" line="1"/>
+        <source>React</source>
+        <translation>Reagisci</translation>
+    </message>
+    <message>
+        <location filename="../assets/TextCard.qml" line="1"/>
+        <source>Copy</source>
+        <translation>Copia</translation>
+    </message>
+    <message>
+        <location filename="../assets/TextCard.qml" line="1"/>
+        <source>Delete for everyone</source>
+        <translation>Elimina per tutti</translation>
+    </message>
+    <message>
+        <location filename="../assets/TextCard.qml" line="1"/>
+        <source>Delete for me</source>
+        <translation>Elimina per me</translation>
+    </message>
+    <message>
+        <location filename="../assets/TextCard.qml" line="1"/>
+        <source>edited</source>
+        <translation>modificato</translation>
+    </message>
+</context>
+<context>
     <name>RevokeDialog</name>
     <message>
         <location filename="../assets/RevokeDialog.qml" line="1"/>

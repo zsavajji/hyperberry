@@ -433,6 +433,12 @@ Page {
                         }
                     },
                     ListItemComponent {
+                        type: "text"
+                        TextCard {
+                            msg: ListItemData
+                        }
+                    },
+                    ListItemComponent {
                         type: "msg"
                         MessageItem {
                             msg: ListItemData

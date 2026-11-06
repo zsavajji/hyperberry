@@ -77,7 +77,11 @@ QString MessageModel::itemType(const QVariantList &indexPath)
     const Entry e = m_entries.value(indexPath.value(0).toInt());
     if (e.msg < 0)
         return "header";
-    return m_all[e.msg].service ? "service" : "msg";
+    const Msg &m = m_all[e.msg];
+    if (m.service)
+        return "service";
+    // Plain text gets the light card, TextCard. A row's type never changes: its kind and link preview don't.
+    return e.members.isEmpty() && m.kind == 0 && m.data["linkTitle"].toString().isEmpty() ? "text" : "msg";
 }
 
 QVariant MessageModel::data(const QVariantList &indexPath)
