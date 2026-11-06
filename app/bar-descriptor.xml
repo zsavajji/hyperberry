@@ -91,6 +91,19 @@
         <image>icon-110.png</image>
         <image>icon-144.png</image>
     </icon>
+    <!-- The launch screen, which the phone shows from the tap until the app's first frame (the user's
+         ask, 2026-11-06: it stayed black). Made by scripts/gen-icons.py, one per screen the app can
+         meet in portrait, which it stays in: Q10 and Classic, Z30, Z10, Passport. -->
+    <asset path="assets/images/splash-720x720.png">splash-720x720.png</asset>
+    <asset path="assets/images/splash-720x1280.png">splash-720x1280.png</asset>
+    <asset path="assets/images/splash-768x1280.png">splash-768x1280.png</asset>
+    <asset path="assets/images/splash-1440x1440.png">splash-1440x1440.png</asset>
+    <splashScreens>
+        <image>splash-720x720.png</image>
+        <image>splash-720x1280.png</image>
+        <image>splash-768x1280.png</image>
+        <image>splash-1440x1440.png</image>
+    </splashScreens>
     <!-- The Hub is another process: it reads these from /apps/<pkg>/public/ (engine/hub_qnx.go
          hands it that folder). -->
     <asset path="assets/images/hub.png" public="true">hub.png</asset>

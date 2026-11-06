@@ -6,7 +6,7 @@ The phone has only the trash can among the info page's and chat menu's icons (us
 2026-11-01), so these are drawn as action icons too: contacts_action (two people), save_action
 (a floppy disk), block_action (the "forbidden" sign), attach_action (a paperclip), plus_action
 (a plus, which the phone has only beside a contact, a place or an event) and megaphone_action.
-It also draws the app's icon, in every size.
+It also draws the app's icon, in every size, and the splash.
 
 They're white on transparent, so QML tints them with ImageView.filterColor (grey, or the
 primary colour for read). Each is drawn at 8x and scaled down to its size on the Q10: 3 du,
@@ -233,7 +233,8 @@ def main(out):
 
     # The app's icon (the user's design, 2026-11-06): the green tile, the white bubble of the New chat icon
     # (message.png's proportions: 55 by 38, its tail a fifth of the width from the left, and nearly square
-    # corners), and WhatsApp's handset in it. Every size BB10 picks from (bb10-devices).
+    # corners), and WhatsApp's handset in it. Every size BB10 picks from (bb10-devices), then the
+    # splash: the same tile on the dark theme's black, shown from the tap until the app's first frame.
     def app_icon(px):
         n = 1024
         img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
@@ -267,6 +268,14 @@ def main(out):
 
     for px in (86, 90, 96, 110, 144):
         app_icon(px).save(f"{out}/icon-{px}.png")
+    # One per screen an app that stays in portrait can meet (bb10-devices): the Q10 and Classic, the Z30, the
+    # Z10, the Passport. The tile is 30 % of the width, in the middle, so it looks the same on each.
+    for w, h in ((720, 720), (720, 1280), (768, 1280), (1440, 1440)):
+        splash = Image.new("RGB", (w, h), (0, 0, 0))
+        side = round(0.3 * w)
+        tile = app_icon(side)
+        splash.paste(tile, ((w - side) // 2, (h - side) // 2), tile)
+        splash.save(f"{out}/splash-{w}x{h}.png")
 
 
 if __name__ == "__main__":
