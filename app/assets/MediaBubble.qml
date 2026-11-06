@@ -16,7 +16,7 @@ Container {
     property variant view
     property bool location: msg.media == "location"
     property bool contact: msg.media == "contact"
-    property bool picture: msg.media == "photo" || msg.media == "video" || (location && msg.hasThumb)
+    property bool picture: msg.media == "photo" || msg.media == "video" || (location && !!msg.hasThumb)
     property bool sticker: msg.media == "sticker"
     property bool loading: view.mediaLoadingId == msg.id
     // The system's icon in the emoji's place; "" for the files, which are not loaded then.
