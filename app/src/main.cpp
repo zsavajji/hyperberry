@@ -22,6 +22,7 @@
 #include "ContactPicker.h"
 #include "EmojiModel.h"
 #include "EngineLink.h"
+#include "Invites.h"
 #include "MapChooser.h"
 #include "MediaOpener.h"
 #include "OpenRequests.h"
@@ -124,6 +125,7 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     if (notifyDefaults.apply() != bb::platform::NotificationSettingsError::None)
         qWarning() << "notification defaults refused";
     OpenRequests openRequests(engine.invoker(), &app);
+    Invites invites(&engine, &app);
 
     qmlRegisterType<ChatController>("hyperberry", 1, 0, "ChatController");
     qmlRegisterType<ContactInfo>("hyperberry", 1, 0, "ContactInfo");
@@ -141,6 +143,7 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     document->setContextProperty("qr", &qr);
     document->setContextProperty("settings", &settings);
     document->setContextProperty("openRequests", &openRequests);
+    document->setContextProperty("invites", &invites);
     // The phone's region and language ("IT", "it"): the linking page's first country, and the
     // language of country names.
     QVariantMap phoneLocale;

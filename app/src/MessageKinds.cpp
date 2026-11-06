@@ -129,6 +129,7 @@ bool MessageKinds::fill(int kind, const QString &chat, const QString &id, const 
 
     QStringList lines;
     data["spoiler"] = extra.value("spoiler").toBool() && (kind == 1 || kind == 2); // MessageRows takes it off once tapped
+    data["invite"] = kind == 14 && !out ? chat : QString(); // the chat of an invite card we can join, for its button
     data["poll"] = kind == 11; // always set, so QML never reads undefined
     // And an empty options list: a recycled card's PollBubble reads msg.options for its new row
     // before the delegate holding it goes (Q10 ui.log, 2026-11-02 and 11-04, six TypeErrors).

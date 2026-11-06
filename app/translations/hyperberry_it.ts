@@ -820,6 +820,11 @@
         <source>edited</source>
         <translation>modificato</translation>
     </message>
+    <message>
+        <location filename="../assets/MessageItem.qml" line="1"/>
+        <source>Join group</source>
+        <translation>Unisciti al gruppo</translation>
+    </message>
 </context>
 <context>
     <name>MessageKinds</name>
@@ -1399,6 +1404,51 @@
         <location filename="../assets/main.qml" line="29"/>
         <source>Profile</source>
         <translation>Profilo</translation>
+    </message>
+    <message>
+        <location filename="../assets/main.qml" line="1"/>
+        <source>Cancel</source>
+        <translation>Annulla</translation>
+    </message>
+    <message>
+        <location filename="../assets/main.qml" line="1"/>
+        <source>This invite doesn't work any more</source>
+        <translation>Questo invito non è più valido</translation>
+    </message>
+    <message>
+        <location filename="../assets/main.qml" line="1"/>
+        <source>Couldn't open this invite. Try again in a moment.</source>
+        <translation>Impossibile aprire questo invito. Riprova tra poco.</translation>
+    </message>
+    <message>
+        <location filename="../assets/main.qml" line="1"/>
+        <source>Follow this channel?</source>
+        <translation>Seguire questo canale?</translation>
+    </message>
+    <message>
+        <location filename="../assets/main.qml" line="1"/>
+        <source>Join this group?</source>
+        <translation>Unirsi a questo gruppo?</translation>
+    </message>
+    <message>
+        <location filename="../assets/main.qml" line="1"/>
+        <source>%1 followers</source>
+        <translation>%1 follower</translation>
+    </message>
+    <message>
+        <location filename="../assets/main.qml" line="1"/>
+        <source>%1 members</source>
+        <translation>%1 membri</translation>
+    </message>
+    <message>
+        <location filename="../assets/main.qml" line="1"/>
+        <source>Follow</source>
+        <translation>Segui</translation>
+    </message>
+    <message>
+        <location filename="../assets/main.qml" line="1"/>
+        <source>Join</source>
+        <translation>Unisciti</translation>
     </message>
 </context>
 </TS>

@@ -1,4 +1,5 @@
 import bb.cascades 1.4
+import bb.system 1.2
 
 // The app's root (PLAN.md §7): a NavigationPane that holds no page of its own. It shows the
 // chat list when linked, else the linking page: not linked, the root is the linking page, not a sheet.
@@ -74,6 +75,19 @@ NavigationPane {
                 source: "asset:///fonts/HyperBerryEmoji.ttf"
                 fontFamily: "HBEmoji"
             }
+        },
+        // A group or channel invite (steps 6.6f, 6.6g): filled by askToJoin.
+        SystemDialog {
+            id: joinDialog
+            cancelButton.label: qsTr("Cancel")
+            onFinished: {
+                if (value == SystemUiResult.ConfirmButtonSelection) {
+                    invites.accept()
+                }
+            }
+        },
+        SystemToast {
+            id: inviteFailed
         }
     ]
     onPopTransitionEnded: page.destroy()
@@ -81,9 +95,29 @@ NavigationPane {
     onCreationCompleted: {
         // Not a Connections: Cascades' QML has none.
         openRequests.openChat.connect(nav.openRequested)
+        invites.offered.connect(nav.askToJoin)
+        invites.joined.connect(nav.openRequested)
         // setCover, as the skills have it: cover belongs to Application, not to a page.
         Application.setCover(coverDef.createObject())
         show()
+    }
+
+    property string failedCmd: engine.failure.cmd || ""
+    onFailedCmdChanged: {
+        if (failedCmd == "invite.info" || failedCmd == "invite.accept" || failedCmd == "group.join") {
+            inviteFailed.body = engine.failure.code == "invite_invalid" ? qsTr("This invite doesn't work any more")
+                                                                        : qsTr("Couldn't open this invite. Try again in a moment.")
+            inviteFailed.show()
+        }
+    }
+
+    function askToJoin(kind, name, count) {
+        var channel = kind == "channel"
+        joinDialog.title = channel ? qsTr("Follow this channel?") : qsTr("Join this group?")
+        var size = count > 0 ? (channel ? qsTr("%1 followers") : qsTr("%1 members")).arg(count) : ""
+        joinDialog.body = size == "" ? name : name + "\n" + size
+        joinDialog.confirmButton.label = channel ? qsTr("Follow") : qsTr("Join")
+        joinDialog.show()
     }
 
     // A page swap, so there's no Back to the other root: the new page goes in at the bottom

@@ -19,7 +19,7 @@ Container {
     }
     gestureHandlers: TapHandler {
         onTapped: {
-            if (preview.link != "") {
+            if (preview.link != "" && !preview.view.joiner.openLink(preview.link)) {
                 browser.trigger("bb.action.OPEN")
             }
         }

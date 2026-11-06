@@ -72,6 +72,7 @@ func newSession(container *sqlstore.Container, srv *Server, store *Store, log wa
 	registerSend(srv, s)
 	registerPresence(srv, s)
 	registerGroup(srv, s)
+	registerInvites(srv, s)
 	registerContacts(srv, s)
 	registerProfile(srv, s)
 	registerMedia(srv, s)

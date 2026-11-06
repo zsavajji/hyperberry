@@ -211,6 +211,8 @@ Container {
                         if (h.indexOf("hbmention:") == 0) {
                             event.abort() // ours: the system can't open it
                             item.ListItem.view.openPerson(h.substring(10), event.text)
+                        } else if (item.ListItem.view.joiner.openLink(h)) {
+                            event.abort() // a group or channel invite: it's asked here, not in the browser
                         }
                     }
                 }
@@ -227,6 +229,18 @@ Container {
                     LinkPreview {
                         msg: item.msg
                         view: item.ListItem.view
+                    }
+                }
+            }
+            // Built only for an invite we received, after its text (step 6.6f).
+            ControlDelegate {
+                delegateActive: item.msg.invite != "" && !item.msg.deleted
+                sourceComponent: ComponentDefinition {
+                    Button {
+                        topMargin: ui.du(1)
+                        horizontalAlignment: HorizontalAlignment.Fill
+                        text: qsTr("Join group")
+                        onClicked: item.ListItem.view.joiner.openCard(item.msg.invite, item.msg.id, item.msg.text.split("\n")[0])
                     }
                 }
             }

@@ -381,6 +381,7 @@ Page {
                 // and fetches it again when the user moved it out of Downloads. A location and a contact
                 // have no file.
                 property string mediaLoadingId: media.loadingId
+                property variant joiner: invites // for the cards, which see no context objects
                 function openMedia(msg) {
                     if (msg.media == "location") {
                         maps.choose(msg.lat, msg.lon, msg.place)
