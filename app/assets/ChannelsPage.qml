@@ -36,7 +36,7 @@ Page {
     actions: [
         ActionItem {
             title: qsTr("Follow")
-            imageSource: "file:///usr/share/icons/ic_join_now.png"
+            imageSource: "asset:///images/plus_action.png"
             ActionBar.placement: ActionBarPlacement.OnBar
             onTriggered: followPrompt.show()
         }
