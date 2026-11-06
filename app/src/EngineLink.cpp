@@ -201,6 +201,7 @@ void EngineLink::readLines()
                     QVariantMap prefs;
                     prefs["notifyPreview"] = QSettings(QDir::homePath() + "/settings.ini", QSettings::IniFormat)
                                                  .value("notifyPreview", true).toBool();
+                    prefs["language"] = m_language;
                     request("prefs.set", prefs);
                     qDebug() << "engine: connected, link" << m_link["state"].toString()
                              << ", conn" << m_conn;

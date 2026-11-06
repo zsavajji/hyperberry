@@ -39,6 +39,9 @@ public:
     // The app's one InvokeManager: it starts the engine, and OpenRequests hears notification taps on it.
     bb::system::InvokeManager *invoker() const { return m_invoker; }
 
+    // The phone's language ("it"), sent with prefs.set on every connect so the engine words previews in it.
+    void setLanguage(const QString &language) { m_language = language; }
+
     bool connected() const;
     QVariantMap link() const;
     QString conn() const;
@@ -108,6 +111,7 @@ private:
     bb::system::InvokeManager *m_invoker;
     QElapsedTimer m_invokedAt;
     QString m_token;
+    QString m_language;
     int m_counter;
     QString m_helloId;
     QHash<QString, QString> m_pending;

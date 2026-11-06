@@ -56,7 +56,7 @@ func newStore(db *sql.DB, srv *Server, log waLog.Logger) *Store {
 	st := &Store{db: db, srv: srv, log: log, ops: make(chan func(*storeTx), 1024), done: make(chan struct{})}
 	st.nt = newNotifier(srv.dir, log)
 	st.hist = newHistoryQueue(st)
-	srv.Handle("prefs.set", st.nt.handlePrefs)
+	srv.Handle("prefs.set", st.handlePrefs)
 	go st.run()
 	return st
 }
@@ -448,7 +448,7 @@ func (t *storeTx) refreshLast(chat, id string, revoked bool) {
 	r.Text, r.SenderName = text.String, name.String
 	p := chatPreview(r)
 	if revoked {
-		p = "This message was deleted"
+		p = word("This message was deleted")
 	}
 	t.chats[chat] = true
 	t.exec("UPDATE chats SET last_preview = ? WHERE jid = ?", p, chat)

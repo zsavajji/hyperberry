@@ -204,35 +204,37 @@ func preview(kind int, text string, secs int) string {
 	label, sep := "", " "
 	switch kind {
 	case msgPhoto:
-		label = "Photo"
+		label = word("Photo")
 	case msgVideo:
-		label = "Video"
+		label = word("Video")
 	case msgLocation:
-		label = "Location"
+		label = word("Location")
 	case msgContact:
-		label, sep = "Contact", ": "
+		label, sep = word("Contact"), ": "
 	case msgPoll:
-		label, sep = "Poll", ": "
+		label, sep = word("Poll"), ": "
 	case msgEvent:
-		label, sep = "Event", ": "
+		label, sep = word("Event"), ": "
 	case msgInvite:
-		label, sep = "Group invite", ": "
+		label, sep = word("Group invite"), ": "
 	case msgNotice:
-		return cmp.Or(noticeWords[text], unknownText)
+		return cmp.Or(word(noticeWords[text]), word(unknownText))
 	case msgVoice:
 		if secs > 0 {
 			return fmt.Sprintf("🎤 %d:%02d", secs/60, secs%60)
 		}
-		return "Voice message"
+		return word("Voice message")
 	case msgAudio:
-		return "Audio"
+		return word("Audio")
 	case msgSticker:
-		return "Sticker"
+		return word("Sticker")
 	case msgDoc:
 		if line == "" {
-			return "Document"
+			return word("Document")
 		}
-		return "Document: " + line
+		return word("Document") + ": " + line
+	case msgOther: // the text is unknownText or a kind's own summary
+		return word(line)
 	default:
 		return line
 	}
@@ -247,7 +249,7 @@ func chatPreview(r msgRow) string {
 	p := preview(r.Kind, r.Text, r.Duration)
 	switch {
 	case r.Out:
-		return "You: " + p
+		return word("You") + ": " + p
 	case r.SenderName != "":
 		return firstWord(r.SenderName) + ": " + p
 	}

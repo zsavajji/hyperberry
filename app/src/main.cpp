@@ -107,6 +107,7 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     if (translator.load("hyperberry_" + language, QCoreApplication::applicationDirPath() + "/assets/translations"))
         app.installTranslator(&translator);
     EngineLink engine(&app);
+    engine.setLanguage(language); // before engine.start() below: the hello sends it
     ContactBook book(&engine, &app);
     ChatListModel chats(&engine, false, &app);
     ChatListModel archivedChats(&engine, true, &app);

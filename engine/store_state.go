@@ -40,6 +40,12 @@ func (t *storeTx) deleteMessage(chat, id string) {
 		return
 	}
 	t.chats[chat] = true
+	t.lastFromNewest(chat)
+}
+
+// lastFromNewest sets the chat's last-message columns from its newest message, NULL for none.
+func (t *storeTx) lastFromNewest(chat string) {
+	var newest string
 	if t.tx.QueryRow("SELECT id FROM messages WHERE chat = ? ORDER BY ts DESC LIMIT 1", chat).Scan(&newest) != nil {
 		t.exec("UPDATE chats SET last_preview = NULL WHERE jid = ?", chat)
 		return
@@ -47,9 +53,30 @@ func (t *storeTx) deleteMessage(chat, id string) {
 	r, _ := t.messageByID(chat, newest)
 	p := chatPreview(r)
 	if r.Deleted {
-		p = "This message was deleted"
+		p = word("This message was deleted")
 	}
 	t.exec("UPDATE chats SET last_preview = ?, last_out = ?, last_state = ? WHERE jid = ?", p, r.Out, r.State, chat)
+}
+
+// rewritePreviews words every chat's preview again, after the language changed.
+func (t *storeTx) rewritePreviews() {
+	rows, err := t.tx.Query("SELECT jid FROM chats")
+	if err != nil {
+		t.log.Warnf("rewrite previews: %v", err)
+		return
+	}
+	var jids []string
+	for rows.Next() {
+		var j string
+		if rows.Scan(&j) == nil {
+			jids = append(jids, j)
+		}
+	}
+	rows.Close()
+	for _, j := range jids {
+		t.chats[j] = true
+		t.lastFromNewest(j)
+	}
 }
 
 // clearChat is "clear chat", or with drop "delete chat": every message row goes, and the voice

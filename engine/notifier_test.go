@@ -238,7 +238,7 @@ func TestHubReadAndSend(t *testing.T) {
 
 func TestHubPreviewOff(t *testing.T) {
 	s, st, _, h := hubSim(t)
-	if _, err := st.nt.handlePrefs([]byte(`{"notifyPreview":false}`)); err != nil {
+	if _, err := st.nt.setPrefs([]byte(`{"notifyPreview":false}`)); err != nil {
 		t.Fatal(err)
 	}
 	msg(s, 3, "secret")
@@ -428,17 +428,17 @@ func TestHubActions(t *testing.T) {
 func TestPrefsPersist(t *testing.T) {
 	dir := t.TempDir()
 	n := newNotifier(dir, waLog.Noop)
-	if !n.preview {
+	if !n.notifyPreview() {
 		t.Error("default: want previews on")
 	}
-	if _, err := n.handlePrefs([]byte(`{}`)); err == nil {
+	if _, err := n.setPrefs([]byte(`{}`)); err == nil {
 		t.Error("prefs.set with nothing: want an error")
 	}
-	n.handlePrefs([]byte(`{"notifyPreview":false}`))
+	n.setPrefs([]byte(`{"notifyPreview":false}`))
 	n.close()
 	n = newNotifier(dir, waLog.Noop)
 	defer n.close()
-	if n.preview {
+	if n.notifyPreview() {
 		t.Error("a new engine on the same dir lost notifyPreview")
 	}
 }

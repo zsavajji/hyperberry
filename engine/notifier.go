@@ -150,9 +150,9 @@ type Notifier struct {
 	item    func(it hubItem, add bool) error
 	remove  func(id string) error
 
-	mu      sync.Mutex
-	preview bool
-	closed  bool
+	mu     sync.Mutex
+	prefs  prefs
+	closed bool
 
 	// Only the run goroutine touches these.
 	ready   bool            // registered with the Hub
@@ -163,14 +163,13 @@ type Notifier struct {
 
 func newNotifier(dir string, log waLog.Logger) *Notifier {
 	n := &Notifier{in: make(chan func(), 64), done: make(chan struct{}), log: log,
-		path: filepath.Join(dir, "prefs.json"), state: filepath.Join(dir, "hub.json"), preview: true,
+		path: filepath.Join(dir, "prefs.json"), state: filepath.Join(dir, "hub.json"),
 		// dir is /accounts/1000/appdata/<pkg>/data on the phone, and the Hub reads the public
 		// assets from /apps/<pkg>/public/.
 		assets: "/apps/" + filepath.Base(filepath.Dir(dir)) + "/public/",
 		open:   hubOpenFn, account: hubAccountFn, item: hubItemFn, remove: hubRemoveFn, items: map[string]bool{}}
-	var p struct{ NotifyPreview *bool }
-	if b, err := os.ReadFile(n.path); err == nil && json.Unmarshal(b, &p) == nil && p.NotifyPreview != nil {
-		n.preview = *p.NotifyPreview
+	if b, err := os.ReadFile(n.path); err == nil && json.Unmarshal(b, &n.prefs) == nil && n.prefs.Language != nil {
+		setLanguage(*n.prefs.Language)
 	}
 	var hs hubState
 	if b, err := os.ReadFile(n.state); err == nil && json.Unmarshal(b, &hs) == nil {
@@ -287,14 +286,11 @@ func (n *Notifier) apply(chat string, nt note) {
 	if !known && !nt.add {
 		return
 	}
-	n.mu.Lock()
-	preview := n.preview
-	n.mu.Unlock()
 	body := nt.preview
-	if !preview {
+	if !n.notifyPreview() {
 		body = ""
 		if nt.unread != 0 {
-			body = "New message"
+			body = word("New message")
 		}
 	}
 	unread := nt.unread
@@ -400,18 +396,4 @@ func writeAtomic(path string, b []byte) error {
 		err = os.Rename(tmp, path)
 	}
 	return err
-}
-
-// handlePrefs is prefs.set {notifyPreview}. The engine keeps the setting itself since it
-// notifies while the UI is closed.
-func (n *Notifier) handlePrefs(req json.RawMessage) (any, error) {
-	var r struct{ NotifyPreview *bool }
-	if json.Unmarshal(req, &r) != nil || r.NotifyPreview == nil {
-		return nil, &Error{"bad_request", "prefs.set needs notifyPreview"}
-	}
-	n.mu.Lock()
-	n.preview = *r.NotifyPreview
-	n.mu.Unlock()
-	b, _ := json.Marshal(map[string]bool{"notifyPreview": *r.NotifyPreview})
-	return nil, writeAtomic(n.path, b)
 }

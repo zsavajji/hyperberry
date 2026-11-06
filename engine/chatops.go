@@ -174,7 +174,7 @@ func exportText(chat, name string, group bool, rows []msgRow) string {
 			}
 			switch {
 			case r.Deleted:
-				line = "This message was deleted"
+				line = word("This message was deleted")
 			case r.Kind == msgNotice: // the text is a code
 				line = preview(msgNotice, r.Text, 0)
 			case r.Kind == msgPhoto, r.Kind == msgVideo, r.Kind == msgVoice, r.Kind == msgAudio, r.Kind == msgDoc, r.Kind == msgSticker:
