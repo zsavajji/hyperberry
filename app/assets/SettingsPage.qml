@@ -110,6 +110,34 @@ Page {
                 title: qsTr("Storage")
             }
             Container {
+                topMargin: ui.du(3)
+                layout: StackLayout {
+                    orientation: LayoutOrientation.LeftToRight
+                }
+                Container {
+                    layoutProperties: StackLayoutProperties {
+                        spaceQuota: 1
+                    }
+                    verticalAlignment: VerticalAlignment.Center
+                    Label {
+                        text: qsTr("Download on mobile data")
+                        bottomMargin: 0
+                    }
+                    Label {
+                        text: qsTr("Off, photos and voice notes wait for a tap unless you're on Wi-Fi.")
+                        multiline: true
+                        topMargin: 0
+                        textStyle.base: SystemDefaults.TextStyles.SubtitleText
+                        textStyle.color: ui.palette.secondaryTextOnPlain
+                    }
+                }
+                ToggleButton {
+                    verticalAlignment: VerticalAlignment.Center
+                    checked: settings.mediaOnMobile
+                    onCheckedChanged: settings.mediaOnMobile = checked
+                }
+            }
+            Container {
                 topMargin: ui.du(2)
                 layout: StackLayout {
                     orientation: LayoutOrientation.LeftToRight

@@ -199,8 +199,9 @@ void EngineLink::readLines()
                     sendUiState(); // a restart loses this device's availability
                     // The engine notifies while the UI is closed, so it keeps this itself.
                     QVariantMap prefs;
-                    prefs["notifyPreview"] = QSettings(QDir::homePath() + "/settings.ini", QSettings::IniFormat)
-                                                 .value("notifyPreview", true).toBool();
+                    QSettings file(QDir::homePath() + "/settings.ini", QSettings::IniFormat);
+                    prefs["notifyPreview"] = file.value("notifyPreview", true).toBool();
+                    prefs["mediaOnMobile"] = file.value("mediaOnMobile", true).toBool();
                     prefs["language"] = m_language;
                     request("prefs.set", prefs);
                     qDebug() << "engine: connected, link" << m_link["state"].toString()

@@ -26,6 +26,7 @@ Settings::Settings(EngineLink *engine, QObject *parent)
 int Settings::theme() const { return m_file.value("theme", 0).toInt() == 1 ? 1 : 0; }
 bool Settings::enterSends() const { return m_file.value("enterSends", true).toBool(); }
 bool Settings::notifyPreview() const { return m_file.value("notifyPreview", true).toBool(); }
+bool Settings::mediaOnMobile() const { return m_file.value("mediaOnMobile", true).toBool(); }
 // Larger (3, 140 %) went at the user's word (2026-11-01); a saved 3 reads as Large.
 int Settings::textSize() const { return qBound(0, m_file.value("textSize", 1).toInt(), 2); }
 
@@ -80,6 +81,20 @@ void Settings::setNotifyPreview(bool on)
         m_engine->request("prefs.set", prefs);
     }
     emit notifyPreviewChanged();
+}
+
+void Settings::setMediaOnMobile(bool on)
+{
+    if (on == mediaOnMobile())
+        return;
+    store("mediaOnMobile", on);
+    // Not connected: the hello path sends it on the next connect.
+    if (m_engine->connected()) {
+        QVariantMap prefs;
+        prefs["mediaOnMobile"] = on;
+        m_engine->request("prefs.set", prefs);
+    }
+    emit mediaOnMobileChanged();
 }
 
 void Settings::setTextSize(int size)

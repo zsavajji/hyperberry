@@ -94,8 +94,21 @@ func (st *Store) downloadVoice(ctx context.Context, cli *whatsmeow.Client, dir s
 	return err
 }
 
+// onCellular is whether the default network is mobile data; tests swap it.
+var onCellular = cellular
+
+// holdLive: a live photo or voice note waits for a tap on mobile data when the user turned that
+// off (step 6.6c). Stickers still come: they're small, and the chat fetches them as it draws them.
+func (st *Store) holdLive(row msgRow) bool {
+	return row.Kind != msgSticker && !st.nt.mediaOnMobile() && onCellular()
+}
+
 // liveMedia downloads a voice note, a photo or a sticker that just arrived.
 func (st *Store) liveMedia(cli *whatsmeow.Client, row msgRow) {
+	if st.holdLive(row) {
+		st.log.Debugf("media %s: waits for a tap, mobile data is off", row.ID)
+		return
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
 	defer cancel()
 	if _, err := st.downloadMedia(ctx, cli, st.srv.dir, row); err != nil {
