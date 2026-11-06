@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	waLog "github.com/polymorfa/hypermeow/util/log"
 )
@@ -66,4 +67,57 @@ func TestRewritePreviews(t *testing.T) {
 	if !tx.chats[c] {
 		t.Error("the chat isn't marked changed")
 	}
+}
+
+func TestPrefsCacheLimit(t *testing.T) {
+	dir := t.TempDir()
+	n := newNotifier(dir, waLog.Noop)
+	defer n.close()
+	if got := n.cacheLimit(); got != 64<<20 {
+		t.Errorf("default: %d", got)
+	}
+	if _, err := n.setPrefs([]byte(`{"cacheMB":512}`)); err != nil {
+		t.Fatal(err)
+	}
+	for _, bad := range []string{"63", "513", "0", "-1"} {
+		if _, err := n.setPrefs([]byte(`{"cacheMB":` + bad + `}`)); err == nil {
+			t.Errorf("cacheMB %s: no error", bad)
+		}
+	}
+	if got := n.cacheLimit(); got != 512<<20 {
+		t.Errorf("after refusals: %d", got)
+	}
+	again := newNotifier(dir, waLog.Noop) // what a restart reads
+	defer again.close()
+	if got := again.cacheLimit(); got != 512<<20 {
+		t.Errorf("after a restart: %d", got)
+	}
+}
+
+// A limit that comes down takes effect at once, with no decode or restart to wait for.
+func TestPrefsLowerLimitPrunes(t *testing.T) {
+	_, st, _, _ := hubSim(t)
+	big := filepath.Join(st.srv.dir, "cache", "voice", "big.wav")
+	if err := os.MkdirAll(filepath.Dir(big), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.Create(big)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.Truncate(65 << 20) // sparse: only its size matters
+	f.Close()
+	if _, err := st.handlePrefs([]byte(`{"cacheMB":512}`)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := st.handlePrefs([]byte(`{"cacheMB":64}`)); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 200; i++ {
+		if !exists(big) {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	t.Error("the file over the new limit is still there")
 }

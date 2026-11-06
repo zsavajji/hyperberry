@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"time"
 )
 
 // prefs is what the UI sets with prefs.set, kept in prefs.json: the engine needs it itself,
@@ -10,6 +11,7 @@ type prefs struct {
 	NotifyPreview *bool   `json:"notifyPreview,omitempty"`
 	MediaOnMobile *bool   `json:"mediaOnMobile,omitempty"`
 	Language      *string `json:"language,omitempty"`
+	CacheMB       *int    `json:"cacheMB,omitempty"`
 }
 
 // notifyPreview is whether the Hub shows the message text; on until set otherwise.
@@ -26,12 +28,25 @@ func (n *Notifier) mediaOnMobile() bool {
 	return n.prefs.MediaOnMobile == nil || *n.prefs.MediaOnMobile
 }
 
+// cacheLimit is what data/cache/ may hold, in bytes.
+func (n *Notifier) cacheLimit() int64 {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	if n.prefs.CacheMB == nil {
+		return cacheDefaultMB << 20
+	}
+	return int64(*n.prefs.CacheMB) << 20
+}
+
 // setPrefs merges the fields prefs.set gives into the stored ones and writes the lot. langChanged
 // is true when the language differs from the stored one, so the previews need wording again.
 func (n *Notifier) setPrefs(req json.RawMessage) (langChanged bool, err error) {
 	var r prefs
-	if json.Unmarshal(req, &r) != nil || r.NotifyPreview == nil && r.MediaOnMobile == nil && r.Language == nil {
-		return false, &Error{"bad_request", "prefs.set needs notifyPreview, mediaOnMobile or language"}
+	if json.Unmarshal(req, &r) != nil || r.NotifyPreview == nil && r.MediaOnMobile == nil && r.Language == nil && r.CacheMB == nil {
+		return false, &Error{"bad_request", "prefs.set needs notifyPreview, mediaOnMobile, language or cacheMB"}
+	}
+	if r.CacheMB != nil && (*r.CacheMB < cacheDefaultMB || *r.CacheMB > cacheMaxMB) {
+		return false, &Error{"bad_request", "cacheMB is 64 to 512"}
 	}
 	n.mu.Lock()
 	defer n.mu.Unlock()
@@ -46,15 +61,22 @@ func (n *Notifier) setPrefs(req json.RawMessage) (langChanged bool, err error) {
 		n.prefs.Language = r.Language
 		setLanguage(*r.Language)
 	}
+	if r.CacheMB != nil {
+		n.prefs.CacheMB = r.CacheMB
+	}
 	b, _ := json.Marshal(n.prefs)
 	return langChanged, writeAtomic(n.path, b)
 }
 
-// handlePrefs is prefs.set. A new language rewrites every chat's preview, in the writer.
+// handlePrefs is prefs.set. A new language rewrites every chat's preview, in the writer, and a limit
+// that came down takes effect at once. Pruning at every prefs.set is only a walk of the folder.
 func (st *Store) handlePrefs(req json.RawMessage) (any, error) {
 	langChanged, err := st.nt.setPrefs(req)
 	if err == nil && langChanged {
 		st.ops <- func(t *storeTx) { t.rewritePreviews() }
+	}
+	if err == nil {
+		go pruneCache(st.srv.dir, st.nt.cacheLimit(), "", time.Now(), st.log)
 	}
 	return nil, err
 }

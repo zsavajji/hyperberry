@@ -11,8 +11,12 @@ import (
 	waLog "github.com/polymorfa/hypermeow/util/log"
 )
 
-// cacheCap is what data/cache/ may hold: voice notes' decoded audio, at 5.5 MB a minute, and photo previews. All of it is made again when needed.
-const cacheCap = 64 << 20
+// What data/cache/ may hold, in MB: voice notes' decoded audio, at 5.5 MB a minute, and photo previews.
+// All of it is made again when needed. The user picks the limit in Settings (prefs.set's cacheMB).
+const (
+	cacheDefaultMB = 64
+	cacheMaxMB     = 512
+)
 
 // uploadMaxAge is when an upload's temp file is a crash's leftover. Younger, it may be in flight.
 const uploadMaxAge = 24 * time.Hour

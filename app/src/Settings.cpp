@@ -41,6 +41,7 @@ bool Settings::enterSends() const { return m_file.value("enterSends", true).toBo
 bool Settings::notifyPreview() const { return m_file.value("notifyPreview", true).toBool(); }
 bool Settings::startAtBoot() const { return m_file.value("startAtBoot", false).toBool(); }
 bool Settings::mediaOnMobile() const { return m_file.value("mediaOnMobile", true).toBool(); }
+int Settings::cacheLimit() const { return qBound(64, m_file.value("cacheLimit", 64).toInt(), 512); }
 // Larger (3, 140 %) went at the user's word (2026-11-01); a saved 3 reads as Large.
 int Settings::textSize() const { return qBound(0, m_file.value("textSize", 1).toInt(), 2); }
 
@@ -161,6 +162,21 @@ void Settings::setMediaOnMobile(bool on)
         m_engine->request("prefs.set", prefs);
     }
     emit mediaOnMobileChanged();
+}
+
+void Settings::setCacheLimit(int mb)
+{
+    mb = qBound(64, mb, 512);
+    if (mb == cacheLimit())
+        return;
+    store("cacheLimit", mb);
+    // Not connected: the hello path sends it on the next connect. The engine prunes, since it decodes.
+    if (m_engine->connected()) {
+        QVariantMap prefs;
+        prefs["cacheMB"] = mb;
+        m_engine->request("prefs.set", prefs);
+    }
+    emit cacheLimitChanged();
 }
 
 void Settings::setTextSize(int size)

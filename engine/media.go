@@ -170,7 +170,7 @@ func (st *Store) playVoice(dir string, r voiceReq, fetch, notify func(msgRow) er
 		if err := writeFile(wav, writeWAV(pcm, 48000)); err != nil {
 			return nil, err
 		}
-		go pruneCache(dir, cacheCap, wav, time.Now(), st.log)
+		go pruneCache(dir, st.nt.cacheLimit(), wav, time.Now(), st.log)
 	}
 	if !row.Out && !row.Played {
 		if err := notify(row); err != nil {

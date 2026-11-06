@@ -1395,6 +1395,11 @@
         <translation>Scarica su rete mobile</translation>
     </message>
     <message>
+        <location filename="../assets/SettingsPage.qml" line="170"/>
+        <source>Cache limit</source>
+        <translation>Limite della cache</translation>
+    </message>
+    <message>
         <location filename="../assets/SettingsPage.qml" line="123"/>
         <source>Off, photos and voice notes wait for a tap unless you&apos;re on Wi-Fi.</source>
         <translation>Se disattivato, foto e messaggi vocali attendono un tocco, tranne che in Wi-Fi.</translation>

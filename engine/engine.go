@@ -66,7 +66,7 @@ func runEngine(container *sqlstore.Container, dataDir string, log waLog.Logger, 
 			log.Errorf("server: %v", err)
 		}
 	}()
-	go pruneCache(dataDir, cacheCap, "", time.Now(), log)
+	go pruneCache(dataDir, st.nt.cacheLimit(), "", time.Now(), log)
 	log.Infof("serving the UI")
 	go logStats(log)
 	<-stop

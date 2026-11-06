@@ -165,6 +165,22 @@ Page {
                     onCheckedChanged: settings.mediaOnMobile = checked
                 }
             }
+            // What data/cache/ may hold. The engine prunes it, the oldest first (step 8.3).
+            DropDown {
+                topMargin: ui.du(2)
+                title: qsTr("Cache limit")
+                options: [
+                    Option { text: "64 MB"; selected: settings.cacheLimit == 64 },
+                    Option { text: "128 MB"; selected: settings.cacheLimit == 128 },
+                    Option { text: "256 MB"; selected: settings.cacheLimit == 256 },
+                    Option { text: "512 MB"; selected: settings.cacheLimit == 512 }
+                ]
+                onSelectedIndexChanged: {
+                    if (selectedIndex >= 0) {
+                        settings.cacheLimit = [64, 128, 256, 512][selectedIndex]
+                    }
+                }
+            }
             Container {
                 topMargin: ui.du(2)
                 layout: StackLayout {
