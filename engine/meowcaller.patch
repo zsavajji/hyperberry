@@ -1,0 +1,116 @@
+--- a/mlow/fft.go
++++ b/mlow/fft.go
+@@ -1,6 +1,9 @@
+ package mlow
+ 
+-import "math"
++import (
++	"math"
++	"sync"
++)
+ 
+ // cpx is a single-precision complex value.
+ //
+@@ -46,13 +49,11 @@
+ 	}
+ 	p := smallestFactor(n)
+ 	if p == n {
++		tw := twiddleTable(n, p, sign)
+ 		for k := 0; k < n; k++ {
+ 			var acc cpx
+-			angK := sign * 2.0 * smplPI * float32(k) / float32(n)
+ 			for j := 0; j < n; j++ {
+-				ang := angK * float32(j)
+-				w := cpx{re: float32(math.Cos(float64(ang))), im: float32(math.Sin(float64(ang)))}
+-				acc = acc.add(x[j*stride].mul(w))
++				acc = acc.add(x[j*stride].mul(tw[k*n+j]))
+ 			}
+ 			out[k] = acc
+ 		}
+@@ -63,18 +64,59 @@
+ 	for q := 0; q < p; q++ {
+ 		fftRec(x[q*stride:], stride*p, m, sign, sub[q*m:(q+1)*m])
+ 	}
++	tw := twiddleTable(n, p, sign)
+ 	for k := 0; k < n; k++ {
+ 		kmod := k % m
+ 		var acc cpx
+ 		for q := 0; q < p; q++ {
+-			ang := sign * 2.0 * smplPI * float32(k) * float32(q) / float32(n)
+-			tw := cpx{re: float32(math.Cos(float64(ang))), im: float32(math.Sin(float64(ang)))}
+-			acc = acc.add(sub[q*m+kmod].mul(tw))
++			acc = acc.add(sub[q*m+kmod].mul(tw[k*p+q]))
+ 		}
+ 		out[k] = acc
+ 	}
+ }
+ 
++// HyperBerry: fftRec's twiddles, computed once per length and direction with the very float32
++// expressions it used to evaluate on every call, so the output is bit-identical. Recomputing
++// them took 45 of the 77 s that encoding a minute of audio cost on the Q10 (2026-11-07), mostly
++// math.Cos and math.Sin's float64 to uint64 conversion, which 32-bit ARM does in software. The
++// encoder's lengths, 512 and 576, factor into 2s and 3s, so the tables are a few KB in all.
++type twiddleKey struct {
++	n    int
++	sign float32
++}
++
++var twiddles sync.Map // twiddleKey -> []cpx
++
++// twiddleTable is [k*n+j] for a prime n (p == n), else [k*p+q].
++func twiddleTable(n, p int, sign float32) []cpx {
++	key := twiddleKey{n, sign}
++	if t, ok := twiddles.Load(key); ok {
++		return t.([]cpx)
++	}
++	w := func(ang float32) cpx {
++		return cpx{re: float32(math.Cos(float64(ang))), im: float32(math.Sin(float64(ang)))}
++	}
++	var t []cpx
++	if p == n {
++		t = make([]cpx, n*n)
++		for k := 0; k < n; k++ {
++			angK := sign * 2.0 * smplPI * float32(k) / float32(n)
++			for j := 0; j < n; j++ {
++				t[k*n+j] = w(angK * float32(j))
++			}
++		}
++	} else {
++		t = make([]cpx, n*p)
++		for k := 0; k < n; k++ {
++			for q := 0; q < p; q++ {
++				t[k*p+q] = w(sign * 2.0 * smplPI * float32(k) * float32(q) / float32(n))
++			}
++		}
++	}
++	twiddles.Store(key, t)
++	return t
++}
++
+ // cfft computes the complex FFT of a mixed-radix length into out. sign=-1 forward,
+ // +1 inverse.
+ func cfft(input, out []cpx, sign float32) {
+--- a/mlow/lpc.go
++++ b/mlow/lpc.go
+@@ -128,6 +128,10 @@
+ 	csumsum  [SmplLPCOrder / 4][nfft4]float64
+ }
+ 
++// HyperBerry: the tables are constants, built once instead of on every frame (2.3 of the 77 s
++// a minute of audio cost to encode on the Q10). bruteDct only reads them.
++var dctTab = buildDctTables()
++
+ func buildDctTables() dctTables {
+ 	// Source of truth: https://github.com/oxidezap/whatsapp-rust/blob/674e85164b35ca19115dfebcf605708d15951ee7/wacore/src/voip/mlow/smpl_lpc.rs#L115-L143
+ 	twoPi := 2.0 * smplPIF64
+@@ -271,9 +275,8 @@
+ 		f2d[i] = float64(f2[i])
+ 	}
+ 
+-	tables := buildDctTables()
+ 	var r [SmplLPCOrder + 1]float64
+-	bruteDct(&tables, f2d, SmplLPCOrder, r[:])
++	bruteDct(&dctTab, f2d, SmplLPCOrder, r[:])
+ 
+ 	var rc [SmplLPCOrder]float32
+ 	ac2rcDbl(r[:], SmplLPCOrder, smplLPCReg, rc[:])

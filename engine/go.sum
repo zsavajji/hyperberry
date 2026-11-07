@@ -22,6 +22,8 @@ github.com/polymorfa/hypermeow v0.0.0-20261026020717-7852ff1c1718 h1:6naUJhSb6gv
 github.com/polymorfa/hypermeow v0.0.0-20261026020717-7852ff1c1718/go.mod h1:EvyTVXMPeTcxWr1fcININB6lXlYcysXftCodhsO72LI=
 github.com/polymorfa/libsignal-protocol-go v0.2.3-0.20260806162910-a2adef2e8a11 h1:ZeZ6sUkmZY+v6ULce+O7cuuzUmvu9d3t5sY2CTrJ2AQ=
 github.com/polymorfa/libsignal-protocol-go v0.2.3-0.20260806162910-a2adef2e8a11/go.mod h1:B5KZPsgswdf1eCvC+PZ7z45g5OECgqy6Zb0o7I5CcNQ=
+github.com/purpshell/meowcaller v0.0.0-20260906234207-c48c3e2a243c h1:WTKYJ34EcGTL5hsZWMMfPlDFgNEmiw+GjkgZL3YYbHg=
+github.com/purpshell/meowcaller v0.0.0-20260906234207-c48c3e2a243c/go.mod h1:f6pCb0y+awhe7ZsbB+3uisWL0RVSqGn08VpXT4a8ZI4=
 github.com/rs/zerolog v1.35.1 h1:m7xQeoiLIiV0BCEY4Hs+j2NG4Gp2o2KPKmhnnLiazKI=
 github.com/rs/zerolog v1.35.1/go.mod h1:EjML9kdfa/RMA7h/6z6pYmq1ykOuA8/mjWaEvGI+jcw=
 github.com/stretchr/testify v1.12.0 h1:K6Mr6jO9JICuend/5xzTM03ydSV3vdNRYAdPSukj8uI=

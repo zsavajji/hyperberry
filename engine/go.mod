@@ -8,6 +8,7 @@ require (
 	github.com/coder/websocket v1.8.15
 	github.com/mattn/go-sqlite3 v1.14.52
 	github.com/polymorfa/hypermeow v0.0.0-20261026020717-7852ff1c1718
+	github.com/purpshell/meowcaller v0.0.0-20260906234207-c48c3e2a243c
 	github.com/rs/zerolog v1.35.1
 	golang.org/x/crypto/x509roots/fallback v0.0.0-20261027005312-1da6254a58cf
 	google.golang.org/protobuf v1.36.12
