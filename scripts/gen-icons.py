@@ -1,7 +1,7 @@
 """Draws the chat list's small marks into app/assets/images/: ticks, clock, mute, pin and mic,
 the action bar's record icon, the row menu's pin and mute, the voice bubble's play, pause and
 retry discs, and the Hub's: the item menu's tick_action, unread_action and delete_action, and
-the account's hub.png (the app's green with message.png, which this script doesn't make, on it).
+the account's hub.png (the app's icon, at the Hub's 81 px).
 The phone has only the trash can among the info page's and chat menu's icons (user's choice,
 2026-11-01), so these are drawn as action icons too: contacts_action (two people), save_action
 (a floppy disk), block_action (the "forbidden" sign), attach_action (a paperclip), plus_action
@@ -221,16 +221,6 @@ def main(out):
             d.polygon(p((0.70, 0.22), (0.76, 0.46), (0.52, 0.40)), dark)
         img.resize((D, D), Image.LANCZOS).save(f"{out}/{name}.png")
 
-    # The Hub account's icon: the app's green in a rounded square, message.png at 60% of it.
-    B = 81
-    img = Image.new("RGBA", (B * S, B * S), (0, 0, 0, 0))
-    ImageDraw.Draw(img).rounded_rectangle((0, 0, B * S - 1, B * S - 1), round(0.18 * B * S), (0x1B, 0xD8, 0x62, 255))
-    m = Image.open(f"{out}/message.png").convert("RGBA")
-    side = round(0.6 * B * S)
-    m = m.resize((side, round(side * m.height / m.width)), Image.LANCZOS)
-    img.paste(m, ((B * S - m.width) // 2, (B * S - m.height) // 2), m)
-    img.resize((B, B), Image.LANCZOS).save(f"{out}/hub.png")
-
     # The app's icon (the user's design, 2026-11-06): the green tile, the white bubble of the New chat icon
     # (message.png's proportions: 55 by 38, its tail a fifth of the width from the left, and nearly square
     # corners), and WhatsApp's handset in it. Every size BB10 picks from (bb10-devices), then the
@@ -268,6 +258,9 @@ def main(out):
 
     for px in (86, 90, 96, 110, 144):
         app_icon(px).save(f"{out}/icon-{px}.png")
+    # The Hub's account and items, and so its alerts, show the app's icon: the old green tile with the
+    # bare bubble stayed there after the icon changed (Q10, 2026-11-07). 81 px, as the Hub draws it.
+    app_icon(81).save(f"{out}/hub.png")
     # One per screen an app that stays in portrait can meet (bb10-devices): the Q10 and Classic, the Z30, the
     # Z10, the Passport. The tile is 30 % of the width, in the middle, so it looks the same on each.
     for w, h in ((720, 720), (720, 1280), (768, 1280), (1440, 1440)):
