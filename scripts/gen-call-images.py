@@ -3,7 +3,8 @@ app's look (measured from the user's screenshots, 720x720, 1 du = 9 px): call_bg
 the default-contact silhouette), call_fade (a photo's fade to black), call_track (the answer bar:
 capsule, green and red arcs, the red handset, the chevrons; 665x148), call_knob, call_btn (the
 round button's disc) and the white glyphs call_silence, call_message, call_speaker, call_mute,
-call_unmute and call_end, which QML tints with ImageView.filterColor. Everything is drawn at 8x and scaled down.
+call_unmute, call_end, call_video, call_video_off and call_switch, which QML tints with
+ImageView.filterColor. Everything is drawn at 8x and scaled down.
 Run by hand when one changes, in the image fetch-emoji.sh builds:
     docker run --rm -v "$PWD:/src" hyperberry-font python -I /src/scripts/gen-call-images.py /src/app/assets/images
 """
@@ -219,6 +220,51 @@ def end(out):
     save(handset(62, 22, WHITE), out, "call_end")
 
 
+def camcorder():
+    """A rounded body and the lens's trapezoid on its right."""
+    img, d = new(50, 50)
+    d.rounded_rectangle(sc(3, 13, 35, 37), 4 * S, WHITE)
+    d.polygon(sc(38, 22, 47, 14, 47, 36, 38, 28), WHITE)
+    return img, d
+
+
+def video(out):
+    save(camcorder()[0], out, "call_video")
+
+
+def video_off(out):
+    """The camcorder struck through, a gap around the stroke as the mute one has."""
+    img, d = camcorder()
+    d.line(sc(6, 5, 44, 46), CLEAR, 8 * S)
+    d.line(sc(6, 5, 44, 46), WHITE, 3 * S)
+    save(img, out, "call_video_off")
+
+
+def arrow(d, a, r):
+    """An arrowhead at angle a degrees (clockwise from 3 o'clock) of the circle of radius r round
+    (25, 25), pointing the way round (clockwise)."""
+    import math
+    t = math.radians(a)
+    px, py = 25 + r * math.cos(t), 25 + r * math.sin(t)
+    nx, ny = math.cos(t), math.sin(t)  # outwards
+    tx, ty = -math.sin(t), math.cos(t)  # clockwise
+    d.polygon(sc(px + tx * 7, py + ty * 7, px + nx * 5.5, py + ny * 5.5, px - nx * 5.5, py - ny * 5.5), WHITE)
+
+
+def switch(out):
+    """A camera with two arrows going round it."""
+    img, d = new(50, 50)
+    d.rounded_rectangle(sc(14, 19, 36, 34), 3 * S, WHITE)
+    d.rectangle(sc(20, 15.5, 28, 20), WHITE)
+    d.ellipse(sc(21, 22, 29, 30), CLEAR)
+    d.ellipse(sc(23, 24, 27, 28), WHITE)
+    d.arc(sc(4.5, 4.5, 45.5, 45.5), 205, 322, WHITE, 3 * S)
+    d.arc(sc(4.5, 4.5, 45.5, 45.5), 25, 142, WHITE, 3 * S)
+    arrow(d, 322, 21)
+    arrow(d, 142, 21)
+    save(img, out, "call_switch")
+
+
 if __name__ == "__main__":
-    for f in (background, fade, track, knob, button, silence, message, speaker, mute, unmute, end):
+    for f in (background, fade, track, knob, button, silence, message, speaker, mute, unmute, end, video, video_off, switch):
         f(sys.argv[1])

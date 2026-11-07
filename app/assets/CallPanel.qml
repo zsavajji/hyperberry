@@ -1,13 +1,22 @@
 import bb.cascades 1.4
 
-// The controls of a call that isn't ringing (step 7.4): the black panel with Speaker and Mute (a
-// WhatsApp call has no keypad, note or second call), and the red End call bar. Over the call
-// screen's 720 px stage, whose size px() scales.
+// The controls of a call that isn't ringing (step 7.4): the black panel with Speaker, Mute, Video
+// and Switch camera (a WhatsApp call has no keypad, note or second call; Video turns a voice call
+// into a video one), and the red End call bar. Over the call screen's 720 px stage, whose size px()
+// scales. On a video call the panel is see-through, over the peer's picture (step 7c.3).
 Container {
     id: panel
     property bool ended: false
+    // The call has video: the panel lets the picture show through.
+    property bool video: false
+    // We send our video.
+    property bool videoOn: false
     property bool pressed: false
     signal hangup
+    signal videoTapped
+    signal switchTapped
+    // Any control was tapped: the call screen holds off hiding them.
+    signal touched
     preferredWidth: px(720)
     preferredHeight: px(720)
     layout: AbsoluteLayout {}
@@ -20,9 +29,9 @@ Container {
         }
         preferredWidth: panel.px(720)
         preferredHeight: panel.px(305)
-        background: Color.Black
+        background: panel.video ? Color.create("#99000000") : Color.Black
     }
-    // The stock cells: 222 x 90 px at x 18 and 249, from y 432.
+    // The stock cells: 222 x 90 px at x 18, 249 and 480, from y 432.
     CallToggle {
         layoutProperties: AbsoluteLayoutProperties {
             positionX: panel.px(18)
@@ -31,7 +40,10 @@ Container {
         icon: "asset:///images/call_speaker.png"
         text: qsTr("Speaker")
         on: callAudio.speaker
-        onTapped: callAudio.speaker = !callAudio.speaker
+        onTapped: {
+            callAudio.speaker = !callAudio.speaker
+            panel.touched()
+        }
     }
     CallToggle {
         layoutProperties: AbsoluteLayoutProperties {
@@ -43,7 +55,41 @@ Container {
         iconOn: "asset:///images/call_unmute.png"
         textOn: qsTr("Unmute")
         on: callAudio.muted
-        onTapped: callAudio.muted = !callAudio.muted
+        onTapped: {
+            callAudio.muted = !callAudio.muted
+            panel.touched()
+        }
+    }
+    // Lit while our video is off, as Mute is while muted.
+    CallToggle {
+        layoutProperties: AbsoluteLayoutProperties {
+            positionX: panel.px(480)
+            positionY: panel.px(432)
+        }
+        icon: "asset:///images/call_video.png"
+        text: qsTr("Stop video")
+        iconOn: "asset:///images/call_video_off.png"
+        textOn: qsTr("Start video")
+        on: !panel.videoOn
+        onTapped: {
+            panel.videoTapped()
+            panel.touched()
+        }
+    }
+    // Needs our camera: dimmed and inert while we send nothing.
+    CallToggle {
+        layoutProperties: AbsoluteLayoutProperties {
+            positionX: panel.px(18)
+            positionY: panel.px(520)
+        }
+        enabled: panel.videoOn
+        opacity: panel.videoOn ? 1 : 0.5
+        icon: "asset:///images/call_switch.png"
+        text: qsTr("Switch camera")
+        onTapped: {
+            panel.switchTapped()
+            panel.touched()
+        }
     }
     Container {
         layoutProperties: AbsoluteLayoutProperties {
@@ -81,7 +127,10 @@ Container {
         onTouch: panel.pressed = event.isDown() || event.isMove()
         onTouchExit: panel.pressed = false
         gestureHandlers: TapHandler {
-            onTapped: panel.hangup()
+            onTapped: {
+                panel.hangup()
+                panel.touched()
+            }
         }
     }
 }

@@ -609,6 +609,11 @@
         <source>Voice call</source>
         <translation>Chiamata vocale</translation>
     </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="1"/>
+        <source>Video call</source>
+        <translation>Videochiamata</translation>
+    </message>
 </context>
 <context>
     <name>CountryPage</name>
@@ -1661,6 +1666,11 @@
     </message>
     <message>
         <location filename="../assets/CallSheet.qml" line="1"/>
+        <source>Incoming video call</source>
+        <translation>Videochiamata in arrivo</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallSheet.qml" line="1"/>
         <source>Connecting…</source>
         <translation>Connessione…</translation>
     </message>
@@ -1699,6 +1709,11 @@
         <source>WhatsApp: voice call</source>
         <translation>WhatsApp: chiamata vocale</translation>
     </message>
+    <message>
+        <location filename="../assets/CallSheet.qml" line="1"/>
+        <source>WhatsApp: video call</source>
+        <translation>WhatsApp: videochiamata</translation>
+    </message>
 </context>
 <context>
     <name>CallPanel</name>
@@ -1721,6 +1736,29 @@
         <location filename="../assets/CallPanel.qml" line="1"/>
         <source>Unmute</source>
         <translation>Attiva audio</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallPanel.qml" line="1"/>
+        <source>Stop video</source>
+        <translation>Ferma video</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallPanel.qml" line="1"/>
+        <source>Start video</source>
+        <translation>Avvia video</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallPanel.qml" line="1"/>
+        <source>Switch camera</source>
+        <translation>Cambia fotocamera</translation>
+    </message>
+</context>
+<context>
+    <name>CallVideoView</name>
+    <message>
+        <location filename="../assets/CallVideoView.qml" line="1"/>
+        <source>Wants to turn on video</source>
+        <translation>Vuole attivare il video</translation>
     </message>
 </context>
 <context>

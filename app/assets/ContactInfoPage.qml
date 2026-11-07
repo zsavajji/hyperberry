@@ -57,6 +57,13 @@ Page {
             onTriggered: engine.request("call.start", {"chat": page.chat.jid})
         },
         ActionItem {
+            title: qsTr("Video call")
+            imageSource: "file:///usr/share/icons/ic_chat_video.png"
+            enabled: engine.linked
+            ActionBar.placement: ActionBarPlacement.OnBar
+            onTriggered: engine.request("call.start", {"chat": page.chat.jid, "video": true})
+        },
+        ActionItem {
             title: qsTr("Export chat")
             imageSource: "asset:///images/save_action.png"
             enabled: page.hasChat
