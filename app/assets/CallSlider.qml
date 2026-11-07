@@ -77,17 +77,26 @@ Container {
         } else if (event.isMove() && dragging) {
             at = Math.max(-reach, Math.min(reach, event.windowX - startX))
             knob.translationX = at
-        } else if ((event.isUp() || event.isCancel()) && dragging) {
-            dragging = false
-            var end = event.isCancel() ? 0 : at
-            console.log("call slider: let go at " + Math.round(end) + (event.isCancel() ? " (cancelled)" : ""))
-            at = 0
-            back.play()
-            if (end <= -(reach - grab)) {
+            // An end counts as soon as the knob reaches it, not on release: on the Q10 (0.0.1.185)
+            // every slide ended in a cancel, never a release, so nothing was ever answered.
+            if (at <= -(reach - grab)) {
+                console.log("call slider: answered")
+                letGo()
                 answered()
-            } else if (end >= reach - grab) {
+            } else if (at >= reach - grab) {
+                console.log("call slider: declined")
+                letGo()
                 declined()
             }
+        } else if ((event.isUp() || event.isCancel()) && dragging) {
+            console.log("call slider: let go at " + Math.round(at) + (event.isCancel() ? " (cancelled)" : ""))
+            letGo()
         }
+    }
+    // The drag ends and the knob slides back to the middle.
+    function letGo() {
+        dragging = false
+        at = 0
+        back.play()
     }
 }
