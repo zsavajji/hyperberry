@@ -31,7 +31,9 @@ Settings::Settings(EngineLink *engine, QObject *parent)
     // Dark is the bar descriptor's theme (CASCADES_THEME): nothing to apply, and no reload.
     if (theme() == 1)
         applyTheme();
-    // A new registration replaces the old one (navigator_invoke.h), so this also covers a reinstall.
+    // Refused while the timer stands (2, 12292, at every start on the Q10), though navigator_invoke.h
+    // says a new one replaces the old. Harmless: it survived a reboot and about ten reinstalls. It
+    // should add the timer again if one is ever lost, which is unproven.
     if (startAtBoot())
         applyBootTimer(true);
 }
