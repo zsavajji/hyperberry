@@ -151,7 +151,7 @@ func (st *Store) reactable(chat, id string) (msgRow, error) {
 	if err := st.runOp(func(t *storeTx) { row, ok = t.messageByID(chat, id) }); err != nil {
 		return row, err
 	}
-	if !ok {
+	if !ok || isCallID(id) { // a call row is ours alone: WhatsApp has no such message
 		return row, &Error{"not_found", "no such message"}
 	}
 	return row, nil

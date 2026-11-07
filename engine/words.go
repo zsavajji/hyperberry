@@ -14,7 +14,7 @@ var italian = map[string]string{
 	"You": "Tu", "This message was deleted": "Questo messaggio è stato eliminato",
 	"New message": "Nuovo messaggio", "Message": "Messaggio",
 	"Voice call": "Chiamata vocale", "Video call": "Videochiamata",
-	"Missed voice call": "Chiamata vocale persa", "Missed video call": "Videochiamata persa",
+	"Incoming voice call": "Chiamata vocale in arrivo", "Missed voice call": "Chiamata vocale persa", "Missed video call": "Videochiamata persa",
 	"Pinned a message": "Ha fissato un messaggio", "Unpinned a message": "Ha tolto un messaggio fissato",
 	"View once message": "Messaggio visualizzabile una volta", "Message on your phone": "Messaggio sul tuo telefono",
 }

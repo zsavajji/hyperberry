@@ -51,6 +51,7 @@ func runEngine(container *sqlstore.Container, dataDir string, log waLog.Logger, 
 	if sim {
 		log.Infof("simulating an account (step 1.12): nothing goes to WhatsApp")
 		hello = newSim(srv, st, log.Sub("sim")).hello
+		registerSimCalls(srv)
 	} else {
 		sess, err := newSession(container, srv, st, log.Sub("session"))
 		if err != nil {

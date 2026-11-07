@@ -210,7 +210,7 @@ func (t *storeTx) setUnread(chat string, n int) {
 // for "mark as unread"), newest first.
 // ponytail: it trusts the counter; messages read on the phone but already counted are re-marked, which is harmless.
 func (t *storeTx) unreadIncoming(chat string) []unreadMsg {
-	rows, err := t.tx.Query(`SELECT id, COALESCE(sender, '') FROM messages WHERE chat = ?1 AND out = 0
+	rows, err := t.tx.Query(`SELECT id, COALESCE(sender, '') FROM messages WHERE chat = ?1 AND out = 0 AND id NOT LIKE 'call-%'
 ORDER BY ts DESC LIMIT MAX(1, COALESCE((SELECT unread FROM chats WHERE jid = ?1), 0))`, chat)
 	if err != nil {
 		t.log.Warnf("unread: %v", err)

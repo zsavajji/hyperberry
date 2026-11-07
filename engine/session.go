@@ -6,6 +6,7 @@ import (
 	"errors"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/polymorfa/hypermeow"
@@ -13,6 +14,7 @@ import (
 	"github.com/polymorfa/hypermeow/store/sqlstore"
 	"github.com/polymorfa/hypermeow/types/events"
 	waLog "github.com/polymorfa/hypermeow/util/log"
+	"github.com/purpshell/meowcaller"
 )
 
 // Link states (PLAN.md §5). "syncing" is left to the store, which knows when history is in.
@@ -45,7 +47,9 @@ type Session struct {
 	// syncing is true from a new link until its recent chats are in chats.db, or syncCap: the
 	// UI waits on the linking page meanwhile (the user's, 2026-11-01).
 	syncing bool
-	photos  *photoQueue // the chats' pictures (photos.go)
+	photos  *photoQueue                       // the chats' pictures (photos.go)
+	calls   *Calls                            // the live call (calls.go)
+	mc      atomic.Pointer[meowcaller.Client] // meowcaller on the current client
 }
 
 // syncCap ends "syncing" if the phone sends no recent-chats history: an account with no chats.
@@ -58,6 +62,7 @@ func newSession(container *sqlstore.Container, srv *Server, store *Store, log wa
 		return nil, err
 	}
 	s := &Session{container: container, srv: srv, store: store, log: log, link: linkUnlinked, conn: "offline"}
+	s.initCalls()
 	s.photos = newPhotoQueue(store, func() photoFetch { return clientFetch(s.client()) })
 	store.historyIn = func() { go s.endSync() } // off the writer: endSync takes s.mu
 	s.cli = s.newClient(device)
@@ -119,6 +124,7 @@ func (s *Session) newClient(device *store.Device) *whatsmeow.Client {
 	cli.ManualHistorySyncDownload = true
 	cli.DisableManualHistorySyncReceipt = true
 	configureReconnect(cli)
+	s.callsOn(cli) // before it connects: meowcaller listens to the call stanzas from the start
 	cli.AddEventHandler(func(evt any) { s.onEvent(cli, evt) })
 	cli.AddEventHandler(func(evt any) { s.store.handle(cli, evt) })
 	return cli
@@ -344,6 +350,7 @@ func (s *Session) reset() error {
 		s.stopQR()
 	}
 	s.cli.Disconnect()
+	s.calls.drop()
 	s.store.clear()
 	s.syncing = false
 	s.cli = s.newClient(s.container.NewDevice())
@@ -386,9 +393,17 @@ func (s *Session) onEvent(cli *whatsmeow.Client, evt any) {
 	case *events.Picture:
 		s.photos.changed(cli, e.JID)
 	case *events.Disconnected:
+		// A call's media runs on its own relay and may outlive a short drop, which hypermeow mends
+		// by itself; only a connection still down after callDropGrace ends the call.
+		time.AfterFunc(callDropGrace, func() {
+			if !cli.IsConnected() {
+				s.calls.drop()
+			}
+		})
 		s.conn = "connecting" // hypermeow reconnects by itself
 		s.srv.Emit("conn", map[string]any{"state": s.conn})
 	case *events.StreamReplaced:
+		s.calls.drop()
 		s.conn = "offline" // another engine took this session over
 		s.srv.Emit("conn", map[string]any{"state": s.conn, "reason": "replaced"})
 	case *events.LoggedOut:

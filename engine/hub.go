@@ -35,10 +35,14 @@ type hubItem struct {
 // nothing the Hub or a shell could trip on.
 func hubItemID(chat string) string { return "chat_" + hex.EncodeToString([]byte(chat)) }
 
-var hubChatRE = regexp.MustCompile(`chat_([0-9a-f]+)`)
+// hubCallRE finds the id of a ringing call's item (hub_call.go).
+var hubCallRE = regexp.MustCompile(`call_[0-9a-f]+`)
+
+var hubChatRE = regexp.MustCompile(`(?:chat|call)_([0-9a-f]+)`)
 
 // hubChat finds a chat's item id in s, wherever the Hub put it (the URI or the data of an
-// invocation), and gives back the chat key; "" when there is none.
+// invocation), and gives back the chat key; "" when there is none. A ringing call's item
+// (call_ and the chat key in hex) opens the same chat.
 func hubChat(s string) string {
 	m := hubChatRE.FindStringSubmatch(s)
 	if m == nil {
@@ -60,6 +64,9 @@ func hubActions(srv *Server, in <-chan invocation, remove func(chat string), log
 			continue // START, TIMER_FIRED and the like need nothing
 		}
 		log.Infof("%s mime %q uri %q data %q", inv.action, inv.mime, inv.uri, inv.data)
+		if hubCallRE.MatchString(inv.uri + " " + string(inv.data)) {
+			continue // the ringing call's item is no chat's state: nothing to mark or delete
+		}
 		chat := hubChat(inv.uri + " " + string(inv.data))
 		if chat == "" {
 			log.Warnf("%s: no chat in the invocation", inv.action)

@@ -18,7 +18,7 @@ docker run --rm -v "$ROOT:/src" -v "$CACHE:/cache" -w /src/engine \
 		go build -trimpath -ldflags="-s -w" -o /src/build/hyperberryd .
 		L=$QNX_TARGET/armle-v7/lib
 		for l in $L/libc.so.3 $L/libm.so.2 $L/libsocket.so.3 $L/../usr/lib/libbps.so.3 \
-				$L/../usr/lib/libunifieddatasourcec.so.1; do
+				$L/../usr/lib/libunifieddatasourcec.so.1 $L/libmmrndclient.so.1 $L/../usr/lib/libstrm.so.1; do
 			nm -D --defined-only $l | awk "{ print \$3 }"
 		done | sed "s/@.*//" | sort -u >/tmp/defined
 		missing=$(nm -D --undefined-only /src/build/hyperberryd | awk "\$1 == \"U\" { print \$2 }" |

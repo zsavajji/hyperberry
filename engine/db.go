@@ -107,6 +107,8 @@ CREATE TABLE poll_votes(
   options TEXT NOT NULL,
   ts INTEGER NOT NULL,
   PRIMARY KEY(chat, msg, sender));`,
+	// Calls (step 7.2): the Calls tab lists the call rows (kind 13, id call-<call id>) of every chat.
+	`CREATE INDEX messages_by_kind ON messages(kind, ts);`,
 }
 
 // openChats opens chats.db in WAL mode and migrates it to the newest schema.

@@ -151,12 +151,16 @@ func (s *Session) handleDelete(req json.RawMessage) (any, error) {
 		}
 		return nil, nil
 	}
+	var wa []msgRow // call rows go locally only: our other devices have no such messages
 	for _, m := range rows {
 		id := m.ID
 		s.store.ops <- func(t *storeTx) { t.deleteMessage(r.Chat, id) }
+		if !isCallID(id) {
+			wa = append(wa, m)
+		}
 	}
-	if len(rows) > 0 {
-		if err := cli.SendAppState(ctx, deleteForMePatch(jid, rows)); err != nil {
+	if len(wa) > 0 {
+		if err := cli.SendAppState(ctx, deleteForMePatch(jid, wa)); err != nil {
 			// ponytail: our other devices keep the messages; queue and retry if that matters.
 			s.log.Warnf("delete for me: app state: %v", err)
 		}
@@ -180,7 +184,7 @@ func (st *Store) deletable(chat string, ids []string, everyone bool) ([]msgRow, 
 	rows := <-got
 	if everyone {
 		for _, m := range rows {
-			if !m.Out || m.Deleted || m.State < stateSent || m.State > stateRead {
+			if !m.Out || m.Deleted || m.State < stateSent || m.State > stateRead || isCallID(m.ID) {
 				return nil, &Error{"not_ours", "only our own sent messages can be deleted for everyone"}
 			}
 		}
@@ -226,7 +230,9 @@ func (st *Store) queueRow(jid types.JID, chat, quote string, row msgRow) (msgRow
 		made <- !t.hasChat(chat)
 		var q msgRow
 		if quote != "" {
-			q, _ = t.messageByID(chat, quote)
+			if !isCallID(quote) { // a call row can't be quoted: WhatsApp doesn't know it
+				q, _ = t.messageByID(chat, quote)
+			}
 		}
 		quoted <- q
 		if q.ID != "" {

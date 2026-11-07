@@ -26,9 +26,14 @@ type Handler func(req json.RawMessage) (any, error)
 
 // Server is the UI link of PLAN.md §5: newline-delimited JSON over loopback TCP.
 type Server struct {
-	dir      string
-	log      waLog.Logger
-	hello    func() any
+	dir   string
+	log   waLog.Logger
+	hello func() any
+	// afterHello gives an event to send right after a hello reply (the live call, step 7.2), or nil.
+	afterHello func() (string, map[string]any)
+	// audio hands an audio link's connection to the live call. It writes ok first, and says false,
+	// writing nothing, when id is not the live call.
+	audio    func(id string, conn net.Conn, ok []byte) bool
 	token    string
 	ln       net.Listener
 	handlers map[string]Handler
@@ -130,17 +135,10 @@ func (s *Server) Serve() error {
 // Emit sends an event to every authenticated client. It never blocks: a client whose queue
 // is full is closed, and the UI reconnects and re-reads chats.db.
 func (s *Server) Emit(ev string, body map[string]any) {
-	m := make(map[string]any, len(body)+1)
-	for k, v := range body {
-		m[k] = v
-	}
-	m["ev"] = ev
-	line, err := json.Marshal(m)
-	if err != nil {
-		s.log.Warnf("event %s: %v", ev, err)
+	line := s.eventLine(ev, body)
+	if line == nil {
 		return
 	}
-	line = append(line, '\n')
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for c := range s.clients {
@@ -154,6 +152,35 @@ func (s *Server) Emit(ev string, body map[string]any) {
 			c.close()
 		}
 	}
+}
+
+// eventLine is the line of an event, nil when it can't be encoded.
+func (s *Server) eventLine(ev string, body map[string]any) []byte {
+	m := make(map[string]any, len(body)+1)
+	for k, v := range body {
+		m[k] = v
+	}
+	m["ev"] = ev
+	line, err := json.Marshal(m)
+	if err != nil {
+		s.log.Warnf("event %s: %v", ev, err)
+		return nil
+	}
+	return append(line, '\n')
+}
+
+// helloReader reads a connection a byte at a time until it is authed: the hello line is then the
+// last thing the scanner takes, so an audio link's first PCM bytes are still in the socket.
+type helloReader struct {
+	r      net.Conn
+	authed *atomic.Bool
+}
+
+func (h helloReader) Read(p []byte) (int, error) {
+	if !h.authed.Load() && len(p) > 1 {
+		p = p[:1]
+	}
+	return h.r.Read(p)
 }
 
 // Close stops accepting, closes every client and removes engine.json.
@@ -215,14 +242,19 @@ func reply(id string, result any, err error) []byte {
 
 func (s *Server) read(c *client) {
 	defer s.wg.Done()
+	keep := false // an audio link's connection lives on, in the call
 	defer func() {
-		c.close()
 		s.mu.Lock()
 		delete(s.clients, c)
 		s.mu.Unlock()
+		if keep {
+			c.once.Do(func() { close(c.done) }) // the writer goes; the socket stays open
+			return
+		}
+		c.close()
 		s.log.Infof("UI disconnected")
 	}()
-	sc := bufio.NewScanner(c.conn)
+	sc := bufio.NewScanner(helloReader{c.conn, &c.authed})
 	sc.Buffer(make([]byte, 0, 64<<10), 1<<20)
 	for sc.Scan() {
 		line := append(json.RawMessage(nil), sc.Bytes()...)
@@ -231,6 +263,7 @@ func (s *Server) read(c *client) {
 			Cmd   string `json:"cmd"`
 			Token string `json:"token"`
 			Proto int    `json:"proto"`
+			Audio string `json:"audio"`
 		}
 		bad := json.Unmarshal(line, &r) != nil || r.Cmd == ""
 		if !c.authed.Load() {
@@ -245,6 +278,16 @@ func (s *Server) read(c *client) {
 				c.conn.Write(reply(r.At, nil, &Error{"proto", "this engine speaks proto 1"}))
 				return
 			}
+			if r.Audio != "" {
+				ok := reply(r.At, nil, nil)
+				if s.audio == nil || !s.audio(r.Audio, c.conn, ok) {
+					c.conn.Write(reply(r.At, nil, &Error{"not_found", "no such live call"}))
+					return
+				}
+				keep = true
+				s.log.Infof("audio link opened for call %s", r.Audio)
+				return
+			}
 			var res any
 			if s.hello != nil {
 				res = s.hello()
@@ -252,6 +295,14 @@ func (s *Server) read(c *client) {
 			// The reply goes in the queue before authed is set, so no event overtakes it.
 			c.out <- reply(r.At, res, nil)
 			c.authed.Store(true)
+			// After authed, so an event in between is not lost; at worst it comes twice.
+			if s.afterHello != nil {
+				if ev, body := s.afterHello(); ev != "" {
+					if line := s.eventLine(ev, body); line != nil {
+						c.out <- line
+					}
+				}
+			}
 			continue
 		}
 		var res any

@@ -22,7 +22,9 @@ void OpenRequests::invoked(const InvokeRequest &request)
     // Logged whole: where the Hub puts the item id is for the Q10 to show.
     qDebug() << "invoked:" << request.action() << request.mimeType() << request.uri()
              << request.data();
-    QRegExp item("chat_([0-9a-f]+)");
+    // A chat's item, or a ringing call's (call_, step 7.2): both open the chat, where the call's
+    // sheet shows the call if it still rings.
+    QRegExp item("(?:chat|call)_([0-9a-f]+)");
     if (item.indexIn(request.uri().toString() + " " + QString::fromUtf8(request.data())) >= 0)
         emit openChat(QString::fromUtf8(QByteArray::fromHex(item.cap(1).toLatin1())));
 }

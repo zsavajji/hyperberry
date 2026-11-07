@@ -119,7 +119,7 @@ func (st *Store) lastKey(chat string) (time.Time, *waCommon.MessageKey) {
 		var id, sender string
 		var ts int64
 		var out bool
-		if t.tx.QueryRow("SELECT id, ts, out, COALESCE(sender, '') FROM messages WHERE chat = ? ORDER BY ts DESC, rowid DESC LIMIT 1",
+		if t.tx.QueryRow("SELECT id, ts, out, COALESCE(sender, '') FROM messages WHERE chat = ? AND id NOT LIKE 'call-%' ORDER BY ts DESC, rowid DESC LIMIT 1",
 			chat).Scan(&id, &ts, &out, &sender) != nil {
 			got <- res{}
 			return
