@@ -3,7 +3,7 @@ import hyperberry 1.0
 
 // The call screen (step 7.4), in the look of the stock Phone app: one Sheet owned by main.qml, over
 // everything. It opens on any `call` event that isn't `ended` and closes 2 s after `ended`. While the
-// call rings: silence, message and the slide bar (CallRinging); else Speaker, Mute and End call
+// call rings: video or not, message and the slide bar (CallRinging); else Speaker, Mute and End call
 // (CallPanel). engine.call is {id, chat, out, state, reason, since, video, videoOurs, videoTheirs,
 // videoAsked} (docs/plan/phase7.md, docs/protocol2.md). The stage is the Q10's 720 px screen, kept
 // to the bottom, so what the stock app measures from there stays where it was; px() scales its px
@@ -131,7 +131,9 @@ Sheet {
             return
         }
         syncHolds(st == "calling" || st == "connecting" || st == "active")
-        callVideo.sending = !!call.videoOurs
+        // Answered without video, ours stays off while connecting too: the engine turns it off only
+        // as the call goes active, and the camera mustn't show the user meanwhile.
+        callVideo.sending = !!call.videoOurs && (call.out || st == "active" || ringControls.withVideo)
         // The controls stay while the call isn't on or the peer asks for our video; else they count down.
         if (st != "active" || call.videoAsked) {
             controlsShown = true
@@ -156,9 +158,6 @@ Sheet {
         }
         closer.stop()
         who = chats.chat(call.chat)
-        if (st == "ringing") {
-            ringControls.silenced = false
-        }
         if (st == "active" && call.since > 0) {
             refreshClock()
             ticker.start()
@@ -168,6 +167,7 @@ Sheet {
         if (!opened) {
             callAudio.muted = false
             callAudio.speaker = !!call.video
+            ringControls.withVideo = !!call.video
             open()
         }
         // After open(), so the controls the windows bind to are in the sheet. Video goes to the
@@ -288,8 +288,9 @@ Sheet {
                 CallRinging {
                     id: ringControls
                     visible: sheet.ringing
-                    onSilence: engine.request("call.silence", {"id": sheet.call.id})
-                    onAnswered: engine.request("call.answer", {"id": sheet.call.id})
+                    video: !!sheet.call.video
+                    // A voice call is answered as one; a video call with or without ours.
+                    onAnswered: engine.request("call.answer", sheet.call.video ? {"id": sheet.call.id, "video": ringControls.withVideo} : {"id": sheet.call.id})
                     onDeclined: engine.request("call.reject", {"id": sheet.call.id})
                     // Declines, then the caller's chat opens with the composer, as a contact page's
                     // Message does, for a chat we may not have yet.

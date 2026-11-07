@@ -2,7 +2,7 @@
 app's look (measured from the user's screenshots, 720x720, 1 du = 9 px): call_bg (the gradient with
 the default-contact silhouette), call_fade (a photo's fade to black), call_track (the answer bar:
 capsule, green and red arcs, the red handset, the chevrons; 665x148), call_knob, call_btn (the
-round button's disc) and the white glyphs call_silence, call_message, call_speaker, call_mute,
+round button's disc) and the white glyphs call_message, call_speaker, call_mute,
 call_unmute, call_end, call_video, call_video_off and call_switch, which QML tints with
 ImageView.filterColor. Everything is drawn at 8x and scaled down.
 Run by hand when one changes, in the image fetch-emoji.sh builds:
@@ -165,19 +165,6 @@ def button(out):
     save(img, out, "call_btn")
 
 
-def silence(out):
-    """Beamed notes struck through, a gap around the stroke."""
-    img, d = new(50, 50)
-    d.ellipse(sc(9, 33, 21, 43), WHITE)
-    d.ellipse(sc(28, 29, 40, 39), WHITE)
-    d.rectangle(sc(19, 10, 22, 38), WHITE)
-    d.rectangle(sc(38, 6, 41, 34), WHITE)
-    d.polygon(sc(19, 8, 41, 3, 41, 10, 19, 15), WHITE)
-    d.line(sc(43, 3, 6, 47), CLEAR, 8 * S)
-    d.line(sc(43, 3, 6, 47), WHITE, 3 * S)
-    save(img, out, "call_silence")
-
-
 def message(out):
     img, d = new(50, 50)
     d.rounded_rectangle(sc(3, 7, 47, 37), 4 * S, WHITE)
@@ -266,5 +253,5 @@ def switch(out):
 
 
 if __name__ == "__main__":
-    for f in (background, fade, track, knob, button, silence, message, speaker, mute, unmute, end, video, video_off, switch):
+    for f in (background, fade, track, knob, button, message, speaker, mute, unmute, end, video, video_off, switch):
         f(sys.argv[1])

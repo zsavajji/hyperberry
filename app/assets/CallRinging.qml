@@ -1,11 +1,13 @@
 import bb.cascades 1.4
 
-// The controls of a ringing call (step 7.4): silence the ringtone, answer with a message (which
-// declines), and the slide bar. Over the call screen's 720 px stage, whose size px() scales.
+// The controls of a ringing call (step 7.4): on a video call, whether to answer with our video (the
+// user's idea, 2026-11-07, where the stock app's silence button was); answer with a message (which
+// declines); and the slide bar. Over the call screen's 720 px stage, whose size px() scales.
 Container {
     id: ringing
-    property bool silenced: false
-    signal silence
+    // The call offers video; answering sends ours while withVideo (the sheet sets it on as offered).
+    property bool video: false
+    property bool withVideo: true
     signal message
     signal answered
     signal declined
@@ -21,7 +23,7 @@ Container {
             positionX: ringing.px(308)
             positionY: ringing.px(419)
         }
-        opacity: ringing.silenced ? 0.35 : 1
+        visible: ringing.video
         layout: DockLayout {}
         ImageView {
             preferredWidth: ringing.px(104)
@@ -35,15 +37,10 @@ Container {
             preferredWidth: ringing.px(50)
             preferredHeight: ringing.px(50)
             scalingMethod: ScalingMethod.AspectFit
-            imageSource: "asset:///images/call_silence.png"
+            imageSource: ringing.withVideo ? "asset:///images/call_video.png" : "asset:///images/call_video_off.png"
         }
         gestureHandlers: TapHandler {
-            onTapped: {
-                if (!ringing.silenced) {
-                    ringing.silenced = true
-                    ringing.silence()
-                }
-            }
+            onTapped: ringing.withVideo = !ringing.withVideo
         }
     }
     Container {
