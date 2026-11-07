@@ -1,18 +1,15 @@
 #include "CallAudio.h"
 
 #include "EngineLink.h"
+#include "LinkIo.h"
 
-#include <bb/data/JsonDataAccess>
 #include <audio/audio_manager_device.h>
 #include <audio/audio_manager_routing.h>
 #include <sys/asoundlib.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
 #include <errno.h>
 #include <signal.h>
 #include <string.h>
 #include <sys/socket.h>
-#include <sys/time.h>
 #include <unistd.h>
 #include <QDebug>
 #include <QMetaObject>
@@ -128,30 +125,6 @@ void CallAudio::stop()
     setRunning(false);
 }
 
-static bool sendAll(int fd, const char *data, int size)
-{
-    while (size > 0) {
-        const ssize_t n = ::send(fd, data, size, 0);
-        if (n <= 0)
-            return false;
-        data += n;
-        size -= int(n);
-    }
-    return true;
-}
-
-static bool recvAll(int fd, char *data, int size)
-{
-    while (size > 0) {
-        const ssize_t n = ::recv(fd, data, size, 0);
-        if (n <= 0)
-            return false;
-        data += n;
-        size -= int(n);
-    }
-    return true;
-}
-
 void CallAudio::closeLink()
 {
     QMutexLocker lock(&m_fdLock);
@@ -180,41 +153,11 @@ bool CallAudio::openLink()
     }
     if (m_stopping)
         return false;
-    sockaddr_in addr;
-    memset(&addr, 0, sizeof addr);
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(port);
-    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    timeval timeout = { 3, 0 };
-    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof timeout);
-    if (::connect(fd, reinterpret_cast<sockaddr *>(&addr), sizeof addr) != 0) {
+    if (!LinkIo::connectLoopback(fd, port)) {
         qWarning("call audio: connect failed, errno %d", errno);
         return false;
     }
-    QString token = m_engine->token();
-    token.replace('\\', "\\\\").replace('"', "\\\"");
-    QString callId = m_callId;
-    callId.replace('\\', "\\\\").replace('"', "\\\"");
-    const QByteArray hello = QString("{\"@\":\"a\",\"cmd\":\"hello\",\"token\":\"%1\",\"proto\":1,\"audio\":\"%2\"}\n")
-                                 .arg(token, callId).toUtf8();
-    if (!sendAll(fd, hello.constData(), hello.size())) {
-        qWarning("call audio: hello not sent, errno %d", errno);
-        return false;
-    }
-    // One byte at a time, so no audio behind the reply is swallowed.
-    QByteArray line;
-    char c;
-    while (line.size() < 4096 && ::recv(fd, &c, 1, 0) == 1 && c != '\n')
-        line += c;
-    bb::data::JsonDataAccess json;
-    const QVariant reply = json.loadFromBuffer(line);
-    if (json.hasError() || reply.toMap()["ok"].toBool() != true) {
-        qWarning("call audio: hello refused: %s", line.constData());
-        return false;
-    }
-    timeval none = { 0, 0 };
-    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &none, sizeof none);
-    return true;
+    return LinkIo::hello(fd, m_engine->token(), "a", "audio", m_callId, "call audio");
 }
 
 bool CallAudio::openPcm(bool capture, void **pcm, unsigned int *handle, int *frag)
@@ -345,7 +288,7 @@ void CallAudio::captureLoop()
         while (acc.size() >= FrameBytes) {
             if (m_muted)
                 memset(acc.data(), 0, FrameBytes);
-            if (!sendAll(m_fd, acc.constData(), FrameBytes))
+            if (!LinkIo::sendAll(m_fd, acc.constData(), FrameBytes))
                 goto done; // the link is gone: the playback side sees it too
             acc.remove(0, FrameBytes);
         }
@@ -376,7 +319,7 @@ void CallAudio::session()
         QByteArray acc;
         bool primed = false;
         int errors = 0, underruns = 0, dropped = 0;
-        while (!m_stopping && recvAll(m_fd, frame, FrameBytes)) { // false: the engine closed it, or stop()
+        while (!m_stopping && LinkIo::recvAll(m_fd, frame, FrameBytes)) { // false: the engine closed it, or stop()
             acc.append(frame, FrameBytes);
             if (acc.size() > Keep) {
                 dropped += acc.size() - Prime;
