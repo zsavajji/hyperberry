@@ -142,7 +142,7 @@ Sheet {
         Container {
             horizontalAlignment: HorizontalAlignment.Fill
             verticalAlignment: VerticalAlignment.Fill
-            background: Color.create("#1b132a")
+            background: Color.create("#132a1c") // the stock #1b132a in the primary colour's hue
             layout: DockLayout {}
             Container {
                 horizontalAlignment: HorizontalAlignment.Center
@@ -153,7 +153,7 @@ Sheet {
                 ImageView {
                     preferredWidth: sheet.px(720)
                     preferredHeight: sheet.px(720)
-                    scalingMethod: ScalingMethod.Fill
+                    scalingMethod: ScalingMethod.AspectFit
                     imageSource: "asset:///images/call_bg.png"
                 }
                 // The picture fills the area above the controls and fades to black at its foot.
@@ -172,7 +172,7 @@ Sheet {
                     }
                     preferredWidth: sheet.px(720)
                     preferredHeight: sheet.px(260)
-                    scalingMethod: ScalingMethod.Fill
+                    scalingMethod: ScalingMethod.AspectFit
                     imageSource: "asset:///images/call_fade.png"
                 }
                 Label {
@@ -238,7 +238,7 @@ Sheet {
                 horizontalAlignment: HorizontalAlignment.Fill
                 verticalAlignment: VerticalAlignment.Top
                 preferredHeight: sheet.px(55)
-                background: Color.create("#0f0b19")
+                background: Color.create("#0b1910") // the stock #0f0b19 in the primary colour's hue
                 layout: DockLayout {}
                 Label {
                     verticalAlignment: VerticalAlignment.Center

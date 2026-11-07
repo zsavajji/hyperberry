@@ -20,7 +20,7 @@ Container {
         verticalAlignment: VerticalAlignment.Center
         preferredWidth: toggle.px(50)
         preferredHeight: toggle.px(50)
-        scalingMethod: ScalingMethod.Fill
+        scalingMethod: ScalingMethod.AspectFit
         imageSource: toggle.icon
         filterColor: toggle.on ? ui.palette.primary : Color.White
     }

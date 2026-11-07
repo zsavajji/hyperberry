@@ -7,6 +7,7 @@ call_end, which QML tints with ImageView.filterColor. Everything is drawn at 8x 
 Run by hand when one changes, in the image fetch-emoji.sh builds:
     docker run --rm -v "$PWD:/src" hyperberry-font python -I /src/scripts/gen-call-images.py /src/app/assets/images
 """
+import colorsys
 import sys
 
 from PIL import Image, ImageDraw, ImageFilter
@@ -70,26 +71,35 @@ SHADE = [(0, 0x45, 0x41, 0x52), (190, 0x45, 0x41, 0x52), (192, 0x43, 0x3f, 0x50)
          (368, 0x1e, 0x1d, 0x23), (384, 0x1a, 0x19, 0x1f)]
 
 
+def accent(rgb):
+    """The stock screen's purple turned to HyperBerry's primary colour, #1bd862 (the user's ask,
+    2026-11-07): its hue, with the stock colour's own saturation and brightness kept."""
+    h, s, v = colorsys.rgb_to_hsv(*[c / 255 for c in rgb])
+    hue = colorsys.rgb_to_hsv(0x1b / 255, 0xd8 / 255, 0x62 / 255)[0]
+    return tuple(c * 255 for c in colorsys.hsv_to_rgb(hue, s, v))
+
+
 def gradient(y):
     t = min(1, max(0, (y - 300) / 210))
-    return tuple(v * (1 - t) for v in (0x1b, 0x13, 0x2a))
+    return tuple(v * (1 - t) for v in accent((0x1b, 0x13, 0x2a)))
 
 
 def background(out):
-    """Flat #1b132a to y 300, linear to black at 510; the default-contact silhouette fades into it."""
+    """The stock #1b132a in the primary colour's hue, flat to y 300, then linear to black at 510; the
+    default-contact silhouette fades into it."""
     W = 720
     bg = Image.new("RGB", (W, W))
     sil = Image.new("RGB", (W, W))
     for y in range(W):
         g = gradient(y)
         if y < 384:
-            c = lerp(SHADE, y)
+            c = accent(lerp(SHADE, y))
         elif y < 400:  # into the background
             u = (y - 384) / 16
-            c = tuple(a + (b - a) * u for a, b in zip(lerp(SHADE, 384), g))
+            c = tuple(a + (b - a) * u for a, b in zip(accent(lerp(SHADE, 384)), g))
         else:  # the shoulders are only a hint
             k = min((y - 400) / 50, 1) * min(1, max(0, (520 - y) / 70))
-            c = tuple(a + k * h for a, h in zip(g, (13, 12, 16)))
+            c = tuple(a + k * h for a, h in zip(g, accent((13, 12, 16))))
         ImageDraw.Draw(bg).line((0, y, W, y), tuple(round(v) for v in g))
         ImageDraw.Draw(sil).line((0, y, W, y), tuple(round(v) for v in c))
     # The shape, fitted to the stock outline's rows: a flat-topped skull (190 px wide 9 px below
@@ -129,12 +139,12 @@ def track(out):
     W, H = 665, 148
     img, d = new(W, H)
     d.rounded_rectangle(sc(0, 0, W, H), 74 * S, hexa("#1e1e1e"))
-    green, red = hexa("#789038"), hexa("#e83838")
+    green, red = hexa("#1bd862"), hexa("#e83838")  # answer in the primary colour (the user's ask)
     d.arc(sc(1.5, 1.5, 146.5, 146.5), 90, 270, green, 4 * S)
     d.arc(sc(W - 146.5, 1.5, W - 1.5, 146.5), 270, 90, red, 4 * S)
     put(img, handset(85, 32, hexa("#f83030")), 583, 74)
     # Brighter toward the middle on the green side, dimmer away from it on the red.
-    chevrons(d, 168, ["#2e3a20", "#46552d", "#63773c"], True)
+    chevrons(d, 168, ["#0b5627", "#10823b", "#16b351"], True)  # the primary at 40, 60 and 83 %, as the stock's
     chevrons(d, 413, ["#983e3d", "#753132", "#592527"], False)
     save(img, out, "call_track")
 

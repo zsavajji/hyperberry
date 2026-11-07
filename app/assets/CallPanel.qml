@@ -59,7 +59,7 @@ Container {
             leftMargin: panel.px(14)
             preferredWidth: panel.px(62)
             preferredHeight: panel.px(22)
-            scalingMethod: ScalingMethod.Fill
+            scalingMethod: ScalingMethod.AspectFit
             imageSource: "asset:///images/call_end.png"
         }
         Label {

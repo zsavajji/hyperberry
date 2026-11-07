@@ -11,6 +11,9 @@ Container {
     // Where the finger went down, in window px: the knob follows its distance from here, not the
     // finger's place on the knob, so it doesn't jump.
     property real startX: 0
+    // The knob's offset while dragged, kept here rather than read back from translationX.
+    property real at: 0
+    property bool dragging: false
     // The knob's centre to an end's icon is 260 px; it counts within 40 px of it.
     property real reach: px(260)
     property real grab: px(40)
@@ -23,7 +26,7 @@ Container {
     ImageView {
         preferredWidth: slider.px(665)
         preferredHeight: slider.px(148)
-        scalingMethod: ScalingMethod.Fill
+        scalingMethod: ScalingMethod.AspectFit
         imageSource: "asset:///images/call_track.png"
     }
     // The phone's own handset, tinted green (the track holds only the red one); 66 px centred
@@ -35,9 +38,9 @@ Container {
         }
         preferredWidth: slider.px(66)
         preferredHeight: slider.px(66)
-        scalingMethod: ScalingMethod.Fill
+        scalingMethod: ScalingMethod.AspectFit
         imageSource: "file:///usr/share/icons/ic_phone.png"
-        filterColor: Color.create("#709830")
+        filterColor: Color.create("#1bd862") // the primary colour, the user's ask (2026-11-07)
     }
     ImageView {
         id: knob
@@ -47,32 +50,43 @@ Container {
         }
         preferredWidth: slider.px(110)
         preferredHeight: slider.px(110)
-        scalingMethod: ScalingMethod.Fill
+        scalingMethod: ScalingMethod.AspectFit
         imageSource: "asset:///images/call_knob.png"
-        // Cascades animates every translationX change by itself, which would leave the knob
-        // trailing the finger: off while dragging, on again so a short release slides it back.
+        // No implicit animation of translationX, which would leave the knob trailing the finger;
+        // the slide back is the explicit one below.
         attachedObjects: ImplicitAnimationController {
-            id: follow
             propertyName: "translationX"
+            enabled: false
         }
-        onTouch: {
-            if (event.isDown()) {
-                follow.enabled = false
-                slider.startX = event.windowX
-            } else if (event.isMove()) {
-                knob.translationX = Math.max(-slider.reach, Math.min(slider.reach, event.windowX - slider.startX))
-            } else if (event.isUp() || event.isCancel()) {
-                var at = knob.translationX
-                follow.enabled = true
-                knob.translationX = 0
-                if (event.isCancel()) {
-                    return
-                }
-                if (at <= -(slider.reach - slider.grab)) {
-                    slider.answered()
-                } else if (at >= slider.reach - slider.grab) {
-                    slider.declined()
-                }
+        animations: TranslateTransition {
+            id: back
+            toX: 0
+            duration: 150
+        }
+    }
+    // The whole track takes the drag, not the knob: on the Q10 (0.0.1.184) the knob alone locked
+    // under the finger. Touches on the images bubble up to here, wherever on the track the finger
+    // goes. The knob follows the finger's distance from where it went down; the 220 px needed to
+    // reach an end are the guard against a brush in the pocket.
+    onTouch: {
+        if (event.isDown()) {
+            dragging = true
+            back.stop()
+            startX = event.windowX
+            console.log("call slider: down")
+        } else if (event.isMove() && dragging) {
+            at = Math.max(-reach, Math.min(reach, event.windowX - startX))
+            knob.translationX = at
+        } else if ((event.isUp() || event.isCancel()) && dragging) {
+            dragging = false
+            var end = event.isCancel() ? 0 : at
+            console.log("call slider: let go at " + Math.round(end) + (event.isCancel() ? " (cancelled)" : ""))
+            at = 0
+            back.play()
+            if (end <= -(reach - grab)) {
+                answered()
+            } else if (end >= reach - grab) {
+                declined()
             }
         }
     }

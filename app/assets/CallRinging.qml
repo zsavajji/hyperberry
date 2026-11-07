@@ -26,7 +26,7 @@ Container {
         ImageView {
             preferredWidth: ringing.px(104)
             preferredHeight: ringing.px(104)
-            scalingMethod: ScalingMethod.Fill
+            scalingMethod: ScalingMethod.AspectFit
             imageSource: "asset:///images/call_btn.png"
         }
         ImageView {
@@ -34,7 +34,7 @@ Container {
             verticalAlignment: VerticalAlignment.Center
             preferredWidth: ringing.px(50)
             preferredHeight: ringing.px(50)
-            scalingMethod: ScalingMethod.Fill
+            scalingMethod: ScalingMethod.AspectFit
             imageSource: "asset:///images/call_silence.png"
         }
         gestureHandlers: TapHandler {
@@ -55,7 +55,7 @@ Container {
         ImageView {
             preferredWidth: ringing.px(104)
             preferredHeight: ringing.px(104)
-            scalingMethod: ScalingMethod.Fill
+            scalingMethod: ScalingMethod.AspectFit
             imageSource: "asset:///images/call_btn.png"
         }
         ImageView {
@@ -63,7 +63,7 @@ Container {
             verticalAlignment: VerticalAlignment.Center
             preferredWidth: ringing.px(50)
             preferredHeight: ringing.px(50)
-            scalingMethod: ScalingMethod.Fill
+            scalingMethod: ScalingMethod.AspectFit
             imageSource: "asset:///images/call_message.png"
         }
         gestureHandlers: TapHandler {
