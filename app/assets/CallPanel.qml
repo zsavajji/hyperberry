@@ -52,20 +52,23 @@ Container {
         enabled: !panel.ended
         opacity: panel.ended ? 0.5 : 1
         background: panel.pressed ? Color.create("#b3181a") : Color.create("#ff3334")
-        layout: DockLayout {}
+        // Padding and a row, not margins in a DockLayout: margins only space siblings, never from
+        // the container's edge (pitfalls.md), which left icon and label on top of each other at the
+        // bar's edge on the Q10 (0.0.1.187). The stock handset at x 32 and the label at x 114.
+        leftPadding: panel.px(14)
+        layout: StackLayout {
+            orientation: LayoutOrientation.LeftToRight
+        }
         ImageView {
-            horizontalAlignment: HorizontalAlignment.Left
             verticalAlignment: VerticalAlignment.Center
-            leftMargin: panel.px(14)
             preferredWidth: panel.px(62)
             preferredHeight: panel.px(22)
             scalingMethod: ScalingMethod.AspectFit
             imageSource: "asset:///images/call_end.png"
         }
         Label {
-            horizontalAlignment: HorizontalAlignment.Left
             verticalAlignment: VerticalAlignment.Center
-            leftMargin: panel.px(96)
+            leftMargin: panel.px(20)
             text: qsTr("End call")
             textFormat: TextFormat.Plain
             textStyle.fontSize: FontSize.PercentageValue

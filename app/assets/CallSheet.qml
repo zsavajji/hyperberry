@@ -178,7 +178,7 @@ Sheet {
                 Label {
                     layoutProperties: AbsoluteLayoutProperties {
                         positionX: sheet.px(30)
-                        positionY: sheet.ringing ? sheet.px(291) : sheet.px(339)
+                        positionY: sheet.ringing ? sheet.px(284) : sheet.px(312)
                     }
                     preferredWidth: sheet.timed ? sheet.px(450) : sheet.px(650)
                     multiline: false
@@ -192,7 +192,7 @@ Sheet {
                 Label {
                     layoutProperties: AbsoluteLayoutProperties {
                         positionX: sheet.px(29)
-                        positionY: sheet.ringing ? sheet.px(365) : sheet.px(386)
+                        positionY: sheet.ringing ? sheet.px(360) : sheet.px(372)
                     }
                     preferredWidth: sheet.px(650)
                     text: sheet.line
@@ -203,7 +203,7 @@ Sheet {
                     visible: sheet.timed
                     layoutProperties: AbsoluteLayoutProperties {
                         positionX: sheet.px(467)
-                        positionY: sheet.px(364)
+                        positionY: sheet.px(373)
                     }
                     preferredWidth: sheet.px(220)
                     text: sheet.clock
@@ -239,10 +239,11 @@ Sheet {
                 verticalAlignment: VerticalAlignment.Top
                 preferredHeight: sheet.px(55)
                 background: Color.create("#0b1910") // the stock #0f0b19 in the primary colour's hue
+                // Padding, not a margin: a margin doesn't count from the container's edge.
+                leftPadding: sheet.px(30)
                 layout: DockLayout {}
                 Label {
                     verticalAlignment: VerticalAlignment.Center
-                    leftMargin: sheet.px(30)
                     text: qsTr("WhatsApp: voice call")
                     textFormat: TextFormat.Plain
                     textStyle.fontSize: FontSize.PercentageValue
