@@ -1,8 +1,8 @@
-Audio playout: duplicate and late frames are dropped, not a restart (his patch 9); the relay link's test.
+Audio playout: duplicate and late frames are dropped, not a restart (its patch 9); the relay link's test.
 From whatsapp-light's patched meowcaller (github.com/vbbot/whatsapp-light, by Vasu Bhatia, its
 meowcaller/ at commit d185e2c; notes in its meowcaller/PATCHES-wa-poc.md), against upstream meowcaller
-c48c3e2. Used with the author's agreement, given to the HyperBerry user on 2026-11-07; the licence
-is to follow in his repository. Applied in order by scripts/hypermeow-work.sh.
+c48c3e2. MIT licence, Copyright (c) 2026 Vasu Bhatia: LICENSE-whatsapp-light, beside this patch
+(from whatsapp-light's commit c5be1e6). Applied in order by scripts/hypermeow-work.sh.
 
 --- a/audio_playout.go	2026-11-07 21:51:36
 +++ b/audio_playout.go	2026-11-07 21:51:36

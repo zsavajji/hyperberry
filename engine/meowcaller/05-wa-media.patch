@@ -1,8 +1,8 @@
 Media, second half: reconnects (10), the next relay when the caller's media doesn't come (11), the first keyframe (8), stats.
 From whatsapp-light's patched meowcaller (github.com/vbbot/whatsapp-light, by Vasu Bhatia, its
 meowcaller/ at commit d185e2c; notes in its meowcaller/PATCHES-wa-poc.md), against upstream meowcaller
-c48c3e2. Used with the author's agreement, given to the HyperBerry user on 2026-11-07; the licence
-is to follow in his repository. Applied in order by scripts/hypermeow-work.sh.
+c48c3e2. MIT licence, Copyright (c) 2026 Vasu Bhatia: LICENSE-whatsapp-light, beside this patch
+(from whatsapp-light's commit c5be1e6). Applied in order by scripts/hypermeow-work.sh.
 
 --- a/engine_media.go	2026-11-07 21:51:36
 +++ b/engine_media.go	2026-11-07 21:51:36
