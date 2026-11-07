@@ -1,0 +1,373 @@
+Media, first half: the relay link that can be replaced mid-call, its watchdog and reconnects (patch 10), video pacing (3).
+From whatsapp-light's patched meowcaller (github.com/vbbot/whatsapp-light, by Vasu Bhatia, its
+meowcaller/ at commit d185e2c; notes in its meowcaller/PATCHES-wa-poc.md), against upstream meowcaller
+c48c3e2. Used with the author's agreement, given to the HyperBerry user on 2026-11-07; the licence
+is to follow in his repository. Applied in order by scripts/hypermeow-work.sh.
+
+--- a/engine_media.go	2026-11-07 21:51:36
++++ b/engine_media.go	2026-11-07 21:51:36
+@@ -36,6 +36,12 @@
+ type videoReceiveState struct {
+ 	assembler   rtp.H264AccessUnitAssembler
+ 	orientation int
++	// wa-poc patch: reorder stage + receive stats.
++	reorder   rtp.SeqReorderBuffer
++	packets   uint64
++	frames    uint64
++	plis      uint64
++	lastStats time.Time
+ }
+ 
+ // maybeStartMedia launches the media loop for callID once both the callKey and the relay
+@@ -103,6 +109,13 @@
+ 		defer clear(callKey)
+ 		if err := e.runMedia(mctx, callID, call, callKey, selfLID, peerLID, rd, inbound); err != nil {
+ 			e.c.log.Warn().Err(err).Str("call_id", callID).Msg("media ended")
++			// wa-poc patch: a 1:1 call whose media can't run is over; end it on both phones
++			// instead of leaving it open and silent.
++			if mctx.Err() == nil && call != nil && call.State() != CallPhaseEnded && !e.isGroupCall(callID) {
++				if hangErr := e.hangup(call); hangErr != nil {
++					e.c.log.Warn().Err(hangErr).Str("call_id", callID).Msg("ending call after media failure")
++				}
++			}
+ 		}
+ 	}()
+ }
+@@ -112,8 +125,21 @@
+ //
+ // NOT VALIDATED: live-relay only.
+ func (e *engine) connectAndAllocate(ctx context.Context, rd *relayData, streamSsrcs [9]uint32, inbound bool) (*relay.RelayMediaChannel, []byte, error) {
++	return e.connectAndAllocateTo(ctx, rd, getMediaRelayEndpoint(rd, inbound), streamSsrcs, nil, 0)
++}
++
++// connectAndAllocateTo is connectAndAllocate to a chosen endpoint (wa-poc patch: a reconnect
++// may try the allocation's other relays).
++//
++// subscribePIDs, when set, makes the allocate subscribe to those participants' media the way a
++// group call's does (wa-poc patch, experimental: a 1:1 reconnect asks for the peer explicitly).
++func (e *engine) connectAndAllocateTo(ctx context.Context, rd *relayData, ep *relayEndpoint, streamSsrcs [9]uint32, subscribePIDs []uint32, appDataSSRC uint32) (*relay.RelayMediaChannel, []byte, error) {
++	// wa-poc patch: a reconnect gives up on a hung handshake sooner and tries again.
++	connectTimeout := 12 * time.Second
++	if subscribePIDs != nil || appDataSSRC != 0 {
++		connectTimeout = relayReconnectConnectTimeout
++	}
+ 	log := e.c.log
+-	ep := getMediaRelayEndpoint(rd, inbound)
+ 	if ep == nil || len(ep.addresses) == 0 {
+ 		return nil, nil, fmt.Errorf("relay has no usable endpoint")
+ 	}
+@@ -140,7 +166,7 @@
+ 			return nil, nil, fmt.Errorf("relay connect: %w", r.err)
+ 		}
+ 		ch = r.ch
+-	case <-time.After(12 * time.Second):
++	case <-time.After(connectTimeout):
+ 		return nil, nil, fmt.Errorf("relay connect timed out (DTLS didn't complete)")
+ 	case <-ctx.Done():
+ 		return nil, nil, ctx.Err()
+@@ -168,6 +194,9 @@
+ 	var tx [12]byte
+ 	_, _ = rand.Read(tx[:])
+ 	allocate := stun.BuildWasmStunAllocateRequestWithStreamSsrcs(tx, rd.relayTokens[ep.tokenID], endpointXor, streamSsrcs, rd.relayKeyASCII, log)
++	if len(subscribePIDs) > 0 {
++		allocate = stun.BuildWasmStunAllocateRequestWithGroupSubscriptions(tx, rd.relayTokens[ep.tokenID], endpointXor, streamSsrcs, appDataSSRC, subscribePIDs, rd.relayKeyASCII, log)
++	}
+ 	if _, err := ch.Send(allocate); err != nil {
+ 		ch.Close()
+ 		return nil, nil, fmt.Errorf("allocate send: %w", err)
+@@ -179,8 +208,165 @@
+ 		"stream_ssrcs": streamSsrcs,
+ 	})
+ 	return ch, allocate, nil
++}
++
++// groupRelaySnapshotWait is how long group media waits for the relay snapshot (wa-poc patch).
++const groupRelaySnapshotWait = 5 * time.Second
++
++// wa-poc patch: reconnecting a call's relay link after a network dropout.
++const (
++	// relaySilenceLimit is how long the relay may say nothing before the link is treated as
++	// dead. The relay answers the 1 Hz keepalive ping, so a healthy link is never this quiet.
++	relaySilenceLimit = 6 * time.Second
++	// relayReconnectWindow is how long a lost link is retried before the call is ended.
++	relayReconnectWindow     = 30 * time.Second
++	relayReconnectMaxBackoff = 4 * time.Second
++	// relayRedialAfter and relayRedialLimit: how long a reconnected link may carry no peer media
++	// before it's dialled again, and how many times in a row.
++	relayReconnectConnectTimeout = 4 * time.Second
++	relayRedialAfter             = 3 * time.Second
++	relayRedialLimit             = 8
++)
++
++// wa-poc patch: an answered call whose first relay never carries the caller's media.
++const (
++	// initialRelayWait is how long an incoming 1:1 call waits on a relay for any of the
++	// caller's media before moving to the call's next relay. Media normally arrives
++	// within half a second of joining.
++	initialRelayWait = 2500 * time.Millisecond
++	// initialRelayMoves caps those moves, so a call with every relay silent gives up.
++	initialRelayMoves = 4
++)
++
++// isGroupCall reports whether callID is a group call.
++func (e *engine) isGroupCall(callID string) bool {
++	e.mu.Lock()
++	defer e.mu.Unlock()
++	m := e.calls[callID]
++	return m != nil && m.group
++}
++
++// relaySender is what media senders write to: the call's relayLink.
++type relaySender interface {
++	Send(data []byte) (int, error)
++}
++
++// relayLink holds a call's current relay channel. When the channel fails mid-call it is
++// replaced, while the media pipelines (and their SRTP state) carry on over the new one.
++type relayLink struct {
++	mu     sync.Mutex
++	ch     *relay.RelayMediaChannel
++	lastRx atomic.Int64
++}
++
++func newRelayLink(ch *relay.RelayMediaChannel) *relayLink {
++	l := &relayLink{ch: ch}
++	l.lastRx.Store(time.Now().UnixNano())
++	return l
++}
++
++func (l *relayLink) current() *relay.RelayMediaChannel {
++	l.mu.Lock()
++	defer l.mu.Unlock()
++	return l.ch
++}
++
++// Send writes to the current channel. A failed or missing channel drops the packet without
++// an error, so the send loops keep running while the receive loop reconnects.
++func (l *relayLink) Send(data []byte) (int, error) {
++	ch := l.current()
++	if ch == nil {
++		return 0, nil
++	}
++	n, err := ch.Send(data)
++	if err != nil {
++		return 0, nil
++	}
++	return n, nil
++}
++
++// Recv reads from the current channel; an error means the channel is gone.
++func (l *relayLink) Recv(buf []byte) (int, error) {
++	ch := l.current()
++	if ch == nil {
++		return 0, fmt.Errorf("relay link is down")
++	}
++	n, err := ch.Recv(buf)
++	if err == nil {
++		l.lastRx.Store(time.Now().UnixNano())
++	}
++	return n, err
++}
++
++// silentFor is how long it has been since the relay last sent anything.
++func (l *relayLink) silentFor(now time.Time) time.Duration {
++	return now.Sub(time.Unix(0, l.lastRx.Load()))
++}
++
++// swap installs ch (nil to drop the link) and closes the channel it replaces.
++func (l *relayLink) swap(ch *relay.RelayMediaChannel) {
++	l.mu.Lock()
++	old := l.ch
++	l.ch = ch
++	l.mu.Unlock()
++	l.lastRx.Store(time.Now().UnixNano())
++	if old != nil {
++		_ = old.Close()
++	}
++}
++
++// kill drops and closes the current channel, which unblocks a pending Recv. The link reads as
++// down from here until the reconnect installs a new channel.
++func (l *relayLink) kill() {
++	l.swap(nil)
++}
++
++// reconnectCensus counts the peer's media in the first seconds after a reconnect, to tell a
++// link the relay bridges from one it doesn't.
++type reconnectCensus struct {
++	since       time.Time
++	rtcp, audio int
++	redialed    bool
++	checked     bool
++}
++
++// reconnectCensusWindow is how long after a reconnect the census runs.
++const reconnectCensusWindow = 20 * time.Second
++
++func (c *reconnectCensus) start(now time.Time) {
++	*c = reconnectCensus{since: now}
+ }
+ 
++func (c *reconnectCensus) active() bool {
++	return !c.since.IsZero() && time.Since(c.since) < reconnectCensusWindow
++}
++
++// reconnectEndpoint picks the endpoint for reconnect attempt n: the call's usual endpoint
++// first, then the allocation's other relays in turn.
++func reconnectEndpoint(rd *relayData, inbound bool, n int) *relayEndpoint {
++	return reconnectEndpointFrom(rd, inbound, "", n)
++}
++
++// reconnectEndpointFrom is reconnectEndpoint starting from the relay called from, when the
++// allocation has it: the relay that last carried the call (wa-poc patch).
++func reconnectEndpointFrom(rd *relayData, inbound bool, from string, n int) *relayEndpoint {
++	primary := getMediaRelayEndpoint(rd, inbound)
++	candidates := []*relayEndpoint{primary}
++	for i := range rd.endpoints {
++		if ep := &rd.endpoints[i]; ep != primary && len(ep.addresses) > 0 && ep.isFNA == (primary != nil && primary.isFNA) {
++			candidates = append(candidates, ep)
++		}
++	}
++	start := 0
++	for i, ep := range candidates {
++		if ep != nil && ep.relayName == from {
++			start = i
++			break
++		}
++	}
++	return candidates[(start+n)%len(candidates)]
++}
++
+ // runMedia runs the per-frame media loop over the relay DataChannel: the Player's frames
+ // (or silence) → MLow → E2E-SRTP protect → DataChannel, and DataChannel → classify →
+ // unprotect → MLow decode → the Call's sink. A 1 Hz allocate+ping keepalive holds the
+@@ -220,11 +406,25 @@
+ 	if err != nil {
+ 		return err
+ 	}
+-	ch, allocate, err := e.connectAndAllocate(ctx, rd, streamSsrcs, inbound)
++	firstCh, allocate, err := e.connectAndAllocate(ctx, rd, streamSsrcs, inbound)
+ 	if err != nil {
+ 		return err
+ 	}
+-	defer ch.Close()
++	// wa-poc patch: media goes through a relayLink so the channel can be replaced mid-call.
++	ch := newRelayLink(firstCh)
++	defer ch.swap(nil)
++	e.mu.Lock()
++	if m := e.calls[callID]; m != nil {
++		m.link = ch
++	}
++	e.mu.Unlock()
++	defer func() {
++		e.mu.Lock()
++		if m := e.calls[callID]; m != nil && m.link == ch {
++			m.link = nil
++		}
++		e.mu.Unlock()
++	}()
+ 	allocateState := newGroupRelayAllocateStateWithHBHFEC(
+ 		allocate,
+ 		rd.relayKeyASCII,
+@@ -379,6 +579,9 @@
+ 		}
+ 		audioPlayoutMu.Lock()
+ 		defer audioPlayoutMu.Unlock()
++		if audioPlayout.Dropped > 0 {
++			log.Info().Str("call_id", callID).Uint64("dropped", audioPlayout.Dropped).Msg("inbound audio frames dropped as duplicate or late")
++		}
+ 		_, sink := callPlayerSink(call)
+ 		_ = audioPlayout.Flush(sink)
+ 	}()
+@@ -552,6 +755,25 @@
+ 				"event": "keepalive", "tick": tickCount,
+ 				"tx_id_hex": hex.EncodeToString(tx[:]), "ping_hex": hex.EncodeToString(ping[:]),
+ 			})
++		}
++	}()
++
++	// wa-poc patch: the relay answers every keepalive, so a silent link is a dead one (the
++	// network dropped and the transport hasn't noticed yet). Closing it makes the receive loop
++	// reconnect.
++	go func() {
++		t := time.NewTicker(time.Second)
++		defer t.Stop()
++		for {
++			select {
++			case <-ctx.Done():
++				return
++			case now := <-t.C:
++				if silent := ch.silentFor(now); silent > relaySilenceLimit && ch.current() != nil {
++					log.Warn().Dur("silent", silent).Str("call_id", callID).Msg("relay link silent, treating it as lost")
++					ch.kill()
++				}
++			}
+ 		}
+ 	}()
+ 
+@@ -635,6 +857,7 @@
+ 	var rosterGeneration uint64
+ 	hasRosterGeneration := false
+ 	var videoWirePacket, videoWireFrame uint64
++	var videoExtMissing int // wa-poc patch
+ 
+ 	// Video send: a second WARP pipeline on our video SSRC, registered on the call so
+ 	// Call.SendVideoFrame can push encoded H.264 to the relay. Cleared when the loop exits.
+@@ -677,10 +900,16 @@
+ 	if m := e.calls[callID]; m != nil {
+ 		vsender.active = m.localVideo
+ 		vsender.sendGated = m.videoGate
++		vsender.orientation = uint8(m.localOrientation & 0x03) // wa-poc patch
+ 		m.videoTx = vsender
+ 		m.appDataTx = appSender
+ 	}
+ 	e.mu.Unlock()
++	// wa-poc patch: frames sent before this were dropped, and the sender waits for an IDR; ask
++	// the encoder for one now rather than at its next scheduled keyframe.
++	if call != nil {
++		call.requestVideoKeyframe()
++	}
+ 	defer func() {
+ 		appSender.close()
+ 		vsender.mu.Lock()
+@@ -697,17 +926,31 @@
+ 	var audioReception rtp.RtcpReceptionStatsSet
+ 	var videoReception rtp.RtcpReceptionStatsSet
+ 	if groupMode.Load() {
+-		e.mu.Lock()
+-		current := e.calls[callID]
++		// wa-poc patch: media can start a moment before the group update carrying the relay is
++		// stored (the roster is applied first); wait for it rather than ending the call's media.
+ 		var update *groupCallUpdate
+-		if current != nil && current.groupUpdate != nil {
+-			cloned := cloneGroupCallUpdate(*current.groupUpdate)
+-			update = &cloned
++		waitUntil := time.Now().Add(groupRelaySnapshotWait)
++		for {
++			e.mu.Lock()
++			current := e.calls[callID]
++			update = nil
++			if current != nil && current.groupUpdate != nil {
++				cloned := cloneGroupCallUpdate(*current.groupUpdate)
++				update = &cloned
++			}
++			e.mu.Unlock()
++			if update != nil && update.Relay != nil {
++				break
++			}
++			if current == nil || time.Now().After(waitUntil) {
++				return fmt.Errorf("meowcaller: group media started without an authoritative relay snapshot")
++			}
++			select {
++			case <-ctx.Done():
++				return ctx.Err()
++			case <-time.After(50 * time.Millisecond):
++			}
+ 		}
+-		e.mu.Unlock()
+-		if update == nil || update.Relay == nil {
+-			return fmt.Errorf("meowcaller: group media started without an authoritative relay snapshot")
+-		}
+ 		var relayTx [12]byte
+ 		if _, err := rand.Read(relayTx[:]); err != nil {
+ 			return fmt.Errorf("generate group relay transaction ID: %w", err)

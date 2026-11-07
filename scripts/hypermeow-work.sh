@@ -15,6 +15,10 @@ src=$(go list -m -f '{{.Dir}}' github.com/purpshell/meowcaller)
 rm -rf /tmp/meowcaller
 cp -r "$src" /tmp/meowcaller
 chmod -R u+w /tmp/meowcaller
+# whatsapp-light's fixes first (engine/meowcaller/*.patch, in order: phase7b.md), then our FFT one.
+for p in /src/engine/meowcaller/*.patch; do
+	patch -s --fuzz=0 -p1 -d /tmp/meowcaller <"$p" >&2
+done
 patch -s --fuzz=0 -p1 -d /tmp/meowcaller </src/engine/meowcaller.patch >&2
 cat >/tmp/go.work <<EOF
 go $(go list -m -f '{{.GoVersion}}')

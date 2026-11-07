@@ -1,0 +1,454 @@
+Media, second half: reconnects (10), the next relay when the caller's media doesn't come (11), the first keyframe (8), stats.
+From whatsapp-light's patched meowcaller (github.com/vbbot/whatsapp-light, by Vasu Bhatia, its
+meowcaller/ at commit d185e2c; notes in its meowcaller/PATCHES-wa-poc.md), against upstream meowcaller
+c48c3e2. Used with the author's agreement, given to the HyperBerry user on 2026-11-07; the licence
+is to follow in his repository. Applied in order by scripts/hypermeow-work.sh.
+
+--- a/engine_media.go	2026-11-07 21:51:36
++++ b/engine_media.go	2026-11-07 21:51:36
+@@ -802,17 +1045,172 @@
+ 			}
+ 		}
+ 	}()
++
++	// relayName is the relay the call is on. goodRelay is the last one that carried the
++	// peer's media; reconnects start from it (wa-poc patch).
++	relayName := ""
++	if ep := getMediaRelayEndpoint(rd, inbound); ep != nil {
++		relayName = ep.relayName
++	}
++	goodRelay := relayName
++
++	// reconnect replaces a lost relay link, retrying for relayReconnectWindow, and asks both
++	// sides' video for a keyframe once it's back (wa-poc patch). It returns an error when
++	// the link can't be restored; the caller then ends the call.
++	reconnect := func(cause error) error {
++		ch.swap(nil)
++		prevPhase := CallPhaseActive
++		if call != nil {
++			prevPhase = call.State()
++			call.setPhase(CallPhaseReconnecting)
++		}
++		log.Warn().Err(cause).Str("call_id", callID).Msg("relay link lost, reconnecting")
++		started := time.Now()
++		backoff := 500 * time.Millisecond
++		for attempt := 0; ; attempt++ {
++			e.mu.Lock()
++			current := e.calls[callID]
++			latest := rd
++			if current != nil && current.relay != nil && !current.group {
++				latest = current.relay
++			}
++			e.mu.Unlock()
++			if current == nil {
++				return cause
++			}
++			ep := reconnectEndpointFrom(latest, inbound, goodRelay, attempt)
++			var subscribe []uint32
++			if !groupMode.Load() && latest.hasPeerPID {
++				subscribe = []uint32{latest.peerPID}
++			}
++			newCh, newAllocate, err := e.connectAndAllocateTo(ctx, latest, ep, streamSsrcs, subscribe, appDataSelfSsrc)
++			if err == nil {
++				allocateState.replace(newAllocate)
++				ch.swap(newCh)
++				var ptx [12]byte
++				_, _ = rand.Read(ptx[:])
++				ping := stun.BuildWhatsappPing(ptx, log)
++				_, _ = ch.Send(ping[:])
++				vsender.requestKeyframe()
++				if call != nil {
++					call.requestVideoKeyframe()
++					call.setPhase(prevPhase)
++				}
++				relayName = ep.relayName
++				log.Info().Str("call_id", callID).Int("attempt", attempt+1).Str("relay_name", ep.relayName).
++					Dur("after", time.Since(started)).Msg("relay link restored")
++				go e.relayLinkRestored(callID)
++				return nil
++			}
++			if ctx.Err() != nil {
++				return ctx.Err()
++			}
++			log.Warn().Err(err).Str("call_id", callID).Int("attempt", attempt+1).Msg("relay reconnect attempt failed")
++			if time.Since(started) > relayReconnectWindow {
++				return fmt.Errorf("relay link not restored after %s: %w", relayReconnectWindow, cause)
++			}
++			select {
++			case <-ctx.Done():
++				return ctx.Err()
++			case <-time.After(backoff):
++			}
++			if backoff *= 2; backoff > relayReconnectMaxBackoff {
++				backoff = relayReconnectMaxBackoff
++			}
++		}
++	}
+ 
++	// moveRelay joins the call's next relay when the current one never brought the caller's
++	// media (wa-poc patch). The current link stays up if the next relay can't be joined.
++	moveRelay := func() {
++		ep := reconnectEndpointFrom(rd, inbound, relayName, 1)
++		if ep == nil || ep.relayName == relayName {
++			return
++		}
++		cctx, cancel := context.WithTimeout(ctx, relayReconnectConnectTimeout)
++		newCh, newAllocate, err := e.connectAndAllocateTo(cctx, rd, ep, streamSsrcs, nil, 0)
++		cancel()
++		if err != nil {
++			log.Warn().Err(err).Str("call_id", callID).Str("relay_name", ep.relayName).Msg("joining the next relay failed")
++			return
++		}
++		allocateState.replace(newAllocate)
++		ch.swap(newCh)
++		var ptx [12]byte
++		_, _ = rand.Read(ptx[:])
++		ping := stun.BuildWhatsappPing(ptx, log)
++		_, _ = ch.Send(ping[:])
++		log.Info().Str("call_id", callID).Str("from", relayName).Str("to", ep.relayName).
++			Msg("no caller media on the relay, moved to the call's next relay")
++		relayName = ep.relayName
++	}
++	joinedAt := time.Now()
++	var relayMoves int
++
++	var census reconnectCensus
++	var redials int
+ 	buf := make([]byte, 1500)
+ 	var rtpIn, rtpSeen, unprotectFail, rtpInspect, vidIn, appDataIn, appDataUnprotectFail, videoUnprotectFail, videoFrameIn, videoSinkMissing, rtcpIn, rtcpAuthFail, groupForwardingInvalid uint64
++	var lastTxFeedbackLog time.Time // wa-poc patch
++	var rtcpCensus rtp.RtcpCensus   // wa-poc patch
++	var lastCensusLog time.Time     // wa-poc patch
++	var extSamples int              // wa-poc patch
++	var lastExtLog time.Time        // wa-poc patch
++	var txKeyframeRequests int      // wa-poc patch
+ 	for {
+ 		if ctx.Err() != nil {
+ 			return ctx.Err()
+ 		}
+ 		n, err := ch.Recv(buf)
+ 		if err != nil {
+-			return fmt.Errorf("relay recv: %w", err)
++			if ctx.Err() != nil {
++				return ctx.Err()
++			}
++			// wa-poc patch: reconnect rather than leave the call open with no media.
++			if err = reconnect(fmt.Errorf("relay recv: %w", err)); err != nil {
++				return err
++			}
++			for receiver, state := range videoReceiveStates {
++				state.assembler = rtp.H264AccessUnitAssembler{}
++				state.reorder = rtp.SeqReorderBuffer{}
++				delete(lastVideoPLI, receiver.videoSSRC)
++			}
++			for _, videoSSRC := range audioReceivers.ActiveVideoSSRCs() {
++				if packet, pliErr := videoRtcp.pictureLossIndication(videoSSRC); pliErr == nil {
++					_, _ = ch.Send(packet)
++				}
++			}
++			census.start(time.Now())
++			continue
+ 		}
++		// wa-poc patch: a reconnected link can be accepted (allocate success, pongs) yet carry
++		// none of the peer's media, by chance of where it lands. With nothing from the peer
++		// 3 s after reconnecting, dial again from a new socket, up to relayRedialLimit times.
++		// wa-poc patch (experimental): nothing from the peer 1.5 s after reconnecting; ask it to
++		// check the connection, which makes its side refresh.
++		if census.active() && !census.checked && rtpIn > 0 && census.audio == 0 && census.rtcp == 0 &&
++			time.Since(census.since) > 1500*time.Millisecond {
++			census.checked = true
++			go e.sendTransportCheck(callID)
++		}
++		if census.active() && !census.redialed && rtpIn > 0 && census.audio == 0 && census.rtcp == 0 &&
++			time.Since(census.since) > relayRedialAfter {
++			census.redialed = true
++			if redials < relayRedialLimit {
++				redials++
++				log.Warn().Str("call_id", callID).Int("redial", redials).Msg("no peer media since reconnect, dialing the relay again")
++				ch.kill()
++			}
++		}
++		if census.active() && census.audio > 0 {
++			redials = 0
++		}
++		if inbound && !groupMode.Load() && rtpSeen == 0 && rtcpIn == 0 && !census.active() &&
++			relayMoves < initialRelayMoves && time.Since(joinedAt) > initialRelayWait {
++			relayMoves++
++			moveRelay()
++			joinedAt = time.Now()
++		}
+ 		currentRosterGeneration, activeReceivers := audioReceivers.ActiveReceiverSnapshot()
+ 		if !hasRosterGeneration || currentRosterGeneration != rosterGeneration {
+ 			for receiver, state := range videoReceiveStates {
+@@ -846,6 +1244,9 @@
+ 			"event": "packet_in", "bytes": n, "is_rtp": isRTP,
+ 			"group_wrapped": groupWrapped, "group_header_bytes": n - len(pkt),
+ 		})
++		if census.active() && packetKind == relay.RelayPacketRtcp {
++			census.rtcp++
++		}
+ 		switch packetKind {
+ 		case relay.RelayPacketRtcp:
+ 			senderSsrc, ok := rtp.ParseRtcpSenderSsrc(pkt)
+@@ -865,8 +1266,27 @@
+ 			if rtcpIn++; rtcpIn == 1 {
+ 				log.Info().Uint32("ssrc", senderSsrc).Uint32("index", index).Msg("first authenticated peer SRTCP received")
+ 			}
++			// wa-poc patch: which feedback does a real WhatsApp client send?
++			rtcpCensus.Add(plain)
++			if now := time.Now(); now.Sub(lastCensusLog) > 10*time.Second {
++				lastCensusLog = now
++				log.Info().Str("types", rtcpCensus.String()).Msg("peer rtcp census")
++			}
++			// wa-poc patch: log how the peer is receiving our video (loss, jitter, keyframe asks).
++			if rb, ok := rtp.FindReportBlock(plain, videoSelfSsrc); ok {
++				if now := time.Now(); now.Sub(lastTxFeedbackLog) > 10*time.Second {
++					lastTxFeedbackLog = now
++					log.Info().
++						Float64("lost_pct", float64(rb.FractionLost)*100/256).
++						Int32("lost_total", rb.CumulativeLost).
++						Float64("jitter_ms", float64(rb.Jitter)/90).
++						Int("keyframe_requests", txKeyframeRequests).
++						Msg("video tx feedback from peer")
++				}
++			}
+ 			keyframe := rtp.RtcpRequestsKeyframe(plain, videoSelfSsrc)
+ 			if keyframe {
++				txKeyframeRequests++
+ 				vsender.requestKeyframe()
+ 				if call != nil {
+ 					call.requestVideoKeyframe()
+@@ -903,6 +1323,7 @@
+ 		case relay.RelayPacketOther:
+ 			continue
+ 		}
++		goodRelay = relayName
+ 		if rtpSeen++; rtpSeen == 1 {
+ 			log.Info().Int("bytes", n).Msg("first RTP-classified packet from relay, relay is bridging the peer's media")
+ 		}
+@@ -980,6 +1401,29 @@
+ 				videoReceiveStates[media.receiver] = videoState
+ 			}
+ 			videoReception.Observe(vh.Ssrc, vh.SequenceNumber, vh.Timestamp, uint64(time.Now().UnixMilli()), 90000)
++			// wa-poc patch: what a real WhatsApp client puts in the fields we always send as 0.
++			if x := vh.VideoExtension; x != nil {
++				if now := time.Now(); extSamples < 8 || now.Sub(lastExtLog) > 10*time.Second {
++					extSamples++
++					lastExtLog = now
++					fn := -1
++					if x.FrameNumber != nil {
++						fn = int(*x.FrameNumber)
++					}
++					log.Info().Uint16("seq", vh.SequenceNumber).Uint32("rtp_ts", vh.Timestamp).Bool("marker", vh.Marker).
++						Str("frame_info", fmt.Sprintf("0x%02x", x.MediaFrameInfo)).Int("frame_number", fn).
++						Uint16("initial_bandwidth", x.InitialBandwidth).Int16("short_offset", x.ShortOffset).
++						Uint16("transport_seq", x.TransportSequence).Msg("peer video rtp ext")
++				}
++			}
++			// wa-poc patch: say what a video packet carried when it had no readable extension.
++			if vh.VideoExtension == nil && videoExtMissing < 6 {
++				videoExtMissing++
++				profile, extension, hasExtension := rtp.RtpExtensionProfileAndData(pkt)
++				log.Info().Uint32("ssrc", vh.Ssrc).Uint16("seq", vh.SequenceNumber).Bool("has_extension", hasExtension).
++					Str("profile", fmt.Sprintf("0x%04x", profile)).Str("extension_hex", hex.EncodeToString(extension)).
++					Msg("peer video rtp without readable extension")
++			}
+ 			if vh.VideoExtension != nil {
+ 				orientation := vh.VideoExtension.DisplayOrientation()
+ 				if orientation != videoState.orientation {
+@@ -1011,59 +1455,70 @@
+ 				})
+ 			}
+ 			videoWirePacket++
+-			frame, complete, recoveryNeeded := videoState.assembler.Push(
+-				vh.SequenceNumber,
+-				vh.Marker,
+-				media.Payload,
+-			)
+-			if recoveryNeeded && shouldSendVideoPLI(lastVideoPLI, vh.Ssrc, time.Now()) {
+-				packet, feedbackErr := videoRtcp.pictureLossIndication(vh.Ssrc)
+-				if feedbackErr == nil {
+-					_, feedbackErr = ch.Send(packet)
+-				}
+-				if feedbackErr != nil {
+-					log.Warn().Err(feedbackErr).Uint32("ssrc", vh.Ssrc).Msg("failed to request video keyframe after RTP loss")
+-				}
+-			}
+-			if complete {
+-				if videoWireFrame < videoWireFrameLimit {
+-					e.c.diag.Emit("video_wire", map[string]any{
+-						"event": "access_unit", "direction": "in", "call_id": callID,
+-						"frame": videoWireFrame, "ssrc": vh.Ssrc, "rtp_ts": vh.Timestamp,
+-						"idr": rtp.AUHasIDR(frame), "bytes": len(frame),
+-					})
+-				}
+-				videoWireFrame++
+-				e.c.diag.Emit("video", map[string]any{"event": "frame", "ssrc": vh.Ssrc, "bytes": len(frame)})
+-				deliveredParticipantFrame := false
+-				if call != nil {
+-					deliveredParticipantFrame = call.dispatchParticipantVideoFrame(ParticipantVideoFrame{
+-						ParticipantID: media.ParticipantID,
+-						Sender:        media.UserJID,
+-						Device:        media.DeviceJID,
+-						PID:           media.PID,
+-						HasPID:        media.HasPID,
+-						SSRC:          vh.Ssrc,
+-						Orientation:   videoState.orientation,
+-						AccessUnit:    frame,
+-					})
+-				}
+-				if sink := callVideoSink(call); sink != nil {
+-					if err := sink.WriteVideo(frame); err != nil {
+-						log.Warn().Err(err).Uint32("ssrc", vh.Ssrc).Int("bytes", len(frame)).Msg("failed to write WhatsApp video frame to sink")
+-					} else {
+-						if videoFrameIn == 0 {
+-							log.Info().Uint32("ssrc", vh.Ssrc).Int("bytes", len(frame)).Msg("first WhatsApp video frame written to sink")
+-						}
+-						videoFrameIn++
++			// wa-poc patch: restore sequence order first; the assembler drops everything until
++			// the next IDR on any out-of-order packet.
++			videoState.packets++
++			for _, op := range videoState.reorder.Push(vh.SequenceNumber, vh.Marker, media.Payload, time.Now()) {
++				frame, complete, recoveryNeeded := videoState.assembler.Push(op.Seq, op.Marker, op.Payload)
++				if recoveryNeeded && shouldSendVideoPLI(lastVideoPLI, vh.Ssrc, time.Now()) {
++					packet, feedbackErr := videoRtcp.pictureLossIndication(vh.Ssrc)
++					if feedbackErr == nil {
++						_, feedbackErr = ch.Send(packet)
+ 					}
+-				} else if !deliveredParticipantFrame {
+-					if videoSinkMissing == 0 {
+-						log.Warn().Uint32("ssrc", vh.Ssrc).Int("bytes", len(frame)).Msg("WhatsApp video frame arrived with no sink attached")
++					videoState.plis++
++					if feedbackErr != nil {
++						log.Warn().Err(feedbackErr).Uint32("ssrc", vh.Ssrc).Msg("failed to request video keyframe after RTP loss")
+ 					}
+-					videoSinkMissing++
++				}
++				if complete {
++					videoState.frames++
++					if videoWireFrame < videoWireFrameLimit {
++						e.c.diag.Emit("video_wire", map[string]any{
++							"event": "access_unit", "direction": "in", "call_id": callID,
++							"frame": videoWireFrame, "ssrc": vh.Ssrc, "rtp_ts": vh.Timestamp,
++							"idr": rtp.AUHasIDR(frame), "bytes": len(frame),
++						})
++					}
++					videoWireFrame++
++					e.c.diag.Emit("video", map[string]any{"event": "frame", "ssrc": vh.Ssrc, "bytes": len(frame)})
++					deliveredParticipantFrame := false
++					if call != nil {
++						deliveredParticipantFrame = call.dispatchParticipantVideoFrame(ParticipantVideoFrame{
++							ParticipantID: media.ParticipantID,
++							Sender:        media.UserJID,
++							Device:        media.DeviceJID,
++							PID:           media.PID,
++							HasPID:        media.HasPID,
++							SSRC:          vh.Ssrc,
++							Orientation:   videoState.orientation,
++							AccessUnit:    frame,
++						})
++					}
++					if sink := callVideoSink(call); sink != nil {
++						if err := sink.WriteVideo(frame); err != nil {
++							log.Warn().Err(err).Uint32("ssrc", vh.Ssrc).Int("bytes", len(frame)).Msg("failed to write WhatsApp video frame to sink")
++						} else {
++							if videoFrameIn == 0 {
++								log.Info().Uint32("ssrc", vh.Ssrc).Int("bytes", len(frame)).Msg("first WhatsApp video frame written to sink")
++							}
++							videoFrameIn++
++						}
++					} else if !deliveredParticipantFrame {
++						if videoSinkMissing == 0 {
++							log.Warn().Uint32("ssrc", vh.Ssrc).Int("bytes", len(frame)).Msg("WhatsApp video frame arrived with no sink attached")
++						}
++						videoSinkMissing++
++					}
+ 				}
+ 			}
++			if now := time.Now(); now.Sub(videoState.lastStats) > 10*time.Second {
++				videoState.lastStats = now
++				log.Info().Uint32("ssrc", vh.Ssrc).
++					Uint64("packets", videoState.packets).Uint64("frames", videoState.frames).
++					Uint64("held", videoState.reorder.Held).Uint64("late", videoState.reorder.Late).
++					Uint64("lost", videoState.reorder.Skipped).Uint64("pli_sent", videoState.plis).
++					Msg("video rx stats")
++			}
+ 			if vidIn++; vidIn == 1 {
+ 				log.Info().Uint32("ssrc", vh.Ssrc).Msg("first video RTP demuxed from relay (NOT VALIDATED)")
+ 				e.c.diag.Emit("meta", map[string]any{"event": "first_video_rtp_in", "call_id": callID, "ssrc": vh.Ssrc})
+@@ -1079,6 +1534,9 @@
+ 			continue
+ 		}
+ 		audio, ok := audioReceivers.DecodeAudio(pkt)
++		if census.active() && ok {
++			census.audio++
++		}
+ 		if !ok {
+ 			if unprotectFail++; unprotectFail == 1 {
+ 				log.Warn().Uint32("ssrc", vh.Ssrc).Int("bytes", n).Msg("audio RTP did not match an authenticated active participant")
+@@ -1281,7 +1739,7 @@
+ 	mu               sync.Mutex
+ 	pipe             *MediaPipeline
+ 	stream           *rtp.VideoRtpStream
+-	ch               *relay.RelayMediaChannel
++	ch               relaySender
+ 	ssrc             uint32
+ 	callID           string
+ 	frame            uint64
+@@ -1289,6 +1747,7 @@
+ 	active           bool
+ 	sendGated        bool
+ 	keyframeRequired bool
++	orientation      uint8 // wa-poc patch: CVO quarter turns (0..3) for outgoing frames
+ 	log              zerolog.Logger
+ 	diag             *diag.Recorder
+ }
+@@ -1447,6 +1906,8 @@
+ 	if idr {
+ 		mediaFrameInfo = rtp.VideoMediaFrameInfoIDR
+ 	}
++	// wa-poc patch: the low two bits carry CVO rotation (see VideoRtpExtension.DisplayOrientation).
++	mediaFrameInfo |= vs.orientation & 0x03
+ 	packets := make([][]byte, 0, len(payloads))
+ 	for i, payload := range payloads {
+ 		header := vs.stream.NextPacket(i == len(payloads)-1, mediaFrameInfo)
+@@ -1490,6 +1951,13 @@
+ 	vs.mu.Unlock()
+ }
+ 
++// setOrientation sets the CVO rotation stamped on outgoing frames (wa-poc patch).
++func (vs *videoSender) setOrientation(quarterTurns int) {
++	vs.mu.Lock()
++	vs.orientation = uint8(quarterTurns & 0x03)
++	vs.mu.Unlock()
++}
++
+ func (vs *videoSender) requestKeyframe() {
+ 	vs.mu.Lock()
+ 	vs.keyframeRequired = true
+@@ -1513,12 +1981,24 @@
+ 	}
+ 	sent := 0
+ 	wireBytes := 0
+-	for _, pkt := range packets {
++	// wa-poc patch: pace large frames (keyframes) instead of bursting every packet into the
++	// relay at once; spread over at most ~25 ms, well inside one 66 ms frame interval.
++	var gap time.Duration
++	if len(packets) > 6 {
++		gap = 25 * time.Millisecond / time.Duration(len(packets))
++		if gap > 2*time.Millisecond {
++			gap = 2 * time.Millisecond
++		}
++	}
++	for i, pkt := range packets {
+ 		if _, err := vs.ch.Send(pkt); err != nil {
+ 			return
+ 		}
+ 		sent++
+ 		wireBytes += len(pkt)
++		if gap > 0 && i < len(packets)-1 {
++			time.Sleep(gap)
++		}
+ 	}
+ 	frame := vs.frame
+ 	if sent > 0 {

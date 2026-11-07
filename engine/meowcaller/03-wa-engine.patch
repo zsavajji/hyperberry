@@ -1,0 +1,419 @@
+Engine and API: video orientation (1), group video (5, 6), the relay an incoming call joins (11), NetworkChanged and reconnecting (10).
+From whatsapp-light's patched meowcaller (github.com/vbbot/whatsapp-light, by Vasu Bhatia, its
+meowcaller/ at commit d185e2c; notes in its meowcaller/PATCHES-wa-poc.md), against upstream meowcaller
+c48c3e2. Used with the author's agreement, given to the HyperBerry user on 2026-11-07; the licence
+is to follow in his repository. Applied in order by scripts/hypermeow-work.sh.
+
+--- a/engine.go	2026-11-07 21:51:36
++++ b/engine.go	2026-11-07 21:51:36
+@@ -14,12 +14,12 @@
+ 	"time"
+ 	"unsafe"
+ 
+-	"github.com/purpshell/meowcaller/signaling"
+ 	"github.com/polymorfa/hypermeow"
+ 	waBinary "github.com/polymorfa/hypermeow/binary"
+ 	"github.com/polymorfa/hypermeow/proto/waE2E"
+ 	"github.com/polymorfa/hypermeow/types"
+ 	"github.com/polymorfa/hypermeow/types/events"
++	"github.com/purpshell/meowcaller/signaling"
+ 	"google.golang.org/protobuf/proto"
+ )
+ 
+@@ -60,8 +60,11 @@
+ 	videoGate         bool         // outbound upgrade is waiting for peer acceptance
+ 	peerVideoUpgrade  bool         // the peer's inbound upgrade is waiting for local acceptance
+ 	videoTx           *videoSender // video send pipeline, live while media runs
++	localOrientation  int          // wa-poc patch: CVO quarter turns stamped on outgoing video RTP
+ 	appDataTx         *appDataSender
+ 	rekeyPeer         func(string) error
++	link              *relayLink            // wa-poc patch: the media's relay link, live while media runs
++	lastCheck         *events.CallTransport // wa-poc patch: the peer's latest transport check
+ 	group             bool
+ 	groupUpdate       *groupCallUpdate
+ 	groupReceivers    *participantReceiveRegistry
+@@ -163,6 +166,7 @@
+ 			e.onRelay(ev.CallID, ev.Data)
+ 			e.onRelayLatency(ev)
+ 		case *events.CallTransport:
++			e.answerTransportCheck(ev)
+ 			e.onRelay(ev.CallID, ev.Data)
+ 		case *events.CallTerminate:
+ 			e.onTerminate(ev.CallID, ev.Reason)
+@@ -189,6 +193,109 @@
+ 	return sender.sendReaction(emoji)
+ }
+ 
++// answerTransportCheck replies to the peer's <transport transport-message-type=3> (its
++// connectivity check while it tries to reach us again) with type 9 (wa-poc patch; the reference
++// documents "3 peer ICE (callee replies 9)"). The peer stops checking once answered, and only
++// moves to our new relay link if that link is up by then, so while the link is down the answer
++// waits for it (relayLinkRestored).
++func (e *engine) answerTransportCheck(ev *events.CallTransport) {
++	transport := findChild(ev.Data, "transport")
++	if transport == nil || transport.AttrGetter().OptionalString("transport-message-type") != "3" {
++		return
++	}
++	e.mu.Lock()
++	m := e.calls[ev.CallID]
++	if m == nil {
++		e.mu.Unlock()
++		return
++	}
++	m.lastCheck = ev
++	// Answered now even while the link is down (the peer hangs up after a few unanswered
++	// checks), and again once it's back (relayLinkRestored).
++	e.mu.Unlock()
++	e.sendTransportAnswer(ev)
++}
++
++// relayLinkRestored runs once a call's relay link is back: it answers a check that arrived
++// meanwhile, or, if the peer has checked before, tells it again unprompted that we're reachable.
++func (e *engine) relayLinkRestored(callID string) {
++	e.mu.Lock()
++	m := e.calls[callID]
++	if m == nil || m.lastCheck == nil {
++		e.mu.Unlock()
++		return
++	}
++	ev := m.lastCheck
++	e.mu.Unlock()
++	e.sendTransportAnswer(ev)
++}
++
++func (e *engine) sendTransportAnswer(ev *events.CallTransport) {
++	msgType := "9"
++	node := signaling.BuildTransport(&signaling.TransportParams{
++		CallID: ev.CallID, To: ev.From, CallCreator: ev.CallCreator, TransportMessageType: &msgType,
++	})
++	node.Attrs["id"] = e.nextCallNodeID()
++	if err := e.transmitCallNode(context.Background(), node); err != nil {
++		e.c.log.Warn().Err(err).Str("call_id", ev.CallID).Msg("answering transport check failed")
++		return
++	}
++}
++
++// sendTransportCheck sends the peer a connectivity check of our own, the
++// <transport transport-message-type=3><net medium=2/></transport> a WhatsApp client sends while
++// it tries to reach the other side again (wa-poc patch, experimental). After the relay link moved
++// to a new network, the peer answering it is meant to make its side refresh, so the relay starts
++// forwarding its media to the new link.
++func (e *engine) sendTransportCheck(callID string) {
++	e.mu.Lock()
++	m := e.calls[callID]
++	if m == nil || m.call == nil {
++		e.mu.Unlock()
++		return
++	}
++	call, to, creator := m.call, m.from, m.creator
++	if m.lastCheck != nil {
++		to, creator = m.lastCheck.From, m.lastCheck.CallCreator
++	}
++	e.mu.Unlock()
++	if call.State() == CallPhaseEnded {
++		return
++	}
++	node := waBinary.Node{
++		Tag:   "call",
++		Attrs: waBinary.Attrs{"to": to, "id": e.nextCallNodeID()},
++		Content: []waBinary.Node{{
++			Tag:     "transport",
++			Attrs:   waBinary.Attrs{"call-id": callID, "call-creator": creator, "transport-message-type": "3"},
++			Content: []waBinary.Node{{Tag: "net", Attrs: waBinary.Attrs{"medium": "2"}}},
++		}},
++	}
++	if err := e.transmitCallNode(context.Background(), node); err != nil {
++		e.c.log.Warn().Err(err).Str("call_id", callID).Msg("sending transport check failed")
++		return
++	}
++}
++
++// networkChanged drops every live relay link so media reconnects over the new network now,
++// rather than after the silence watchdog notices (wa-poc patch).
++func (e *engine) networkChanged() {
++	e.mu.Lock()
++	var links []*relayLink
++	for _, m := range e.calls {
++		if m.link != nil && m.link.current() != nil {
++			links = append(links, m.link)
++		}
++	}
++	e.mu.Unlock()
++	for _, l := range links {
++		l.kill()
++	}
++	if len(links) > 0 {
++		e.c.log.Info().Int("links", len(links)).Msg("network changed, reconnecting relay links")
++	}
++}
++
+ // entry returns (creating if needed) the per-call state for callID.
+ func (e *engine) entry(callID string) *engineCall {
+ 	if e.calls[callID] == nil {
+@@ -388,10 +495,20 @@
+ 	}
+ 	e.mu.Lock()
+ 	m := e.calls[callID]
+-	if m == nil || m.call == nil || m.call.State() == CallPhaseEnded || !m.localVideo {
++	if m == nil || m.call == nil || m.call.State() == CallPhaseEnded {
+ 		e.mu.Unlock()
+ 		return errors.New("meowcaller: call has no active video media")
+ 	}
++	// wa-poc patch: remember the orientation and stamp it into the CVO bits of every outgoing
++	// video RTP packet (receivers rotate by it), even before video media is up.
++	m.localOrientation = orientation
++	if m.videoTx != nil {
++		m.videoTx.setOrientation(orientation)
++	}
++	if !m.localVideo {
++		e.mu.Unlock()
++		return nil
++	}
+ 	to, creator := m.from, m.creator
+ 	e.mu.Unlock()
+ 	node := signaling.BuildVideoStateWithParams(signaling.VideoStateParams{
+@@ -670,7 +787,10 @@
+ 	}
+ 	if m.group {
+ 		// Source of truth: https://github.com/purpshell/meowcaller/blob/676ebee3eca513b5348fab36cae5c560cc791238/datasheets/voip-group-invite-accept.md#L26-L45
+-		accept, err := signaling.BuildActiveGroupAccept(c.id, m.creator, e.nextCallNodeID())
++		e.mu.Lock()
++		video := m.localVideo || m.remoteVideo
++		e.mu.Unlock()
++		accept, err := signaling.BuildActiveGroupAccept(c.id, m.creator, e.nextCallNodeID(), video)
+ 		if err != nil {
+ 			return err
+ 		}
+@@ -744,9 +864,25 @@
+ 	term.Attrs["id"] = e.nextCallNodeID()
+ 	e.finishCall(c.id, "hangup")
+ 	if err := e.transmitCallNode(context.Background(), term); err != nil {
++		// wa-poc patch: the call is already over here; with signaling down (a network change),
++		// keep trying to tell the peer instead of failing the hang-up.
++		e.c.log.Warn().Err(err).Str("call_id", c.id).Msg("send terminate failed, retrying")
++		go e.retryCallNode(c.id, term)
+ 		return fmt.Errorf("send terminate: %w", err)
+ 	}
+ 	return nil
++}
++
++// retryCallNode resends node every 2 s for up to 30 s, until it goes through (wa-poc patch).
++func (e *engine) retryCallNode(callID string, node waBinary.Node) {
++	for i := 0; i < 15; i++ {
++		time.Sleep(2 * time.Second)
++		if err := e.transmitCallNode(context.Background(), node); err == nil {
++			e.c.log.Info().Str("call_id", callID).Str("action", node.Tag).Int("attempt", i+2).Msg("call node sent on retry")
++			return
++		}
++	}
++	e.c.log.Warn().Str("call_id", callID).Msg("gave up sending call node")
+ }
+ 
+ // onRelay records relay data from a relaylatency/transport/ack stanza and starts media
+@@ -1112,7 +1248,7 @@
+ 		// (state=11) acceptance signal. whatsmeow's generic typeless ack does not satisfy the
+ 		// sender, which then cancels the upgrade after ~5s before streaming any video.
+ 		e.ackVideoStanza(callNode)
+-		e.onVideoStanza(&kids[0])
++		e.onVideoStanzaFrom(callNode.AttrGetter().OptionalJIDOrEmpty("from"), &kids[0])
+ 		return true
+ 	}
+ 	return false
+@@ -1137,7 +1273,11 @@
+ // onVideoStanza handles an inbound standalone <video> state stanza — the peer's video
+ // on/off and device orientation — and fires the Call's OnVideoState listener. whatsmeow
+ // surfaces no event for it (same as mute_v2), so it is intercepted here.
+-func (e *engine) onVideoStanza(v *waBinary.Node) {
++func (e *engine) onVideoStanza(v *waBinary.Node) { e.onVideoStanzaFrom(types.EmptyJID, v) }
++
++// onVideoStanzaFrom handles a <video> state change sent by from (wa-poc patch: in a group call
++// each participant sends their own, and VideoState.Sender says whose it is).
++func (e *engine) onVideoStanzaFrom(from types.JID, v *waBinary.Node) {
+ 	ag := v.AttrGetter()
+ 	callID := ag.String("call-id")
+ 	if callID == "" {
+@@ -1224,6 +1364,7 @@
+ 				Upgrade:     state == signaling.VideoStateUpgradeRequest || state == signaling.VideoStateUpgradeRequestV2,
+ 				Orientation: orientation,
+ 				Raw:         state,
++				Sender:      from,
+ 			})
+ 		}
+ 	}
+@@ -1513,6 +1654,8 @@
+ 	relayTokens   [][]byte // indexed <token id=…>
+ 	endpoints     []relayEndpoint
+ 	peerJID       types.JID
++	peerPID       uint32 // wa-poc patch: the peer's relay participant ID, when given
++	hasPeerPID    bool
+ }
+ 
+ func nodeBytes(n *waBinary.Node) []byte {
+@@ -1625,6 +1768,9 @@
+ 
+ 	kids := node.GetChildren()
+ 	peerPID := node.AttrGetter().String("peer_pid")
++	if pid, err := strconv.ParseUint(peerPID, 10, 32); err == nil {
++		rd.peerPID, rd.hasPeerPID = uint32(pid), true
++	}
+ 	for i := range kids {
+ 		child := &kids[i]
+ 		if child.Tag == "participant" && peerPID != "" && child.AttrGetter().String("pid") == peerPID {
+@@ -1665,6 +1811,13 @@
+ 				return e
+ 			}
+ 		}
++		// wa-poc patch: some offers mark no FNA relay. The caller's relay is then the one
++		// without an auth token, the opposite of the outbound rule below.
++		for i := range rd.endpoints {
++			if e := &rd.endpoints[i]; e.authTokenID == 0 && len(e.addresses) > 0 {
++				return e
++			}
++		}
+ 	}
+ 	for i := range rd.endpoints {
+ 		if e := &rd.endpoints[i]; !e.isFNA && e.authTokenID != 0 {
+--- a/client.go	2026-11-07 21:51:36
++++ b/client.go	2026-11-07 21:51:36
+@@ -7,10 +7,10 @@
+ 	"strings"
+ 	"sync"
+ 
+-	"github.com/purpshell/meowcaller/diag"
+-	"github.com/rs/zerolog"
+ 	"github.com/polymorfa/hypermeow"
+ 	"github.com/polymorfa/hypermeow/types"
++	"github.com/purpshell/meowcaller/diag"
++	"github.com/rs/zerolog"
+ )
+ 
+ // Client is the managed entry point to the WhatsApp calling stack. It wraps a
+@@ -31,6 +31,10 @@
+ 	onIncomingCall func(*Call)
+ }
+ 
++// NetworkChanged tells the library the device switched networks, so live calls reconnect
++// their media at once (wa-poc patch).
++func (c *Client) NetworkChanged() { c.eng.networkChanged() }
++
+ // CallOptions controls media negotiated for an outbound call.
+ type CallOptions struct {
+ 	// Video advertises a WhatsApp video call. The caller must provide encoded H.264
+--- a/livecall.go	2026-11-07 21:51:36
++++ b/livecall.go	2026-11-07 21:51:36
+@@ -51,6 +51,8 @@
+ // GroupCallState is a sanitized group-call roster. Transaction zero may contain
+ // selected outgoing targets before the first authoritative server transaction.
+ type GroupCallState struct {
++	// GroupJID is the WhatsApp group the call belongs to; empty for an ad-hoc call.
++	GroupJID       types.JID
+ 	TransactionID  uint32
+ 	RekeyRequested bool
+ 	Participants   []GroupCallParticipant
+@@ -204,6 +206,7 @@
+ func groupCallStateFromUpdate(update groupCallUpdate) GroupCallState {
+ 	// Source of truth: https://github.com/purpshell/meowcaller/blob/a95ab63017f996313ca7e4cfbbfb96fead1717a7/datasheets/api-group-call-state.md#L58-L68
+ 	state := GroupCallState{
++		GroupJID:       update.GroupJID,
+ 		TransactionID:  update.TransactionID,
+ 		RekeyRequested: update.RekeyRequested,
+ 		Participants:   make([]GroupCallParticipant, len(update.Participants)),
+--- a/session.go	2026-11-07 21:51:36
++++ b/session.go	2026-11-07 21:51:36
+@@ -34,6 +34,8 @@
+ 	CallPhaseActive
+ 	CallPhaseEnded
+ 	CallPhaseWaitingRoom
++	// CallPhaseReconnecting: the media link was lost mid-call and is being restored (wa-poc patch).
++	CallPhaseReconnecting
+ )
+ 
+ // CallSession is the per-call signaling state with validated phase transitions.
+--- a/video.go	2026-11-07 21:51:36
++++ b/video.go	2026-11-07 21:51:36
+@@ -53,6 +53,8 @@
+ 	Orientation int
+ 	// Raw is the unmapped "state" attribute value.
+ 	Raw int
++	// Sender is who sent it: in a group call, the participant whose camera this is.
++	Sender types.JID
+ }
+ 
+ // ParticipantVideoFrame is one authenticated H.264 access unit attributed to a
+--- a/engine_group_relay.go	2026-11-07 21:51:36
++++ b/engine_group_relay.go	2026-11-07 21:51:36
+@@ -37,6 +37,13 @@
+ 	return bytes.Clone(s.packet)
+ }
+ 
++// replace swaps in a fresh allocate, after the relay link was reconnected (wa-poc patch).
++func (s *groupRelayAllocateState) replace(packet []byte) {
++	s.mu.Lock()
++	defer s.mu.Unlock()
++	s.packet = bytes.Clone(packet)
++}
++
+ func (s *groupRelayAllocateState) SendCurrent(send func([]byte) error) error {
+ 	// Source of truth: https://github.com/purpshell/meowcaller/blob/bcfb7f0c076b131422c22f024dfff080448e70f4/datasheets/group-media-relay-refresh.md#L59-L67
+ 	if send == nil {
+--- a/signaling/group.go	2026-11-07 21:51:36
++++ b/signaling/group.go	2026-11-07 21:51:36
+@@ -160,8 +160,10 @@
+ 	), nil
+ }
+ 
+-// BuildActiveGroupAccept builds the immediate acceptance of an active-call invite.
+-func BuildActiveGroupAccept(callID string, callCreator types.JID, requestID string) (waBinary.Node, error) {
++// BuildActiveGroupAccept builds the immediate acceptance of an active-call invite. A video
++// call's accept carries <video> after <audio>, as WhatsApp Web sends it (wa-poc patch): the
++// server refuses an audio-only accept to a group video call with call ack error 431.
++func BuildActiveGroupAccept(callID string, callCreator types.JID, requestID string, video bool) (waBinary.Node, error) {
+ 	// Source of truth: https://github.com/purpshell/meowcaller/blob/676ebee3eca513b5348fab36cae5c560cc791238/datasheets/voip-group-invite-accept.md#L26-L45
+ 	if callID == "" || callCreator.IsEmpty() || requestID == "" {
+ 		return waBinary.Node{}, fmt.Errorf("signaling: build active group accept: incomplete identity")
+@@ -171,6 +173,7 @@
+ 		To:          types.NewJID(callID, "call"),
+ 		CallCreator: callCreator,
+ 		AudioRates:  []string{"16000"},
++		Video:       video,
+ 	})
+ 	accept.Attrs["id"] = requestID
+ 	return accept, nil
+@@ -303,6 +306,10 @@
+ 		return nil, false, err
+ 	}
+ 	update.Joinable = attrs.OptionalString("joinable") == "1"
++	// A group-bound offer may carry the group on <offer> rather than <group_info> (wa-poc patch).
++	if update.GroupJID.IsEmpty() {
++		update.GroupJID = attrs.OptionalJIDOrEmpty("group-jid")
++	}
+ 	return update, true, nil
+ }
+ 
+--- a/signaling/group_test.go	2026-11-07 21:51:36
++++ b/signaling/group_test.go	2026-11-07 21:51:36
+@@ -65,7 +65,7 @@
+ 		t.Fatalf("preaccept children = %v", got)
+ 	}
+ 
+-	accept, err := BuildActiveGroupAccept("CID", creator, "ACCEPT")
++	accept, err := BuildActiveGroupAccept("CID", creator, "ACCEPT", false)
+ 	if err != nil {
+ 		t.Fatalf("BuildActiveGroupAccept: %v", err)
+ 	}
+@@ -78,6 +78,15 @@
+ 	if _, ok := getChild(t, contentNodes(t, accept)[0], "group_info"); ok {
+ 		t.Fatal("active group accept must not repeat group_info")
+ 	}
++
++	// A video call's accept advertises the decoder after the audio, as WhatsApp Web does.
++	video, err := BuildActiveGroupAccept("CID", creator, "ACCEPT", true)
++	if err != nil {
++		t.Fatalf("BuildActiveGroupAccept video: %v", err)
++	}
++	if got := childTags(t, video); !eqTags(got, []string{"audio", "video", "net", "encopt"}) {
++		t.Fatalf("video accept children = %v", got)
++	}
+ }
+ 
+ func TestParseActiveGroupInviteSnapshot(t *testing.T) {
