@@ -8,6 +8,7 @@ IMAGE=${BB10_NDK_IMAGE:-yamsergey/bb10-ndk:0.6}
 "$ROOT/scripts/build-engine.sh" >/dev/null
 "$ROOT/scripts/fetch-emoji.sh"
 "$ROOT/scripts/fetch-qrcodegen.sh"
+"$ROOT/scripts/fetch-omxil.sh"
 "$ROOT/scripts/fetch-libwebp.sh"
 [ -f "$ROOT/build/buildid.txt" ] || echo 1 >"$ROOT/build/buildid.txt"
 docker run --rm -v "$ROOT:/src" -w /src "$IMAGE" bash -c '

@@ -1438,6 +1438,11 @@
 <context>
     <name>SettingsPage</name>
     <message>
+        <location filename="../assets/SettingsPage.qml" line="22"/>
+        <source>Video decoder test</source>
+        <translation>Prova del decoder video</translation>
+    </message>
+    <message>
         <location filename="../assets/SettingsPage.qml" line="9"/>
         <source>Settings</source>
         <translation>Impostazioni</translation>
@@ -1911,6 +1916,57 @@
         <location filename="../assets/RevokeDialog.qml" line="1"/>
         <source>Cancel</source>
         <translation>Annulla</translation>
+    </message>
+</context>
+<context>
+    <name>VideoTest</name>
+    <message>
+        <location filename="../src/VideoTest.cpp" line="66"/>
+        <source>The video window could not be made; see the log.</source>
+        <translation>Impossibile creare la finestra video; vedi il log.</translation>
+    </message>
+    <message>
+        <location filename="../src/VideoTest.cpp" line="126"/>
+        <source>The test clip is missing.</source>
+        <translation>Il video di prova manca.</translation>
+    </message>
+    <message>
+        <location filename="../src/VideoTest.cpp" line="139"/>
+        <source>The hardware decoder did not open; see the log.</source>
+        <translation>Il decoder hardware non si è aperto; vedi il log.</translation>
+    </message>
+</context>
+<context>
+    <name>VideoTestPage</name>
+    <message>
+        <location filename="../assets/VideoTestPage.qml" line="12"/>
+        <source>Video decoder test</source>
+        <translation>Prova del decoder video</translation>
+    </message>
+    <message>
+        <location filename="../assets/VideoTestPage.qml" line="22"/>
+        <source>Stop</source>
+        <translation>Ferma</translation>
+    </message>
+    <message>
+        <location filename="../assets/VideoTestPage.qml" line="22"/>
+        <source>Start</source>
+        <translation>Avvia</translation>
+    </message>
+    <message>
+        <location filename="../assets/VideoTestPage.qml" line="69"/>
+        <source>Pass %1: in %2, out %3, %4 fps</source>
+        <translation>Passata %1: entrati %2, usciti %3, %4 fps</translation>
+    </message>
+    <message>
+        <location filename="../assets/VideoTestPage.qml" line="76"/>
+        <source>Latency %1 / max %2 ms, first frame %3 ms</source>
+        <translation>Latenza %1 / max %2 ms, primo fotogramma %3 ms</translation>
+    </message>
+    <message>
+        <location filename="../assets/VideoTestPage.qml" line="82"/>
+        <source>CPU %1 % of a core, de-tile %2 ms</source>
+        <translation>CPU %1 % di un core, de-tiling %2 ms</translation>
     </message>
 </context>
 </TS>

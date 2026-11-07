@@ -11,6 +11,10 @@ Page {
     // Read when the page opens and after a clear; the walk of data/cache/ is a few files.
     onCreationCompleted: cacheText = settings.cacheSize()
     attachedObjects: [
+        ComponentDefinition {
+            id: videoTestDef
+            source: "VideoTestPage.qml"
+        },
         SystemDialog {
             id: unlinkDialog
             title: qsTr("Unlink this device?")
@@ -24,6 +28,16 @@ Page {
         },
         SystemToast {
             id: clearedToast
+        }
+    ]
+    // A developer test, not a setting: it plays a clip through the hardware video decoder and
+    // shows the numbers (VideoTestPage.qml). Last in the overflow, out of the way.
+    actions: [
+        ActionItem {
+            title: qsTr("Video decoder test")
+            imageSource: "asset:///images/play.png"
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            onTriggered: nav.push(videoTestDef.createObject())
         }
     ]
     ScrollView {
