@@ -29,13 +29,16 @@ TitleBar {
             layout: StackLayout {
                 orientation: LayoutOrientation.LeftToRight
             }
-            gestureHandlers: TapHandler {
-                onTapped: bar.tapped()
-            }
+            // The info page's tap is on the name and on the picture, not on the whole bar: a tap on
+            // the call button reached the bar's handler too, and the contact page came up before
+            // every call (Q10, 0.0.1.188). A TapEvent has no target to tell them apart by.
             Container {
                 verticalAlignment: VerticalAlignment.Center
                 layoutProperties: StackLayoutProperties {
                     spaceQuota: 1
+                }
+                gestureHandlers: TapHandler {
+                    onTapped: bar.tapped()
                 }
                 // Two lines fit 85 px only without the labels' default margins (about 20 px),
                 // and below the stock title's 25 px capitals (125 %; 100 % draws 20 px):
@@ -60,8 +63,8 @@ TitleBar {
                     textStyle.color: ui.palette.secondaryTextOnPlain
                 }
             }
-            // The call button; its own tap, so the bar's (the info page) isn't reached. call.start's
-            // failure is worded by main.qml's toast.
+            // The call button, outside the two parts that open the info page. call.start's failure
+            // is worded by main.qml's toast.
             Container {
                 visible: bar.canCall
                 verticalAlignment: VerticalAlignment.Center
@@ -92,6 +95,9 @@ TitleBar {
                 preferredHeight: ui.px(81)
                 background: bar.chat ? Color.create(bar.chat.color) : Color.Transparent
                 layout: DockLayout {}
+                gestureHandlers: TapHandler {
+                    onTapped: bar.tapped()
+                }
                 ImageView {
                     visible: bar.hasPhoto
                     horizontalAlignment: HorizontalAlignment.Fill
