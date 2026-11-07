@@ -6,7 +6,9 @@ TitleBar {
     id: bar
     property variant chat
     property string status
-    property bool hasPhoto: !!bar.chat && !!bar.chat.photo
+    // Fetched while open: the chat keeps the row it opened with, so the picture is read from the table as the name is.
+    property string photo: bar.chat ? (chats.revision >= 0 && chats.chat(bar.chat.jid).photo) || bar.chat.photo || "" : ""
+    property bool hasPhoto: photo != ""
     signal tapped
     kind: TitleBarKind.FreeForm
     // The status line must stay; the default let the bar scroll away with the list (Q10).
@@ -67,7 +69,7 @@ TitleBar {
                     visible: bar.hasPhoto
                     horizontalAlignment: HorizontalAlignment.Fill
                     verticalAlignment: VerticalAlignment.Fill
-                    imageSource: bar.hasPhoto ? "file://" + bar.chat.photo : ""
+                    imageSource: bar.hasPhoto ? "file://" + bar.photo : ""
                     scalingMethod: ScalingMethod.AspectFill
                     loadEffect: ImageViewLoadEffect.None
                 }
