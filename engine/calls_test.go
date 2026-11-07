@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -395,17 +394,30 @@ func TestCallReasonAndRing(t *testing.T) {
 	old := ringPPS
 	ringPPS = pps
 	defer func() { ringPPS = old }()
-	write(pps, "@cat.phone\nsound::on\ntone::"+tone+"\n")
-	if got := ringFile(ringPPS); got != fallbackRing {
-		t.Errorf("tone that doesn't exist: %s", got)
-	}
-	write(tone, "x")
+	write(pps, "@cat.phone\nsound::on\ntone::"+tone+"\nvib_len:n:500\n")
 	if got := ringFile(ringPPS); got != tone {
 		t.Errorf("phone's tone: %s", got)
 	}
-	ringPPS = dir + "/none"
-	if got := ringFile(ringPPS); !strings.HasSuffix(got, "notification_phone_ringer.wav") {
-		t.Errorf("no PPS: %s", got)
+	if got := ringFile(dir + "/none"); got != "" {
+		t.Errorf("no PPS: %q", got)
+	}
+	status, global := dir+"/status", dir+"/global"
+	if !ringAllowed(status, global) {
+		t.Error("no PPS at all: should ring")
+	}
+	write(status, "@status\nsound::off\nvolume::70\n")
+	write(global, "@global\nmode::normal\nmodeid::silent\n")
+	if ringAllowed(status, global) {
+		t.Error("silent mode rang")
+	}
+	write(global, "@global\nmodeid::phoneonly\n")
+	if !ringAllowed(status, global) {
+		t.Error("phone only didn't ring")
+	}
+	write(status, "@status\nsound::on\n")
+	write(global, "@global\nmodeid::normal\n")
+	if !ringAllowed(status, global) {
+		t.Error("normal mode didn't ring")
 	}
 }
 

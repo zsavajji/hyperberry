@@ -7,6 +7,7 @@ package main
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <mm/renderer.h>
+#include <mm/renderer/events.h>
 
 // One ringtone: the connection and the context it plays in.
 typedef struct {
@@ -42,6 +43,20 @@ static int hb_ring_start(hb_ring *r, const char *url) {
 	return 0;
 }
 
+// hb_ring_again starts the tone over once mm-renderer has stopped at its end: on the Q10 the
+// repeat parameter didn't loop it (0.0.1.185 rang once). It drains the pending events; the last,
+// MMR_EVENT_NONE, still carries the context's state. 1 when it started over.
+static int hb_ring_again(hb_ring *r) {
+	const mmr_event_t *ev;
+	do
+		ev = mmr_event_get(r->ctx);
+	while (ev && ev->type != MMR_EVENT_NONE);
+	if (!ev || ev->state != MMR_STATE_STOPPED)
+		return 0;
+	mmr_seek(r->ctx, "0");
+	return mmr_play(r->ctx) == 0;
+}
+
 static void hb_ring_stop(hb_ring *r) {
 	if (r->ctx) {
 		mmr_stop(r->ctx);
@@ -56,11 +71,12 @@ import "C"
 
 import (
 	"fmt"
+	"time"
 	"unsafe"
 )
 
-// startRing plays file as a ringtone until stop is called. Not thread-bound: the caller runs it
-// on a goroutine of its own, so nothing on the call's path waits on mm-renderer.
+// startRing plays file as a ringtone, over and over, until stop is called. The caller runs it on a
+// goroutine of its own, so nothing on the call's path waits on mm-renderer.
 func startRing(file string) (stop func(), err error) {
 	url := C.CString("file://" + file)
 	defer C.free(unsafe.Pointer(url))
@@ -69,5 +85,36 @@ func startRing(file string) (stop func(), err error) {
 		C.hb_ring_stop(r)
 		return nil, fmt.Errorf("mm-renderer failed at step %d", int(rc))
 	}
-	return func() { C.hb_ring_stop(r) }, nil
+	// Every mm-renderer call after the start is on this goroutine: a look every half second
+	// whether the tone has ended, to start it over, until stop.
+	quit, done := make(chan struct{}), make(chan struct{})
+	go func() {
+		defer close(done)
+		defer C.hb_ring_stop(r)
+		tick := time.NewTicker(500 * time.Millisecond)
+		defer tick.Stop()
+		var last time.Time
+		quick := 0
+		for {
+			select {
+			case <-quit:
+				return
+			case <-tick.C:
+				if C.hb_ring_again(r) == 0 {
+					continue
+				}
+				// A tone that stops again at once is failing, not ending: three times and it's left off.
+				if time.Since(last) < 2*time.Second {
+					if quick++; quick == 3 {
+						<-quit
+						return
+					}
+				} else {
+					quick = 0
+				}
+				last = time.Now()
+			}
+		}
+	}()
+	return func() { close(quit); <-done }, nil
 }

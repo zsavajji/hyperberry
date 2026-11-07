@@ -1,8 +1,8 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
+	"errors"
 	"os"
 	"strings"
 	"time"
@@ -18,27 +18,46 @@ const (
 	fallbackRing = "/usr/share/sounds/notification_phone_ringer.wav"
 )
 
-// ringPPS is the notification settings of the phone app, whose tone is the user's ringtone.
-var ringPPS = "/pps/services/notify/settings/cat.phone"
+// ringPPS is the phone app's notification settings, whose tone is the user's ringtone; notifyStatus
+// and notifyGlobal say whether the phone's mode lets a call ring. All readable by apps (Q10,
+// 2026-11-07).
+var (
+	ringPPS      = "/pps/services/notify/settings/cat.phone"
+	notifyStatus = "/pps/services/notify/status"
+	notifyGlobal = "/pps/services/notify/settings/global"
+)
 
 // ringStart plays the file until stop is called; ringtone_qnx.go, or a no-op elsewhere.
 var ringStart = startRing
 
-// ringFile is the phone's own ringtone if PPS names one that exists, else the stock one.
-func ringFile(pps string) string {
-	f, err := os.Open(pps)
-	if err == nil {
-		defer f.Close()
-		sc := bufio.NewScanner(f)
-		for sc.Scan() {
-			if tone, ok := strings.CutPrefix(sc.Text(), "tone::"); ok {
-				if _, err := os.Stat(tone); err == nil {
-					return tone
-				}
+// ppsValue is key's value in a PPS object ("key:type:value" lines, the type often empty), "" when
+// the object or the key is missing.
+func ppsValue(path, key string) string {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	for _, line := range strings.Split(string(b), "\n") {
+		if k, rest, ok := strings.Cut(line, ":"); ok && k == key {
+			if _, v, ok := strings.Cut(rest, ":"); ok {
+				return v
 			}
 		}
 	}
-	return fallbackRing
+	return ""
+}
+
+// ringFile is the phone's own ringtone, as its Phone app's settings name it, "" when they don't.
+// It isn't checked here: the engine can't see into the tones' folder, mm-renderer can (Q10,
+// 0.0.1.185 fell back to the stock tone for that), and refuses one that isn't there.
+func ringFile(pps string) string { return ppsValue(pps, "tone") }
+
+// ringAllowed is whether the phone's notification mode lets a call ring (the user's call,
+// 2026-11-07: Silent must not ring). The notify service's status says sound::off in Silent,
+// Vibrate, Alerts off and the like; Phone only still rings calls. Unreadable, it rings. The Hub
+// item's own alert follows the mode by itself, vibration included.
+func ringAllowed(status, global string) bool {
+	return ppsValue(global, "modeid") == "phoneonly" || ppsValue(status, "sound") != "off"
 }
 
 // startRing begins the ringtone and the Hub item. Call it with c.mu held.
@@ -46,13 +65,26 @@ func (c *Calls) startRing(cs *callState) {
 	cs.ring = make(chan struct{})
 	cs.item = true
 	c.st.nt.callRing(cs.chat, cs.name, cs.offer)
-	start, pps := ringStart, ringPPS // read here: the goroutine may outlive a test's swap
+	// Read here: the goroutine may outlive a test's swap.
+	start, pps, status, global := ringStart, ringPPS, notifyStatus, notifyGlobal
 	go func(done <-chan struct{}) {
-		file := ringFile(pps)
-		stop, err := start(file)
-		if err != nil {
-			c.log.Warnf("ringtone %s: %v", file, err)
+		if !ringAllowed(status, global) {
+			c.log.Infof("ringtone: off, the phone's notification mode has no sound")
 			return
+		}
+		file := ringFile(pps)
+		var stop func()
+		err := errors.New("the phone names no ringtone")
+		if file != "" {
+			stop, err = start(file)
+		}
+		if err != nil {
+			c.log.Warnf("ringtone %q: %v; the stock one instead", file, err)
+			file = fallbackRing
+			if stop, err = start(file); err != nil {
+				c.log.Warnf("ringtone %s: %v", file, err)
+				return
+			}
 		}
 		c.log.Infof("ringtone %s", file)
 		select {
