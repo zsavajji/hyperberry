@@ -103,7 +103,9 @@ Page {
                 Label {
                     visible: page.loaded
                     horizontalAlignment: HorizontalAlignment.Center
-                    text: qsTr("%Ln followers", "", page.info.followers)
+                    // 0 until channel.info answers: the hidden label is still evaluated, and qsTr's
+                    // count must be a number (undefined logged an error on every open, 0.0.1.178).
+                    text: qsTr("%Ln followers", "", page.info.followers || 0)
                     textStyle.textAlign: TextAlign.Center
                     textStyle.fontSize: FontSize.PercentageValue
                     textStyle.fontSizeValue: nav.bodySize
