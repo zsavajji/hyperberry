@@ -599,6 +599,11 @@
         <source>%1 groups in common</source>
         <translation>%1 gruppi in comune</translation>
     </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml" line="1"/>
+        <source>Voice call</source>
+        <translation>Chiamata vocale</translation>
+    </message>
 </context>
 <context>
     <name>CountryPage</name>
@@ -1564,6 +1569,138 @@
     </message>
 </context>
 <context>
+    <name>CallsModel</name>
+    <message>
+        <location filename="../src/CallsModel.cpp" line="1"/>
+        <source>Unknown</source>
+        <translation>Sconosciuto</translation>
+    </message>
+    <message>
+        <location filename="../src/CallsModel.cpp" line="1"/>
+        <source>Missed voice call</source>
+        <translation>Chiamata vocale persa</translation>
+    </message>
+    <message>
+        <location filename="../src/CallsModel.cpp" line="1"/>
+        <source>Outgoing, %1</source>
+        <translation>In uscita, %1</translation>
+    </message>
+    <message>
+        <location filename="../src/CallsModel.cpp" line="1"/>
+        <source>Incoming, %1</source>
+        <translation>In arrivo, %1</translation>
+    </message>
+    <message>
+        <location filename="../src/CallsModel.cpp" line="1"/>
+        <source>Outgoing</source>
+        <translation>In uscita</translation>
+    </message>
+    <message>
+        <location filename="../src/CallsModel.cpp" line="1"/>
+        <source>Incoming</source>
+        <translation>In arrivo</translation>
+    </message>
+</context>
+<context>
+    <name>CallsPage</name>
+    <message>
+        <location filename="../assets/CallsPage.qml" line="1"/>
+        <source>Calls</source>
+        <translation>Chiamate</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallsPage.qml" line="1"/>
+        <source>No calls yet</source>
+        <translation>Nessuna chiamata</translation>
+    </message>
+</context>
+<context>
+    <name>CallRow</name>
+    <message>
+        <location filename="../assets/CallRow.qml" line="1"/>
+        <source>Call</source>
+        <translation>Chiama</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallRow.qml" line="1"/>
+        <source>Open chat</source>
+        <translation>Apri chat</translation>
+    </message>
+</context>
+<context>
+    <name>CallSheet</name>
+    <message>
+        <location filename="../assets/CallSheet.qml" line="1"/>
+        <source>Calling…</source>
+        <translation>Chiamata in corso…</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallSheet.qml" line="1"/>
+        <source>Incoming voice call</source>
+        <translation>Chiamata vocale in arrivo</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallSheet.qml" line="1"/>
+        <source>Connecting…</source>
+        <translation>Connessione…</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallSheet.qml" line="1"/>
+        <source>Call ended</source>
+        <translation>Chiamata terminata</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallSheet.qml" line="1"/>
+        <source>Declined</source>
+        <translation>Rifiutata</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallSheet.qml" line="1"/>
+        <source>Busy</source>
+        <translation>Occupato</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallSheet.qml" line="1"/>
+        <source>No answer</source>
+        <translation>Nessuna risposta</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallSheet.qml" line="1"/>
+        <source>Call failed</source>
+        <translation>Chiamata non riuscita</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallSheet.qml" line="1"/>
+        <source>Offline</source>
+        <translation>Offline</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallSheet.qml" line="1"/>
+        <source>Decline</source>
+        <translation>Rifiuta</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallSheet.qml" line="1"/>
+        <source>Answer</source>
+        <translation>Rispondi</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallSheet.qml" line="1"/>
+        <source>Mute</source>
+        <translation>Silenzia</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallSheet.qml" line="1"/>
+        <source>Speaker</source>
+        <translation>Vivavoce</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallSheet.qml" line="1"/>
+        <source>End</source>
+        <translation>Termina</translation>
+    </message>
+</context>
+<context>
     <name>cover</name>
     <message>
         <location filename="../assets/cover.qml" line="25"/>
@@ -1607,6 +1744,36 @@
         <location filename="../assets/errors.js" line="13"/>
         <source>That didn&apos;t work: %1</source>
         <translation>Operazione non riuscita: %1</translation>
+    </message>
+    <message>
+        <location filename="../assets/errors.js" line="1"/>
+        <source>You&apos;re already on a call.</source>
+        <translation>Sei già in una chiamata.</translation>
+    </message>
+    <message>
+        <location filename="../assets/errors.js" line="1"/>
+        <source>You&apos;re offline. Connect to call.</source>
+        <translation>Sei offline. Connettiti per chiamare.</translation>
+    </message>
+    <message>
+        <location filename="../assets/errors.js" line="1"/>
+        <source>Link this BlackBerry to WhatsApp to call.</source>
+        <translation>Collega questo BlackBerry a WhatsApp per chiamare.</translation>
+    </message>
+    <message>
+        <location filename="../assets/errors.js" line="1"/>
+        <source>The simulator can&apos;t place calls.</source>
+        <translation>Il simulatore non può fare chiamate.</translation>
+    </message>
+    <message>
+        <location filename="../assets/errors.js" line="1"/>
+        <source>You can only call a person, not a group.</source>
+        <translation>Puoi chiamare solo una persona, non un gruppo.</translation>
+    </message>
+    <message>
+        <location filename="../assets/errors.js" line="1"/>
+        <source>Couldn&apos;t place the call: %1</source>
+        <translation>Impossibile chiamare: %1</translation>
     </message>
 </context>
 <context>
@@ -1665,6 +1832,16 @@
         <location filename="../assets/main.qml" line="110"/>
         <source>WhatsApp won't let this number join by link. If an admin removed it, an admin has to add it back.</source>
         <translation>WhatsApp non consente a questo numero di unirsi tramite link. Se un amministratore lo ha rimosso, deve essere un amministratore ad aggiungerlo di nuovo.</translation>
+    </message>
+    <message>
+        <location filename="../assets/main.qml" line="1"/>
+        <source>Chats</source>
+        <translation>Chat</translation>
+    </message>
+    <message>
+        <location filename="../assets/main.qml" line="1"/>
+        <source>Calls</source>
+        <translation>Chiamate</translation>
     </message>
 </context>
 <context>

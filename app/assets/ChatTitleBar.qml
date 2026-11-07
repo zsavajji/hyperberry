@@ -9,6 +9,10 @@ TitleBar {
     // Fetched while open: the chat keeps the row it opened with, so the picture is read from the table as the name is.
     property string photo: bar.chat ? (chats.revision >= 0 && chats.chat(bar.chat.jid).photo) || bar.chat.photo || "" : ""
     property bool hasPhoto: photo != ""
+    // A call button (step 7.4) for a person's chat only, not our own: groups, channels and broadcasts
+    // are other kinds. The user part of our JID (before ':' and '@') against the chat's.
+    property bool canCall: !!bar.chat && bar.chat.kind == 0 && engine.linked
+        && String(engine.link.me || "").split("@")[0].split(":")[0] != bar.chat.jid.split("@")[0]
     signal tapped
     kind: TitleBarKind.FreeForm
     // The status line must stay; the default let the bar scroll away with the list (Q10).
@@ -54,6 +58,29 @@ TitleBar {
                     textStyle.fontSize: FontSize.PercentageValue
                     textStyle.fontSizeValue: 75
                     textStyle.color: ui.palette.secondaryTextOnPlain
+                }
+            }
+            // The call button; its own tap, so the bar's (the info page) isn't reached. call.start's
+            // failure is worded by main.qml's toast.
+            Container {
+                visible: bar.canCall
+                verticalAlignment: VerticalAlignment.Center
+                leftPadding: ui.du(1.5)
+                rightPadding: ui.du(1.5)
+                minHeight: ui.px(81)
+                layout: DockLayout {}
+                gestureHandlers: TapHandler {
+                    onTapped: engine.request("call.start", {"chat": bar.chat.jid})
+                }
+                // The stock white handset, tinted with the primary colour as the bar's other live
+                // marks are; 45 px in an 81 px bar.
+                ImageView {
+                    verticalAlignment: VerticalAlignment.Center
+                    imageSource: "file:///usr/share/icons/ic_phone.png"
+                    filterColor: ui.palette.primary
+                    preferredWidth: ui.du(5)
+                    preferredHeight: ui.du(5)
+                    scalingMethod: ScalingMethod.AspectFit
                 }
             }
             // The chat's picture (chat.photo, the engine's preview file) where the stock app has

@@ -54,6 +54,7 @@ QVariantMap EngineLink::link() const { return m_link; }
 QString EngineLink::conn() const { return m_conn; }
 bool EngineLink::linked() const { return m_linked; }
 QVariantMap EngineLink::failure() const { return m_failure; }
+QVariantMap EngineLink::call() const { return m_call; }
 
 bool EngineLink::fullscreen() const { return m_fullscreen; }
 QString EngineLink::openChat() const { return m_openChat; }
@@ -238,7 +239,11 @@ void EngineLink::readLines()
             else if (ev == "typing")
                 emit typing(map["chat"].toString(), map["who"].toString(), map["on"].toBool(),
                             map["voice"].toBool());
-            else if (ev == "presence")
+            else if (ev == "call") {
+                m_call = map;
+                m_call.remove("ev");
+                emit callChanged();
+            } else if (ev == "presence")
                 emit presence(map["chat"].toString(), map["online"].toBool(),
                               map["lastSeen"].toLongLong());
         }
@@ -278,6 +283,12 @@ void EngineLink::lost()
         m_connected = false;
         emit connectedChanged();
         qDebug() << "engine: link lost";
+        // The engine hangs a call up when its link goes; no `ended` event can follow.
+        if (!m_call.isEmpty() && m_call["state"].toString() != "ended") {
+            m_call["state"] = "ended";
+            m_call["reason"] = "offline";
+            emit callChanged();
+        }
     }
     const QHash<QString, QString> pending = m_pending;
     m_pending.clear();

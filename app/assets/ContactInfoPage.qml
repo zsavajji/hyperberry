@@ -48,6 +48,14 @@ Page {
             ActionBar.placement: ActionBarPlacement.OnBar
             onTriggered: nav.openRow(page.chat)
         },
+        // call.start's failure is worded by main.qml's toast. Not for ourselves (the engine says bad_chat).
+        ActionItem {
+            title: qsTr("Voice call")
+            imageSource: "file:///usr/share/icons/ic_phone.png"
+            enabled: engine.linked
+            ActionBar.placement: ActionBarPlacement.OnBar
+            onTriggered: engine.request("call.start", {"chat": page.chat.jid})
+        },
         ActionItem {
             title: qsTr("Export chat")
             imageSource: "asset:///images/save_action.png"

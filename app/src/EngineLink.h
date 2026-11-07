@@ -32,6 +32,9 @@ class EngineLink : public QObject
     // property so that pages bind to it and nothing stays connected to a destroyed page. Empty
     // until a failure; request() of the same cmd clears it.
     Q_PROPERTY(QVariantMap failure READ failure NOTIFY failureChanged)
+    // The live call, the last `call` event's {id, chat, out, state, reason, since} (docs/plan/phase7.md);
+    // empty until the first call. After state "ended" it stays until the next call.
+    Q_PROPERTY(QVariantMap call READ call NOTIFY callChanged)
 public:
     explicit EngineLink(QObject *parent = 0);
     ~EngineLink();
@@ -47,6 +50,7 @@ public:
     QString conn() const;
     bool linked() const;
     QVariantMap failure() const;
+    QVariantMap call() const;
     // Whether the app is on screen full size; thumbnail and invisible both mean false.
     bool fullscreen() const;
     QString openChat() const;
@@ -83,6 +87,7 @@ signals:
     void replied(const QString &id, const QString &cmd, const QVariant &result);
     void linkedChanged();
     void failureChanged();
+    void callChanged();
     // Emitted after ui.state went out, so it reaches the engine before a chat.close/chat.open.
     void fullscreenChanged();
 
@@ -121,6 +126,7 @@ private:
     QString m_conn;
     bool m_linked;
     QVariantMap m_failure;
+    QVariantMap m_call;
     bool m_fullscreen;
     QString m_openChat;
 };

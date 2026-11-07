@@ -7,6 +7,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QTextCodec>
+#include <QTimer>
 #include <QTranslator>
 #include <QtDeclarative>
 #include <cstdio>
@@ -16,6 +17,7 @@
 #include <unistd.h>
 
 #include "ChatController.h"
+#include "CallsModel.h"
 #include "ChatListModel.h"
 #include "ContactBook.h"
 #include "ContactInfo.h"
@@ -114,6 +116,7 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     ChatListModel chats(&engine, ChatListModel::Chats, &app);
     ChatListModel archivedChats(&engine, ChatListModel::Archived, &app);
     ChatListModel channelChats(&engine, ChatListModel::Channels, &app);
+    CallsModel callList(&engine, &app);
     // One for the run: the picker's table is built once, not per chat.
     EmojiModel emojis(&app);
     QrImage qr(&app);
@@ -129,6 +132,8 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     OpenRequests openRequests(engine.invoker(), &app);
     Invites invites(&engine, &app);
 
+    // bb.cascades has no Timer: the call screen's clock and its 2 s close (step 7.4).
+    qmlRegisterType<QTimer>("hyperberry", 1, 0, "Timer");
     qmlRegisterType<ChatController>("hyperberry", 1, 0, "ChatController");
     qmlRegisterType<ContactInfo>("hyperberry", 1, 0, "ContactInfo");
     qmlRegisterType<ContactPicker>("hyperberry", 1, 0, "ContactPicker");
@@ -142,6 +147,7 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     document->setContextProperty("chats", &chats);
     document->setContextProperty("archivedChats", &archivedChats);
     document->setContextProperty("channelChats", &channelChats);
+    document->setContextProperty("callList", &callList);
     document->setContextProperty("emojis", &emojis);
     document->setContextProperty("qr", &qr);
     document->setContextProperty("settings", &settings);
