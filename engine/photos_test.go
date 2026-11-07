@@ -215,7 +215,7 @@ func TestPhotoQueue(t *testing.T) {
 	}
 
 	// Queued jids are asked once, one request at a time; chats that don't exist, or that
-	// aren't a person or a group, are never asked.
+	// aren't a person, a group or a channel, are never asked.
 	gate := make(chan struct{})
 	f.reply = func(n int, _ types.JID, _ string, _ func(string) string) (string, error) {
 		if n == 1 {
@@ -234,18 +234,18 @@ func TestPhotoQueue(t *testing.T) {
 	}
 	close(gate)
 	waitIdle(t, q)
-	wantCalls(t, f, "a@lid[]", "b@s.whatsapp.net[]", "g-1@g.us[]")
+	wantCalls(t, f, "a@lid[]", "b@s.whatsapp.net[]", "g-1@g.us[]", "c@newsletter[]")
 	if f.max != 1 {
 		t.Errorf("%d requests ran at once", f.max)
 	}
 
-	// A round asks the people and groups, the newest chat first.
+	// A round asks the people, groups and channels, the newest chat first.
 	f.mu.Lock()
 	f.calls = nil
 	f.mu.Unlock()
 	q.roundNow()
 	waitIdle(t, q)
-	wantCalls(t, f, "b@s.whatsapp.net[]", "g-1@g.us[]", "a@lid[]")
+	wantCalls(t, f, "c@newsletter[]", "b@s.whatsapp.net[]", "g-1@g.us[]", "a@lid[]")
 }
 
 func TestPhotoRateLimit(t *testing.T) {

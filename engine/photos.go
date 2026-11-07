@@ -18,7 +18,7 @@ import (
 	"github.com/polymorfa/hypermeow/types"
 )
 
-// Chat pictures. Every person's and group's chat gets WhatsApp's small preview,
+// Chat pictures. Every person's, group's and channel's chat gets WhatsApp's small preview,
 // asked for one chat at a time, streamed to data/photos/<key>-<picture id>.jpg; chats.photo
 // holds the path, and the UI draws it over the initials tile. The picture's ID is in the file
 // name, so the ID to ask "has it changed?" with is read back from the column: no migration.
@@ -46,6 +46,9 @@ type photoFetch func(ctx context.Context, jid types.JID, preview bool, existing 
 // clientFetch is photoFetch on a hypermeow client.
 func clientFetch(cli *whatsmeow.Client) photoFetch {
 	return func(ctx context.Context, jid types.JID, preview bool, existing string, dst func(string) string) (string, error) {
+		if jid.Server == types.NewsletterServer {
+			return channelFetch(ctx, cli, jid, preview, existing, dst)
+		}
 		info, err := cli.GetProfilePictureInfo(ctx, jid, &whatsmeow.GetProfilePictureParams{Preview: preview, ExistingID: existing})
 		if err != nil || info == nil || info.URL == "" {
 			return "", err // nil, nil: unchanged
@@ -136,7 +139,7 @@ func (q *photoQueue) connected() {
 	}
 }
 
-// round queues every person's and group's chat, newest first, so the ones on screen are done first.
+// round queues every person's, group's and channel's chat, newest first, so the ones on screen are done first.
 // ponytail: a chat that appears after the round, or whose request failed, waits for the next
 // round or for its chat.open.
 func (q *photoQueue) round() {
@@ -156,7 +159,7 @@ func (q *photoQueue) chatKeys() []string {
 	q.st.ops <- func(t *storeTx) {
 		var keys []string
 		defer func() { got <- keys }()
-		rows, err := t.tx.Query("SELECT jid FROM chats WHERE kind IN (?, ?) ORDER BY last_ts DESC", chatUser, chatGroup)
+		rows, err := t.tx.Query("SELECT jid FROM chats WHERE kind IN (?, ?, ?) ORDER BY last_ts DESC", chatUser, chatGroup, chatNewsletter)
 		if err != nil {
 			t.log.Warnf("photos: %v", err)
 			return
@@ -249,7 +252,7 @@ func (q *photoQueue) current(key string) (string, bool) {
 // refresh brings one chat's preview up to date.
 func (q *photoQueue) refresh(key string) error {
 	jid, err := types.ParseJID(key)
-	if err != nil || !isPerson(jid) && jid.Server != types.GroupServer {
+	if err != nil || !isPerson(jid) && jid.Server != types.GroupServer && jid.Server != types.NewsletterServer {
 		return nil
 	}
 	cur, ok := q.current(key)

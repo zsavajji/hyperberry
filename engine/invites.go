@@ -120,6 +120,7 @@ func (s *Session) handleInviteAccept(req json.RawMessage) (any, error) {
 			return nil, inviteErr(err)
 		}
 		s.store.madeChat(jid.String(), chatNewsletter, r.Name)
+		s.photos.add(jid.String())
 		go s.store.channelPosts(cli, jid)
 		return map[string]string{"jid": jid.String()}, nil
 	}

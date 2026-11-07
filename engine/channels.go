@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"strings"
 
 	"github.com/polymorfa/hypermeow"
@@ -18,14 +19,15 @@ const channelPage = 30
 func isChannel(key string) bool { return strings.HasSuffix(key, "@"+types.NewsletterServer) }
 
 // syncChannels lists the followed channels off the writer, since it is a network call, and fetches each one's last posts.
+// It returns their keys (nil on an error), for the pictures.
 // ponytail: every channel on every connect; only on opening them if someone follows dozens.
-func (st *Store) syncChannels(cli *whatsmeow.Client) {
+func (st *Store) syncChannels(cli *whatsmeow.Client) []string {
 	ctx, cancel := context.WithTimeout(context.Background(), netTimeout)
 	defer cancel()
 	list, err := cli.GetSubscribedNewsletters(ctx)
 	if err != nil {
 		st.log.Warnf("channels: %v", err)
-		return
+		return nil
 	}
 	st.ops <- func(t *storeTx) {
 		followed := map[string]bool{}
@@ -41,9 +43,40 @@ func (st *Store) syncChannels(cli *whatsmeow.Client) {
 			}
 		}
 	}
+	keys := make([]string, 0, len(list))
 	for _, c := range list {
 		st.channelPosts(cli, c.ID)
+		keys = append(keys, c.ID.String())
 	}
+	return keys
+}
+
+// channelFetch is clientFetch for a channel: its picture comes with its details, not as a profile
+// picture, by URL or by direct path (unencrypted, as mautrix-whatsapp downloads it).
+// ponytail: which of the two WhatsApp fills is unverified until the Q10 shows a channel's picture.
+func channelFetch(ctx context.Context, cli *whatsmeow.Client, jid types.JID, preview bool, existing string, dst func(string) string) (string, error) {
+	meta, err := cli.GetNewsletterInfo(ctx, jid)
+	if err != nil || meta == nil {
+		return "", err // nil, nil: as unchanged
+	}
+	pic := meta.ThreadMeta.Picture
+	if preview {
+		pic = &meta.ThreadMeta.Preview
+	}
+	switch {
+	case pic == nil || pic.ID == "" || pic.URL == "" && pic.DirectPath == "":
+		return "", whatsmeow.ErrProfilePictureNotSet
+	case pic.ID == existing:
+		return "", nil
+	}
+	path := dst(pic.ID)
+	get := streamURL(ctx, pic.URL)
+	if pic.URL == "" {
+		get = func(f *os.File) (string, error) {
+			return "", cli.DownloadMediaWithOnlyPathToFile(ctx, pic.DirectPath, f)
+		}
+	}
+	return downloadTo(strings.TrimSuffix(path, ".jpg")+".tmp", get, func(string) string { return path })
 }
 
 // channelPosts fetches a channel's last posts and queues them.
@@ -103,7 +136,8 @@ func (s *Session) handleChannelsSync(json.RawMessage) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	go s.store.syncChannels(cli)
+	// The Channels page is where a channel followed on another device first shows, so its picture is asked then.
+	go func() { s.photos.add(s.store.syncChannels(cli)...) }()
 	return nil, nil
 }
 
@@ -126,7 +160,39 @@ func (s *Session) handleChannelUnfollow(req json.RawMessage) (any, error) {
 	return nil, nil
 }
 
+// channelInfo is channel.info's answer: picture is the full size's path, "" when there is none, as contact.info's.
+type channelInfo struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Followers   int    `json:"followers"`
+	Picture     string `json:"picture"`
+}
+
+func (s *Session) handleChannelInfo(req json.RawMessage) (any, error) {
+	var r struct{ Chat string }
+	json.Unmarshal(req, &r)
+	cli, jid, err := s.linked(r.Chat)
+	if err != nil {
+		return nil, err
+	}
+	if jid.Server != types.NewsletterServer {
+		return nil, &Error{"bad_chat", "not a channel: " + r.Chat}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), netTimeout)
+	defer cancel()
+	meta, err := cli.GetNewsletterInfo(ctx, jid)
+	if err != nil {
+		return nil, err
+	}
+	if meta == nil {
+		return nil, &Error{"not_found", "no such channel: " + r.Chat}
+	}
+	t := meta.ThreadMeta
+	return channelInfo{t.Name.Text, t.Description.Text, t.SubscriberCount, s.photos.full(jid)}, nil
+}
+
 func registerChannels(srv *Server, s *Session) {
 	srv.Handle("channels.sync", s.handleChannelsSync)
 	srv.Handle("channel.unfollow", s.handleChannelUnfollow)
+	srv.Handle("channel.info", s.handleChannelInfo)
 }
