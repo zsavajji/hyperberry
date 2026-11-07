@@ -103,7 +103,7 @@ private:
         CameraTest *m_owner;
     };
 
-    void accessUnit(const QByteArray &annexB, qint64 tsUs, bool keyframe);
+    void accessUnit(const QByteArray &annexB, qint64 tsUs, bool keyframe, int orientation);
     void work();
     void summarize();
     void restart();

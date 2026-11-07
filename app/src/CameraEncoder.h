@@ -18,8 +18,9 @@ public:
     public:
         virtual ~Sink() {}
         // On the camera library's thread, one access unit at a time, in order. Keep it short.
-        // tsUs counts from the first frame.
-        virtual void accessUnit(const QByteArray &annexB, qint64 tsUs, bool keyframe) = 0;
+        // tsUs counts from the first frame. orientation: the quarter turns clockwise that make this
+        // camera's picture upright for whoever looks at it (0 to 3), the same for every unit of a run.
+        virtual void accessUnit(const QByteArray &annexB, qint64 tsUs, bool keyframe, int orientation) = 0;
     };
 
     struct Stats
@@ -44,6 +45,9 @@ public:
     // Safe to call twice, and when nothing runs. Returns once no callback is running.
     void stop();
     bool isRunning() const { return m_handle != CAMERA_HANDLE_INVALID; }
+    // The next unit is an IDR, for a peer that lost its place. Only while running, and not while
+    // another thread may be in start() or stop(): the handle is not guarded.
+    void requestKeyframe();
 
     Stats stats() const;
     void resetStats();
@@ -58,6 +62,7 @@ private:
     Sink *m_sink;
     camera_handle_t m_handle;
     bool m_viewfinder, m_encoding;
+    int m_orientation;                      // set by start() before the first callback
     // Callback thread only.
     QByteArray m_sps, m_pps;
     qint64 m_firstUs;

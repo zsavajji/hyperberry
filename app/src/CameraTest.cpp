@@ -122,7 +122,7 @@ void CameraTest::ended()
 
 // On the camera library's thread. A unit the decoder has no free buffer for is dropped (counted),
 // which a live call would do too: a late picture is worse than none.
-void CameraTest::accessUnit(const QByteArray &annexB, qint64 tsUs, bool)
+void CameraTest::accessUnit(const QByteArray &annexB, qint64 tsUs, bool, int)
 {
     if (m_decoder.isOpen() && !m_decoder.feed(annexB, tsUs))
         m_feedFailed.ref();

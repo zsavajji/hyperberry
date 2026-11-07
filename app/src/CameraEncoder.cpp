@@ -66,6 +66,12 @@ static const char *statusName(camera_devstatus_t s)
     }
 }
 
+// The knob for a picture the peer sees sideways: added to the quarter turns the camera's native
+// orientation gives. The Q10 hasn't told us yet (the camera reported frameorientation 0 in portrait,
+// and the SDK says rotation 0 gives upright buffers on a phone whose native orientation is 90, so
+// the true count may be less than native/90): if the peer sees us turned, try 1, 2 or 3 (3 is -1).
+static const int CalibrationTurns = 0;
+
 // Where the NAL units of an Annex-B buffer are: the payload start (past the 3-byte start code) of
 // each, so the type is the byte there & 31. ponytail: a start code is 00 00 01; the extra leading
 // zero of a 4-byte one stays in the previous NAL's tail, harmless to the decoder.
@@ -87,6 +93,7 @@ CameraEncoder::CameraEncoder(Sink *sink)
     , m_handle(CAMERA_HANDLE_INVALID)
     , m_viewfinder(false)
     , m_encoding(false)
+    , m_orientation(0)
     , m_firstUs(-1)
     , m_logged(0)
     , m_lastMs(0)
@@ -155,6 +162,17 @@ bool CameraEncoder::start(bool front, int width, int height, int fps, int bitrat
         return false;
     }
     qDebug("camera: opened the %s camera", front ? "front" : "rear");
+    // How far clockwise the sensor sits from the screen: the peer turns our frames back by it. If
+    // the camera won't say, a guess stands in: a phone's rear sensor sits 90 degrees clockwise, its
+    // front one 270 (unverified on the Q10).
+    uint32_t native = 0;
+    if (camera_get_native_orientation(m_handle, &native) == CAMERA_EOK) {
+        qDebug("camera: native orientation %u degrees", unsigned(native));
+        m_orientation = (int(native / 90) + CalibrationTurns) & 3;
+    } else {
+        qWarning("camera: no native orientation; assuming %d", front ? 3 : 1);
+        m_orientation = ((front ? 3 : 1) + CalibrationTurns) & 3;
+    }
     m_firstUs = -1;
     m_logged = 0;
     m_sps.clear();
@@ -246,6 +264,12 @@ void CameraEncoder::stop()
     m_handle = CAMERA_HANDLE_INVALID;
     m_encoding = m_viewfinder = false;
     qDebug("camera: closed");
+}
+
+void CameraEncoder::requestKeyframe()
+{
+    if (m_encoding)
+        fail("camera_force_video_keyframe", camera_force_video_keyframe(m_handle));
 }
 
 CameraEncoder::Stats CameraEncoder::stats() const
@@ -365,5 +389,5 @@ void CameraEncoder::video(camera_buffer_t *buf)
         }
         m_lastMs = now;
     }
-    m_sink->accessUnit(unit, us - m_firstUs, key);
+    m_sink->accessUnit(unit, us - m_firstUs, key, m_orientation);
 }
