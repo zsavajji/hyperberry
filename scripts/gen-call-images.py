@@ -2,8 +2,8 @@
 app's look (measured from the user's screenshots, 720x720, 1 du = 9 px): call_bg (the gradient with
 the default-contact silhouette), call_fade (a photo's fade to black), call_track (the answer bar:
 capsule, green and red arcs, the red handset, the chevrons; 665x148), call_knob, call_btn (the
-round button's disc) and the white glyphs call_silence, call_message, call_speaker, call_mute and
-call_end, which QML tints with ImageView.filterColor. Everything is drawn at 8x and scaled down.
+round button's disc) and the white glyphs call_silence, call_message, call_speaker, call_mute,
+call_unmute and call_end, which QML tints with ImageView.filterColor. Everything is drawn at 8x and scaled down.
 Run by hand when one changes, in the image fetch-emoji.sh builds:
     docker run --rm -v "$PWD:/src" hyperberry-font python -I /src/scripts/gen-call-images.py /src/app/assets/images
 """
@@ -194,15 +194,25 @@ def speaker(out):
     save(img, out, "call_speaker")
 
 
-def mute(out):
+def mic():
     img, d = new(50, 50)
     d.rounded_rectangle(sc(18, 4, 32, 30), 7 * S, WHITE)
     d.arc(sc(11, 14, 39, 38), 0, 180, WHITE, 3 * S)
     d.rectangle(sc(23.5, 38, 26.5, 44), WHITE)
     d.rectangle(sc(15, 43, 35, 46), WHITE)
+    return img, d
+
+
+def mute(out):
+    img, d = mic()
     d.line(sc(6, 5, 44, 46), CLEAR, 8 * S)
     d.line(sc(6, 5, 44, 46), WHITE, 3 * S)
     save(img, out, "call_mute")
+
+
+def unmute(out):
+    """The mic without its slash: what the Mute toggle shows while muted, as the stock one does."""
+    save(mic()[0], out, "call_unmute")
 
 
 def end(out):
@@ -210,5 +220,5 @@ def end(out):
 
 
 if __name__ == "__main__":
-    for f in (background, fade, track, knob, button, silence, message, speaker, mute, end):
+    for f in (background, fade, track, knob, button, silence, message, speaker, mute, unmute, end):
         f(sys.argv[1])

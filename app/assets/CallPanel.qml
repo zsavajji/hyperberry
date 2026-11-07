@@ -22,10 +22,11 @@ Container {
         preferredHeight: panel.px(305)
         background: Color.Black
     }
+    // The stock cells: 222 x 90 px at x 18 and 249, from y 432.
     CallToggle {
         layoutProperties: AbsoluteLayoutProperties {
-            positionX: panel.px(36)
-            positionY: panel.px(442)
+            positionX: panel.px(18)
+            positionY: panel.px(432)
         }
         icon: "asset:///images/call_speaker.png"
         text: qsTr("Speaker")
@@ -34,11 +35,13 @@ Container {
     }
     CallToggle {
         layoutProperties: AbsoluteLayoutProperties {
-            positionX: panel.px(272)
-            positionY: panel.px(442)
+            positionX: panel.px(249)
+            positionY: panel.px(432)
         }
         icon: "asset:///images/call_mute.png"
         text: qsTr("Mute")
+        iconOn: "asset:///images/call_unmute.png"
+        textOn: qsTr("Unmute")
         on: callAudio.muted
         onTapped: callAudio.muted = !callAudio.muted
     }
