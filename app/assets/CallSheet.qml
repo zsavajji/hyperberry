@@ -1,9 +1,12 @@
 import bb.cascades 1.4
 import hyperberry 1.0
 
-// The call screen (step 7.4): one Sheet owned by main.qml, over everything. It opens on any `call`
-// event that isn't `ended` and closes 2 s after `ended`. Answer and Decline while the call rings,
-// else Mute, Speaker and End. engine.call is {id, chat, out, state, reason, since} (docs/plan/phase7.md).
+// The call screen (step 7.4), in the look of the stock Phone app: one Sheet owned by main.qml, over
+// everything. It opens on any `call` event that isn't `ended` and closes 2 s after `ended`. While the
+// call rings: silence, message and the slide bar (CallRinging); else Speaker, Mute and End call
+// (CallPanel). engine.call is {id, chat, out, state, reason, since} (docs/plan/phase7.md). The
+// stage is the Q10's 720 px screen, kept to the bottom, so what the stock app measures from
+// there stays where it was; px() scales its px by the device's du.
 Sheet {
     id: sheet
     property variant call: engine.call
@@ -18,10 +21,20 @@ Sheet {
     // The call the audio link was started for, so connecting -> active doesn't restart it.
     property string audioFor: ""
     property string clock: "0:00"
-    property string line: wording(phase, call.reason, clock)
+    property string line: wording(phase, call.reason)
+    // The clock shows from the answer to the hang-up, and stays at the end.
+    property bool timed: (phase == "active" || ended) && call.since > 0
+    // The caller's picture, if the chat has one.
+    property bool hasPhoto: !!who.photo
+    // The name of a caller we have no chat with: their number.
+    property string number: (call.chat || "").split("@")[0]
     peekEnabled: false
 
-    function wording(phase, reason, clock) {
+    function px(n) {
+        return ui.du(n / 9)
+    }
+
+    function wording(phase, reason) {
         switch (phase) {
         case "calling":
             return qsTr("Calling…")
@@ -29,10 +42,9 @@ Sheet {
             return qsTr("Incoming voice call")
         case "connecting":
             return qsTr("Connecting…")
-        case "active":
-            return clock
         case "ended":
-            return qsTr("Call ended")
+            var word = reasonWord(reason)
+            return qsTr("Call ended") + (word != "" ? " · " + word : "")
         }
         return ""
     }
@@ -81,6 +93,9 @@ Sheet {
         }
         syncHolds(st == "calling" || st == "connecting" || st == "active")
         if (st == "ended") {
+            if (call.since > 0) {
+                refreshClock()
+            }
             ticker.stop()
             closer.start()
             callAudio.stop()
@@ -93,6 +108,9 @@ Sheet {
         }
         closer.stop()
         who = chats.chat(call.chat)
+        if (st == "ringing") {
+            ringControls.silenced = false
+        }
         if (st == "active" && call.since > 0) {
             refreshClock()
             ticker.start()
@@ -124,85 +142,112 @@ Sheet {
         Container {
             horizontalAlignment: HorizontalAlignment.Fill
             verticalAlignment: VerticalAlignment.Fill
+            background: Color.create("#1b132a")
             layout: DockLayout {}
             Container {
                 horizontalAlignment: HorizontalAlignment.Center
-                verticalAlignment: VerticalAlignment.Center
-                layout: StackLayout {}
-                CallTile {
-                    horizontalAlignment: HorizontalAlignment.Center
-                    size: ui.du(24)
-                    color: sheet.who.color || "#087099"
-                    photo: sheet.who.photo || ""
-                    initials: sheet.who.initials || ""
-                    emojiStyle: nav.emojiStyle
-                    fontPercent: 300
+                verticalAlignment: VerticalAlignment.Bottom
+                preferredWidth: sheet.px(720)
+                preferredHeight: sheet.px(720)
+                layout: AbsoluteLayout {}
+                ImageView {
+                    preferredWidth: sheet.px(720)
+                    preferredHeight: sheet.px(720)
+                    scalingMethod: ScalingMethod.Fill
+                    imageSource: "asset:///images/call_bg.png"
+                }
+                // The picture fills the area above the controls and fades to black at its foot.
+                ImageView {
+                    visible: sheet.hasPhoto
+                    preferredWidth: sheet.px(720)
+                    preferredHeight: sheet.ringing ? sheet.px(510) : sheet.px(415)
+                    scalingMethod: ScalingMethod.AspectFill
+                    loadEffect: ImageViewLoadEffect.None
+                    imageSource: sheet.hasPhoto ? "file://" + sheet.who.photo : ""
+                }
+                ImageView {
+                    visible: sheet.hasPhoto
+                    layoutProperties: AbsoluteLayoutProperties {
+                        positionY: sheet.ringing ? sheet.px(250) : sheet.px(155)
+                    }
+                    preferredWidth: sheet.px(720)
+                    preferredHeight: sheet.px(260)
+                    scalingMethod: ScalingMethod.Fill
+                    imageSource: "asset:///images/call_fade.png"
                 }
                 Label {
-                    horizontalAlignment: HorizontalAlignment.Center
-                    topMargin: ui.du(3)
-                    text: sheet.who.name || ""
+                    layoutProperties: AbsoluteLayoutProperties {
+                        positionX: sheet.px(30)
+                        positionY: sheet.ringing ? sheet.px(291) : sheet.px(339)
+                    }
+                    preferredWidth: sheet.timed ? sheet.px(450) : sheet.px(650)
+                    multiline: false
+                    text: sheet.who.name || sheet.number
                     textFormat: TextFormat.Plain
                     textStyle.base: nav.emojiStyle
                     textStyle.fontSize: FontSize.PercentageValue
-                    textStyle.fontSizeValue: 150
+                    textStyle.fontSizeValue: sheet.ringing ? 200 : 170
+                    textStyle.color: Color.White
                 }
                 Label {
-                    horizontalAlignment: HorizontalAlignment.Center
+                    layoutProperties: AbsoluteLayoutProperties {
+                        positionX: sheet.px(29)
+                        positionY: sheet.ringing ? sheet.px(365) : sheet.px(386)
+                    }
+                    preferredWidth: sheet.px(650)
                     text: sheet.line
                     textFormat: TextFormat.Plain
-                    textStyle.color: ui.palette.secondaryTextOnPlain
+                    textStyle.color: Color.White
                 }
                 Label {
-                    visible: sheet.ended && sheet.reasonWord(sheet.call.reason) != ""
-                    horizontalAlignment: HorizontalAlignment.Center
-                    text: sheet.reasonWord(sheet.call.reason)
+                    visible: sheet.timed
+                    layoutProperties: AbsoluteLayoutProperties {
+                        positionX: sheet.px(467)
+                        positionY: sheet.px(364)
+                    }
+                    preferredWidth: sheet.px(220)
+                    text: sheet.clock
                     textFormat: TextFormat.Plain
-                    textStyle.color: ui.palette.secondaryTextOnPlain
+                    textStyle.fontSize: FontSize.PercentageValue
+                    textStyle.fontSizeValue: 95
+                    textStyle.textAlign: TextAlign.Right
+                    textStyle.color: Color.White
                 }
-                Container {
+                CallRinging {
+                    id: ringControls
                     visible: sheet.ringing
-                    horizontalAlignment: HorizontalAlignment.Center
-                    topMargin: ui.du(6)
-                    layout: StackLayout {
-                        orientation: LayoutOrientation.LeftToRight
-                    }
-                    CallButton {
-                        text: qsTr("Decline")
-                        fill: "#D93B30"
-                        onTapped: engine.request("call.reject", {"id": sheet.call.id})
-                    }
-                    CallButton {
-                        leftMargin: ui.du(3)
-                        text: qsTr("Answer")
-                        fill: "#2E9E4F"
-                        onTapped: engine.request("call.answer", {"id": sheet.call.id})
+                    onSilence: engine.request("call.silence", {"id": sheet.call.id})
+                    onAnswered: engine.request("call.answer", {"id": sheet.call.id})
+                    onDeclined: engine.request("call.reject", {"id": sheet.call.id})
+                    // Declines, then the caller's chat opens with the composer, as a contact page's
+                    // Message does, for a chat we may not have yet.
+                    onMessage: {
+                        engine.request("call.reject", {"id": sheet.call.id})
+                        sheet.close()
+                        nav.openRow(sheet.who.jid ? sheet.who : {"jid": sheet.call.chat, "name": sheet.number, "initials": "", "color": "#087099"})
                     }
                 }
-                Container {
-                    visible: !sheet.ringing && !sheet.ended
-                    horizontalAlignment: HorizontalAlignment.Center
-                    topMargin: ui.du(6)
-                    layout: StackLayout {
-                        orientation: LayoutOrientation.LeftToRight
-                    }
-                    CallButton {
-                        text: qsTr("Mute")
-                        on: callAudio.muted
-                        onTapped: callAudio.muted = !callAudio.muted
-                    }
-                    CallButton {
-                        leftMargin: ui.du(2)
-                        text: qsTr("Speaker")
-                        on: callAudio.speaker
-                        onTapped: callAudio.speaker = !callAudio.speaker
-                    }
-                    CallButton {
-                        leftMargin: ui.du(2)
-                        text: qsTr("End")
-                        fill: "#D93B30"
-                        onTapped: engine.request("call.hangup", {"id": sheet.call.id})
-                    }
+                CallPanel {
+                    visible: !sheet.ringing
+                    ended: sheet.ended
+                    onHangup: engine.request("call.hangup", {"id": sheet.call.id})
+                }
+            }
+            // The header band, as the stock app's, under no status bar here.
+            Container {
+                horizontalAlignment: HorizontalAlignment.Fill
+                verticalAlignment: VerticalAlignment.Top
+                preferredHeight: sheet.px(55)
+                background: Color.create("#0f0b19")
+                layout: DockLayout {}
+                Label {
+                    verticalAlignment: VerticalAlignment.Center
+                    leftMargin: sheet.px(30)
+                    text: qsTr("WhatsApp: voice call")
+                    textFormat: TextFormat.Plain
+                    textStyle.fontSize: FontSize.PercentageValue
+                    textStyle.fontSizeValue: 85
+                    textStyle.color: Color.create("#e8e8e8")
                 }
             }
             // At the ear: black, and every touch stops here, so a cheek presses nothing.

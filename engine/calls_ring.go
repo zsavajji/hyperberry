@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"os"
 	"strings"
 	"time"
@@ -43,6 +44,7 @@ func ringFile(pps string) string {
 // startRing begins the ringtone and the Hub item. Call it with c.mu held.
 func (c *Calls) startRing(cs *callState) {
 	cs.ring = make(chan struct{})
+	cs.item = true
 	c.st.nt.callRing(cs.chat, cs.name, cs.offer)
 	start, pps := ringStart, ringPPS // read here: the goroutine may outlive a test's swap
 	go func(done <-chan struct{}) {
@@ -61,12 +63,33 @@ func (c *Calls) startRing(cs *callState) {
 	}(cs.ring)
 }
 
-// stopRing ends both. Call it with c.mu held.
-func (c *Calls) stopRing(cs *callState) {
-	if cs.ring == nil {
-		return
+// silenceRing ends the ringtone only: the Hub item and the ringing state stay (call.silence).
+// Call it with c.mu held.
+func (c *Calls) silenceRing(cs *callState) {
+	if cs.ring != nil {
+		close(cs.ring)
+		cs.ring = nil
 	}
-	close(cs.ring)
-	cs.ring = nil
-	c.st.nt.callEnd(cs.chat)
+}
+
+// stopRing ends the ringtone and takes the Hub item out. Call it with c.mu held.
+func (c *Calls) stopRing(cs *callState) {
+	c.silenceRing(cs)
+	if cs.item {
+		cs.item = false
+		c.st.nt.callEnd(cs.chat)
+	}
+}
+
+func (c *Calls) handleSilence(req json.RawMessage) (any, error) {
+	cs, err := c.get(req)
+	if err != nil {
+		return nil, err
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if cs.state == "ringing" {
+		c.silenceRing(cs)
+	}
+	return nil, nil
 }

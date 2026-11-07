@@ -406,3 +406,41 @@ func TestCallReasonAndRing(t *testing.T) {
 		t.Errorf("no PPS: %s", got)
 	}
 }
+
+func TestCallSilence(t *testing.T) {
+	r := newCallRig(t)
+	stops := make(chan struct{}, 4)
+	ringStart = func(string) (func(), error) { return func() { stops <- struct{}{} }, nil }
+	f := r.fake("S1")
+	r.c.offer(f)
+	r.want(t, "ringing", "")
+	r.hub.take()
+	if err := r.req("call.silence", "nope"); err == nil {
+		t.Error("silence of an unknown call: no error")
+	}
+	for i := 0; i < 2; i++ { // the second is a no-op
+		if err := r.req("call.silence", "S1"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	select {
+	case <-stops:
+	case <-time.After(2 * time.Second):
+		t.Fatal("the ringtone was not stopped")
+	}
+	for _, c := range r.hub.take() {
+		if c.op == "remove" {
+			t.Fatalf("silence removed the Hub item: %v", c)
+		}
+	}
+	f.end("")
+	r.want(t, "ended", "hangup")
+	r.row(t, "S1") // lets the notifier catch up
+	gone := false
+	for _, c := range r.hub.take() {
+		gone = gone || c.op == "remove" && c.item.id == callItemID(annaKey)
+	}
+	if !gone {
+		t.Error("the Hub item stayed after the call ended")
+	}
+}

@@ -1681,28 +1681,26 @@
     </message>
     <message>
         <location filename="../assets/CallSheet.qml" line="1"/>
-        <source>Decline</source>
-        <translation>Rifiuta</translation>
+        <source>WhatsApp: voice call</source>
+        <translation>WhatsApp: chiamata vocale</translation>
     </message>
+</context>
+<context>
+    <name>CallPanel</name>
     <message>
-        <location filename="../assets/CallSheet.qml" line="1"/>
-        <source>Answer</source>
-        <translation>Rispondi</translation>
-    </message>
-    <message>
-        <location filename="../assets/CallSheet.qml" line="1"/>
-        <source>Mute</source>
-        <translation>Silenzia</translation>
-    </message>
-    <message>
-        <location filename="../assets/CallSheet.qml" line="1"/>
+        <location filename="../assets/CallPanel.qml" line="1"/>
         <source>Speaker</source>
-        <translation>Vivavoce</translation>
+        <translation>Altoparl.</translation>
     </message>
     <message>
-        <location filename="../assets/CallSheet.qml" line="1"/>
-        <source>End</source>
-        <translation>Termina</translation>
+        <location filename="../assets/CallPanel.qml" line="1"/>
+        <source>Mute</source>
+        <translation>Disattiva audio</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallPanel.qml" line="1"/>
+        <source>End call</source>
+        <translation>Termina chiamata</translation>
     </message>
 </context>
 <context>

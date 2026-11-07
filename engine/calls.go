@@ -38,12 +38,13 @@ type callState struct {
 	chat      string // the chats.db key of the person
 	name      string // for the Hub item and a new chat
 	out       bool
-	offer     int64  // unix seconds: the row's ts
-	state     string // the last state sent
-	since     int64  // unix ms of "active"
-	answering bool   // we pressed Answer
-	forced    string // the reason to end with, whatever meowcaller says (offline)
-	ring      chan struct{}
+	offer     int64         // unix seconds: the row's ts
+	state     string        // the last state sent
+	since     int64         // unix ms of "active"
+	answering bool          // we pressed Answer
+	forced    string        // the reason to end with, whatever meowcaller says (offline)
+	ring      chan struct{} // the ringtone, nil once silenced
+	item      bool          // the Hub item is up
 	ended     bool
 	mic       *micSource
 	link      atomic.Pointer[audioLink]
@@ -74,6 +75,7 @@ func newCalls(st *Store, srv *Server, log waLog.Logger) *Calls {
 	srv.Handle("call.answer", c.handleAnswer)
 	srv.Handle("call.reject", c.handleReject)
 	srv.Handle("call.hangup", c.handleHangup)
+	srv.Handle("call.silence", c.handleSilence)
 	return c
 }
 
@@ -82,7 +84,7 @@ func registerSimCalls(srv *Server) {
 	srv.Handle("call.start", func(json.RawMessage) (any, error) {
 		return nil, &Error{"simulated", "the simulated account has no calls"}
 	})
-	for _, cmd := range []string{"call.answer", "call.reject", "call.hangup"} {
+	for _, cmd := range []string{"call.answer", "call.reject", "call.hangup", "call.silence"} {
 		srv.Handle(cmd, func(json.RawMessage) (any, error) { return nil, &Error{"not_found", "no such live call"} })
 	}
 }
