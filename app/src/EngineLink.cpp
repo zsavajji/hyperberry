@@ -23,6 +23,7 @@ EngineLink::EngineLink(QObject *parent)
     : QObject(parent)
     , m_retryDelay(RetryMinMs)
     , m_invoker(new InvokeManager(this))
+    , m_port(0)
     , m_counter(0)
     , m_connected(false)
     , m_conn("offline")
@@ -126,6 +127,7 @@ void EngineLink::tryConnect()
             m_token = map["token"].toString();
         }
     }
+    m_port = port;
     if (port == 0) {
         startEngine();
         m_retry.start(m_retryDelay);

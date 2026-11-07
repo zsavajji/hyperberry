@@ -51,6 +51,9 @@ public:
     bool linked() const;
     QVariantMap failure() const;
     QVariantMap call() const;
+    // Where the engine listens and the token its hello wants, as last read from engine.json (0 and "" before the first read): the audio link (CallAudio) says hello itself.
+    int port() const { return m_port; }
+    QString token() const { return m_token; }
     // Whether the app is on screen full size; thumbnail and invisible both mean false.
     bool fullscreen() const;
     QString openChat() const;
@@ -116,6 +119,7 @@ private:
     bb::system::InvokeManager *m_invoker;
     QElapsedTimer m_invokedAt;
     QString m_token;
+    int m_port;
     QString m_language;
     int m_counter;
     QString m_helloId;

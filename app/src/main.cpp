@@ -17,6 +17,7 @@
 #include <unistd.h>
 
 #include "ChatController.h"
+#include "CallAudio.h"
 #include "CallsModel.h"
 #include "ChatListModel.h"
 #include "ContactBook.h"
@@ -29,6 +30,7 @@
 #include "MediaOpener.h"
 #include "OpenRequests.h"
 #include "Profile.h"
+#include "Proximity.h"
 #include "QrImage.h"
 #include "Settings.h"
 
@@ -117,6 +119,8 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     ChatListModel archivedChats(&engine, ChatListModel::Archived, &app);
     ChatListModel channelChats(&engine, ChatListModel::Channels, &app);
     CallsModel callList(&engine, &app);
+    CallAudio callAudio(&engine, &app);
+    Proximity proximity(&app);
     // One for the run: the picker's table is built once, not per chat.
     EmojiModel emojis(&app);
     QrImage qr(&app);
@@ -148,6 +152,8 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     document->setContextProperty("archivedChats", &archivedChats);
     document->setContextProperty("channelChats", &channelChats);
     document->setContextProperty("callList", &callList);
+    document->setContextProperty("callAudio", &callAudio);
+    document->setContextProperty("proximity", &proximity);
     document->setContextProperty("emojis", &emojis);
     document->setContextProperty("qr", &qr);
     document->setContextProperty("settings", &settings);

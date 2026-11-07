@@ -12,9 +12,12 @@ Sheet {
     property bool ended: phase == "ended"
     // The chat's row, read when a call comes in (its name and picture); {} for a chat we don't have.
     property variant who: ({})
-    // Step 7.3 wires these to CallAudio; until then they only show.
-    property bool muted: false
-    property bool speaker: false
+    // A call is live from dialling to hang-up; the proximity sensor and the awake screen are held
+    // for exactly that (and released when the sheet closes, whatever the state).
+    property bool live: phase == "calling" || phase == "connecting" || phase == "active"
+    property bool held: false
+    // The call the audio link was started for, so connecting -> active doesn't restart it.
+    property string audioFor: ""
     property string clock: "0:00"
     property string line: wording(phase, call.reason, clock)
     peekEnabled: false
@@ -55,14 +58,35 @@ Sheet {
         var s = secs % 60
         clock = Math.floor(secs / 60) + ":" + (s < 10 ? "0" : "") + s
     }
+    function syncHolds(wanted) {
+        if (wanted && !held) {
+            held = true
+            proximity.acquire()
+        } else if (!wanted && held) {
+            held = false
+            proximity.release()
+        }
+    }
+    onClosed: {
+        syncHolds(false)
+        callAudio.stop()
+        audioFor = ""
+    }
     onCallChanged: {
         if (phase == "") {
             return
         }
+        syncHolds(live)
         if (ended) {
             ticker.stop()
             closer.start()
+            callAudio.stop()
+            audioFor = ""
             return
+        }
+        if ((phase == "connecting" || phase == "active") && audioFor != call.id) {
+            audioFor = call.id
+            callAudio.start(call.id)
         }
         closer.stop()
         who = chats.chat(call.chat)
@@ -73,8 +97,8 @@ Sheet {
             ticker.stop()
         }
         if (!opened) {
-            muted = false
-            speaker = false
+            callAudio.muted = false
+            callAudio.speaker = false
             open()
         }
     }
@@ -161,14 +185,14 @@ Sheet {
                     }
                     CallButton {
                         text: qsTr("Mute")
-                        on: sheet.muted
-                        onTapped: sheet.muted = !sheet.muted
+                        on: callAudio.muted
+                        onTapped: callAudio.muted = !callAudio.muted
                     }
                     CallButton {
                         leftMargin: ui.du(2)
                         text: qsTr("Speaker")
-                        on: sheet.speaker
-                        onTapped: sheet.speaker = !sheet.speaker
+                        on: callAudio.speaker
+                        onTapped: callAudio.speaker = !callAudio.speaker
                     }
                     CallButton {
                         leftMargin: ui.du(2)
@@ -177,6 +201,14 @@ Sheet {
                         onTapped: engine.request("call.hangup", {"id": sheet.call.id})
                     }
                 }
+            }
+            // At the ear: black, and every touch stops here, so a cheek presses nothing.
+            Container {
+                visible: sheet.held && proximity.near && !callAudio.speaker
+                horizontalAlignment: HorizontalAlignment.Fill
+                verticalAlignment: VerticalAlignment.Fill
+                background: Color.Black
+                onTouch: {}
             }
         }
     }
