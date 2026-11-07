@@ -7,6 +7,7 @@ import (
 
 	"github.com/polymorfa/hypermeow"
 	"github.com/polymorfa/hypermeow/types"
+	"github.com/polymorfa/hypermeow/types/events"
 	waLog "github.com/polymorfa/hypermeow/util/log"
 	"github.com/purpshell/meowcaller"
 	"github.com/rs/zerolog"
@@ -54,6 +55,12 @@ func (s *Session) callsOn(cli *whatsmeow.Client) {
 	mc.OnIncomingCall(func(call *meowcaller.Call) {
 		if cli == s.client() {
 			s.calls.offer(call)
+		}
+	})
+	// The offers meowcaller drops as already over: a call that rang while the engine was off.
+	cli.AddEventHandler(func(evt any) {
+		if e, ok := evt.(*events.CallOffer); ok && cli == s.client() {
+			s.calls.endedOffer(e)
 		}
 	})
 	s.mc.Store(mc)

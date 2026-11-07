@@ -8,7 +8,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	waBinary "github.com/polymorfa/hypermeow/binary"
 	"github.com/polymorfa/hypermeow/types"
+	"github.com/polymorfa/hypermeow/types/events"
 	waLog "github.com/polymorfa/hypermeow/util/log"
 	"github.com/purpshell/meowcaller"
 )
@@ -281,6 +283,45 @@ func (c *Calls) offer(call liveCall) {
 	c.mu.Unlock()
 	c.log.Infof("call %s: incoming from %s", cs.id, key)
 	c.phase(cs, meowcaller.CallPhaseRinging)
+}
+
+// endedOffer is an offer that comes already over: the call rang while the engine was off, and
+// WhatsApp hands it on at the next connection, marked is_call_ended or with a terminate reason.
+// meowcaller drops it ("not a live call"), so here it is a missed call, as the main phone shows,
+// unless another device of ours took it (a reason with "elsewhere"). Group calls aren't logged:
+// this phase is 1:1 only. A row already written (the same call id) isn't counted twice.
+func (c *Calls) endedOffer(e *events.CallOffer) {
+	if e.Data == nil || !e.GroupJID.IsEmpty() {
+		return
+	}
+	ag := e.Data.AttrGetter()
+	reason := ag.OptionalString("terminate_reason")
+	if ag.OptionalString("is_call_ended") != "1" && reason == "" {
+		return // a live offer: meowcaller's, then offer()
+	}
+	c.log.Infof("call %s: came over already (%q)", e.CallID, reason)
+	if strings.Contains(reason, "elsewhere") {
+		return
+	}
+	peer := e.CallCreator
+	if peer.IsEmpty() {
+		peer = e.From
+	}
+	text := "missed_call"
+	if hasChild(e.Data, "video") {
+		text = "missed_video_call"
+	}
+	ts := e.Timestamp.Unix()
+	if e.Timestamp.IsZero() {
+		ts = time.Now().Unix()
+	}
+	key, name := c.resolve(peer)
+	c.writeRow(&callState{id: e.CallID, chat: key, name: name, offer: ts}, text, -1, true)
+}
+
+func hasChild(n *waBinary.Node, tag string) bool {
+	_, ok := n.GetOptionalChildByTag(tag)
+	return ok
 }
 
 func (c *Calls) turnAway(call liveCall) {

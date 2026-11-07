@@ -8,7 +8,9 @@ import (
 	"testing"
 	"time"
 
+	waBinary "github.com/polymorfa/hypermeow/binary"
 	"github.com/polymorfa/hypermeow/types"
+	"github.com/polymorfa/hypermeow/types/events"
 	waLog "github.com/polymorfa/hypermeow/util/log"
 	"github.com/purpshell/meowcaller"
 )
@@ -442,5 +444,35 @@ func TestCallSilence(t *testing.T) {
 	}
 	if !gone {
 		t.Error("the Hub item stayed after the call ended")
+	}
+}
+
+// A call that rang while the engine was off comes as an offer already over: a missed call, once;
+// one another device took makes no row, nor does a live offer.
+func TestEndedOffer(t *testing.T) {
+	r := newCallRig(t)
+	offer := func(id string, attrs waBinary.Attrs, kids ...waBinary.Node) *events.CallOffer {
+		e := &events.CallOffer{Data: &waBinary.Node{Tag: "offer", Attrs: attrs, Content: kids}}
+		e.CallID, e.From, e.Timestamp = id, types.NewJID("111", types.HiddenUserServer), time.Unix(1700000000, 0)
+		return e
+	}
+	r.c.endedOffer(offer("O1", waBinary.Attrs{"is_call_ended": "1"}))
+	if text, out, _, _, unread, ok := r.row(t, "O1"); !ok || text != "missed_call" || out || unread != 1 {
+		t.Fatalf("ended offer: %q out=%v unread=%d ok=%v", text, out, unread, ok)
+	}
+	r.c.endedOffer(offer("O1", waBinary.Attrs{"is_call_ended": "1"})) // delivered again
+	if _, _, _, _, unread, _ := r.row(t, "O1"); unread != 1 {
+		t.Fatalf("the same call counted twice: unread %d", unread)
+	}
+	r.c.endedOffer(offer("O2", waBinary.Attrs{"terminate_reason": "accepted_elsewhere"}))
+	r.c.endedOffer(offer("O3", waBinary.Attrs{}))
+	for _, id := range []string{"O2", "O3"} {
+		if _, _, _, _, _, ok := r.row(t, id); ok {
+			t.Fatalf("%s wrote a row", id)
+		}
+	}
+	r.c.endedOffer(offer("O4", waBinary.Attrs{"is_call_ended": "1"}, waBinary.Node{Tag: "video"}))
+	if text, _, _, _, _, ok := r.row(t, "O4"); !ok || text != "missed_video_call" {
+		t.Fatalf("video: %q ok=%v", text, ok)
 	}
 }
