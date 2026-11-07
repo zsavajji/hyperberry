@@ -47,6 +47,11 @@ func inviteErr(err error) error {
 			return &Error{"invite_invalid", err.Error()}
 		}
 	}
+	// A 401 isn't one of hypermeow's: WhatsApp keeps someone an admin removed from coming back by
+	// link (Q10, 2026-11-07, a link to a group the number had been removed from). Retrying won't help.
+	if errors.Is(err, whatsmeow.ErrIQNotAuthorized) {
+		return &Error{"invite_not_allowed", err.Error()}
+	}
 	return err
 }
 

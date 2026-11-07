@@ -105,8 +105,10 @@ NavigationPane {
     property string failedCmd: engine.failure.cmd || ""
     onFailedCmdChanged: {
         if (failedCmd == "invite.info" || failedCmd == "invite.accept" || failedCmd == "group.join") {
-            inviteFailed.body = engine.failure.code == "invite_invalid" ? qsTr("This invite doesn't work any more")
-                                                                        : qsTr("Couldn't open this invite. Try again in a moment.")
+            var code = engine.failure.code
+            inviteFailed.body = code == "invite_invalid" ? qsTr("This invite doesn't work any more")
+                              : code == "invite_not_allowed" ? qsTr("WhatsApp won't let this number join by link. If an admin removed it, an admin has to add it back.")
+                              : qsTr("Couldn't open this invite. Try again in a moment.")
             inviteFailed.show()
         }
     }

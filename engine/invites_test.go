@@ -60,6 +60,9 @@ func TestInviteErr(t *testing.T) {
 	if err := inviteErr(fmt.Errorf("x: %w", whatsmeow.ErrInviteLinkRevoked)); !errors.As(err, &e) || e.Code != "invite_invalid" {
 		t.Errorf("revoked: %v", err)
 	}
+	if err := inviteErr(fmt.Errorf("info query: %w", whatsmeow.ErrIQNotAuthorized)); !errors.As(err, &e) || e.Code != "invite_not_allowed" {
+		t.Errorf("401: %v", err)
+	}
 	other := errors.New("timeout")
 	if inviteErr(other) != other {
 		t.Error("another error changed")

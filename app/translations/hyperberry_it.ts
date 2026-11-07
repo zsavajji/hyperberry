@@ -1609,6 +1609,11 @@
         <source>Join</source>
         <translation>Unisciti</translation>
     </message>
+    <message>
+        <location filename="../assets/main.qml" line="110"/>
+        <source>WhatsApp won't let this number join by link. If an admin removed it, an admin has to add it back.</source>
+        <translation>WhatsApp non consente a questo numero di unirsi tramite link. Se un amministratore lo ha rimosso, deve essere un amministratore ad aggiungerlo di nuovo.</translation>
+    </message>
 </context>
 <context>
     <name>TextCard</name>
