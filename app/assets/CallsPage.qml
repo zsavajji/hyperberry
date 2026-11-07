@@ -5,6 +5,32 @@ import bb.cascades 1.4
 // chat. A failed call.start is worded by main.qml's toast, whoever sent it.
 Page {
     id: page
+    // New call (the user's ask, 2026-11-07): New chat's contact picker, titled for a call; a pick
+    // places the call and the picker goes, so the sheet comes up over the Calls list.
+    attachedObjects: ComponentDefinition {
+        id: pickerDef
+        source: "NewChatPage.qml"
+    }
+    actions: ActionItem {
+        title: qsTr("New call")
+        imageSource: "file:///usr/share/icons/ic_phone.png"
+        ActionBar.placement: ActionBarPlacement.Signature
+        shortcuts: SystemShortcut {
+            type: SystemShortcuts.CreateNew
+        }
+        onTriggered: page.newCall()
+    }
+    function newCall() {
+        var picker = pickerDef.createObject()
+        picker.title = qsTr("New call")
+        picker.picked.connect(page.callPicked)
+        callsNav.push(picker)
+        picker.focusSearch()
+    }
+    function callPicked(contact) {
+        engine.request("call.start", {"chat": contact.jid})
+        callsNav.pop()
+    }
     titleBar: TitleBar {
         title: qsTr("Calls")
         scrollBehavior: TitleBarScrollBehavior.Sticky

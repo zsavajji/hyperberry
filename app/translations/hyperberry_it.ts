@@ -1613,6 +1613,11 @@
         <source>No calls yet</source>
         <translation>Nessuna chiamata</translation>
     </message>
+    <message>
+        <location filename="../assets/CallsPage.qml" line="1"/>
+        <source>New call</source>
+        <translation>Nuova chiamata</translation>
+    </message>
 </context>
 <context>
     <name>CallRow</name>

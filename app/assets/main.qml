@@ -233,7 +233,12 @@ TabbedPane {
         // The stock handset (/usr/share/icons/ic_phone.png, 80 px white, on the Q10 2026-11-07).
         imageSource: "file:///usr/share/icons/ic_phone.png"
         enabled: nav.linked
-        content: CallsPage {
+        // A pane of its own, so New call's picker opens inside the tab (the user's ask, 2026-11-07).
+        content: NavigationPane {
+            id: callsNav
+            onPopTransitionEnded: page.destroy()
+            CallsPage {
+            }
         }
     }
 }
