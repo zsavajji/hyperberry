@@ -4,13 +4,17 @@
 #include <bb/cascades/Window>
 #include <bps/bps.h>
 #include <bps/sensor.h>
+#include <audio/audio_manager_device.h>
+#include <audio/audio_manager_routing.h>
 #include <errno.h>
+#include <unistd.h>
 #include <QDebug>
 
 Proximity::Proximity(QObject *parent)
     : QObject(parent)
     , m_users(0)
     , m_near(false)
+    , m_ear(0)
 {
 }
 
@@ -49,6 +53,23 @@ void Proximity::release()
     unsubscribe(sensor_get_domain());
     keepAwake(false);
     setNear(false);
+}
+
+unsigned int Proximity::earHandle()
+{
+    if (m_ear)
+        return m_ear;
+    unsigned int h = 0;
+    int rc = audio_manager_get_handle(AUDIO_TYPE_VOICE, getpid(), false, &h);
+    if (rc == 0)
+        rc = audio_manager_set_handle_type(h, AUDIO_TYPE_VOICE, AUDIO_DEVICE_HANDSET, AUDIO_DEVICE_DEFAULT);
+    if (rc != 0) {
+        qWarning("proximity: ear handle failed, rc %d", rc);
+        if (h)
+            audio_manager_free_handle(h);
+        return 0;
+    }
+    return m_ear = h;
 }
 
 void Proximity::event(bps_event_t *event)

@@ -3,7 +3,8 @@ import bb.multimedia 1.4
 
 // The chat page's one voice-note player (step 4.3b). Starting a note stops the one playing; the
 // page's destruction ends it. The bubbles read playingId, loadingId, paused, posMs and durMs
-// through the page's list. ponytail: the speaker only; the earpiece and proximity come later.
+// through the page's list. While a note plays
+// the proximity sensor is held, and at the ear the note moves to the handset (step 7.5).
 MediaPlayer {
     id: player
     property string jid
@@ -14,6 +15,17 @@ MediaPlayer {
     property bool paused: mediaState == MediaState.Paused
     property int posMs: Number(position) || 0
     property int durMs: Number(duration) || 0
+    // Playing now: the sensor's acquire/release follow this one flag, so they stay paired.
+    property bool held: playingId != "" && !paused
+    // The handle may change while playing ("seamlessly", MediaPlayer.hpp); 0 is the default output.
+    property bool atEar: held && proximity.near
+    onHeldChanged: held ? proximity.acquire() : proximity.release()
+    onAtEarChanged: audioManagerHandle = atEar ? proximity.earHandle() : 0
+    Component.onDestruction: {
+        if (held) {
+            proximity.release()
+        }
+    }
     // Anything but a failed download, which the bubble shows as retry.
     signal failed
     // No engine: the request never went.

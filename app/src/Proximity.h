@@ -21,6 +21,9 @@ public:
     bool isNear() const { return m_near; }
     Q_INVOKABLE void acquire();
     Q_INVOKABLE void release();
+    // The ear: an audio_manager handle routed to the handset, made on first use and kept for the
+    // app's run (a MediaPlayer's audioManagerHandle; 0 if audio_manager refused).
+    Q_INVOKABLE unsigned int earHandle();
 
     void event(bps_event_t *event);
 
@@ -32,6 +35,7 @@ private:
 
     int m_users;
     bool m_near;
+    unsigned int m_ear;
 };
 
 #endif
