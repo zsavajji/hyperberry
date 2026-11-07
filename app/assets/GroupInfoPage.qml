@@ -222,7 +222,7 @@ Page {
                 property int bodySize: nav.bodySize
                 property int smallSize: nav.smallSize
                 property string pressColor: nav.pressColor
-                // The rows' long-press menu reaches the page through the view, as MessageItem's do.
+                // The rows' long-press menu reaches the page through the view, as the message cards' do.
                 property bool admin: page.amAdmin
                 function change(p, action) {
                     page.ctl.changeParticipant(p.jid, action)

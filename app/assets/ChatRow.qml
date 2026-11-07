@@ -123,7 +123,7 @@ Container {
                 Label {
                     verticalAlignment: VerticalAlignment.Center
                     text: row.chat.time || ""
-                    // Grows with the text size, as the name and preview do (MessageItem's time).
+                    // Grows with the text size, as the name and preview do (MessageCard.cpp's time).
                     textStyle.base: SystemDefaults.TextStyles.SmallText
                     textStyle.fontSize: FontSize.PercentageValue
                     textStyle.fontSizeValue: Math.round(100 * row.ListItem.view.textScale)
@@ -158,7 +158,7 @@ Container {
                     // Closer to the ticks than Cascades' default gap (about 20 px between labels):
                     // the user's, Q10, 2026-11-02.
                     leftMargin: ui.du(1)
-                    // Without U+20E3, a keycap's frame, as MessageItem's body.
+                    // Without U+20E3, a keycap's frame, as the message card's body (MessageCard.cpp).
                     text: row.chat.preview.replace(/\u20E3/g, "")
                     textStyle.base: row.ListItem.view.emojiStyle
                     textStyle.fontSize: FontSize.PercentageValue

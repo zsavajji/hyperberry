@@ -14,7 +14,7 @@ class UIConfig;
 
 class AlbumTile;
 
-// An album in a card (step 6.5g), mirroring AlbumBubble.qml: 4 or more photos and videos sent
+// An album in a card (step 6.5g), mirroring AlbumBubble.qml (gone since step 8.6): 4 or more photos and videos sent
 // together (MessageModel makes the entry; Albums.h has the rule) as four square tiles, two by
 // two, as wide as a single photo (MediaBubble's 40 du). With more than four, the fourth tile is
 // darkened with "+N", N the album's size less 3, and opens the album's page (the list's

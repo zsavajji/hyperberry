@@ -34,7 +34,7 @@ private:
 };
 
 // A service line ("service" rows of MessageModel): a chip, like a button that isn't one (Q10,
-// 2026-10-31), mirroring ServiceItem.qml.
+// 2026-10-31), mirroring ServiceItem.qml (gone since step 8.6).
 class ServiceCard : public bb::cascades::CustomControl
 {
     Q_OBJECT

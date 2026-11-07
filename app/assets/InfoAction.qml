@@ -44,7 +44,7 @@ ActionItem {
         p.ctl = chatCtl
         nav.push(p)
     }
-    // A mention's link in a message (MessageItem): the person's page, with the row built as
+    // A mention's link in a message (MessageCard.cpp): the person's page, with the row built as
     // GroupInfoPage's openPerson does: the one-to-one chat's, else one like the contact picker's.
     // A member brings the initials and colour; for someone who isn't one (any more) the name is the
     // link's "@name" and the tile one initial on a fixed colour.

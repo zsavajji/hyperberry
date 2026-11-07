@@ -44,7 +44,7 @@ Container {
             topMargin: 0
             bottomMargin: 0
             multiline: false
-            // Without U+20E3, a keycap's frame, as MessageItem's body.
+            // Without U+20E3, a keycap's frame, as the message card's body (MessageCard.cpp).
             text: quote.replace(/⃣/g, "")
             textFormat: TextFormat.Plain
             textStyle.base: nav.emojiStyle

@@ -370,7 +370,7 @@ Page {
                     return ctl.playedWave(data, bars)
                 }
                 // Photos, videos, audio files and documents: the message being fetched, for the bubbles
-                // (MediaBubble.qml). Always through media.get: it answers at once when the file is here,
+                // (MediaBubble.cpp). Always through media.get: it answers at once when the file is here,
                 // and fetches it again when the user moved it out of Downloads. A location and a contact
                 // have no file.
                 property string mediaLoadingId: media.loadingId

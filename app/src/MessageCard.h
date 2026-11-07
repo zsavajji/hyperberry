@@ -31,7 +31,7 @@ class PollBubble;
 class VoiceBubble;
 
 // One message as a BBM-style card (PLAN.md §7), mirroring MessageItem.qml (rich) and TextCard.qml
-// (plain, what a chat is mostly made of): flat, on the black page, theirs inset on the right and
+// (plain, what a chat is mostly made of), both gone since step 8.6: flat, on the black page, theirs inset on the right and
 // ours on the left, with a hairline underline. Built once, with the body text and the time and
 // ticks, and filled by show() on each recycle. Every other part is made the first time a message
 // needs it, then kept and hidden when the next one doesn't, since rows are recycled; each goes into

@@ -80,7 +80,7 @@ QString MessageModel::itemType(const QVariantList &indexPath)
     const Msg &m = m_all[e.msg];
     if (m.service)
         return "service";
-    // Plain text gets the light card, TextCard. A row's type never changes: its kind and link preview don't.
+    // Plain text gets the plain MessageCard. A row's type never changes: its kind and link preview don't.
     return e.members.isEmpty() && m.kind == 0 && m.data["linkTitle"].toString().isEmpty() ? "text" : "msg";
 }
 
