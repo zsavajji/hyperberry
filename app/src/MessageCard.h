@@ -14,6 +14,7 @@ class ActionSet;
 class ActiveTextTriggeredEvent;
 class Button;
 class Container;
+class Control;
 class DeleteActionItem;
 class ImageView;
 class Label;
@@ -22,7 +23,12 @@ class UIConfig;
 }
 }
 
+class AlbumBubble;
 class Invites;
+class LinkPreview;
+class MediaBubble;
+class PollBubble;
+class VoiceBubble;
 
 // One message as a BBM-style card (PLAN.md §7), mirroring MessageItem.qml (rich) and TextCard.qml
 // (plain, what a chat is mostly made of): flat, on the black page, theirs inset on the right and
@@ -70,12 +76,16 @@ private:
     void makeBang();
     void makeChip();
     void makeActions();
+    void makeBubbles();
+    void place(bb::cascades::Control *part, bb::cascades::Control *a = 0, bb::cascades::Control *b = 0,
+               bb::cascades::Control *c = 0, bb::cascades::Control *d = 0);
     bb::cascades::ActionItem *action(const char *title, const char *icon, const char *slot);
 
     void restyle();
     void fillColumn();
     void fillFoot();
     void fillMenu();
+    void fillBubbles();
 
     bb::cascades::ListView *m_list;
     bb::cascades::UIConfig *m_ui;
@@ -101,6 +111,12 @@ private:
     bb::cascades::Label *m_label;
     bb::cascades::Label *m_text;
     bb::cascades::Button *m_join;
+    // The rich card's bubbles, made as m_sender is (VoiceBubble.cpp and the others).
+    VoiceBubble *m_voice;
+    MediaBubble *m_media;
+    AlbumBubble *m_album;
+    LinkPreview *m_link;
+    PollBubble *m_poll;
     bb::cascades::Container *m_timeBox;
     bb::cascades::Label *m_time;
     bb::cascades::ImageView *m_ticks;

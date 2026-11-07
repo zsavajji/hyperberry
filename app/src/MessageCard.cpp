@@ -24,6 +24,7 @@
 #include <bb/cascades/VerticalAlignment>
 
 #include "CardStyle.h"
+#include "PollBubble.h"
 
 using namespace bb::cascades;
 
@@ -48,6 +49,11 @@ MessageCard::MessageCard(ListView *list, bool rich)
     , m_quoteText(0)
     , m_label(0)
     , m_join(0)
+    , m_voice(0)
+    , m_media(0)
+    , m_album(0)
+    , m_link(0)
+    , m_poll(0)
     , m_bang(0)
     , m_chip(0)
     , m_reactions(0)
@@ -142,6 +148,8 @@ void MessageCard::show(const QVariantMap &msg)
         makeLabel();
     if (m_rich && !str("invite").isEmpty() && !deleted && !m_join)
         makeJoin();
+    if (m_rich)
+        makeBubbles();
     if (out && m_msg.value("state").toInt() == 4 && !m_bang)
         makeBang();
     if (m_msg.value("reactionCount").toInt() > 0 && !m_chip)
@@ -152,6 +160,8 @@ void MessageCard::show(const QVariantMap &msg)
     m_root->setLeftPadding(out ? m_ui->du(7) : m_ui->du(1.5));
     m_root->setRightPadding(out ? m_ui->du(1.5) : m_ui->du(7));
     fillColumn();
+    if (m_rich)
+        fillBubbles();
     fillFoot();
     fillMenu();
     paintBackground();
@@ -282,7 +292,7 @@ void MessageCard::makeQuote()
     m_styled = false;
 }
 
-// The voice, media and album bubbles go between the quote and this label (a later step).
+// After the voice, media and album bubbles, before the text.
 void MessageCard::makeLabel()
 {
     m_label = new Label();
@@ -301,7 +311,7 @@ void MessageCard::makeJoin()
     m_join->setHorizontalAlignment(HorizontalAlignment::Fill);
     m_join->setText(Card::tr(kContext, "Join group"));
     connect(m_join, SIGNAL(clicked()), this, SLOT(onJoin()));
-    m_col->insert(m_col->indexOf(m_text) + 1, m_join);
+    place(m_join, m_poll);
 }
 
 // Our message that failed: a red "!" after the ticks.
@@ -426,3 +436,4 @@ void MessageCard::fillFoot()
             m_reactions->setText(str("reactions") + (count > 1 ? QString(" %1").arg(count) : QString()));
     }
 }
+
