@@ -43,6 +43,7 @@ private:
     int m_w, m_h;
     QByteArray m_scratch;      // the fallback's linear NV12
     bool m_warned;
+    bool m_postLogged;
     mutable QMutex m_mu;
     double m_detileSum, m_detileMax;
     int m_detileCount;

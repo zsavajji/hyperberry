@@ -15,6 +15,8 @@ ListView {
     property bool archivedList: false
     // True on the Channels page: the row's menu has Unfollow for Archive, and no pin or mute.
     property bool channelList: false
+    // The rows' Call reads it here: a list item can't see the engine context property (0.0.1.191).
+    property bool linked: engine.linked
     signal chatTapped(variant chat)
 
     function set(jid, args) {

@@ -56,7 +56,10 @@ Page {
             layout: DockLayout {
             }
             attachedObjects: LayoutUpdateHandler {
-                onLayoutFrameChanged: stage.w = layoutFrame.width
+                onLayoutFrameChanged: {
+                    stage.w = layoutFrame.width
+                    console.log("video control: frame " + layoutFrame.width + "x" + layoutFrame.height)
+                }
             }
             // Under the page's own drawing (the window sits at z -1), so the report below shows
             // over the picture and the action bar over its foot.
@@ -64,6 +67,8 @@ Page {
                 id: video
                 windowId: "hyperberryVideoTest"
                 updatedProperties: WindowProperty.Size | WindowProperty.Position | WindowProperty.Visible
+                // Whether Cascades adopted our window: in the log, since 0.0.1.191 showed nothing.
+                onBoundToWindowChanged: console.log("video control: bound " + boundToWindow + " in " + video.windowGroup)
                 horizontalAlignment: HorizontalAlignment.Fill
                 preferredHeight: stage.w * 3 / 4
             }

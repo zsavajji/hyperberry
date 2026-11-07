@@ -23,7 +23,7 @@ Container {
             ActionItem {
                 title: qsTr("Call")
                 imageSource: "file:///usr/share/icons/ic_phone.png"
-                enabled: row.chat.kind == 0 && engine.linked
+                enabled: row.chat.kind == 0 && row.ListItem.view.linked
                 onTriggered: row.ListItem.view.call(row.chat)
             }
             ActionItem {

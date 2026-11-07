@@ -22,6 +22,7 @@ VideoWindow::VideoWindow()
     , m_w(0)
     , m_h(0)
     , m_warned(false)
+    , m_postLogged(false)
     , m_detileSum(0)
     , m_detileMax(0)
     , m_detileCount(0)
@@ -56,9 +57,11 @@ bool VideoWindow::build(int format, const QString &windowId, const QByteArray &g
         return false;
     }
     // The three things the control needs to adopt the window (a child window, in the app's group,
-    // carrying the control's id), the group joined only now that the control exists.
-    if (screen_join_window_group(m_win, group.constData())
-        || screen_set_window_property_cv(m_win, SCREEN_PROPERTY_ID_STRING, id.size() + 1, id.constData())) {
+    // carrying the control's id), the group joined only now that the control exists. The id goes
+    // first: Cascades looks for it as the window joins, and an id set after never got the window
+    // adopted (0.0.1.191: unsized, full screen, nothing in the control).
+    if (screen_set_window_property_cv(m_win, SCREEN_PROPERTY_ID_STRING, id.size() + 1, id.constData())
+        || screen_join_window_group(m_win, group.constData())) {
         qWarning("video window: joining the group or setting the id failed: %s", strerror(errno));
         screen_destroy_window(m_win);
         m_win = 0;
@@ -81,6 +84,7 @@ bool VideoWindow::create(const QString &windowId, int width, int height, bool rg
     m_w = width;
     m_h = height;
     m_warned = false;
+    m_postLogged = false;
     if (screen_create_context(&m_ctx, SCREEN_APPLICATION_CONTEXT)) {
         qWarning("video window: screen_create_context: %s", strerror(errno));
         m_ctx = 0;
@@ -165,9 +169,11 @@ void VideoWindow::frame(const VideoDecoder::Frame &f)
         m_warned = true;
         return;
     }
-    screen_buffer_t buf = 0;
-    if (screen_get_window_property_pv(m_win, SCREEN_PROPERTY_RENDER_BUFFERS, (void **)&buf) || !buf)
+    // Room for both of the window's buffers: Screen writes them all (one variable took two before).
+    screen_buffer_t bufs[2] = { 0, 0 };
+    if (screen_get_window_property_pv(m_win, SCREEN_PROPERTY_RENDER_BUFFERS, (void **)bufs) || !bufs[0])
         return;
+    screen_buffer_t buf = bufs[0];
     unsigned char *base = 0;
     int stride = 0;
     screen_get_buffer_property_pv(buf, SCREEN_PROPERTY_POINTER, (void **)&base);
@@ -202,7 +208,18 @@ void VideoWindow::frame(const VideoDecoder::Frame &f)
         }
         ms = nowMs() - t0;
     }
-    screen_post_window(m_win, buf, 0, NULL, 0);
+    // The whole frame is dirty: with no rectangle Screen may take it as nothing changed (the
+    // window in front showed one frozen picture, 0.0.1.191). The first failure and the first
+    // success are logged.
+    const int dirty[4] = { 0, 0, m_w, m_h };
+    if (screen_post_window(m_win, buf, 1, dirty, 0)) {
+        if (!m_postLogged)
+            qWarning("video window: screen_post_window: %s", strerror(errno));
+        m_postLogged = true;
+    } else if (!m_postLogged) {
+        qDebug("video window: first frame posted");
+        m_postLogged = true;
+    }
     QMutexLocker lock(&m_mu);
     m_detileSum += ms;
     m_detileCount++;
