@@ -33,7 +33,9 @@ type Server struct {
 	afterHello func() (string, map[string]any)
 	// audio hands an audio link's connection to the live call. It writes ok first, and says false,
 	// writing nothing, when id is not the live call.
-	audio    func(id string, conn net.Conn, ok []byte) bool
+	audio func(id string, conn net.Conn, ok []byte) bool
+	// video is the same for a video link (step 7c.2).
+	video    func(id string, conn net.Conn, ok []byte) bool
 	token    string
 	ln       net.Listener
 	handlers map[string]Handler
@@ -264,6 +266,7 @@ func (s *Server) read(c *client) {
 			Token string `json:"token"`
 			Proto int    `json:"proto"`
 			Audio string `json:"audio"`
+			Video string `json:"video"`
 		}
 		bad := json.Unmarshal(line, &r) != nil || r.Cmd == ""
 		if !c.authed.Load() {
@@ -278,14 +281,17 @@ func (s *Server) read(c *client) {
 				c.conn.Write(reply(r.At, nil, &Error{"proto", "this engine speaks proto 1"}))
 				return
 			}
-			if r.Audio != "" {
+			if id, kind, attach := r.Audio, "audio", s.audio; id != "" || r.Video != "" {
+				if id == "" {
+					id, kind, attach = r.Video, "video", s.video
+				}
 				ok := reply(r.At, nil, nil)
-				if s.audio == nil || !s.audio(r.Audio, c.conn, ok) {
+				if attach == nil || !attach(id, c.conn, ok) {
 					c.conn.Write(reply(r.At, nil, &Error{"not_found", "no such live call"}))
 					return
 				}
 				keep = true
-				s.log.Infof("audio link opened for call %s", r.Audio)
+				s.log.Infof("%s link opened for call %s", kind, id)
 				return
 			}
 			var res any

@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/purpshell/meowcaller"
@@ -81,7 +82,7 @@ func floatToPCM(f []float32) []byte {
 	return b
 }
 
-// audioLink is one UI connection and the peer's frames on their way to it.
+// audioLink is one UI connection (the video link uses it too) and the peer's frames on their way to it.
 type audioLink struct {
 	conn net.Conn
 	out  chan []byte
@@ -130,16 +131,22 @@ func (s linkSink) WriteFrame(f []float32) error {
 
 func (s linkSink) Close() error { return nil }
 
-// attachAudio is Server.audio: the hello of an audio link for call id. It takes the connection
-// over; a link already there is replaced.
+// attachAudio is Server.audio: the hello of an audio link for call id.
 func (c *Calls) attachAudio(id string, conn net.Conn, ok []byte) bool {
+	return c.attachLink(id, conn, ok, peerQueue, func(cs *callState) *atomic.Pointer[audioLink] { return &cs.link }, c.readLink)
+}
+
+// attachLink takes a link's connection over for the live call id, after the ok line. It fills the
+// slot the call keeps that kind of link in; a link already there is replaced and closed. read runs
+// on the connection until it closes.
+func (c *Calls) attachLink(id string, conn net.Conn, ok []byte, queue int, slot func(*callState) *atomic.Pointer[audioLink], read func(*callState, *audioLink)) bool {
 	c.mu.Lock()
 	cs := c.cur
 	if cs == nil || cs.call == nil || cs.ended || cs.id != id {
 		c.mu.Unlock()
 		return false
 	}
-	l := &audioLink{conn: conn, out: make(chan []byte, peerQueue), done: make(chan struct{})}
+	l := &audioLink{conn: conn, out: make(chan []byte, queue), done: make(chan struct{})}
 	conn.SetWriteDeadline(time.Now().Add(2 * time.Second))
 	_, err := conn.Write(ok)
 	conn.SetWriteDeadline(time.Time{})
@@ -147,13 +154,13 @@ func (c *Calls) attachAudio(id string, conn net.Conn, ok []byte) bool {
 		c.mu.Unlock()
 		return false
 	}
-	old := cs.link.Swap(l)
+	old := slot(cs).Swap(l)
 	c.mu.Unlock()
 	if old != nil {
 		old.close()
 	}
 	go l.write()
-	go c.readLink(cs, l)
+	go read(cs, l)
 	return true
 }
 

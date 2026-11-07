@@ -31,6 +31,18 @@ type liveCall interface {
 	OnEnd(func(reason string))
 	Play(meowcaller.AudioSource) *meowcaller.Player
 	Receive(meowcaller.AudioSink)
+	// Video, step 7c.2 (calls_video.go).
+	IsVideo() bool
+	IsSendingVideo() bool
+	IsReceivingVideo() bool
+	StartVideo() error
+	AcceptVideo() error
+	StopVideo() error
+	SetVideoOrientation(o int) error
+	ReceiveVideo(meowcaller.VideoSink)
+	SendVideoWithDuration(au []byte, d time.Duration) error
+	OnVideoState(func(meowcaller.VideoState))
+	OnVideoKeyframeRequest(func())
 }
 
 // callState is the live call. Calls.mu guards it, except link.
@@ -50,6 +62,7 @@ type callState struct {
 	ended     bool
 	mic       *micSource
 	link      atomic.Pointer[audioLink]
+	vid       videoState
 }
 
 // Calls owns the live call. The seams are what Session fills in; tests fill their own.
@@ -61,7 +74,7 @@ type Calls struct {
 	// ready checks that a call to chat can be placed and gives the person's name.
 	ready func(chat string) (name string, err error)
 	// dial places the call.
-	dial func(ctx context.Context, target string) (liveCall, error)
+	dial func(ctx context.Context, target string, video bool) (liveCall, error)
 	// resolve is the chats.db key and the name of a caller.
 	resolve func(peer types.JID) (key, name string)
 
@@ -73,11 +86,13 @@ func newCalls(st *Store, srv *Server, log waLog.Logger) *Calls {
 	c := &Calls{st: st, srv: srv, log: log}
 	srv.afterHello = c.helloEvent
 	srv.audio = c.attachAudio
+	srv.video = c.attachVideo
 	srv.Handle("call.start", c.handleStart)
 	srv.Handle("call.answer", c.handleAnswer)
 	srv.Handle("call.reject", c.handleReject)
 	srv.Handle("call.hangup", c.handleHangup)
 	srv.Handle("call.silence", c.handleSilence)
+	srv.Handle("call.video", c.handleVideo)
 	return c
 }
 
@@ -86,7 +101,7 @@ func registerSimCalls(srv *Server) {
 	srv.Handle("call.start", func(json.RawMessage) (any, error) {
 		return nil, &Error{"simulated", "the simulated account has no calls"}
 	})
-	for _, cmd := range []string{"call.answer", "call.reject", "call.hangup", "call.silence"} {
+	for _, cmd := range []string{"call.answer", "call.reject", "call.hangup", "call.silence", "call.video"} {
 		srv.Handle(cmd, func(json.RawMessage) (any, error) { return nil, &Error{"not_found", "no such live call"} })
 	}
 }
@@ -132,8 +147,10 @@ func callPhase(p meowcaller.CallPhase, out bool) string {
 
 // body is the `call` event. Call it with c.mu held.
 func (cs *callState) body(reason string) map[string]any {
-	return map[string]any{"id": cs.id, "chat": cs.chat, "out": cs.out, "state": cs.state,
+	m := map[string]any{"id": cs.id, "chat": cs.chat, "out": cs.out, "state": cs.state,
 		"reason": reason, "since": cs.since}
+	cs.videoBody(m)
+	return m
 }
 
 // helloEvent is the live call, for the UI that just said hello.
@@ -158,13 +175,17 @@ func (c *Calls) get(req json.RawMessage) (*callState, error) {
 }
 
 func (c *Calls) handleStart(req json.RawMessage) (any, error) {
-	var r struct{ Chat string }
+	var r struct {
+		Chat  string
+		Video bool
+	}
 	json.Unmarshal(req, &r)
 	name, err := c.ready(r.Chat)
 	if err != nil {
 		return nil, err
 	}
 	cs := &callState{chat: r.Chat, name: name, out: true, offer: time.Now().Unix()}
+	cs.vid.f.video = r.Video
 	c.mu.Lock()
 	if c.cur != nil {
 		c.mu.Unlock()
@@ -175,7 +196,7 @@ func (c *Calls) handleStart(req json.RawMessage) (any, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
 	defer cancel()
-	call, err := c.dial(ctx, r.Chat)
+	call, err := c.dial(ctx, r.Chat, r.Video)
 	if err != nil {
 		c.mu.Lock()
 		if c.cur == cs {
@@ -208,12 +229,15 @@ func (c *Calls) handleAnswer(req json.RawMessage) (any, error) {
 	if err != nil {
 		return nil, err
 	}
+	var r struct{ Video *bool } // absent: answered as offered
+	json.Unmarshal(req, &r)
 	c.mu.Lock()
 	cs.answering = true
+	cs.vid.voiceOnly = r.Video != nil && !*r.Video
 	c.mu.Unlock()
 	if err := cs.call.Answer(); err != nil {
 		c.mu.Lock()
-		cs.answering = false
+		cs.answering, cs.vid.voiceOnly = false, false
 		c.mu.Unlock()
 		return nil, err
 	}
@@ -256,6 +280,7 @@ func (c *Calls) hook(cs *callState) {
 	cs.mic = &micSource{}
 	cs.call.Play(cs.mic)
 	cs.call.Receive(linkSink{cs})
+	c.hookVideo(cs)
 	cs.call.OnStateChange(func(p meowcaller.CallPhase) { c.phase(cs, p) })
 	cs.call.OnEnd(func(raw string) { c.finish(cs, raw) })
 }
@@ -307,16 +332,14 @@ func (c *Calls) endedOffer(e *events.CallOffer) {
 	if peer.IsEmpty() {
 		peer = e.From
 	}
-	text := "missed_call"
-	if hasChild(e.Data, "video") {
-		text = "missed_video_call"
-	}
 	ts := e.Timestamp.Unix()
 	if e.Timestamp.IsZero() {
 		ts = time.Now().Unix()
 	}
 	key, name := c.resolve(peer)
-	c.writeRow(&callState{id: e.CallID, chat: key, name: name, offer: ts}, text, -1, true)
+	cs := &callState{id: e.CallID, chat: key, name: name, offer: ts}
+	cs.vid.f.video = hasChild(e.Data, "video")
+	c.writeRow(cs, "missed_call", -1, true)
 }
 
 func hasChild(n *waBinary.Node, tag string) bool {
@@ -330,7 +353,9 @@ func (c *Calls) turnAway(call liveCall) {
 		c.log.Warnf("call %s: reject: %v", call.ID(), err)
 	}
 	key, name := c.resolve(call.Peer())
-	c.writeRow(&callState{id: call.ID(), chat: key, name: name, offer: time.Now().Unix()}, "missed_call", 0, true)
+	cs := &callState{id: call.ID(), chat: key, name: name, offer: time.Now().Unix()}
+	cs.vid.f.video = call.IsVideo()
+	c.writeRow(cs, "missed_call", 0, true)
 }
 
 // phase follows meowcaller's phase changes; the ending comes through finish.
@@ -352,6 +377,9 @@ func (c *Calls) phase(cs *callState, p meowcaller.CallPhase) {
 	cs.state = st
 	if st == "active" {
 		cs.since = time.Now().UnixMilli()
+		if cs.vid.voiceOnly {
+			go c.voiceOnly(cs)
+		}
 	}
 	c.srv.Emit("call", cs.body(""))
 }
@@ -381,10 +409,13 @@ func (c *Calls) finish(cs *callState, raw string) {
 	}
 	cs.state = "ended"
 	c.srv.Emit("call", cs.body(reason))
-	link := cs.link.Swap(nil)
+	cs.vid.read(cs) // the sticky "had video", for the row
+	link, vlink := cs.link.Swap(nil), cs.vid.link.Swap(nil)
 	c.mu.Unlock()
-	if link != nil {
-		link.close()
+	for _, l := range []*audioLink{link, vlink} {
+		if l != nil {
+			l.close()
+		}
 	}
 
 	switch {
@@ -426,7 +457,7 @@ func (c *Calls) drop() {
 // is no duration.
 func (c *Calls) writeRow(cs *callState, text string, secs int, missed bool) {
 	row := msgRow{Chat: cs.chat, ID: "call-" + cs.id, TS: cs.offer, Out: cs.out, State: stateRead,
-		Kind: msgNotice, Text: text}
+		Kind: msgNotice, Text: cs.kind(text)}
 	if cs.out {
 		row.State = stateSent
 	}

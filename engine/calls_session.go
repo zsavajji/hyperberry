@@ -39,8 +39,8 @@ func (s *Session) initCalls() {
 	c := newCalls(s.store, s.srv, s.log.Sub("calls"))
 	c.ready = s.callReady
 	c.resolve = s.callResolve
-	c.dial = func(ctx context.Context, target string) (liveCall, error) {
-		call, err := s.mc.Load().Call(ctx, target)
+	c.dial = func(ctx context.Context, target string, video bool) (liveCall, error) {
+		call, err := s.mc.Load().CallWithOptions(ctx, target, meowcaller.CallOptions{Video: video})
 		if err != nil {
 			return nil, err
 		}

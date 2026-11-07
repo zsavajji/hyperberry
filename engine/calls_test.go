@@ -24,7 +24,15 @@ type fakeCall struct {
 	onEnd func(string)
 	src   meowcaller.AudioSource
 	sink  meowcaller.AudioSink
-	calls []string // "answer", "reject", "hangup"
+	calls []string // "answer", "reject", "hangup", "startvideo", ...
+
+	// Video (calls_video_test.go).
+	video, ours, theirs bool
+	vsink               meowcaller.VideoSink
+	onVS                func(meowcaller.VideoState)
+	onKey               func()
+	sent                []sentAU
+	orients             []int
 }
 
 func (f *fakeCall) ID() string      { return f.id }
@@ -128,7 +136,7 @@ func newCallRig(t *testing.T) *callRig {
 	r.c = newCalls(st, ts.Server, waLog.Noop)
 	r.c.ready = func(chat string) (string, error) { return "Anna", nil }
 	r.c.resolve = func(peer types.JID) (string, string) { return annaKey, "Anna" }
-	r.c.dial = func(_ context.Context, target string) (liveCall, error) {
+	r.c.dial = func(_ context.Context, target string, video bool) (liveCall, error) {
 		r.mu.Lock()
 		defer r.mu.Unlock()
 		return r.next, nil
