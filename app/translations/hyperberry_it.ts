@@ -1443,6 +1443,11 @@
         <translation>Prova del decoder video</translation>
     </message>
     <message>
+        <location filename="../assets/SettingsPage.qml" line="22"/>
+        <source>Camera test</source>
+        <translation>Prova della fotocamera</translation>
+    </message>
+    <message>
         <location filename="../assets/SettingsPage.qml" line="9"/>
         <source>Settings</source>
         <translation>Impostazioni</translation>
@@ -1916,6 +1921,102 @@
         <location filename="../assets/RevokeDialog.qml" line="1"/>
         <source>Cancel</source>
         <translation>Annulla</translation>
+    </message>
+</context>
+<context>
+    <name>CameraTest</name>
+    <message>
+        <location filename="../src/CameraTest.cpp" line="1"/>
+        <source>The video window could not be made; see the log.</source>
+        <translation>Impossibile creare la finestra video; vedi il log.</translation>
+    </message>
+    <message>
+        <location filename="../src/CameraTest.cpp" line="1"/>
+        <source>The hardware decoder did not open; see the log.</source>
+        <translation>Il decoder hardware non si è aperto; vedi il log.</translation>
+    </message>
+    <message>
+        <location filename="../src/CameraTest.cpp" line="1"/>
+        <source>The camera did not start; see the log.</source>
+        <translation>La fotocamera non si è avviata; vedi il log.</translation>
+    </message>
+    <message>
+        <location filename="../src/CameraTest.cpp" line="1"/>
+        <source>front</source>
+        <translation>anteriore</translation>
+    </message>
+    <message>
+        <location filename="../src/CameraTest.cpp" line="1"/>
+        <source>rear</source>
+        <translation>posteriore</translation>
+    </message>
+</context>
+<context>
+    <name>CameraTestPage</name>
+    <message>
+        <location filename="../assets/CameraTestPage.qml" line="1"/>
+        <source>Camera test</source>
+        <translation>Prova della fotocamera</translation>
+    </message>
+    <message>
+        <location filename="../assets/CameraTestPage.qml" line="1"/>
+        <source>Stop</source>
+        <translation>Ferma</translation>
+    </message>
+    <message>
+        <location filename="../assets/CameraTestPage.qml" line="1"/>
+        <source>Start</source>
+        <translation>Avvia</translation>
+    </message>
+    <message>
+        <location filename="../assets/CameraTestPage.qml" line="1"/>
+        <source>Use the rear camera</source>
+        <translation>Usa la fotocamera posteriore</translation>
+    </message>
+    <message>
+        <location filename="../assets/CameraTestPage.qml" line="1"/>
+        <source>Use the front camera</source>
+        <translation>Usa la fotocamera anteriore</translation>
+    </message>
+    <message>
+        <location filename="../assets/CameraTestPage.qml" line="1"/>
+        <source>Size 640x480</source>
+        <translation>Dimensione 640x480</translation>
+    </message>
+    <message>
+        <location filename="../assets/CameraTestPage.qml" line="1"/>
+        <source>Size 320x240</source>
+        <translation>Dimensione 320x240</translation>
+    </message>
+    <message>
+        <location filename="../assets/CameraTestPage.qml" line="1"/>
+        <source>15 frames a second</source>
+        <translation>15 fotogrammi al secondo</translation>
+    </message>
+    <message>
+        <location filename="../assets/CameraTestPage.qml" line="1"/>
+        <source>30 frames a second</source>
+        <translation>30 fotogrammi al secondo</translation>
+    </message>
+    <message>
+        <location filename="../assets/CameraTestPage.qml" line="1"/>
+        <source>Encoder %1 fps, %2 kbit/s, %3 keyframes</source>
+        <translation>Codificatore %1 fps, %2 kbit/s, %3 fotogrammi chiave</translation>
+    </message>
+    <message>
+        <location filename="../assets/CameraTestPage.qml" line="1"/>
+        <source>Frame mean %1 / max %2 bytes, gap %3 / max %4 ms</source>
+        <translation>Fotogramma medio %1 / max %2 byte, intervallo %3 / max %4 ms</translation>
+    </message>
+    <message>
+        <location filename="../assets/CameraTestPage.qml" line="1"/>
+        <source>Decoder in %1, out %2, latency %3 / max %4 ms</source>
+        <translation>Decoder entrati %1, usciti %2, latenza %3 / max %4 ms</translation>
+    </message>
+    <message>
+        <location filename="../assets/CameraTestPage.qml" line="1"/>
+        <source>CPU %1 % of a core (whole app)</source>
+        <translation>CPU %1 % di un core (tutta l'app)</translation>
     </message>
 </context>
 <context>

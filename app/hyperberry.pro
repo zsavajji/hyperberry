@@ -6,12 +6,12 @@ CONFIG += qt warn_on release
 QT += declarative network sql gui
 # QtGui links anyway (QtDeclarative needs it); QImage and QImageReader make the photo previews and the
 # thumbnail sent with a photo (step 6.3), since the engine decodes no picture.
-LIBS += -lbbcascades -lbbdata -lbbsystem -lbbplatform -lbb -lbbutilityi18n -lslog2 -lbbpim -lbps -lasound -laudio_manager -lscreen
+LIBS += -lbbcascades -lbbdata -lbbsystem -lbbplatform -lbb -lbbutilityi18n -lslog2 -lbbpim -lbps -lasound -laudio_manager -lscreen -lcamapi
 QMAKE_LFLAGS += -Wl,-rpath-link,$${QNX_DIR}/$${QNX_CPUDIR}/usr/lib/qt4/lib
 QMAKE_CXXFLAGS += -Wno-psabi
 
-SOURCES += src/main.cpp src/EngineLink.cpp src/ChatListModel.cpp src/CallsModel.cpp src/EmojiModel.cpp src/MessageModel.cpp src/MessageRows.cpp src/Albums.cpp src/MessageKinds.cpp src/Polls.cpp src/Pins.cpp src/ChatController.cpp src/ContactBook.cpp src/ContactInfo.cpp src/ContactPicker.cpp src/MapChooser.cpp src/MediaData.cpp src/MediaOpener.cpp src/QrImage.cpp src/Waveform.cpp src/OpenRequests.cpp src/Invites.cpp src/Profile.cpp src/Settings.cpp src/Sticker.cpp src/CallAudio.cpp src/Proximity.cpp src/VideoDecoder.cpp src/VideoFormat.cpp src/VideoOutput.cpp src/VideoWindow.cpp src/VideoTest.cpp $$PWD/../lib/qrcodegen/qrcodegen.c
-HEADERS += src/EngineLink.h src/ChatListModel.h src/CallsModel.h src/EmojiModel.h src/emojiTable.h src/MessageModel.h src/Albums.h src/MessageKinds.h src/Polls.h src/Pins.h src/ChatController.h src/ContactBook.h src/ContactInfo.h src/ContactPicker.h src/MapChooser.h src/MediaData.h src/MediaOpener.h src/Moves.h src/dates.h src/colors.h src/QrImage.h src/Waveform.h src/OpenRequests.h src/Invites.h src/Profile.h src/Settings.h src/Sticker.h src/sizes.h src/CallAudio.h src/Proximity.h src/VideoDecoder.h src/VideoWindow.h src/VideoTest.h
+SOURCES += src/main.cpp src/EngineLink.cpp src/ChatListModel.cpp src/CallsModel.cpp src/EmojiModel.cpp src/MessageModel.cpp src/MessageRows.cpp src/Albums.cpp src/MessageKinds.cpp src/Polls.cpp src/Pins.cpp src/ChatController.cpp src/ContactBook.cpp src/ContactInfo.cpp src/ContactPicker.cpp src/MapChooser.cpp src/MediaData.cpp src/MediaOpener.cpp src/QrImage.cpp src/Waveform.cpp src/OpenRequests.cpp src/Invites.cpp src/Profile.cpp src/Settings.cpp src/Sticker.cpp src/CallAudio.cpp src/Proximity.cpp src/VideoDecoder.cpp src/VideoFormat.cpp src/VideoOutput.cpp src/VideoWindow.cpp src/VideoTest.cpp src/CameraEncoder.cpp src/CameraTest.cpp $$PWD/../lib/qrcodegen/qrcodegen.c
+HEADERS += src/EngineLink.h src/ChatListModel.h src/CallsModel.h src/EmojiModel.h src/emojiTable.h src/MessageModel.h src/Albums.h src/MessageKinds.h src/Polls.h src/Pins.h src/ChatController.h src/ContactBook.h src/ContactInfo.h src/ContactPicker.h src/MapChooser.h src/MediaData.h src/MediaOpener.h src/Moves.h src/dates.h src/colors.h src/QrImage.h src/Waveform.h src/OpenRequests.h src/Invites.h src/Profile.h src/Settings.h src/Sticker.h src/sizes.h src/CallAudio.h src/Proximity.h src/VideoDecoder.h src/VideoWindow.h src/VideoTest.h src/CameraEncoder.h src/CameraTest.h
 
 DESTDIR = app
 OBJECTS_DIR = obj

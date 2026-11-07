@@ -15,6 +15,10 @@ Page {
             id: videoTestDef
             source: "VideoTestPage.qml"
         },
+        ComponentDefinition {
+            id: cameraTestDef
+            source: "CameraTestPage.qml"
+        },
         SystemDialog {
             id: unlinkDialog
             title: qsTr("Unlink this device?")
@@ -38,6 +42,13 @@ Page {
             imageSource: "asset:///images/play.png"
             ActionBar.placement: ActionBarPlacement.InOverflow
             onTriggered: nav.push(videoTestDef.createObject())
+        },
+        // The camera's hardware H.264 encoder into the decoder and a window (CameraTestPage.qml).
+        ActionItem {
+            title: qsTr("Camera test")
+            imageSource: "asset:///images/play.png"
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            onTriggered: nav.push(cameraTestDef.createObject())
         }
     ]
     ScrollView {

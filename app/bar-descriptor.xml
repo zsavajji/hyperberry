@@ -116,6 +116,7 @@
     <permission>run_when_backgrounded</permission>
     <permission>post_notification</permission>
     <permission>record_audio</permission>
+    <permission>use_camera</permission>
     <permission>play_audio</permission>
     <!-- The phone's address book, read by the UI (src/ContactBook.cpp) and handed to the engine, so
          a person saved on the Q10 shows under that name. -->
