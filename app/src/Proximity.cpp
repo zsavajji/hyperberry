@@ -22,7 +22,7 @@ Proximity::~Proximity()
 {
     if (m_users > 0) {
         m_users = 1;
-        release();
+        drop();
     }
 }
 
@@ -34,8 +34,12 @@ static void keepAwake(bool on)
                                                 : bb::cascades::ScreenIdleMode::Normal);
 }
 
-void Proximity::acquire()
+void Proximity::acquire(QObject *holder)
 {
+    if (!holder || m_holders.contains(holder))
+        return;
+    m_holders.insert(holder);
+    connect(holder, SIGNAL(destroyed(QObject *)), this, SLOT(holderGone(QObject *)));
     if (m_users++ > 0)
         return;
     keepAwake(true);
@@ -45,7 +49,21 @@ void Proximity::acquire()
         qWarning("proximity: sensor refused, errno %d", errno);
 }
 
-void Proximity::release()
+void Proximity::release(QObject *holder)
+{
+    if (!holder || !m_holders.remove(holder))
+        return;
+    disconnect(holder, SIGNAL(destroyed(QObject *)), this, SLOT(holderGone(QObject *)));
+    drop();
+}
+
+void Proximity::holderGone(QObject *holder)
+{
+    if (m_holders.remove(holder))
+        drop();
+}
+
+void Proximity::drop()
 {
     if (m_users <= 0 || --m_users > 0)
         return;

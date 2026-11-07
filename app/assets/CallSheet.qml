@@ -61,10 +61,10 @@ Sheet {
     function syncHolds(wanted) {
         if (wanted && !held) {
             held = true
-            proximity.acquire()
+            proximity.acquire(sheet)
         } else if (!wanted && held) {
             held = false
-            proximity.release()
+            proximity.release(sheet)
         }
     }
     onClosed: {

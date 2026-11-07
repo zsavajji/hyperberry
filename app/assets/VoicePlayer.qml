@@ -19,13 +19,9 @@ MediaPlayer {
     property bool held: playingId != "" && !paused
     // The handle may change while playing ("seamlessly", MediaPlayer.hpp); 0 is the default output.
     property bool atEar: held && proximity.near
-    onHeldChanged: held ? proximity.acquire() : proximity.release()
+    // Held by the player itself, so its destruction with the chat page releases it (Proximity).
+    onHeldChanged: held ? proximity.acquire(player) : proximity.release(player)
     onAtEarChanged: audioManagerHandle = atEar ? proximity.earHandle() : 0
-    Component.onDestruction: {
-        if (held) {
-            proximity.release()
-        }
-    }
     // Anything but a failed download, which the bubble shows as retry.
     signal failed
     // No engine: the request never went.
