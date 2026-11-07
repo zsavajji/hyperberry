@@ -8,6 +8,7 @@
 
 ContactInfo::ContactInfo(QObject *parent)
     : QObject(parent)
+    , m_command("contact.info")
 {
 }
 
@@ -46,7 +47,7 @@ void ContactInfo::ask(const QString &jid)
     m_jid = jid;
     QVariantMap args;
     args["chat"] = jid;
-    m_id = m_engine->request("contact.info", args);
+    m_id = m_engine->request(m_command, args);
 }
 
 void ContactInfo::block(bool on)
@@ -93,7 +94,7 @@ void ContactInfo::onReplied(const QString &id, const QString &cmd, const QVarian
         emit exported(result.toMap()["path"].toString());
         return;
     }
-    if (cmd != "contact.info" || id != m_id)
+    if (cmd != m_command || id != m_id)
         return;
     QVariantMap info = result.toMap();
     QVariantList groups;

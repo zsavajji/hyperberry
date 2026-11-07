@@ -24,6 +24,53 @@
     </message>
 </context>
 <context>
+    <name>ChannelInfoPage</name>
+    <message>
+        <location filename="../assets/ChannelInfoPage.qml" line="19"/>
+        <source>Channel info</source>
+        <translation>Info canale</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChannelInfoPage.qml" line="23"/>
+        <location filename="../assets/ChannelInfoPage.qml" line="39"/>
+        <source>Unfollow</source>
+        <translation>Non seguire più</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChannelInfoPage.qml" line="37"/>
+        <source>Unfollow this channel?</source>
+        <translation>Non seguire più questo canale?</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChannelInfoPage.qml" line="40"/>
+        <source>Cancel</source>
+        <translation>Annulla</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../assets/ChannelInfoPage.qml" line="106"/>
+        <source>%Ln followers</source>
+        <translation>
+            <numerusform>%Ln follower</numerusform>
+            <numerusform>%Ln follower</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../assets/ChannelInfoPage.qml" line="116"/>
+        <source>Loading…</source>
+        <translation>Caricamento…</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChannelInfoPage.qml" line="125"/>
+        <source>Couldn&apos;t load the channel&apos;s info. Check the connection and try again.</source>
+        <translation>Impossibile caricare le info del canale. Controlla la connessione e riprova.</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChannelInfoPage.qml" line="129"/>
+        <source>Description</source>
+        <translation>Descrizione</translation>
+    </message>
+</context>
+<context>
     <name>ChannelsPage</name>
     <message>
         <location filename="../assets/ChannelsPage.qml" line="12"/>
@@ -217,6 +264,11 @@
         <location filename="../assets/ChatPage.qml" line="73"/>
         <source>Contact info</source>
         <translation>Info contatto</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChatPage.qml" line="73"/>
+        <source>Channel info</source>
+        <translation>Info canale</translation>
     </message>
     <message>
         <location filename="../assets/ChatPage.qml" line="73"/>

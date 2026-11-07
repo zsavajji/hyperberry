@@ -27,10 +27,8 @@ Page {
     }
     onChatChanged: {
         ctl.open(chat)
-        if (chat.kind <= 1) {
-            addAction(infoAction, ActionBarPlacement.InOverflow)
-            addAction(pollAction, ActionBarPlacement.InOverflow)
-        }
+        if (chat.kind != 2) addAction(infoAction, ActionBarPlacement.InOverflow)
+        if (chat.kind <= 1) addAction(pollAction, ActionBarPlacement.InOverflow)
         // A channel is read-only (step 6.6g): the first four actions are the composer, Emoji, Send and Attach.
         for (var a = 0; chat.kind == 3 && a < 4; a++) actionAt(a).enabled = false
         ctl.messages.itemAdded.connect(page.added)
@@ -62,10 +60,10 @@ Page {
         MapChooser {
             id: maps
         },
-        // Added for people and groups only (ActionItem has no visible).
+        // Added for people, groups and channels (ActionItem has no visible).
         InfoAction {
             id: infoAction
-            title: page.chat && page.chat.kind == 0 ? qsTr("Contact info") : qsTr("Group info")
+            title: !page.chat ? "" : page.chat.kind == 0 ? qsTr("Contact info") : page.chat.kind == 3 ? qsTr("Channel info") : qsTr("Group info")
             chat: page.chat
             chatCtl: ctl
         },
