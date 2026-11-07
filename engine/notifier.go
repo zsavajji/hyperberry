@@ -42,6 +42,13 @@ func (u *uiState) seen(chat string) bool {
 	return u.fullscreen && u.open == chat
 }
 
+// shown is whether the app is on screen full size, as the UI last said.
+func (u *uiState) shown() bool {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	return u.fullscreen
+}
+
 func (u *uiState) openChat() string {
 	u.mu.Lock()
 	defer u.mu.Unlock()

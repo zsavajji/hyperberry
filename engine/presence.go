@@ -123,13 +123,20 @@ func (s *Session) handleUIState(req json.RawMessage) (any, error) {
 		return nil, &Error{"unlinked", "link this device first"}
 	}
 	s.store.ui.set(r.Fullscreen, r.OpenChat)
+	return nil, sendPresence(cli, r.Fullscreen)
+}
+
+// sendPresence tells WhatsApp the app's focus: available while it's on screen full size. A new
+// connection starts with none, so Connected sends it again (session.go): with no network the
+// UI's own ui.state fails, and nothing re-sent it after a reconnect (Q10, 0.0.1.172).
+func sendPresence(cli *whatsmeow.Client, fullscreen bool) error {
 	state := types.PresenceUnavailable
-	if r.Fullscreen {
+	if fullscreen {
 		state = types.PresenceAvailable
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), netTimeout)
 	defer cancel()
-	return nil, cli.SendPresence(ctx, state)
+	return cli.SendPresence(ctx, state)
 }
 
 // typing and presence only emit: they key the chat in the writer (chatKey needs its tx) and

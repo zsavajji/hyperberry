@@ -374,6 +374,12 @@ func (s *Session) onEvent(cli *whatsmeow.Client, evt any) {
 				s.stopQR = nil
 			}
 			s.setLink(linkReady)
+			// The app's focus again, off this goroutine: a send waits on the connection.
+			go func() {
+				if err := sendPresence(cli, s.store.ui.shown()); err != nil {
+					s.log.Warnf("presence after connecting: %v", err)
+				}
+			}()
 		}
 		s.srv.Emit("conn", map[string]any{"state": s.conn})
 		s.photos.connected()
