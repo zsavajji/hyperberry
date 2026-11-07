@@ -57,53 +57,8 @@ Page {
                 onTriggered: page.picked(dataModel.data(indexPath))
                 listItemComponents: ListItemComponent {
                     type: ""
-                    Container {
-                        id: row
-                        horizontalAlignment: HorizontalAlignment.Fill
-                        background: row.ListItem.active ? Color.create(row.ListItem.view.pressColor) : Color.Transparent
-                        Container {
-                            horizontalAlignment: HorizontalAlignment.Fill
-                            minHeight: ui.du(9.4)
-                            leftPadding: ui.du(1.5)
-                            rightPadding: ui.du(1.5)
-                            layout: StackLayout {
-                                orientation: LayoutOrientation.LeftToRight
-                            }
-                            Container {
-                                verticalAlignment: VerticalAlignment.Center
-                                preferredWidth: ui.du(7)
-                                preferredHeight: ui.du(7)
-                                background: Color.create(ListItemData.color)
-                                layout: DockLayout {}
-                                Label {
-                                    horizontalAlignment: HorizontalAlignment.Center
-                                    verticalAlignment: VerticalAlignment.Center
-                                    text: ListItemData.initials
-                                    textFormat: TextFormat.Plain
-                                    textStyle.base: row.ListItem.view.emojiStyle
-                                    textStyle.fontSize: FontSize.PercentageValue
-                                    textStyle.fontSizeValue: 118
-                                    textStyle.color: Color.White
-                                }
-                            }
-                            Label {
-                                verticalAlignment: VerticalAlignment.Center
-                                leftMargin: ui.du(1.5)
-                                layoutProperties: StackLayoutProperties {
-                                    spaceQuota: 1
-                                }
-                                text: ListItemData.name
-                                textFormat: TextFormat.Plain
-                                textStyle.base: row.ListItem.view.emojiStyle
-                                textStyle.fontSize: FontSize.PercentageValue
-                                textStyle.fontSizeValue: row.ListItem.view.bodySize
-                            }
-                        }
-                        Container {
-                            horizontalAlignment: HorizontalAlignment.Fill
-                            preferredHeight: ui.px(2)
-                            background: ui.palette.plain
-                        }
+                    ContactRow {
+                        contact: ListItemData
                     }
                 }
             }
