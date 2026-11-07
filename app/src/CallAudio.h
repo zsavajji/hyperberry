@@ -68,7 +68,7 @@ private:
     bool openLink();
     void closeLink();
     // Opens the PCM of one direction; false after logging why. frag is the fragment size in bytes.
-    bool openPcm(bool capture, void **pcm, unsigned int *handle);
+    bool openPcm(bool capture, void **pcm, unsigned int *handle, int *frag);
     void closePcm(bool capture, void **pcm, unsigned int *handle);
     void applyRoute(unsigned int handle);
 

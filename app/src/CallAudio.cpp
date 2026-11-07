@@ -25,10 +25,16 @@ static const audio_manager_audio_type_t CallAudioType = AUDIO_TYPE_VOICE;
 // The audio link's frame: 960 samples of 16 kHz mono s16le, 60 ms (the contract's framing).
 static const int FrameBytes = 1920;
 static const int SampleRate = 16000;
-// The PCM's fragment is one frame; up to 3 are buffered (180 ms, like the engine's own queue), so
-// a late packet doesn't underrun but latency stays low.
-static const int FragsMax = 3;
-// A PCM that fails this many reads/writes in a row is given up on, ending the call's audio.
+// The fragment asked for; the device grants its own (1024 bytes on the Q10, 2026-11-07), and all
+// reads and writes go a granted fragment at a time, as block mode wants. Up to 8 queued (256 ms)
+// let a burst of late packets in without blocking; what plays ahead is kept to two frames below.
+static const int FragAsk = 1024;
+static const int FragsMax = 8;
+// Two frames (120 ms) are in before playback starts, and again after it ran dry; more than four
+// waiting and the oldest go, so the delay can't grow through a call.
+static const int Prime = 2 * FrameBytes;
+static const int Keep = 4 * FrameBytes;
+// A PCM that fails this many reads/writes in a row is given up on, ending that side's audio.
 static const int MaxErrors = 50;
 
 CallAudio::CallAudio(EngineLink *engine, QObject *parent)
@@ -211,7 +217,7 @@ bool CallAudio::openLink()
     return true;
 }
 
-bool CallAudio::openPcm(bool capture, void **pcm, unsigned int *handle)
+bool CallAudio::openPcm(bool capture, void **pcm, unsigned int *handle, int *frag)
 {
     const char *dir = capture ? "capture" : "playback";
     // "voice" is the audio path named in the SDK's audio type names (/dev/snd/voicec and voicep on
@@ -242,7 +248,7 @@ bool CallAudio::openPcm(bool capture, void **pcm, unsigned int *handle)
     params.format.format = SND_PCM_SFMT_S16_LE;
     params.format.rate = SampleRate;
     params.format.voices = 1;
-    params.buf.block.frag_size = FrameBytes;
+    params.buf.block.frag_size = FragAsk;
     params.buf.block.frags_min = 1;
     params.buf.block.frags_max = FragsMax;
     rc = snd_pcm_plugin_params(h, &params);
@@ -258,6 +264,7 @@ bool CallAudio::openPcm(bool capture, void **pcm, unsigned int *handle)
         else
             qDebug("call audio: %s open, %d Hz, %d voice, fragment %d bytes x %d", dir, setup.format.rate,
                    setup.format.voices, setup.buf.block.frag_size, setup.buf.block.frags);
+        *frag = rc == 0 && setup.buf.block.frag_size > 0 ? setup.buf.block.frag_size : FragAsk;
     }
     if (rc == 0) {
         rc = snd_pcm_plugin_prepare(h, channel);
@@ -291,47 +298,66 @@ void CallAudio::closePcm(bool capture, void **pcm, unsigned int *handle)
 }
 
 // Brings a stopped channel (underrun, overrun, device change) back. Returns false if it can't.
-static bool recover(snd_pcm_t *pcm, int channel)
+// The status it found goes into *what for the log (SND_PCM_STATUS_*).
+static bool recover(snd_pcm_t *pcm, int channel, int *what)
 {
     snd_pcm_channel_status_t status;
     memset(&status, 0, sizeof status);
     status.channel = channel;
     snd_pcm_plugin_status(pcm, &status);
+    *what = status.status;
     return snd_pcm_plugin_prepare(pcm, channel) == 0;
 }
 
-// The capture thread: the microphone to the engine.
+// The capture thread: the microphone to the engine. The device gives fragments (1024 bytes on the
+// Q10), gathered here into the link's 60 ms frames; a short read keeps what it got.
 void CallAudio::captureLoop()
 {
     void *pcm = 0;
+    int frag = FragAsk;
     // Without a microphone the call still plays the other side (the engine sends silence for us),
     // which tells the user more than a call that ends by itself; the log says why.
-    if (!openPcm(true, &pcm, &m_capHandle))
+    if (!openPcm(true, &pcm, &m_capHandle, &frag))
         return;
-    char frame[FrameBytes];
-    int errors = 0;
+    snd_pcm_t *h = static_cast<snd_pcm_t *>(pcm);
+    QByteArray chunk(frag, 0), acc;
+    int errors = 0, shorts = 0, overruns = 0;
     while (!m_stopping) {
-        const ssize_t n = snd_pcm_plugin_read(static_cast<snd_pcm_t *>(pcm), frame, FrameBytes);
-        if (n != FrameBytes) {
+        const ssize_t n = snd_pcm_plugin_read(h, chunk.data(), frag);
+        if (n > 0)
+            acc.append(chunk.constData(), int(n));
+        if (n != frag) {
             if (m_stopping)
                 break;
+            int what = 0;
+            const bool ok = recover(h, SND_PCM_CHANNEL_CAPTURE, &what);
+            if (n > 0)
+                shorts++;
+            else
+                overruns++;
             if (errors++ == 0)
-                qWarning("call audio: capture read gave %d", int(n));
-            if (errors > MaxErrors || !recover(static_cast<snd_pcm_t *>(pcm), SND_PCM_CHANNEL_CAPTURE))
+                qWarning("call audio: capture read gave %d of %d, status %d, errno %d", int(n), frag, what, errno);
+            if (errors > MaxErrors || !ok)
                 break;
-            usleep(10000);
             continue;
         }
         errors = 0;
-        if (m_muted)
-            memset(frame, 0, FrameBytes);
-        if (!sendAll(m_fd, frame, FrameBytes))
-            break; // the link is gone: the playback side sees it too
+        while (acc.size() >= FrameBytes) {
+            if (m_muted)
+                memset(acc.data(), 0, FrameBytes);
+            if (!sendAll(m_fd, acc.constData(), FrameBytes))
+                goto done; // the link is gone: the playback side sees it too
+            acc.remove(0, FrameBytes);
+        }
     }
+done:
+    if (shorts || overruns)
+        qDebug("call audio: capture had %d short reads and %d failed ones", shorts, overruns);
     closePcm(true, &pcm, &m_capHandle);
 }
 
-// The playback thread: opens the link, starts the capture thread, then the engine to the speaker.
+// The playback thread: opens the link, starts the capture thread, then the engine to the speaker,
+// a fragment at a time from what has come in.
 void CallAudio::session()
 {
     const bool linked = openLink();
@@ -343,39 +369,45 @@ void CallAudio::session()
     QMetaObject::invokeMethod(this, "setRunning", Qt::QueuedConnection, Q_ARG(bool, true));
     m_cap.start();
     void *pcm = 0;
-    if (openPcm(false, &pcm, &m_playHandle)) {
+    int frag = FragAsk;
+    if (openPcm(false, &pcm, &m_playHandle, &frag)) {
         snd_pcm_t *h = static_cast<snd_pcm_t *>(pcm);
-        char frames[2][FrameBytes];
+        char frame[FrameBytes];
+        QByteArray acc;
         bool primed = false;
-        int errors = 0;
-        while (!m_stopping) {
-            // After two frames are in, so one late packet doesn't underrun at once.
-            const int count = primed ? 1 : 2;
-            bool ok = true;
-            for (int i = 0; i < count && ok; i++)
-                ok = recvAll(m_fd, frames[i], FrameBytes);
-            if (!ok)
-                break; // the engine closed the link, or stop()
-            for (int i = 0; i < count; i++) {
-                const ssize_t n = snd_pcm_plugin_write(h, frames[i], FrameBytes);
-                if (n == FrameBytes) {
+        int errors = 0, underruns = 0, dropped = 0;
+        while (!m_stopping && recvAll(m_fd, frame, FrameBytes)) { // false: the engine closed it, or stop()
+            acc.append(frame, FrameBytes);
+            if (acc.size() > Keep) {
+                dropped += acc.size() - Prime;
+                acc.remove(0, acc.size() - Prime);
+            }
+            if (!primed && acc.size() < Prime)
+                continue;
+            primed = true;
+            while (acc.size() >= frag && !m_stopping) {
+                const ssize_t n = snd_pcm_plugin_write(h, acc.constData(), frag);
+                if (n == frag) {
+                    acc.remove(0, frag);
                     errors = 0;
                     continue;
                 }
-                if (m_stopping)
-                    break;
+                // Ran dry, or the device changed: start again once two frames are in, keeping
+                // what hasn't played.
+                int what = 0;
+                const bool ok = recover(h, SND_PCM_CHANNEL_PLAYBACK, &what);
+                underruns++;
                 if (errors++ == 0)
-                    qWarning("call audio: playback write gave %d", int(n));
-                primed = false; // after an underrun, fill two frames again
-                if (errors > MaxErrors || !recover(h, SND_PCM_CHANNEL_PLAYBACK))
+                    qWarning("call audio: playback write gave %d of %d, status %d, errno %d", int(n), frag, what, errno);
+                if (errors > MaxErrors || !ok)
                     goto done;
+                primed = false;
                 break;
             }
-            if (errors == 0)
-                primed = true;
         }
-    }
 done:
+        qDebug("call audio: playback ran dry %d times; %d bytes dropped to keep the delay down", underruns, dropped);
+    }
     m_stopping = 1;
     ::shutdown(m_fd, SHUT_RDWR); // wakes the capture thread's send/read
     m_cap.wait();
