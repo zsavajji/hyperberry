@@ -360,6 +360,19 @@
         <translation>Nuova chat</translation>
     </message>
     <message>
+        <location filename="../assets/ChatsPage.qml" line="50"/>
+        <source>New group</source>
+        <translation>Nuovo gruppo</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../assets/ChatsPage.qml" line="150"/>
+        <source>%n couldn't be added: their privacy settings don't allow it. Invite them with the group's link from your main phone.</source>
+        <translation>
+            <numerusform>%n non è stato aggiunto: le sue impostazioni sulla privacy non lo consentono. Invitalo con il link del gruppo dal telefono principale.</numerusform>
+            <numerusform>%n non sono stati aggiunti: le loro impostazioni sulla privacy non lo consentono. Invitali con il link del gruppo dal telefono principale.</numerusform>
+        </translation>
+    </message>
+    <message>
         <location filename="../assets/ChatsPage.qml" line="39"/>
         <source>Top</source>
         <translation>In alto</translation>
@@ -1047,6 +1060,74 @@
     </message>
     <message>
         <location filename="../assets/NewChatPage.qml" line="118"/>
+        <source>No contact matches.</source>
+        <translation>Nessun contatto corrisponde.</translation>
+    </message>
+</context>
+<context>
+    <name>NewGroupPage</name>
+    <message>
+        <location filename="../assets/NewGroupPage.qml" line="8"/>
+        <source>New group</source>
+        <translation>Nuovo gruppo</translation>
+    </message>
+    <message>
+        <location filename="../assets/NewGroupPage.qml" line="16"/>
+        <source>Create</source>
+        <translation>Crea</translation>
+    </message>
+    <message>
+        <location filename="../assets/NewGroupPage.qml" line="38"/>
+        <source>A group needs a name and someone in it</source>
+        <translation>Un gruppo richiede un nome e almeno un partecipante.</translation>
+    </message>
+    <message>
+        <location filename="../assets/NewGroupPage.qml" line="42"/>
+        <source>Not sent: HyperBerry is reconnecting. Try again in a moment.</source>
+        <translation>Non inviato: HyperBerry si sta riconnettendo. Riprova tra un attimo.</translation>
+    </message>
+    <message>
+        <location filename="../assets/NewGroupPage.qml" line="14"/>
+        <source>WhatsApp won't take a name that long</source>
+        <translation>WhatsApp non accetta un nome così lungo.</translation>
+    </message>
+    <message>
+        <location filename="../assets/NewGroupPage.qml" line="14"/>
+        <source>Couldn't create the group. Check the connection and try again.</source>
+        <translation>Impossibile creare il gruppo. Controlla la connessione e riprova.</translation>
+    </message>
+    <message>
+        <location filename="../assets/NewGroupPage.qml" line="76"/>
+        <source>Group name</source>
+        <translation>Nome del gruppo</translation>
+    </message>
+    <message>
+        <location filename="../assets/NewGroupPage.qml" line="80"/>
+        <source>Search contacts</source>
+        <translation>Cerca contatti</translation>
+    </message>
+    <message>
+        <location filename="../assets/NewGroupPage.qml" line="85"/>
+        <source>%1 chosen</source>
+        <translation>%1 scelti</translation>
+    </message>
+    <message>
+        <location filename="../assets/NewGroupPage.qml" line="111"/>
+        <source>Loading…</source>
+        <translation>Caricamento…</translation>
+    </message>
+    <message>
+        <location filename="../assets/NewGroupPage.qml" line="115"/>
+        <source>Creating the group…</source>
+        <translation>Creazione del gruppo…</translation>
+    </message>
+    <message>
+        <location filename="../assets/NewGroupPage.qml" line="118"/>
+        <source>No contacts yet. Your phone sends them shortly after linking.</source>
+        <translation>Ancora nessun contatto. Il telefono li invia poco dopo il collegamento.</translation>
+    </message>
+    <message>
+        <location filename="../assets/NewGroupPage.qml" line="118"/>
         <source>No contact matches.</source>
         <translation>Nessun contatto corrisponde.</translation>
     </message>

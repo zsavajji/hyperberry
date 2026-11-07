@@ -5,6 +5,7 @@
 #include <bb/cascades/DataModel>
 #include <QObject>
 #include <QPointer>
+#include <QSet>
 #include <QString>
 #include <QVariant>
 #include <QVariantList>
@@ -13,7 +14,8 @@ class EngineLink;
 
 // The new chat page's address book (PLAN.md §7, step 3.6), made by QML in the page's
 // attachedObjects so it dies with the page. It asks contacts.list, draws each contact as a
-// chat-list row (the tile the chat will have) and filters them as the user types.
+// chat-list row (the tile the chat will have) and filters them as the user types. The new
+// group page also ticks contacts here (m_chosen, so a filter keeps the ticks) and creates the group.
 class ContactPicker : public QObject
 {
     Q_OBJECT
@@ -26,6 +28,8 @@ class ContactPicker : public QObject
     // isn't re-read by a binding).
     Q_PROPERTY(int total READ total NOTIFY loadedChanged)
     Q_PROPERTY(int shown READ shown NOTIFY shownChanged)
+    // How many contacts the new group page has ticked.
+    Q_PROPERTY(int chosenCount READ chosenCount NOTIFY chosenChanged)
 public:
     explicit ContactPicker(QObject *parent = 0);
 
@@ -35,14 +39,23 @@ public:
     bool loaded() const;
     int total() const;
     int shown() const;
+    int chosenCount() const;
 
     Q_INVOKABLE void load();
     // Shows the contacts with a word of the name starting with text, ignoring case; "" shows all.
     Q_INVOKABLE void filter(const QString &text);
+    // Ticks or unticks the row at indexPath, and redraws just that row.
+    Q_INVOKABLE void toggle(const QVariantList &indexPath);
+    // Asks group.create for a group of the ticked contacts; the request's id, "" when the
+    // engine isn't connected. The reply comes as groupCreated.
+    Q_INVOKABLE QString createGroup(const QString &name);
 
 signals:
     void loadedChanged();
     void shownChanged();
+    void chosenChanged();
+    // refused: how many the privacy settings kept out of the group.
+    void groupCreated(const QString &jid, int refused);
 
 private slots:
     void onReplied(const QString &id, const QString &cmd, const QVariant &result);
@@ -56,6 +69,8 @@ private:
     QVariantList m_all;
     QString m_text;
     QString m_askId; // the contacts.list request we wait for
+    QString m_createId; // the group.create request we wait for
+    QSet<QString> m_chosen; // jids, kept across filters
     bool m_loaded;
     bool m_wanted; // load() was called
 };

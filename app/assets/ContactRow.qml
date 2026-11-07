@@ -45,6 +45,14 @@ Container {
             textStyle.fontSize: FontSize.PercentageValue
             textStyle.fontSizeValue: row.ListItem.view.bodySize
         }
+        ImageView {
+            visible: !!row.contact.chosen
+            verticalAlignment: VerticalAlignment.Center
+            preferredWidth: ui.du(5)
+            preferredHeight: ui.du(5)
+            imageSource: "asset:///images/tick_action.png"
+            filterColor: ui.palette.primary
+        }
     }
     Container {
         horizontalAlignment: HorizontalAlignment.Fill

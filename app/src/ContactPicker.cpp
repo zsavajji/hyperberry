@@ -49,6 +49,11 @@ int ContactPicker::shown() const
     return m_model->size();
 }
 
+int ContactPicker::chosenCount() const
+{
+    return m_chosen.size();
+}
+
 void ContactPicker::load()
 {
     m_wanted = true;
@@ -73,6 +78,12 @@ void ContactPicker::onConnected()
 // has in the chat list.
 void ContactPicker::onReplied(const QString &id, const QString &cmd, const QVariant &result)
 {
+    if (cmd == "group.create" && id == m_createId) {
+        m_createId.clear();
+        const QVariantMap r = result.toMap();
+        emit groupCreated(r["jid"].toString(), r["refused"].toInt());
+        return;
+    }
     if (cmd != "contacts.list" || id != m_askId)
         return;
     m_all.clear();
@@ -81,6 +92,7 @@ void ContactPicker::onReplied(const QString &id, const QString &cmd, const QVari
         c["kind"] = 0;
         c["initials"] = initials(c["name"].toString());
         c["color"] = pickColor(c["jid"].toString(), kColors, kColorCount);
+        c["chosen"] = m_chosen.contains(c["jid"].toString());
         m_all << c;
     }
     m_loaded = true;
@@ -104,8 +116,42 @@ void ContactPicker::filter(const QString &text)
                 }
             }
         }
-        if (match)
-            m_model->append(v);
+        if (match) {
+            QVariantMap row = v.toMap();
+            row["chosen"] = m_chosen.contains(row["jid"].toString());
+            m_model->append(row);
+        }
     }
     emit shownChanged();
+}
+
+void ContactPicker::toggle(const QVariantList &indexPath)
+{
+    const int i = indexPath.value(0).toInt();
+    if (i < 0 || i >= m_model->size())
+        return;
+    QVariantMap row = m_model->value(i).toMap();
+    const QString jid = row["jid"].toString();
+    const bool on = !m_chosen.contains(jid);
+    if (on)
+        m_chosen.insert(jid);
+    else
+        m_chosen.remove(jid);
+    row["chosen"] = on;
+    m_model->replace(i, row);
+    emit chosenChanged();
+}
+
+QString ContactPicker::createGroup(const QString &name)
+{
+    if (!m_engine || !m_engine->connected())
+        return QString();
+    QVariantList members;
+    foreach (const QString &jid, m_chosen)
+        members << jid;
+    QVariantMap req;
+    req["name"] = name;
+    req["participants"] = members;
+    m_createId = m_engine->request("group.create", req);
+    return m_createId;
 }

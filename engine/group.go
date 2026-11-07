@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"sort"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/polymorfa/hypermeow"
 	"github.com/polymorfa/hypermeow/types"
@@ -42,6 +44,7 @@ type contactInfo struct {
 func registerGroup(srv *Server, s *Session) {
 	srv.Handle("group.info", s.handleGroupInfo)
 	srv.Handle("group.participants", s.handleGroupParticipants)
+	srv.Handle("group.create", s.handleGroupCreate)
 	srv.Handle("contact.info", s.handleContactInfo)
 }
 
@@ -218,4 +221,72 @@ func (s *Session) handleContactInfo(req json.RawMessage) (any, error) {
 	out.Blocked = isBlocked(bl, jid.User, pn.User)
 	out.Picture = s.photos.full(jid)
 	return out, nil
+}
+
+// maxGroupName is WhatsApp's own limit. hypermeow's doc still says 25; the apps take 100, and a
+// name the server won't take comes back as a 406, which handleGroupCreate maps.
+const maxGroupName = 100
+
+// parseGroupCreate reads group.create's request: the trimmed name and the members, in order,
+// without empties or repeats.
+func parseGroupCreate(req json.RawMessage) (name string, members []types.JID, err error) {
+	var r struct {
+		Name         string
+		Participants []string
+	}
+	if err := json.Unmarshal(req, &r); err != nil {
+		return "", nil, &Error{"bad_request", "group.create needs name and participants"}
+	}
+	name = strings.TrimSpace(r.Name)
+	if n := utf8.RuneCountInString(name); n < 1 || n > maxGroupName {
+		return "", nil, &Error{"bad_request", "a group name is 1 to 100 characters"}
+	}
+	seen := map[types.JID]bool{}
+	for _, p := range r.Participants {
+		if p = strings.TrimSpace(p); p == "" {
+			continue
+		}
+		j, err := types.ParseJID(p)
+		if err != nil || j.IsEmpty() {
+			return "", nil, &Error{"bad_request", "not a JID: " + p}
+		}
+		if !seen[j] {
+			seen[j] = true
+			members = append(members, j)
+		}
+	}
+	if len(members) == 0 {
+		return "", nil, &Error{"bad_request", "a group needs someone in it"}
+	}
+	return name, members, nil
+}
+
+// handleGroupCreate makes the group, then its chat row, so the UI finds the chat when it opens
+// it. refused counts the people whose privacy settings kept them out.
+func (s *Session) handleGroupCreate(req json.RawMessage) (any, error) {
+	name, members, err := parseGroupCreate(req)
+	if err != nil {
+		return nil, err
+	}
+	cli, err := s.ready()
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
+	defer cancel()
+	info, err := cli.CreateGroup(ctx, whatsmeow.ReqCreateGroup{Name: name, Participants: members})
+	if errors.Is(err, whatsmeow.ErrIQNotAcceptable) {
+		return nil, &Error{"name_too_long", err.Error()}
+	}
+	if err != nil {
+		return nil, err
+	}
+	refused := 0
+	for _, p := range info.Participants {
+		if p.Error != 0 {
+			refused++
+		}
+	}
+	s.store.madeChat(info.JID.String(), chatGroup, name)
+	return map[string]any{"jid": info.JID.String(), "refused": refused}, nil
 }

@@ -1,4 +1,5 @@
 import bb.cascades 1.4
+import bb.system 1.2
 
 // The chat list (PLAN.md §7, step 2.4): chats.db's chats under date headers, drawn by
 // ChatListModel (the context property chats) before the engine answers.
@@ -6,6 +7,8 @@ Page {
     id: page
     // The new chat page while it's open, so picking can remove it from the stack.
     property variant picker
+    // The new group page while it's open, so creating can remove it from the stack.
+    property variant groupPage
     // The filter field is over the list. The letter shortcuts are off meanwhile, or they would
     // eat the letters typed into it (bb10-pitfalls).
     property bool searching: false
@@ -17,6 +20,13 @@ Page {
         ComponentDefinition {
             id: newChatDef
             source: "NewChatPage.qml"
+        },
+        ComponentDefinition {
+            id: newGroupDef
+            source: "NewGroupPage.qml"
+        },
+        SystemToast {
+            id: groupRefused
         },
         ComponentDefinition {
             id: archivedDef
@@ -38,6 +48,12 @@ Page {
                 enabled: !page.searching
             }
             onTriggered: page.newChat()
+        },
+        ActionItem {
+            title: qsTr("New group")
+            imageSource: "asset:///images/contacts_action.png"
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            onTriggered: page.newGroup()
         },
         ActionItem {
             title: qsTr("Top")
@@ -119,6 +135,25 @@ Page {
         picker = null
         nav.remove(old)
         old.destroy()
+    }
+    function newGroup() {
+        groupPage = newGroupDef.createObject()
+        groupPage.created.connect(page.groupCreated)
+        nav.push(groupPage)
+        groupPage.focusName()
+    }
+    function groupCreated(jid, refused) {
+        // Out from under the chat, as chatPicked does the picker; the engine has the chat in
+        // chats.db before it replies, so main.qml opens it.
+        var old = groupPage
+        groupPage = null
+        nav.remove(old)
+        old.destroy()
+        nav.openRequested(jid)
+        if (refused > 0) {
+            groupRefused.body = qsTr("%n couldn't be added: their privacy settings don't allow it. Invite them with the group's link from your main phone.", "", refused)
+            groupRefused.show()
+        }
     }
     titleBar: TitleBar {
         title: engine.connected && engine.conn == "ready" ? qsTr("Chats") : qsTr("Connecting…")
