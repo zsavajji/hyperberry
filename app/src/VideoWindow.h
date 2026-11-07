@@ -3,6 +3,7 @@
 
 #include "VideoDecoder.h"
 
+#include <QAtomicInt>
 #include <QMutex>
 #include <QString>
 #include <screen/screen.h>
@@ -26,6 +27,13 @@ public:
     void destroy();
     bool isNv12() const { return m_format == SCREEN_FORMAT_NV12; }
 
+    // Quarter turns clockwise that make the next frames upright (the peer's orientation); any
+    // thread, takes effect from the next frame. The RGB fallback ignores it.
+    void setRotation(int quarterTurns) { m_turns = quarterTurns & 3; }
+    // The picture as drawn, after turning, 0 x 0 until the first frame has been posted. The window
+    // follows the frames: its buffers are made again when a frame's (turned) size is not theirs.
+    void pictureSize(int *w, int *h) const;
+
     void frame(const VideoDecoder::Frame &frame);
 
     // The time frame() took to bring a frame to linear NV12 in the buffer (and to RGB, in the
@@ -36,15 +44,18 @@ public:
 private:
     bool build(int format, const QString &windowId, const QByteArray &group, int z);
     void toLinear(const VideoDecoder::Frame &f, unsigned char *y, int yStride, unsigned char *uv, int uvStride);
+    bool resize(int w, int h);
 
     screen_context_t m_ctx;
     screen_window_t m_win;
     int m_format;
-    int m_w, m_h;
-    QByteArray m_scratch;      // the fallback's linear NV12
-    bool m_warned;
+    int m_w, m_h;              // the buffers' size; written on the decoder's thread (and in create())
+    QAtomicInt m_turns;
+    QByteArray m_scratch;      // linear NV12 of the frame, before the turn and in the RGB fallback
+    bool m_warned, m_resizeWarned;
     bool m_postLogged;
     mutable QMutex m_mu;
+    int m_picW, m_picH;        // under m_mu: what pictureSize() says
     double m_detileSum, m_detileMax;
     int m_detileCount;
 };

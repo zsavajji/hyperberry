@@ -1,5 +1,7 @@
 #include "VideoWindow.h"
 
+#include "Nv12Rotate.h"
+
 #include <bb/cascades/Application>
 #include <bb/cascades/Window>
 #include <errno.h>
@@ -22,7 +24,10 @@ VideoWindow::VideoWindow()
     , m_w(0)
     , m_h(0)
     , m_warned(false)
+    , m_resizeWarned(false)
     , m_postLogged(false)
+    , m_picW(0)
+    , m_picH(0)
     , m_detileSum(0)
     , m_detileMax(0)
     , m_detileCount(0)
@@ -83,7 +88,9 @@ bool VideoWindow::create(const QString &windowId, int width, int height, bool rg
     destroy();
     m_w = width;
     m_h = height;
+    m_turns = 0;
     m_warned = false;
+    m_resizeWarned = false;
     m_postLogged = false;
     if (screen_create_context(&m_ctx, SCREEN_APPLICATION_CONTEXT)) {
         qWarning("video window: screen_create_context: %s", strerror(errno));
@@ -102,7 +109,6 @@ bool VideoWindow::create(const QString &windowId, int width, int height, bool rg
         m_format = SCREEN_FORMAT_NV12;
     } else if (build(SCREEN_FORMAT_RGBX8888, windowId, group, z)) {
         m_format = SCREEN_FORMAT_RGBX8888;
-        m_scratch.resize(m_w * m_h * 3 / 2);
     } else {
         destroy();
         return false;
@@ -120,6 +126,37 @@ void VideoWindow::destroy()
     m_win = 0;
     m_ctx = 0;
     m_format = 0;
+    QMutexLocker lock(&m_mu);
+    m_picW = m_picH = 0;
+}
+
+void VideoWindow::pictureSize(int *w, int *h) const
+{
+    QMutexLocker lock(&m_mu);
+    *w = m_picW;
+    *h = m_picH;
+}
+
+// Makes the window's buffers again at a new size. On the decoder's thread, the only one that draws,
+// so no frame is being written to them; Screen is told the picture's size too, which the control
+// takes its aspect from.
+bool VideoWindow::resize(int w, int h)
+{
+    const int size[2] = { w, h };
+    screen_destroy_window_buffers(m_win);
+    if (screen_set_window_property_iv(m_win, SCREEN_PROPERTY_BUFFER_SIZE, size)
+        || screen_set_window_property_iv(m_win, SCREEN_PROPERTY_SOURCE_SIZE, size)
+        || screen_create_window_buffers(m_win, 2)) {
+        if (!m_resizeWarned)
+            qWarning("video window: buffers %dx%d refused: %s", w, h, strerror(errno));
+        m_resizeWarned = true;
+        return false;
+    }
+    m_resizeWarned = false;
+    QMutexLocker lock(&m_mu);
+    m_w = w;
+    m_h = h;
+    return true;
 }
 
 void VideoWindow::detileStats(double *meanMs, double *maxMs) const
@@ -163,12 +200,23 @@ void VideoWindow::frame(const VideoDecoder::Frame &f)
 {
     if (!m_win)
         return;
-    if (f.width != m_w || f.height != m_h || (f.colorFormat != VideoDecoder::TiledNV12 && f.colorFormat != VideoDecoder::LinearNV12)) {
+    if (f.colorFormat != VideoDecoder::TiledNV12 && f.colorFormat != VideoDecoder::LinearNV12) {
         if (!m_warned)
-            qWarning("video window: frame %dx%d color 0x%x does not fit the %dx%d window", f.width, f.height, f.colorFormat, m_w, m_h);
+            qWarning("video window: frame %dx%d in colour format 0x%x is not NV12", f.width, f.height, f.colorFormat);
         m_warned = true;
         return;
     }
+    // ponytail: the RGB fallback (only if Screen refuses NV12 windows) draws the picture unturned.
+    const int turns = m_format == SCREEN_FORMAT_NV12 ? int(m_turns) & 3 : 0;
+    const int wantW = turns & 1 ? f.height : f.width, wantH = turns & 1 ? f.width : f.height;
+    if (wantW != m_w || wantH != m_h) {
+        if (!resize(wantW, wantH)) // logged once; the next frame tries again
+            return;
+        qDebug("video window: picture now %dx%d (turns %d)", wantW, wantH, turns);
+    }
+    const int need = f.width * f.height * 3 / 2;
+    if (m_scratch.size() < need)
+        m_scratch.resize(need);
     // Room for both of the window's buffers: Screen writes them all (one variable took two before).
     screen_buffer_t bufs[2] = { 0, 0 };
     if (screen_get_window_property_pv(m_win, SCREEN_PROPERTY_RENDER_BUFFERS, (void **)bufs) || !bufs[0])
@@ -186,8 +234,16 @@ void VideoWindow::frame(const VideoDecoder::Frame &f)
         int offsets[3] = { 0, 0, 0 };
         screen_get_buffer_property_iv(buf, SCREEN_PROPERTY_PLANAR_OFFSETS, offsets);
         // The chroma plane is where Screen says; right behind the luma rows if it says nothing.
+        unsigned char *dy = base + offsets[0], *duv = base + (offsets[1] > 0 ? offsets[1] : stride * m_h);
         t0 = nowMs();
-        toLinear(f, base + offsets[0], stride, base + (offsets[1] > 0 ? offsets[1] : stride * m_h), stride);
+        if (turns == 0) {
+            toLinear(f, dy, stride, duv, stride);
+        } else {
+            // Linear first, then turned into the buffer: the tiles don't survive a turn.
+            unsigned char *sy = (unsigned char *)m_scratch.data(), *suv = sy + f.width * f.height;
+            toLinear(f, sy, f.width, suv, f.width);
+            rotateNv12(sy, suv, f.width, f.height, f.width, turns, dy, stride, duv, stride);
+        }
         ms = nowMs() - t0;
     } else {
         // ponytail: plain C, BT.601, no NEON; the fallback only if Screen refuses NV12 windows.
@@ -221,6 +277,8 @@ void VideoWindow::frame(const VideoDecoder::Frame &f)
         m_postLogged = true;
     }
     QMutexLocker lock(&m_mu);
+    m_picW = m_w;
+    m_picH = m_h;
     m_detileSum += ms;
     m_detileCount++;
     if (ms > m_detileMax)
