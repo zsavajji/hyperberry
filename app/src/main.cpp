@@ -18,6 +18,8 @@
 
 #include "ChatController.h"
 #include "CallAudio.h"
+#include <bb/ApplicationInfo>
+#include <QDeclarativeContext>
 #include "CallVideo.h"
 #include "CallsModel.h"
 #include "ChatListModel.h"
@@ -155,6 +157,8 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     document->setContextProperty("channelChats", &channelChats);
     document->setContextProperty("callList", &callList);
     document->setContextProperty("callAudio", &callAudio);
+    // About shows it where a profile shows the number: versionNumber.buildId, from the .bar.
+    document->documentContext()->setContextProperty("appVersion", bb::ApplicationInfo().version());
     document->setContextProperty("callVideo", &callVideo);
     document->setContextProperty("proximity", &proximity);
     document->setContextProperty("emojis", &emojis);

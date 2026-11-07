@@ -5,7 +5,8 @@ the account's hub.png (the app's icon, at the Hub's 81 px).
 The phone has only the trash can among the info page's and chat menu's icons (user's choice,
 2026-11-01), so these are drawn as action icons too: contacts_action (two people), save_action
 (a floppy disk), block_action (the "forbidden" sign), attach_action (a paperclip), plus_action
-(a plus, which the phone has only beside a contact, a place or an event) and megaphone_action.
+(a plus, which the phone has only beside a contact, a place or an event), megaphone_action and
+help_action (a question mark in a ring, for About).
 It also draws the app's icon, in every size, and the splash.
 
 They're white on transparent, so QML tints them with ImageView.filterColor (grey, or the
@@ -55,6 +56,14 @@ def main(out):
     d.line(pts((0.14, 0.52), (0.38, 0.76), (0.86, 0.26)), white, w, joint="curve")
     save(img, out, "tick")
     action(img, out, "tick")  # the Hub item menu's Mark as read
+
+    # A question mark in a ring: the swipe-down menu's About (the user's choice, 2026-11-07).
+    img, d = canvas(H)
+    d.ellipse(pts((0.06, 0.06), (0.94, 0.94)), None, white, w)
+    d.arc(pts((0.35, 0.22), (0.65, 0.5)), 180, 70, white, w)
+    d.line(pts((0.6, 0.47), (0.5, 0.55), (0.5, 0.64)), white, w, joint="curve")
+    d.ellipse(pts((0.44, 0.71), (0.56, 0.83)), white)
+    action(img, out, "help")
 
     # The second tick's short stroke starts past the first tick's long one, as WhatsApp draws it.
     img, d = canvas(round(H * 1.3))

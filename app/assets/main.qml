@@ -23,6 +23,12 @@ TabbedPane {
                 imageSource: "asset:///images/contacts_action.png"
                 enabled: engine.linked
                 onTriggered: root.showOnChats(profileDef.createObject())
+            },
+            // The app as a profile: logo, name, version, what it is (AboutPage.qml).
+            ActionItem {
+                title: qsTr("About")
+                imageSource: "asset:///images/help_action.png"
+                onTriggered: root.showOnChats(aboutDef.createObject())
             }
         ]
     }
@@ -90,6 +96,10 @@ TabbedPane {
                 ComponentDefinition {
                     id: profileDef
                     source: "ProfilePage.qml"
+                },
+                ComponentDefinition {
+                    id: aboutDef
+                    source: "AboutPage.qml"
                 },
                 ComponentDefinition {
                     id: coverDef

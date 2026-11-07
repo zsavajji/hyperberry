@@ -3,6 +3,29 @@
 <TS version="2.0" language="it_IT">
 <defaultcodec>UTF-8</defaultcodec>
 <context>
+    <name>AboutPage</name>
+    <message>
+        <source>About</source>
+        <translation>Informazioni</translation>
+    </message>
+    <message>
+        <source>A client for WhatsApp based on hypermeow and meowcaller, for BlackBerry 10.</source>
+        <translation>Un client per WhatsApp basato su hypermeow e meowcaller, per BlackBerry 10.</translation>
+    </message>
+    <message>
+        <source>Thanks</source>
+        <translation>Ringraziamenti</translation>
+    </message>
+    <message>
+        <source>vbbot, for whatsapp-light&apos;s patches to meowcaller</source>
+        <translation>vbbot, per le patch di whatsapp-light a meowcaller</translation>
+    </message>
+    <message>
+        <source>Developer</source>
+        <translation>Sviluppatore</translation>
+    </message>
+</context>
+<context>
     <name>AlbumPage</name>
     <message>
         <location filename="../assets/AlbumPage.qml" line="21"/>
@@ -1833,6 +1856,11 @@
         <location filename="../assets/main.qml" line="29"/>
         <source>Profile</source>
         <translation>Profilo</translation>
+    </message>
+    <message>
+        <location filename="../assets/main.qml" line="34"/>
+        <source>About</source>
+        <translation>Informazioni</translation>
     </message>
     <message>
         <location filename="../assets/main.qml" line="1"/>
