@@ -12,9 +12,8 @@ Sheet {
     property bool ended: phase == "ended"
     // The chat's row, read when a call comes in (its name and picture); {} for a chat we don't have.
     property variant who: ({})
-    // A call is live from dialling to hang-up; the proximity sensor and the awake screen are held
-    // for exactly that (and released when the sheet closes, whatever the state).
-    property bool live: phase == "calling" || phase == "connecting" || phase == "active"
+    // The proximity sensor and the awake screen are held while the call is live, from dialling to
+    // hang-up (and released when the sheet closes, whatever the state).
     property bool held: false
     // The call the audio link was started for, so connecting -> active doesn't restart it.
     property string audioFor: ""
@@ -72,25 +71,29 @@ Sheet {
         callAudio.stop()
         audioFor = ""
     }
+    // The state is read from call itself, never from phase, ended or ringing: in Qt 4.8 this
+    // handler can run before those bindings catch up with the same change. Reading them left the
+    // clock at 0:00 and the sheet on "Call ended" on the Q10 (0.0.1.181).
     onCallChanged: {
-        if (phase == "") {
+        var st = call.state || ""
+        if (st == "") {
             return
         }
-        syncHolds(live)
-        if (ended) {
+        syncHolds(st == "calling" || st == "connecting" || st == "active")
+        if (st == "ended") {
             ticker.stop()
             closer.start()
             callAudio.stop()
             audioFor = ""
             return
         }
-        if ((phase == "connecting" || phase == "active") && audioFor != call.id) {
+        if ((st == "connecting" || st == "active") && audioFor != call.id) {
             audioFor = call.id
             callAudio.start(call.id)
         }
         closer.stop()
         who = chats.chat(call.chat)
-        if (phase == "active" && call.since > 0) {
+        if (st == "active" && call.since > 0) {
             refreshClock()
             ticker.start()
         } else {
