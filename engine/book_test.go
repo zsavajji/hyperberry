@@ -198,3 +198,34 @@ func TestRenameAllBook(t *testing.T) {
 		t.Error("the group sender didn't take the book name")
 	}
 }
+
+func TestBookCandidates(t *testing.T) {
+	const it = "393331234567"
+	for _, c := range []struct {
+		what, own string
+		saved     []string
+		want      map[string]string
+	}{
+		{"national", it, []string{"3331234567"}, nil}, // our own number, left out
+		{"national, other", it, []string{"3339999999"}, map[string]string{"393339999999": "Anna"}},
+		{"leading 0, both forms", it, []string{"0412345678"}, map[string]string{"39412345678": "Anna", "390412345678": "Anna"}},
+		{"international", it, []string{"447700900123"}, map[string]string{"447700900123": "Anna"}},
+		{"own unknown", "", []string{"3339999999", "447700900123", "0412345678"}, map[string]string{"447700900123": "Anna"}},
+	} {
+		b := &addressBook{}
+		var es []bookEntry
+		for _, s := range c.saved {
+			es = append(es, bookEntry{s, "Anna"})
+		}
+		b.set(es)
+		got := b.candidates(c.own)
+		if len(got) != len(c.want) {
+			t.Errorf("%s: %v, want %v", c.what, got, c.want)
+		}
+		for k, v := range c.want {
+			if got[k] != v {
+				t.Errorf("%s: %v, want %v", c.what, got, c.want)
+			}
+		}
+	}
+}

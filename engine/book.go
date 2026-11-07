@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"maps"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -118,4 +119,43 @@ func (b *addressBook) set(entries []bookEntry) (changed bool) {
 		}
 	}
 	return true
+}
+
+// candidates is every full number (country code first, digits only) the book's entries may be, each
+// with the entry's name; own is our number, for our country's code. The book keeps digits only, so
+// whether one was typed with its country code is a guess, made as name() matches them: a leading 0
+// is national, and taken with and without it (Italy keeps its 0, the UK drops it); 11 digits or more
+// is already international; anything shorter is national. A wrong guess only asks WhatsApp about a
+// number nobody has, as long as it isn't someone else's: hence not trying every form of every entry.
+// ponytail: the country is the linked account's, as in name().
+func (b *addressBook) candidates(own string) map[string]string {
+	cc := callingCode(own)
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	keys := make([]string, 0, len(b.byNumber))
+	for d := range b.byNumber {
+		keys = append(keys, d)
+	}
+	sort.Strings(keys) // so a number two entries share goes to the same one every time
+	out := map[string]string{}
+	add := func(num, name string) {
+		if _, ok := out[num]; !ok && num != own {
+			out[num] = name
+		}
+	}
+	for _, d := range keys {
+		name := b.byNumber[d]
+		switch {
+		case strings.HasPrefix(d, "0"):
+			if cc != "" {
+				add(cc+d[1:], name)
+				add(cc+d, name)
+			}
+		case len(d) >= 11:
+			add(d, name)
+		case cc != "":
+			add(cc+d, name)
+		}
+	}
+	return out
 }
