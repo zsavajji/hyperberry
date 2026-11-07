@@ -328,7 +328,8 @@ Page {
                 // Filled: a DockLayout's child sits at its top left, at its own size, otherwise.
                 horizontalAlignment: HorizontalAlignment.Fill
                 verticalAlignment: VerticalAlignment.Fill
-                // The cards' long-press menu reaches the page through the list (ListItem.view).
+                // The C++ cards call these functions on the list: the long-press menu's actions, a mention's
+                // tap, the reactions' chip.
                 function reply(msg) {
                     ctl.reply(msg)
                     composer.requestFocus()
@@ -423,32 +424,8 @@ Page {
                         onAtBeginningChanged: ctl.setAtBottom(atBeginning)
                     }
                 ]
-                listItemComponents: [
-                    ListItemComponent {
-                        type: "header"
-                        Header {
-                            title: ListItemData
-                        }
-                    },
-                    ListItemComponent {
-                        type: "text"
-                        TextCard {
-                            msg: ListItemData
-                        }
-                    },
-                    ListItemComponent {
-                        type: "msg"
-                        MessageItem {
-                            msg: ListItemData
-                        }
-                    },
-                    ListItemComponent {
-                        type: "service"
-                        ServiceItem {
-                            msg: ListItemData
-                        }
-                    }
-                ]
+                // The cards are C++ (MessageCards.cpp, step 8.6): they reach the page through these functions and properties.
+                listItemProvider: MessageCards {}
             }
             // ctl.messages is null until the page opens the chat, hence the first test.
             EmptyNote {

@@ -1,0 +1,110 @@
+#include "MessageCard.h"
+
+#include <bb/cascades/ActionItem>
+#include <bb/cascades/ActionSet>
+#include <bb/cascades/ActiveTextTriggeredEvent>
+#include <bb/cascades/DeleteActionItem>
+#include <bb/cascades/ListView>
+
+#include "CardStyle.h"
+#include "Invites.h"
+
+using namespace bb::cascades;
+
+namespace {
+// The QML file's name: the translations of MessageItem.qml's strings (hyperberry_it.ts) apply.
+const char *const kContext = "MessageItem";
+}
+
+// What a card does when touched: its long-press menu, the join button and a tapped link.
+
+// The menu's title is the message's text, or what stands for it.
+void MessageCard::fillMenu()
+{
+    QString title;
+    if (!flag("deleted")) {
+        title = str("text");
+        if (m_rich && title.isEmpty())
+            title = str("summary").isEmpty() ? str("label") : str("summary");
+    }
+    m_menu->setTitle(title);
+}
+
+void MessageCard::onPopulating()
+{
+    if (!m_reply)
+        makeActions();
+    const bool deleted = flag("deleted");
+    const bool readOnly = flag("readOnly");
+    m_reply->setEnabled(!deleted && !readOnly);
+    m_react->setEnabled(!deleted && !readOnly);
+    if (m_votes)
+        m_votes->setEnabled(flag("poll") && !deleted);
+    m_copy->setEnabled(!deleted && !str("text").isEmpty());
+    m_revoke->setEnabled(flag("revocable"));
+    m_deleteMe->setEnabled(!readOnly);
+}
+
+ActionItem *MessageCard::action(const char *title, const char *icon, const char *slot)
+{
+    ActionItem *item = new ActionItem();
+    item->setTitle(Card::tr(kContext, title));
+    item->setImageSource(Card::url(icon));
+    connect(item, SIGNAL(triggered()), this, slot);
+    m_menu->add(item);
+    return item;
+}
+
+void MessageCard::makeActions()
+{
+    m_reply = action("Reply", "file:///usr/share/icons/bb_action_reply.png", SLOT(onReply()));
+    // The icon is the emoji picker's action (step 5.11); the bar opens over the composer.
+    m_react = action("React", "asset:///images/emoji.png", SLOT(onReact()));
+    // Who chose what in a poll (the user's request, 0.0.1.132), as the counts' tap shows it per option.
+    if (m_rich)
+        m_votes = action("View votes", "file:///usr/share/icons/ic_accept.png", SLOT(onVotes()));
+    // /usr/share/icons has no copy icon: this one is the stock Text Messages app's.
+    m_copy = action("Copy", "asset:///images/copy.png", SLOT(onCopy()));
+    m_revoke = action("Delete for everyone", "file:///usr/share/icons/bb_action_delete.png",
+                      SLOT(onRevoke()));
+    // "Delete for me" is a DeleteActionItem, which the system puts last.
+    m_deleteMe = new DeleteActionItem();
+    m_deleteMe->setTitle(Card::tr(kContext, "Delete for me"));
+    connect(m_deleteMe, SIGNAL(triggered()), this, SLOT(onDeleteMe()));
+    m_menu->add(m_deleteMe);
+}
+
+void MessageCard::onReply() { Card::call(m_list, "reply", m_msg); }
+void MessageCard::onReact() { Card::call(m_list, "react", m_msg); }
+void MessageCard::onVotes() { Card::call(m_list, "showVoters", str("votesText")); }
+void MessageCard::onCopy() { Card::call(m_list, "copy", str("text")); }
+void MessageCard::onRevoke() { Card::call(m_list, "deleteForEveryone", str("id")); }
+void MessageCard::onDeleteMe() { Card::call(m_list, "deleteForMe", str("id")); }
+void MessageCard::onWho() { Card::call(m_list, "whoReacted", str("id")); }
+
+// The page's invites (main.cpp's Invites), which the list holds as `joiner`.
+Invites *MessageCard::joiner() const
+{
+    return qobject_cast<Invites *>(qvariant_cast<QObject *>(m_list->property("joiner")));
+}
+
+// Join group: asks at once, by the first line of the card's text.
+void MessageCard::onJoin()
+{
+    Invites *invites = joiner();
+    if (invites)
+        invites->openCard(str("invite"), str("id"), str("text").split("\n").first());
+}
+
+void MessageCard::onLink(ActiveTextTriggeredEvent *event)
+{
+    const QString href = event->href().toString();
+    if (href.startsWith("hbmention:")) {
+        event->abort(); // ours: the system can't open it
+        Card::call(m_list, "openPerson", href.mid(10), event->text());
+        return;
+    }
+    Invites *invites = joiner();
+    if (invites && invites->openLink(href))
+        event->abort(); // a group or channel invite: it's asked here, not in the browser
+}

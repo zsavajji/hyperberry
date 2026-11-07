@@ -31,6 +31,7 @@
 #include "Invites.h"
 #include "MapChooser.h"
 #include "MediaOpener.h"
+#include "MessageCards.h"
 #include "OpenRequests.h"
 #include "Profile.h"
 #include "Proximity.h"
@@ -147,6 +148,7 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     qmlRegisterType<ContactPicker>("hyperberry", 1, 0, "ContactPicker");
     qmlRegisterType<MapChooser>("hyperberry", 1, 0, "MapChooser");
     qmlRegisterType<MediaOpener>("hyperberry", 1, 0, "MediaOpener");
+    qmlRegisterType<MessageCards>("hyperberry", 1, 0, "MessageCards");
     qmlRegisterType<Profile>("hyperberry", 1, 0, "Profile");
     QmlDocument *document = QmlDocument::create("asset:///main.qml").parent(&app);
     if (!loaded(document, "main.qml"))
