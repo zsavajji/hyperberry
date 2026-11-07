@@ -19,7 +19,9 @@ public:
 
     // Sized to the video. UI thread only (it asks the Cascades main window for its group), and
     // after the ForeignWindowControl with this windowId exists. False after logging why.
-    bool create(const QString &windowId, int width, int height);
+    // rgb skips NV12 and draws RGBX; above puts the window in front of Cascades instead of under
+    // its hole (the test's switches, for when nothing shows: 0.0.1.190).
+    bool create(const QString &windowId, int width, int height, bool rgb, bool above);
     // Only once nothing calls frame() any more (the decoder closed).
     void destroy();
     bool isNv12() const { return m_format == SCREEN_FORMAT_NV12; }
@@ -32,7 +34,7 @@ public:
     void resetStats();
 
 private:
-    bool build(int format, const QString &windowId, const QByteArray &group);
+    bool build(int format, const QString &windowId, const QByteArray &group, int z);
     void toLinear(const VideoDecoder::Frame &f, unsigned char *y, int yStride, unsigned char *uv, int uvStride);
 
     screen_context_t m_ctx;

@@ -30,6 +30,9 @@ VideoTest::VideoTest(QObject *parent)
     , m_detileMean(0)
     , m_detileMax(0)
     , m_pass(0)
+    , m_above(false)
+    , m_rgb(false)
+    , m_firstFrame(-1)
 {
     memset(&m_stats, 0, sizeof m_stats);
     m_stats.firstFrameMs = -1;
@@ -45,13 +48,15 @@ VideoTest::~VideoTest()
 void VideoTest::start(const QString &windowId)
 {
     stop();
+    m_windowId = windowId;
     m_error.clear();
     m_pass = 0;
+    m_firstFrame = -1;
     memset(&m_stats, 0, sizeof m_stats);
     m_stats.firstFrameMs = -1;
     m_detileMean = m_detileMax = 0;
     m_stop = 0;
-    if (!m_window.create(windowId, ClipWidth, ClipHeight)) {
+    if (!m_window.create(windowId, ClipWidth, ClipHeight, m_rgb, m_above)) {
         m_error = tr("The video window could not be made; see the log.");
         emit runningChanged();
         return;
@@ -73,6 +78,26 @@ void VideoTest::stop()
     emit runningChanged();
 }
 
+void VideoTest::setAbove(bool on)
+{
+    if (on == m_above)
+        return;
+    m_above = on;
+    emit optionsChanged();
+    if (m_playing)
+        start(m_windowId); // a restart: the window is never touched from two threads
+}
+
+void VideoTest::setRgb(bool on)
+{
+    if (on == m_rgb)
+        return;
+    m_rgb = on;
+    emit optionsChanged();
+    if (m_playing)
+        start(m_windowId);
+}
+
 void VideoTest::setError(const QString &text)
 {
     m_error = text;
@@ -91,6 +116,8 @@ void VideoTest::refresh()
     if (!m_decoder.isOpen())
         return;
     m_stats = m_decoder.stats();
+    if (m_firstFrame >= 0)
+        m_stats.firstFrameMs = m_firstFrame;
     m_window.detileStats(&m_detileMean, &m_detileMax);
     emit statsChanged();
 }
@@ -113,11 +140,13 @@ void VideoTest::summarize(int pass)
     const VideoDecoder::Stats s = m_decoder.stats();
     double detileMean, detileMax;
     m_window.detileStats(&detileMean, &detileMax);
+    if (pass == 1)
+        m_firstFrame = s.firstFrameMs;
     qDebug("video test: pass %d: in %d out %d, %.1f fps, first frame %.0f ms, latency mean %.1f max %.1f ms, "
-           "cpu %.0f%% of a core (whole process), de-tile %.2f ms (max %.2f, %s), errors %d",
-           pass, s.framesIn, s.framesOut, s.wallMs > 0 ? s.framesOut * 1000.0 / s.wallMs : 0.0, s.firstFrameMs,
+           "cpu %.0f%% of a core (whole process), de-tile %.2f ms (max %.2f, %s window, %s Cascades), errors %d",
+           pass, s.framesIn, s.framesOut, s.wallMs > 0 ? s.framesOut * 1000.0 / s.wallMs : 0.0, m_firstFrame,
            s.latencyMeanMs, s.latencyMaxMs, s.wallMs > 0 ? 100 * s.cpuMs / s.wallMs : 0.0,
-           detileMean, detileMax, m_window.isNv12() ? "NV12 window" : "RGBX window", s.errors);
+           detileMean, detileMax, m_window.isNv12() ? "NV12" : "RGBX", m_above ? "in front of" : "under", s.errors);
 }
 
 void VideoTest::play()

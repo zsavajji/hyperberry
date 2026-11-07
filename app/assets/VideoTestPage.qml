@@ -29,10 +29,22 @@ Page {
                     test.start(video.windowId)
                 }
             }
+        },
+        // The window's switches, for when the picture doesn't show: each restarts the test.
+        ActionItem {
+            title: test.above ? qsTr("Window behind") : qsTr("Window in front")
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            onTriggered: test.above = !test.above
+        },
+        ActionItem {
+            title: test.rgb ? qsTr("Draw as NV12") : qsTr("Draw as RGB")
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            onTriggered: test.rgb = !test.rgb
         }
     ]
+    // No background of our own: the theme's is black here, and one of ours painted over the hole
+    // the native window shows through (0.0.1.190: only the numbers showed).
     Container {
-        background: Color.Black
         layout: DockLayout {
         }
         Container {

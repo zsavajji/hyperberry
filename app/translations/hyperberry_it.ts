@@ -1968,5 +1968,25 @@
         <source>CPU %1 % of a core, de-tile %2 ms</source>
         <translation>CPU %1 % di un core, de-tiling %2 ms</translation>
     </message>
+    <message>
+        <location filename="../assets/VideoTestPage.qml" line="1"/>
+        <source>Window behind</source>
+        <translation>Finestra dietro</translation>
+    </message>
+    <message>
+        <location filename="../assets/VideoTestPage.qml" line="1"/>
+        <source>Window in front</source>
+        <translation>Finestra davanti</translation>
+    </message>
+    <message>
+        <location filename="../assets/VideoTestPage.qml" line="1"/>
+        <source>Draw as NV12</source>
+        <translation>Disegna in NV12</translation>
+    </message>
+    <message>
+        <location filename="../assets/VideoTestPage.qml" line="1"/>
+        <source>Draw as RGB</source>
+        <translation>Disegna in RGB</translation>
+    </message>
 </context>
 </TS>

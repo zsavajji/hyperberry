@@ -33,7 +33,7 @@ VideoWindow::~VideoWindow()
     destroy();
 }
 
-bool VideoWindow::build(int format, const QString &windowId, const QByteArray &group)
+bool VideoWindow::build(int format, const QString &windowId, const QByteArray &group, int z)
 {
     const char *name = format == SCREEN_FORMAT_NV12 ? "NV12" : "RGBX8888";
     if (screen_create_window_type(&m_win, m_ctx, SCREEN_CHILD_WINDOW)) {
@@ -44,7 +44,7 @@ bool VideoWindow::build(int format, const QString &windowId, const QByteArray &g
     // Write-only from the CPU, and native: the compositor reads the buffer in place.
     const int usage = SCREEN_USAGE_WRITE | SCREEN_USAGE_NATIVE;
     const int size[2] = { m_w, m_h };
-    const int one = 1, below = -1, noFocus = SCREEN_SENSITIVITY_NO_FOCUS;
+    const int one = 1, noFocus = SCREEN_SENSITIVITY_NO_FOCUS;
     const QByteArray id = windowId.toUtf8();
     if (screen_set_window_property_iv(m_win, SCREEN_PROPERTY_FORMAT, &format)
         || screen_set_window_property_iv(m_win, SCREEN_PROPERTY_USAGE, &usage)
@@ -64,17 +64,18 @@ bool VideoWindow::build(int format, const QString &windowId, const QByteArray &g
         m_win = 0;
         return false;
     }
-    // Under Cascades' hole (the SDK's way; touches don't reach it, none are wanted), and never
-    // the keyboard's owner; the pitfall is a tap in the child taking keys from Cascades.
-    screen_set_window_property_iv(m_win, SCREEN_PROPERTY_ZORDER, &below);
+    // Under Cascades' hole (z -1, the SDK's way; touches don't reach it, none are wanted) or in
+    // front of Cascades (z 1), and never the keyboard's owner; the pitfall is a tap in the child
+    // taking keys from Cascades.
+    screen_set_window_property_iv(m_win, SCREEN_PROPERTY_ZORDER, &z);
     screen_set_window_property_iv(m_win, SCREEN_PROPERTY_SENSITIVITY, &noFocus);
     screen_set_window_property_iv(m_win, SCREEN_PROPERTY_VISIBLE, &one);
     screen_flush_context(m_ctx, 0);
-    qDebug("video window: %dx%d %s, id %s, group %s", m_w, m_h, name, id.constData(), group.constData());
+    qDebug("video window: %dx%d %s, z %d, id %s, group %s", m_w, m_h, name, z, id.constData(), group.constData());
     return true;
 }
 
-bool VideoWindow::create(const QString &windowId, int width, int height)
+bool VideoWindow::create(const QString &windowId, int width, int height, bool rgb, bool above)
 {
     destroy();
     m_w = width;
@@ -92,9 +93,10 @@ bool VideoWindow::create(const QString &windowId, int width, int height)
         return false;
     }
     const QByteArray group = main->groupId().toUtf8();
-    if (build(SCREEN_FORMAT_NV12, windowId, group)) {
+    const int z = above ? 1 : -1;
+    if (!rgb && build(SCREEN_FORMAT_NV12, windowId, group, z)) {
         m_format = SCREEN_FORMAT_NV12;
-    } else if (build(SCREEN_FORMAT_RGBX8888, windowId, group)) {
+    } else if (build(SCREEN_FORMAT_RGBX8888, windowId, group, z)) {
         m_format = SCREEN_FORMAT_RGBX8888;
         m_scratch.resize(m_w * m_h * 3 / 2);
     } else {

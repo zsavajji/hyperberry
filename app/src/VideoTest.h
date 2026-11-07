@@ -33,6 +33,10 @@ class VideoTest : public QObject
     Q_PROPERTY(double cpuPercent READ cpuPercent NOTIFY statsChanged)
     Q_PROPERTY(double detileMs READ detileMs NOTIFY statsChanged)
     Q_PROPERTY(int pass READ pass NOTIFY statsChanged)
+    // The window's switches (0.0.1.190 showed nothing): in front of Cascades rather than under its
+    // hole, and RGBX rather than NV12. Each restarts a running test.
+    Q_PROPERTY(bool above READ above WRITE setAbove NOTIFY optionsChanged)
+    Q_PROPERTY(bool rgb READ rgb WRITE setRgb NOTIFY optionsChanged)
 public:
     explicit VideoTest(QObject *parent = 0);
     ~VideoTest();
@@ -48,6 +52,10 @@ public:
     double cpuPercent() const { return m_stats.wallMs > 0 ? 100 * m_stats.cpuMs / m_stats.wallMs : 0; }
     double detileMs() const { return m_detileMean; }
     int pass() const { return m_pass; }
+    bool above() const { return m_above; }
+    bool rgb() const { return m_rgb; }
+    void setAbove(bool on);
+    void setRgb(bool on);
 
     // windowId is the ForeignWindowControl's, which must exist. Replaces any earlier run; returns
     // at once, the decoder opens on the thread.
@@ -59,6 +67,7 @@ public:
 signals:
     void runningChanged();
     void statsChanged();
+    void optionsChanged();
 
 private slots:
     void refresh();
@@ -94,6 +103,10 @@ private:
     VideoDecoder::Stats m_stats;
     double m_detileMean, m_detileMax;
     int m_pass;
+    bool m_above, m_rgb;
+    QString m_windowId;
+    // Pass 1's first frame: a later pass's would count from the decoder's opening.
+    double m_firstFrame;
 };
 
 #endif
