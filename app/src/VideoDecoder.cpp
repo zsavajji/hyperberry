@@ -10,7 +10,7 @@
 #include <QMutexLocker>
 
 // The sequence is tools/h264gate/h264il.c's, which decoded every frame on the Q10 as root; what
-// an app may do is the question the test page answers. Each step is logged once per open, errors
+// an app may do was the question the decoder test answered (0.0.1.190). Each step is logged once per open, errors
 // by name; nothing is logged per frame.
 
 static const char *ComponentName = "OMX.qcom.video.decoder.avc";

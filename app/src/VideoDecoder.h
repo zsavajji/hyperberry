@@ -12,8 +12,8 @@
 
 // The Q10's hardware H.264 decoder, through OpenMAX IL (docs/plan/phase7.md, "Video calls: the
 // hardware-decode gate", third round): Qualcomm's OMX.qcom.video.decoder.avc from the phone's own
-// libOmxCore.so, one Annex-B access unit per feed(). Meant for the video of a call as well as for
-// the test page. The IL work runs on the caller of feed()/open()/close() (never the UI thread) and
+// libOmxCore.so, one Annex-B access unit per feed(). The receiving half of a call (CallVideo).
+// The IL work runs on the caller of feed()/open()/close() (never the UI thread) and
 // on one thread of its own, which hands each decoded frame to the Sink and gives the buffer back.
 class VideoDecoder
 {

@@ -21,7 +21,7 @@ public:
     // Sized to the video. UI thread only (it asks the Cascades main window for its group), and
     // after the ForeignWindowControl with this windowId exists. False after logging why.
     // rgb skips NV12 and draws RGBX; above puts the window in front of Cascades instead of under
-    // its hole (the test's switches, for when nothing shows: 0.0.1.190).
+    // its hole (the decoder test's switches, 0.0.1.191: under the hole is the one kept).
     bool create(const QString &windowId, int width, int height, bool rgb, bool above);
     // Only once nothing calls frame() any more (the decoder closed).
     void destroy();

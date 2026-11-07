@@ -9,7 +9,7 @@
 // API opens a unit, shows its viewfinder in a window of ours and hands back compressed frames.
 // CAMERA_VIDEOCODEC_H264 is Annex-B (the SDK header says so; AVC1 would be length-prefixed). The
 // access units reach the Sink with SPS and PPS in front of every keyframe, whether or not the
-// camera sends them that way. Meant for the sending half of a call as well as for the test page.
+// camera sends them that way. The sending half of a call (CallVideo).
 class CameraEncoder
 {
 public:
