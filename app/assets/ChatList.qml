@@ -21,6 +21,10 @@ ListView {
         args.chat = jid
         engine.request("chat.set", args)
     }
+    // A failed call.start is worded by main.qml's toast, whoever sent it.
+    function call(chat) {
+        engine.request("call.start", {"chat": chat.jid})
+    }
     function toggleUnread(chat) {
         set(chat.jid, {"unread": chat.unread == 0})
     }

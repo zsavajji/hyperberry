@@ -18,6 +18,14 @@ Container {
     contextActions: [
         ActionSet {
             title: row.chat.name
+            // Call (the user's ask, 2026-11-07): a person's chat only; greyed for the others, since
+            // an ActionItem can't hide.
+            ActionItem {
+                title: qsTr("Call")
+                imageSource: "file:///usr/share/icons/ic_phone.png"
+                enabled: row.chat.kind == 0 && engine.linked
+                onTriggered: row.ListItem.view.call(row.chat)
+            }
             ActionItem {
                 title: row.unread ? qsTr("Mark as read") : qsTr("Mark as unread")
                 imageSource: row.unread ? "file:///usr/share/icons/bb_action_markread.png" : "file:///usr/share/icons/bb_action_markunread.png"

@@ -403,6 +403,11 @@
         <source>Unfollow</source>
         <translation>Non seguire più</translation>
     </message>
+    <message>
+        <location filename="../assets/ChatRow.qml" line="1"/>
+        <source>Call</source>
+        <translation>Chiama</translation>
+    </message>
 </context>
 <context>
     <name>ChatsPage</name>
@@ -1701,6 +1706,11 @@
         <location filename="../assets/CallPanel.qml" line="1"/>
         <source>End call</source>
         <translation>Termina chiamata</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallPanel.qml" line="1"/>
+        <source>Unmute</source>
+        <translation>Attiva audio</translation>
     </message>
 </context>
 <context>
