@@ -241,7 +241,7 @@ void CallVideo::readLoop()
         }
         QMetaObject::invokeMethod(this, "setRunning", Qt::QueuedConnection, Q_ARG(bool, true));
         // Without a decoder our picture still goes out; the records are read and dropped.
-        const bool decoding = m_decoder.open(Width, Height, Fps, MaxUnit);
+        bool decoding = m_decoder.open(Width, Height, Fps, MaxUnit);
         if (!decoding)
             qWarning("call video: the hardware decoder did not open; no picture from the peer");
         char head[HeaderBytes];
@@ -261,6 +261,10 @@ void CallVideo::readLoop()
                 // The turn is the frame's own, and takes effect for the pictures decoded after it
                 // (the decoder holds a few frames, so a change shows a few pictures late: harmless).
                 m_window.setRotation((unsigned char)head[5]);
+                if (decoding && m_decoder.broken()) {
+                    qWarning("call video: the decoder stalled; opening it again");
+                    decoding = m_decoder.open(Width, Height, Fps, MaxUnit);
+                }
                 if (decoding && !m_decoder.feed(payload, qint64(getLe(head + 8, 8))))
                     m_feedRefused.ref(); // no free input buffer: this picture is lost, the next IDR mends it
             } else if (type == 2) {

@@ -46,6 +46,7 @@ void VideoDecoder::outputLoop()
     for (;;) {
         Filled filled = { 0, 0 };
         bool reconfigure = false;
+        unsigned index = 0;
         {
             QMutexLocker lock(&m_mu);
             while (!m_stopping && m_filled.isEmpty() && !m_portChanged)
@@ -55,12 +56,13 @@ void VideoDecoder::outputLoop()
             if (m_portChanged) {
                 m_portChanged = false;
                 reconfigure = true;
+                index = m_portIndex;
             } else {
                 filled = m_filled.takeFirst();
             }
         }
         if (reconfigure)
-            reconfigureOutput();
+            reconfigureOutput(index);
         else
             deliver(filled);
     }
@@ -103,30 +105,63 @@ void VideoDecoder::deliver(const Filled &filled)
     }
 }
 
-// The decoder learned the real picture size (or its crop): disable the output port, free its
-// buffers, read the new definition, enable it and allocate again (what h264il did; 270 ms).
-void VideoDecoder::reconfigureOutput()
+// Every output buffer is back with us (FillBufferDone puts each in m_filled, the port being
+// disabled returns the ones the decoder held). False after ms.
+bool VideoDecoder::waitOutputReturned(int ms)
 {
+    const double end = nowMs() + ms;
+    QMutexLocker lock(&m_mu);
+    while (m_filled.size() < m_outHeaders.size()) {
+        const double left = end - nowMs();
+        if (left <= 0)
+            return false;
+        m_cv.wait(&m_mu, (unsigned long)left + 1);
+    }
+    return true;
+}
+
+// The decoder learned the real picture size (or its crop). A crop alone keeps the port: read the
+// new size. Else disable the output port, free its buffers once the decoder has handed them all
+// back (freeing one it still held stalled the disable on the Q10, 0.0.1.202: the picture stopped
+// after one frame), read the new definition, enable it and allocate again (what h264il did; 270 ms).
+void VideoDecoder::reconfigureOutput(unsigned index)
+{
+    if (index == OMX_IndexConfigCommonOutputCrop) {
+        qDebug("video decoder: output crop changed");
+        readOutputPort();
+        return;
+    }
     qDebug("video decoder: output port settings changed, reconfiguring");
     {
         QMutexLocker lock(&m_mu);
         m_outDisabled = m_outEnabled = false;
     }
-    step("SendCommand(PortDisable, output)", OMX_SendCommand(m_handle, OMX_CommandPortDisable, m_outPort, NULL));
+    bool ok = step("SendCommand(PortDisable, output)", OMX_SendCommand(m_handle, OMX_CommandPortDisable, m_outPort, NULL));
+    if (!waitOutputReturned(1000))
+        qWarning("video decoder: output buffers not all returned in 1 s; freeing them anyway");
     for (int i = 0; i < m_outHeaders.size(); i++)
         OMX_FreeBuffer(m_handle, m_outPort, m_outHeaders[i]);
     m_outHeaders.clear();
-    if (!waitFlag(&m_outDisabled, 2000))
+    if (!waitFlag(&m_outDisabled, 2000)) {
         qWarning("video decoder: output port not disabled in 2 s");
+        ok = false;
+    }
     {
         QMutexLocker lock(&m_mu);
         m_filled.clear(); // buffers that no longer exist
     }
     readOutputPort();
-    step("SendCommand(PortEnable, output)", OMX_SendCommand(m_handle, OMX_CommandPortEnable, m_outPort, NULL));
-    allocateOutput();
-    if (!waitFlag(&m_outEnabled, 2000))
+    ok = step("SendCommand(PortEnable, output)", OMX_SendCommand(m_handle, OMX_CommandPortEnable, m_outPort, NULL)) && ok;
+    ok = allocateOutput() && ok;
+    if (!waitFlag(&m_outEnabled, 2000)) {
         qWarning("video decoder: output port not enabled in 2 s");
+        ok = false;
+    }
     for (int i = 0; i < m_outHeaders.size(); i++)
         OMX_FillThisBuffer(m_handle, m_outHeaders[i]);
+    if (!ok) {
+        qWarning("video decoder: reconfiguration failed; the decoder will be reopened");
+        QMutexLocker lock(&m_mu);
+        m_broken = true;
+    }
 }

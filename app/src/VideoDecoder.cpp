@@ -72,7 +72,8 @@ VideoDecoder::VideoDecoder(Sink *sink)
     , m_warnedFill(false), m_warnedSize(false), m_warnedFree(false)
     , m_cfgSent(false), m_firstUnit(true)
     , m_state(-1)
-    , m_outDisabled(false), m_outEnabled(false), m_portChanged(false), m_stopping(false)
+    , m_outDisabled(false), m_outEnabled(false), m_portChanged(false), m_stopping(false), m_broken(false)
+    , m_portIndex(0)
     , m_framesIn(0), m_framesOut(0), m_errors(0), m_latCount(0)
     , m_firstFeedMs(-1), m_firstFrameMs(-1), m_latSum(0), m_latMax(0), m_cpu0(0), m_wall0(0)
 {
@@ -104,7 +105,11 @@ OMX_ERRORTYPE VideoDecoder::onEvent(OMX_HANDLETYPE, OMX_PTR app, OMX_EVENTTYPE e
         else if (d1 == OMX_CommandPortEnable && d2 == OMX_U32(self->m_outPort))
             self->m_outEnabled = true;
     } else if (event == OMX_EventPortSettingsChanged) {
-        self->m_portChanged = true;
+        qDebug("video decoder: port settings changed, port %u, index 0x%x", unsigned(d1), unsigned(d2));
+        if (d1 == OMX_U32(self->m_outPort)) {
+            self->m_portChanged = true;
+            self->m_portIndex = unsigned(d2);
+        }
     } else if (event == OMX_EventError) {
         // Often a run of them (a corrupt stream); the first few by name, the count in stats().
         if (++self->m_errors <= MaxLoggedErrors)
@@ -248,7 +253,8 @@ bool VideoDecoder::open(int width, int height, int fps, int maxAccessUnit)
         QMutexLocker lock(&m_mu);
         m_stopping = false;
         m_state = -1;
-        m_outDisabled = m_outEnabled = m_portChanged = false;
+        m_outDisabled = m_outEnabled = m_portChanged = m_broken = false;
+        m_portIndex = 0;
         m_freeIn.clear();
         m_filled.clear();
         m_sent.clear();
@@ -313,6 +319,8 @@ bool VideoDecoder::feed(const QByteArray &unit, qint64 ts)
             if (!h || cfg.size() > int(h->nAllocLen) || !sendBuffer(h, cfg.constData(), cfg.size(), OMX_BUFFERFLAG_CODECCONFIG, 0))
                 return false;
             m_cfgSent = true;
+        } else {
+            return false; // nothing decodes before the SPS and PPS: wait for the IDR that brings them
         }
     }
     OMX_BUFFERHEADERTYPE *h = takeFreeInput(200);
@@ -343,6 +351,12 @@ bool VideoDecoder::feed(const QByteArray &unit, qint64 ts)
     const unsigned flags = OMX_BUFFERFLAG_ENDOFFRAME | (m_firstUnit ? OMX_BUFFERFLAG_STARTTIME : 0);
     m_firstUnit = false;
     return sendBuffer(h, unit.constData(), unit.size(), flags, ts);
+}
+
+bool VideoDecoder::broken() const
+{
+    QMutexLocker lock(&m_mu);
+    return m_broken;
 }
 
 void VideoDecoder::close()

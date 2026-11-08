@@ -67,6 +67,9 @@ public:
     // Safe to call twice, and when nothing is open.
     void close();
     bool isOpen() const { return m_open; }
+    // An output reconfiguration that didn't complete: the decoder gives no more pictures. The
+    // feeder closes and opens it again (CallVideo); the next IDR starts the picture.
+    bool broken() const;
 
     Stats stats() const;
     void resetStats();
@@ -111,7 +114,8 @@ private:
     bool sendBuffer(OMX_BUFFERHEADERTYPE *header, const char *data, int size, unsigned flags, qint64 ts);
     void outputLoop();
     void deliver(const Filled &filled);
-    void reconfigureOutput();
+    void reconfigureOutput(unsigned index);
+    bool waitOutputReturned(int ms);
     void readOutputPort();
 
     Sink *m_sink;
@@ -138,7 +142,8 @@ private:
     QList<Filled> m_filled;
     QHash<qint64, double> m_sent;       // timestamp -> when feed() sent it
     int m_state;                        // the last state a SendCommand reached; -1 none
-    bool m_outDisabled, m_outEnabled, m_portChanged, m_stopping;
+    bool m_outDisabled, m_outEnabled, m_portChanged, m_stopping, m_broken;
+    unsigned m_portIndex;               // the last PortSettingsChanged's data2: what changed
     int m_framesIn, m_framesOut, m_errors, m_latCount;
     double m_firstFeedMs, m_firstFrameMs, m_latSum, m_latMax, m_cpu0, m_wall0;
 };
