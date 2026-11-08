@@ -16,7 +16,7 @@ class AlbumTile;
 
 // An album in a card (step 6.5g), mirroring AlbumBubble.qml (gone since step 8.6): 4 or more photos and videos sent
 // together (MessageModel makes the entry; Albums.h has the rule) as four square tiles, two by
-// two, as wide as a single photo (MediaBubble's 40 du). With more than four, the fourth tile is
+// two, across the card's width inside its side padding. With more than four, the fourth tile is
 // darkened with "+N", N the album's size less 3, and opens the album's page (the list's
 // showAlbum); the others open their member as its own row would (the list's openMedia). The four
 // tiles are fixed and each takes its picture from the current msg, so a recycled row never keeps
@@ -43,6 +43,7 @@ private:
     bb::cascades::UIConfig *m_ui;
     QVariantMap m_msg;
     AlbumTile *m_tiles[4];
+    float m_size; // a tile's side, set by show()
 };
 
 #endif

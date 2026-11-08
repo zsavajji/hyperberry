@@ -20,7 +20,6 @@
 #include <bb/cascades/UIConfig>
 #include <bb/cascades/UIPalette>
 #include <bb/cascades/VerticalAlignment>
-#include <bb/device/DisplayInfo>
 #include <QStringList>
 
 #include "CardStyle.h"
@@ -84,10 +83,9 @@ MediaBubble::MediaBubble(ListView *list, bool wide)
     // A picture: the thumbnail, or the page's colour with its name, and what is over it.
     m_photo = new Container();
     m_photo->setLayout(new DockLayout());
-    // Wide: the card's width, the screen's less the card's insets (MessageCard: 7 and 1.5 du).
-    // ponytail: the screen's width when the app started; a phone that rotates would want the list's.
+    // Wide: the card's width.
     if (wide) {
-        m_wide = bb::device::DisplayInfo().pixelSize().width() - m_ui->du(8.5);
+        m_wide = Card::width(m_ui);
         m_photo->setHorizontalAlignment(HorizontalAlignment::Fill);
     }
     m_photo->setPreferredWidth(wide ? m_wide : m_ui->du(40));

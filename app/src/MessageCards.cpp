@@ -31,7 +31,7 @@ VisualNode *MessageCards::createItem(ListView *list, const QString &type)
         return new Header();
     if (type == "service")
         return new ServiceCard(list);
-    // "text" is the light card; "picture" the full one with a photo or video across it; "msg", and
+    // "text" is the light card; "picture" the full one with a photo, video or map across it; "msg", and
     // anything else, the full one.
     return new MessageCard(list, type != "text", type == "picture");
 }

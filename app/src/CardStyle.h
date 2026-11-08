@@ -12,6 +12,8 @@
 #include <bb/cascades/TextFormat>
 #include <bb/cascades/TextStyle>
 #include <bb/cascades/TextStyleDefinition>
+#include <bb/cascades/UIConfig>
+#include <bb/device/DisplayInfo>
 #include <QCoreApplication>
 #include <QMetaObject>
 #include <QString>
@@ -108,6 +110,17 @@ inline bb::cascades::StackLayout *across()
     layout->setOrientation(bb::cascades::LayoutOrientation::LeftToRight);
     return layout;
 }
+
+// A card's width: the screen's less the card's insets (MessageCard: 7 and 1.5 du).
+// ponytail: the screen's width at start; a phone that rotates would want the list's.
+inline float width(bb::cascades::UIConfig *ui)
+{
+    static const int screen = bb::device::DisplayInfo().pixelSize().width();
+    return screen - ui->du(8.5);
+}
+
+// The card's padding at each side, growing with the text size: 2 px over 1.5 du at 100 %.
+inline float side(bb::cascades::UIConfig *ui, float scale) { return ui->du(1.5 * scale) + ui->px(2); }
 
 }
 

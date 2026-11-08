@@ -119,6 +119,7 @@ private:
 AlbumBubble::AlbumBubble(ListView *list)
     : m_list(list)
     , m_ui(list->ui())
+    , m_size(0)
 {
     // As MediaBubble's picture: no margin above, air above and below.
     setTopMargin(0);
@@ -126,9 +127,8 @@ AlbumBubble::AlbumBubble(ListView *list)
     root->setTopPadding(m_ui->du(1));
     root->setBottomPadding(m_ui->du(1));
 
-    // Two rows of two tiles, a gap apart.
+    // Two rows of two tiles, a gap apart; show() sizes them.
     const float gap = m_ui->du(0.5);
-    const float size = (m_ui->du(40) - gap) / 2;
     for (int row = 0; row < 2; ++row) {
         Container *tiles = new Container();
         tiles->setLayout(Card::across());
@@ -136,8 +136,6 @@ AlbumBubble::AlbumBubble(ListView *list)
             tiles->setTopMargin(gap);
         for (int column = 0; column < 2; ++column) {
             AlbumTile *tile = new AlbumTile(m_ui, row * 2 + column, this);
-            tile->box()->setPreferredWidth(size);
-            tile->box()->setPreferredHeight(size);
             if (column == 1)
                 tile->box()->setLeftMargin(gap);
             tiles->add(tile->box());
@@ -162,6 +160,15 @@ QVariantMap AlbumBubble::memberAt(int i) const
 void AlbumBubble::show(const QVariantMap &msg)
 {
     m_msg = msg;
+    // Across the card inside its side padding (the user, 2026-11-08), which grows with the text size.
+    const float size = (Card::width(m_ui) - 2 * Card::side(m_ui, Card::textScale(m_list)) - m_ui->du(0.5)) / 2;
+    if (size != m_size) {
+        m_size = size;
+        for (int i = 0; i < 4; ++i) {
+            m_tiles[i]->box()->setPreferredWidth(size);
+            m_tiles[i]->box()->setPreferredHeight(size);
+        }
+    }
     const int count = m_msg.value("albumCount").toInt();
     for (int i = 0; i < 4; ++i)
         m_tiles[i]->show(memberAt(i), i == 3 && count > 4 ? "+" + QString::number(count - 3) : QString());

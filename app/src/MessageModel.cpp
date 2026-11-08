@@ -80,10 +80,12 @@ QString MessageModel::itemType(const QVariantList &indexPath)
     const Msg &m = m_all[e.msg];
     if (m.service)
         return "service";
-    // Plain text gets the plain MessageCard, a photo or video the one the picture spans (the user,
-    // 2026-11-08: as Android shows them). A row's type never changes: its kind, media and link preview don't.
+    // Plain text gets the plain MessageCard, a photo, video or map picture the one the picture spans
+    // (the user, 2026-11-08: as Android shows them). A row's type never changes: its kind, media,
+    // link preview and a location's map picture (inline, never fetched) don't.
     const QString media = m.data["media"].toString();
-    if (e.members.isEmpty() && (media == "photo" || media == "video"))
+    if (e.members.isEmpty() && (media == "photo" || media == "video"
+                                || (media == "location" && m.data["hasThumb"].toBool())))
         return "picture";
     return e.members.isEmpty() && m.kind == 0 && m.data["linkTitle"].toString().isEmpty() ? "text" : "msg";
 }

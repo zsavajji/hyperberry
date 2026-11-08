@@ -234,7 +234,7 @@ void MessageCard::restyle()
     m_plain = plain;
 
     const Color quiet = m_ui->palette()->secondaryTextOnPlain();
-    const float side = m_ui->du(1.5 * scale) + m_ui->px(2);
+    const float side = Card::side(m_ui, scale);
     m_root->setTopPadding(m_ui->du(1.5 * scale));
     m_card->setLeftPadding(side);
     m_card->setRightPadding(side);
