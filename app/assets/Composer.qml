@@ -76,6 +76,9 @@ Container {
             textStyle.base: nav.emojiStyle
             backgroundVisible: false
             focusHighlightEnabled: false
+            // A tap on Send, Attach or Emoji (not focusable) leaves the focus here, so the next key
+            // still goes through the input method (bb10-pitfalls).
+            focusRetentionPolicyFlags: FocusRetentionPolicy.LoseToFocusable
             enabled: !bar.readOnly
             autoSize.maxLineCount: 5
             input {
