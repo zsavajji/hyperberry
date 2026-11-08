@@ -381,6 +381,11 @@ func TestSimCalls(t *testing.T) {
 	if m := c.read(t); errCode(m) != "not_found" {
 		t.Errorf("%v", m)
 	}
+	// A video call's answer carries a bool "video": it must reach the handler, not fail the envelope.
+	c.send(t, `{"@":"3","cmd":"call.answer","id":"x","video":true}`)
+	if m := c.read(t); errCode(m) != "not_found" {
+		t.Errorf("video answer: %v", m)
+	}
 }
 
 func TestCallReasonAndRing(t *testing.T) {

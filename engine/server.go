@@ -266,7 +266,9 @@ func (s *Server) read(c *client) {
 			Token string `json:"token"`
 			Proto int    `json:"proto"`
 			Audio string `json:"audio"`
-			Video string `json:"video"`
+			// A media link's call id in its hello, but call.answer's bool on a video call: as a
+			// string, a video call's answer failed the envelope as a bad request (Q10, 0.0.1.208).
+			Video any `json:"video"`
 		}
 		bad := json.Unmarshal(line, &r) != nil || r.Cmd == ""
 		if !c.authed.Load() {
@@ -281,9 +283,10 @@ func (s *Server) read(c *client) {
 				c.conn.Write(reply(r.At, nil, &Error{"proto", "this engine speaks proto 1"}))
 				return
 			}
-			if id, kind, attach := r.Audio, "audio", s.audio; id != "" || r.Video != "" {
+			video, _ := r.Video.(string)
+			if id, kind, attach := r.Audio, "audio", s.audio; id != "" || video != "" {
 				if id == "" {
-					id, kind, attach = r.Video, "video", s.video
+					id, kind, attach = video, "video", s.video
 				}
 				ok := reply(r.At, nil, nil)
 				if attach == nil || !attach(id, c.conn, ok) {
