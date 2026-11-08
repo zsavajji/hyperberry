@@ -248,10 +248,10 @@ void MediaBubble::show(const QVariantMap &msg)
 
     m_photo->setVisible(m_picture);
     if (m_picture) {
-        // A tall photo is cut at 50 du, 60 in the picture card; AspectFill crops it.
-        const float ratio = m_msg.value("ratio").toDouble();
-        m_photo->setPreferredHeight(m_wide ? qMin(m_ui->du(60), m_wide * ratio)
-                                           : qMin(m_ui->du(50), m_ui->du(40) * ratio));
+        // A tall photo is cut at 50 du; AspectFill crops it. In the picture card it is square,
+        // cropped the same way, and seen whole when opened (the user, 2026-11-08).
+        m_photo->setPreferredHeight(m_wide ? m_wide
+                                           : qMin(m_ui->du(50), m_ui->du(40) * float(m_msg.value("ratio").toDouble())));
         m_thumb->setVisible(hasThumb);
         m_thumb->setImage(m_msg.value("thumb").value<Image>());
         m_none->setVisible(!hasThumb);
