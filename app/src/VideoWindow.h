@@ -30,6 +30,10 @@ public:
     // Quarter turns clockwise that make the next frames upright (the peer's orientation); any
     // thread, takes effect from the next frame. The RGB fallback ignores it.
     void setRotation(int quarterTurns) { m_turns = quarterTurns & 3; }
+    // The size of the control showing the window; the picture is cropped to its aspect (a fill)
+    // by Screen's source viewport, so the control never outgrows its parent (a Cascades parent
+    // squeezes a bigger child: the picture was squeezed, 0.0.1.203). Any thread; next frame.
+    void setViewSize(int w, int h) { m_viewW = w; m_viewH = h; }
     // The picture as drawn, after turning, 0 x 0 until the first frame has been posted. The window
     // follows the frames: its buffers are made again when a frame's (turned) size is not theirs.
     void pictureSize(int *w, int *h) const;
@@ -45,12 +49,15 @@ private:
     bool build(int format, const QString &windowId, const QByteArray &group, int z);
     void toLinear(const VideoDecoder::Frame &f, unsigned char *y, int yStride, unsigned char *uv, int uvStride);
     bool resize(int w, int h);
+    void crop(int vw, int vh);
 
     screen_context_t m_ctx;
     screen_window_t m_win;
     int m_format;
     int m_w, m_h;              // the buffers' size; written on the decoder's thread (and in create())
     QAtomicInt m_turns;
+    QAtomicInt m_viewW, m_viewH;
+    int m_cropForW, m_cropForH; // the view size the source viewport was set for; decoder thread
     QByteArray m_scratch;      // linear NV12 of the frame, before the turn and in the RGB fallback
     bool m_warned, m_resizeWarned;
     bool m_postLogged;

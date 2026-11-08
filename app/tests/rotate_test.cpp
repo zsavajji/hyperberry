@@ -42,6 +42,14 @@ int main()
             assert(ouv[r * 5 + cw * 2] == 0xAA);
         }
     }
+    // The crop a fill shows: a portrait picture in a square view, a landscape one, no view yet.
+    int x, yy, cw, ch;
+    centreCrop(212, 320, 720, 720, &x, &yy, &cw, &ch);
+    assert(x == 0 && yy == 54 && cw == 212 && ch == 212);
+    centreCrop(320, 180, 720, 720, &x, &yy, &cw, &ch);
+    assert(x == 70 && yy == 0 && cw == 180 && ch == 180);
+    centreCrop(320, 212, 0, 0, &x, &yy, &cw, &ch);
+    assert(x == 0 && yy == 0 && cw == 320 && ch == 212);
     printf("rotate ok\n");
     return 0;
 }

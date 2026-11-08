@@ -14,10 +14,6 @@ Container {
     // The view's own frame.
     property real w: 0
     property real h: 0
-    // The picture's scale for it to fill the frame, and its size so scaled.
-    property real fill: callVideo.pictureWidth > 0 ? Math.max(w / callVideo.pictureWidth, h / callVideo.pictureHeight) : 1
-    property real pictureW: callVideo.pictureWidth * fill
-    property real pictureH: callVideo.pictureHeight * fill
     horizontalAlignment: HorizontalAlignment.Fill
     verticalAlignment: VerticalAlignment.Fill
     // Off while it rings, so the ringing controls under it get their touches; else on even for a
@@ -28,30 +24,23 @@ Container {
         onLayoutFrameChanged: {
             view.w = layoutFrame.width
             view.h = layoutFrame.height
+            callVideo.setViewSize(layoutFrame.width, layoutFrame.height)
         }
     }
     // The children's taps reach this one, and the controls aren't in here.
     gestureHandlers: TapHandler {
         onTapped: sheet.toggleControls()
     }
-    // ponytail: fill crops a landscape picture's sides on the Q10's square screen; fit would letterbox it.
-    Container {
+    // The peer's picture fills the frame: the control is the frame's size and CallVideo crops the
+    // picture to its aspect (Screen's source viewport). A control bigger than the frame was squeezed
+    // into it by Cascades, not cropped (0.0.1.203). ponytail: fill crops; fit would letterbox.
+    ForeignWindowControl {
+        id: remote
+        windowId: "hyperberryCallVideo"
+        updatedProperties: WindowProperty.Size | WindowProperty.Position | WindowProperty.Visible
+        visible: sheet.showPicture
         horizontalAlignment: HorizontalAlignment.Fill
         verticalAlignment: VerticalAlignment.Fill
-        layout: AbsoluteLayout {}
-        ForeignWindowControl {
-            id: remote
-            windowId: "hyperberryCallVideo"
-            updatedProperties: WindowProperty.Size | WindowProperty.Position | WindowProperty.Visible
-            visible: sheet.showPicture
-            // Centred, so a side or the top and foot beyond the frame are cropped by the display.
-            layoutProperties: AbsoluteLayoutProperties {
-                positionX: (view.w - view.pictureW) / 2
-                positionY: (view.h - view.pictureH) / 2
-            }
-            preferredWidth: view.pictureW
-            preferredHeight: view.pictureH
-        }
     }
     // The name and the clock, as the stock app's video call: white on a dark band across the top.
     Container {

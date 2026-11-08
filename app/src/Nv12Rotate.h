@@ -48,4 +48,20 @@ inline void rotateNv12(const unsigned char *y, const unsigned char *uv, int w, i
     rotatePlane<Nv12Pair>(uv, w / 2, h / 2, srcStride, quarterTurns, duv, duvStride);
 }
 
+// The centred part of a w x h picture with the view's aspect (vw x vh): what a fill shows, the
+// rest cropped. Even sides and offsets, for NV12. The whole picture if the view has no size yet.
+inline void centreCrop(int w, int h, int vw, int vh, int *x, int *y, int *cw, int *ch)
+{
+    *cw = w;
+    *ch = h;
+    if (vw > 0 && vh > 0) {
+        if ((long long)w * vh > (long long)vw * h)
+            *cw = int((long long)h * vw / vh) & ~1; // wider than the view: the sides go
+        else
+            *ch = int((long long)w * vh / vw) & ~1; // taller: the top and foot go
+    }
+    *x = ((w - *cw) / 2) & ~1;
+    *y = ((h - *ch) / 2) & ~1;
+}
+
 #endif

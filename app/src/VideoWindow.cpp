@@ -26,6 +26,8 @@ VideoWindow::VideoWindow()
     , m_warned(false)
     , m_resizeWarned(false)
     , m_postLogged(false)
+    , m_cropForW(-1)
+    , m_cropForH(-1)
     , m_picW(0)
     , m_picH(0)
     , m_detileSum(0)
@@ -89,6 +91,7 @@ bool VideoWindow::create(const QString &windowId, int width, int height, bool rg
     m_w = width;
     m_h = height;
     m_turns = 0;
+    m_cropForW = m_cropForH = -1;
     m_warned = false;
     m_resizeWarned = false;
     m_postLogged = false;
@@ -153,10 +156,26 @@ bool VideoWindow::resize(int w, int h)
         return false;
     }
     m_resizeWarned = false;
+    m_cropForW = m_cropForH = -1; // the viewport is the whole buffer again: crop() runs next
     QMutexLocker lock(&m_mu);
     m_w = w;
     m_h = h;
     return true;
+}
+
+// Shows the centred part of the buffer with the view's aspect.
+void VideoWindow::crop(int vw, int vh)
+{
+    int pos[2], size[2];
+    centreCrop(m_w, m_h, vw, vh, &pos[0], &pos[1], &size[0], &size[1]);
+    if (screen_set_window_property_iv(m_win, SCREEN_PROPERTY_SOURCE_POSITION, pos)
+        || screen_set_window_property_iv(m_win, SCREEN_PROPERTY_SOURCE_SIZE, size)) {
+        qWarning("video window: source viewport %dx%d at %d,%d refused: %s", size[0], size[1], pos[0], pos[1], strerror(errno));
+        return; // tried again next frame
+    }
+    m_cropForW = vw;
+    m_cropForH = vh;
+    qDebug("video window: showing %dx%d at %d,%d of %dx%d, for a %dx%d view", size[0], size[1], pos[0], pos[1], m_w, m_h, vw, vh);
 }
 
 void VideoWindow::detileStats(double *meanMs, double *maxMs) const
@@ -214,6 +233,9 @@ void VideoWindow::frame(const VideoDecoder::Frame &f)
             return;
         qDebug("video window: picture now %dx%d (turns %d)", wantW, wantH, turns);
     }
+    const int vw = m_viewW, vh = m_viewH;
+    if (vw != m_cropForW || vh != m_cropForH)
+        crop(vw, vh);
     const int need = f.width * f.height * 3 / 2;
     if (m_scratch.size() < need)
         m_scratch.resize(need);

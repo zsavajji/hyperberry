@@ -55,6 +55,8 @@ public:
     // Joins both threads (the camera and the decoder closed; a camera that is still opening makes
     // it a few seconds) and frees the window. Safe to call twice, and when nothing runs.
     Q_INVOKABLE void stop();
+    // The peer's picture control's size, for the crop (VideoWindow::setViewSize).
+    Q_INVOKABLE void setViewSize(int w, int h) { m_window.setViewSize(w, h); }
 
 signals:
     void runningChanged();
