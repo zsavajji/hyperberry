@@ -138,8 +138,8 @@ MediaBubble::MediaBubble(ListView *list, bool wide)
     // picture, as for a photo, so a recycled card never keeps the previous row's.
     m_stickerImage = new ImageView();
     m_stickerImage->setTopMargin(0);
-    m_stickerImage->setPreferredWidth(m_ui->du(20));
-    m_stickerImage->setPreferredHeight(m_ui->du(20));
+    m_stickerImage->setPreferredWidth(m_ui->du(30));
+    m_stickerImage->setPreferredHeight(m_ui->du(30));
     m_stickerImage->setScalingMethod(ScalingMethod::AspectFit);
     m_stickerImage->setLoadEffect(ImageViewLoadEffect::None);
     // Until it is here: no picture and no thumbnail.
