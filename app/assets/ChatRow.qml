@@ -5,7 +5,7 @@ import bb.cascades 1.4
 // Every text that can hold emoji takes the list's shared emoji style: a FontFaceRule's font
 // reaches only the styles built on it (Q10, 2026-10-31). Its percentages are the system styles'
 // sizes as measured on the Q10. 100 % draws capitals 20 px tall, the tile's TitleText 24 px
-// (118 %); the name and preview take main.qml's bodySize and smallSize, as the chat's cards do.
+// (118 %); the name and preview take main.qml's bodySize, the cards' text size (the user, 2026-11-08).
 Container {
     id: row
     property variant chat
@@ -162,7 +162,7 @@ Container {
                     text: row.chat.preview.replace(/\u20E3/g, "")
                     textStyle.base: row.ListItem.view.emojiStyle
                     textStyle.fontSize: FontSize.PercentageValue
-                    textStyle.fontSizeValue: row.ListItem.view.smallSize
+                    textStyle.fontSizeValue: row.ListItem.view.bodySize
                     textStyle.color: ui.palette.secondaryTextOnPlain
                 }
                 // The unread count, grey while muted, as WhatsApp does.
