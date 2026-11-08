@@ -18,6 +18,7 @@ type participant struct {
 	Name  string `json:"name"`
 	Admin bool   `json:"admin"`
 	Me    bool   `json:"me"`
+	Photo string `json:"photo,omitempty"` // the small picture's path: the member's chat's, else the one fetched for group pages; ours for our own row
 }
 
 type groupInfo struct {
@@ -153,6 +154,7 @@ func (s *Session) handleGroupInfo(req json.RawMessage) (any, error) {
 		})
 	}
 	sortParticipants(out.Participants)
+	s.photos.members(out.Participants) // fills Photo, queues the fetches and returns at once
 	out.Picture = s.photos.full(jid)
 	return out, nil
 }

@@ -202,6 +202,70 @@ func TestPhotoPreview(t *testing.T) {
 	}
 }
 
+func TestPhotoMembers(t *testing.T) {
+	q, st, f, c := newPhotoTest(t)
+	addChat(st, "1@lid", chatUser, 1)
+	q.set("1@lid", newPic(func(id string) string { return q.path("", "1@lid", id) }, "3"))
+	chatPic := photoOf(st, "1@lid")
+	f.reply = func(_ int, jid types.JID, _ string, dst func(string) string) (string, error) {
+		if jid.User == "3" {
+			return "", whatsmeow.ErrProfilePictureNotSet
+		}
+		return newPic(dst, "9"), nil
+	}
+	group := func() []participant {
+		return []participant{{JID: "1@lid"}, {JID: "2@lid"}, {JID: "3@lid"}, {JID: "4@lid", Me: true}}
+	}
+
+	// A member with a chat has the chat's picture and is not asked; ours is the profile's. The
+	// others are asked once each, in order, and a picture is announced, a lack of one is not.
+	me := newPic(func(string) string { return profilePath(st.srv.dir) }, "")
+	ps := group()
+	q.members(ps)
+	waitIdle(t, q)
+	wantCalls(t, f, "2@lid[]", "3@lid[]")
+	p9 := q.path("members", "2@lid", "9")
+	if m := next(t, c, "photo"); m["jid"] != "2@lid" || m["photo"] != p9 || !exists(p9) {
+		t.Errorf("photo event: %v, file %v", m, exists(p9))
+	}
+	if ps[0].Photo != chatPic || ps[3].Photo != me || chatPic == "" {
+		t.Errorf("chat's %q, ours %q", ps[0].Photo, ps[3].Photo)
+	}
+	if !exists(q.memberNone("3@lid")) || exists(q.memberNone("2@lid")) {
+		t.Error("the none mark: for the member with no picture only")
+	}
+
+	// Again right away: the files answer, nobody is asked.
+	ps = group()
+	q.members(ps)
+	waitIdle(t, q)
+	wantCalls(t, f, "2@lid[]", "3@lid[]")
+	if ps[1].Photo != p9 || ps[2].Photo != "" {
+		t.Errorf("cached: %q, %q", ps[1].Photo, ps[2].Photo)
+	}
+
+	// A week on they are asked again, with the stored ID; an unchanged picture is renewed, not announced.
+	old := time.Now().Add(-memberPhotoAge - time.Hour)
+	os.Chtimes(p9, old, old)
+	os.Chtimes(q.memberNone("3@lid"), old, old)
+	f.reply = func(_ int, jid types.JID, _ string, _ func(string) string) (string, error) {
+		if jid.User == "3" {
+			return "", whatsmeow.ErrProfilePictureNotSet
+		}
+		return "", nil
+	}
+	q.members(group())
+	waitIdle(t, q)
+	wantCalls(t, f, "2@lid[]", "3@lid[]", "2@lid[9]", "3@lid[]")
+	if _, seen := q.memberCache("2@lid"); time.Since(seen) > time.Minute || !exists(p9) {
+		t.Error("the unchanged picture wasn't renewed")
+	}
+	if _, seen := q.memberCache("3@lid"); time.Since(seen) > time.Minute {
+		t.Error("the none mark wasn't renewed")
+	}
+	(*photoQueue)(nil).members(group()) // a Session built bare has none
+}
+
 func TestPhotoQueue(t *testing.T) {
 	q, st, f, _ := newPhotoTest(t)
 	for k, c := range map[string]struct {

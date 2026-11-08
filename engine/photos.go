@@ -24,6 +24,8 @@ import (
 // name, so the ID to ask "has it changed?" with is read back from the column: no migration.
 // The info pages ask for the full-size picture themselves (full), kept in data/photos/full/.
 // The engine never decodes a picture (phase6.md 6.3): the bytes only stream to disk.
+// A group's members without a chat of their own get theirs for the group page (members), kept
+// in data/photos/members/ and asked again at most every memberPhotoAge.
 //
 // LIDs: hypermeow passes the JID it is given straight into the query (its only LID handling is
 // for the privacy token it attaches), so a chat keyed by LID is asked by LID, as WhatsApp Web
@@ -37,6 +39,18 @@ var photoPause = 300 * time.Millisecond
 
 // photoRoundGap keeps a flapping connection from starting a round at every Connected.
 const photoRoundGap = 30 * time.Minute
+
+// memberPrefix marks a queue entry as a group member without a chat: it shares the chats' queue,
+// so their pacing and their 429 stop.
+const memberPrefix = "member:"
+
+// memberPhotoAge is how long a member's picture, or the lack of one, is trusted: it is asked
+// again at most this often, besides when WhatsApp says it changed. The cache is the files in
+// members/ (the picture, or <key>.none for "has none"): their newest mtime is the last check, so
+// it survives a restart and opening a group again asks no one checked lately.
+// ponytail: a big group queues every unchecked member on its first open; a 429 ends the round
+// and the rest wait for the next open. Members who left keep their files until unlink.
+const memberPhotoAge = 7 * 24 * time.Hour
 
 // photoFetch asks WhatsApp for jid's picture (the preview, or the full size) unless it is still
 // existing (an ID, "" for none), and streams it to dst(its ID). It returns the file's path, or
@@ -181,8 +195,11 @@ func (q *photoQueue) changed(cli *whatsmeow.Client, jid types.JID) {
 		return
 	}
 	q.st.ops <- func(t *storeTx) {
-		if key := chatKey(context.Background(), t, cli.Store.LIDs, jid, types.EmptyJID); t.hasChat(key) {
+		key := chatKey(context.Background(), t, cli.Store.LIDs, jid, types.EmptyJID)
+		if t.hasChat(key) {
 			q.add(key)
+		} else if _, seen := q.memberCache(key); !seen.IsZero() {
+			q.add(memberPrefix + key) // a member we've cached: the new picture now, not at the age
 		}
 	}
 }
@@ -251,6 +268,9 @@ func (q *photoQueue) current(key string) (string, bool) {
 
 // refresh brings one chat's preview up to date.
 func (q *photoQueue) refresh(key string) error {
+	if k, ok := strings.CutPrefix(key, memberPrefix); ok {
+		return q.member(k)
+	}
 	jid, err := types.ParseJID(key)
 	if err != nil || !isPerson(jid) && jid.Server != types.GroupServer && jid.Server != types.NewsletterServer {
 		return nil
@@ -337,4 +357,107 @@ func (q *photoQueue) full(jid types.JID) string {
 		}
 	}
 	return path
+}
+
+// memberNone is the mark that a member has no picture, or hides it.
+func (q *photoQueue) memberNone(key string) string {
+	return filepath.Join(q.dir, "members", fileSafe.Replace(key)+".none")
+}
+
+// memberCache is a member's pictures in members/ (one, but for a moment) and when they were last
+// checked: the newest mtime of those and the none mark, zero when never.
+func (q *photoQueue) memberCache(key string) (jpgs []string, seen time.Time) {
+	jpgs, _ = filepath.Glob(q.path("members", key, "*"))
+	for _, f := range append([]string{q.memberNone(key)}, jpgs...) {
+		if fi, err := os.Stat(f); err == nil && fi.ModTime().After(seen) {
+			seen = fi.ModTime()
+		}
+	}
+	return
+}
+
+// members fills in the Photo of a group's participants and queues the ones to ask: ours is the
+// profile's; one with a chat has the chat's (the chat rounds keep it fresh); the rest have the
+// file kept in members/, if any, and are queued unless checked within memberPhotoAge. It never
+// waits for the network.
+func (q *photoQueue) members(ps []participant) {
+	if q == nil {
+		return
+	}
+	got := make(chan map[string]string, 1)
+	q.st.ops <- func(t *storeTx) {
+		chats := map[string]string{}
+		defer func() { got <- chats }()
+		for _, p := range ps {
+			var photo sql.NullString
+			if !p.Me && t.tx.QueryRow("SELECT photo FROM chats WHERE jid = ?", p.JID).Scan(&photo) == nil {
+				chats[p.JID] = photo.String
+			}
+		}
+	}
+	chats := <-got
+	var todo []string
+	for i := range ps {
+		p := &ps[i]
+		if photo, ok := chats[p.JID]; ok {
+			p.Photo = photo
+			continue
+		}
+		if p.Me {
+			p.Photo = profilePicture(q.st.srv.dir)
+			continue
+		}
+		jpgs, seen := q.memberCache(p.JID)
+		if len(jpgs) > 0 {
+			p.Photo = jpgs[len(jpgs)-1]
+		}
+		if time.Since(seen) > memberPhotoAge {
+			todo = append(todo, memberPrefix+p.JID)
+		}
+	}
+	q.add(todo...)
+}
+
+// member brings one member's preview up to date, as refresh does a chat's: the file in members/,
+// the none mark when they have no picture, and a photo event when it is not what it was.
+func (q *photoQueue) member(key string) error {
+	jid, err := types.ParseJID(key)
+	if err != nil || !isPerson(jid) {
+		return nil
+	}
+	have, _ := q.memberCache(key)
+	cur := ""
+	if len(have) > 0 {
+		cur = have[len(have)-1]
+	}
+	none := q.memberNone(key)
+	ctx, cancel := context.WithTimeout(context.Background(), netTimeout)
+	defer cancel()
+	path, err := q.fetch()(ctx, jid, true, pictureID(cur), func(id string) string { return q.path("members", key, id) })
+	switch {
+	case noPicture(err), err == nil && path == "" && cur == "":
+		path = "" // none; a nil answer to an unasked ID is the same
+		for _, f := range have {
+			os.Remove(f)
+		}
+		os.MkdirAll(filepath.Dir(none), 0o755)
+		os.WriteFile(none, nil, 0o644) // makes it, or renews its mtime
+	case err != nil:
+		return err
+	case path == "":
+		now := time.Now()
+		os.Chtimes(cur, now, now) // unchanged: checked just now
+		return nil
+	default:
+		for _, f := range have {
+			if f != path {
+				os.Remove(f)
+			}
+		}
+		os.Remove(none)
+	}
+	if path != cur {
+		q.st.srv.Emit("photo", map[string]any{"jid": key, "photo": path})
+	}
+	return nil
 }
