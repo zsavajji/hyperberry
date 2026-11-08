@@ -238,13 +238,13 @@ void MessageCard::restyle()
     m_root->setTopPadding(m_ui->du(1.5 * scale));
     m_card->setLeftPadding(side);
     m_card->setRightPadding(side);
-    m_card->setTopPadding(m_ui->du(1 * scale) + m_ui->px(2));
+    m_card->setTopPadding(m_ui->du(1 * scale)); // 2 px less: the name and time a little higher (Q10, 0.0.1.212)
     m_card->setBottomPadding(m_ui->du(1 * scale) + m_ui->px(2));
     if (m_head) {
         m_head->setLeftPadding(side);
         m_head->setRightPadding(side);
-        m_head->setTopPadding(m_ui->du(1 * scale) + m_ui->px(2));
-        m_head->setBottomPadding(m_ui->du(1 * scale));
+        m_head->setTopPadding(m_ui->du(1 * scale));
+        m_head->setBottomPadding(m_ui->du(1 * scale) + m_ui->px(2));
     }
     Card::style(m_text, m_list, body);
     // A little under SmallText (the user, 2026-11-08: the time a bit smaller).
@@ -271,7 +271,7 @@ void MessageCard::restyle()
 void MessageCard::makeSender()
 {
     m_sender = new Label();
-    m_sender->setBottomMargin(m_ui->du(0.5));
+    m_sender->setBottomMargin(m_ui->du(0.5) + m_ui->px(2)); // +2 px (Q10, 0.0.1.212)
     m_sender->textStyle()->setFontWeight(FontWeight::Bold);
     (m_head ? m_head : m_col)->insert(0, m_sender);
     m_styled = false;
@@ -444,14 +444,13 @@ void MessageCard::fillFoot()
     // (small), 12 px under body text, measured at 85 % and 105 % on the Q10, then scaled with the
     // text size setting.
     // ponytail: linear in the scale, not measured at 90-140 %.
-    // In the picture card the head holds them, so the caption is the card's first line. +3 px for
-    // the time at 85 %, whose baseline sits higher.
-    // ponytail: the 3 px is estimated, not measured on the Q10.
+    // In the picture card the head holds them, so the caption is the card's first line. +2 px for
+    // the time at 85 %, whose baseline sits higher (Q10, 0.0.1.212: +3 was 1 px low).
     const bool small = !m_head && (!str("sender").isEmpty() || !str("quote").isEmpty());
     const bool onPicture = m_head && !m_card->isVisible();
     placeTime(onPicture);
     if (!onPicture)
-        m_timeBox->setTopPadding(m_ui->px((small ? 10 : 15) * m_scale));
+        m_timeBox->setTopPadding(m_ui->px((small ? 9 : 14) * m_scale));
     // White on the picture's dark chip.
     const Color quiet = onPicture ? Color::White : m_ui->palette()->secondaryTextOnPlain();
     m_time->textStyle()->setColor(quiet);
