@@ -17,6 +17,7 @@
 #include <unistd.h>
 
 #include "ChatController.h"
+#include "ChatRows.h"
 #include "CallAudio.h"
 #include <bb/ApplicationInfo>
 #include <QDeclarativeContext>
@@ -144,6 +145,7 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     // bb.cascades has no Timer: the call screen's clock and its 2 s close (step 7.4).
     qmlRegisterType<QTimer>("hyperberry", 1, 0, "Timer");
     qmlRegisterType<ChatController>("hyperberry", 1, 0, "ChatController");
+    qmlRegisterType<ChatRows>("hyperberry", 1, 0, "ChatRows");
     qmlRegisterType<ContactInfo>("hyperberry", 1, 0, "ContactInfo");
     qmlRegisterType<ContactPicker>("hyperberry", 1, 0, "ContactPicker");
     qmlRegisterType<MapChooser>("hyperberry", 1, 0, "MapChooser");

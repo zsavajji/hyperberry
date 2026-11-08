@@ -1,8 +1,10 @@
 import bb.cascades 1.4
 import bb.system 1.2
+import hyperberry 1.0
 
 // The rows of a chat list, for ChatsPage and ArchivedPage: the model is set by the page, which
-// takes chatTapped. The rows' long-press menu reaches the work through the list (ListItem.view).
+// takes chatTapped. The rows are C++ (ChatRows.cpp): they reach the work through the list's
+// functions and properties, and the long-press menu calls the functions.
 ListView {
     id: list
     // The shared emoji style and sizes (main.qml), set by the page.
@@ -94,18 +96,5 @@ ListView {
         }
         chatTapped(dataModel.data(indexPath))
     }
-    listItemComponents: [
-        ListItemComponent {
-            type: "header"
-            Header {
-                title: ListItemData
-            }
-        },
-        ListItemComponent {
-            type: "item"
-            ChatRow {
-                chat: ListItemData
-            }
-        }
-    ]
+    listItemProvider: ChatRows {}
 }

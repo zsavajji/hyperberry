@@ -474,7 +474,7 @@ void MessageCard::fillColumn()
     }
 }
 
-// The time ("edited" before it) and our message's state, as in ChatRow: sending, sent, delivered,
+// The time ("edited" before it) and our message's state, as in ChatRows.cpp: sending, sent, delivered,
 // read, or a red "!" when it failed; then the foot and the reactions' chip.
 void MessageCard::fillFoot()
 {
