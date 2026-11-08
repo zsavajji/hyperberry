@@ -445,12 +445,12 @@ void MessageCard::fillFoot()
     // text size setting.
     // ponytail: linear in the scale, not measured at 90-140 %.
     // In the picture card the head holds them, so the caption is the card's first line. +2 px for
-    // the time at 85 %, whose baseline sits higher (Q10, 0.0.1.212: +3 was 1 px low; 0.0.1.215: beside a name, 1 more).
+    // the time at 85 %, whose baseline sits higher (Q10, 0.0.1.212: +3 was 1 px low; 0.0.1.216: 2 more).
     const bool small = !m_head && (!str("sender").isEmpty() || !str("quote").isEmpty());
     const bool onPicture = m_head && !m_card->isVisible();
     placeTime(onPicture);
     if (!onPicture)
-        m_timeBox->setTopPadding(m_ui->px((small ? 8 : 14) * m_scale));
+        m_timeBox->setTopPadding(m_ui->px((small ? 7 : 12) * m_scale));
     // White on the picture's dark chip.
     const Color quiet = onPicture ? Color::White : m_ui->palette()->secondaryTextOnPlain();
     m_time->textStyle()->setColor(quiet);
