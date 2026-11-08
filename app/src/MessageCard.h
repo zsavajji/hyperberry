@@ -3,6 +3,7 @@
 
 #include <bb/cascades/Color>
 #include <bb/cascades/CustomControl>
+#include <bb/cascades/ImplicitAnimationController>
 #include <bb/cascades/ListItemListener>
 #include <QString>
 #include <QVariantMap>
@@ -19,6 +20,7 @@ class DeleteActionItem;
 class ImageView;
 class Label;
 class ListView;
+class TouchEvent;
 class UIConfig;
 }
 }
@@ -58,6 +60,7 @@ private slots:
     void onLink(bb::cascades::ActiveTextTriggeredEvent *event);
     void onPopulating();
     void onReply();
+    void onTouch(bb::cascades::TouchEvent *event);
     void onReact();
     void onVotes();
     void onCopy();
@@ -97,6 +100,13 @@ private:
     QVariantMap m_msg;
     bool m_pressed;
     bool m_timeOnPicture;
+
+    // Swipe to reply: where the finger went down, and whether this touch is a swipe (1), not one (-1)
+    // or not yet known (0). m_slide holds translationX's implicit animation off while the finger drives it.
+    float m_downX;
+    float m_downY;
+    int m_swipe;
+    bb::cascades::ImplicitAnimationController m_slide;
 
     // What the styling was last set from: restyle() runs again when one of them changes.
     bool m_styled;

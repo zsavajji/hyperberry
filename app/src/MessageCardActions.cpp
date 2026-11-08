@@ -5,6 +5,7 @@
 #include <bb/cascades/ActiveTextTriggeredEvent>
 #include <bb/cascades/DeleteActionItem>
 #include <bb/cascades/ListView>
+#include <bb/cascades/TouchEvent>
 
 #include "CardStyle.h"
 #include "Invites.h"
@@ -83,6 +84,40 @@ void MessageCard::makeActions()
 }
 
 void MessageCard::onReply() { Card::call(m_list, "reply", m_msg); }
+
+// Swipe left to reply (the user, 2026-11-08): the card follows the finger up to 56 px left; let go
+// there and it replies, as the menu's Reply does. Either way it slides back. A touch that moves
+// up or down first is the list's scroll, and the card stays put.
+void MessageCard::onTouch(TouchEvent *event)
+{
+    const float full = 56;
+    if (event->isDown()) {
+        m_downX = event->windowX(); // the window's: the card's own coordinates move with it
+        m_downY = event->windowY();
+        m_swipe = 0;
+        return;
+    }
+    const float dx = event->windowX() - m_downX;
+    const float dy = event->windowY() - m_downY;
+    if (event->isMove()) {
+        if (m_swipe == 0 && qMax(qAbs(dx), qAbs(dy)) > m_ui->du(2)) {
+            m_swipe = (dx < 0 && qAbs(dx) > qAbs(dy) && !flag("deleted") && !flag("readOnly")) ? 1 : -1;
+            if (m_swipe == 1)
+                m_slide = ImplicitAnimationController::create(m_root, "translationX").enabled(false);
+        }
+        if (m_swipe == 1)
+            m_root->setTranslationX(qBound(-full, dx, 0.0f));
+        return;
+    }
+    if (m_swipe != 1) // up or cancel
+        return;
+    m_swipe = 0;
+    const bool reply = event->isUp() && m_root->translationX() <= -full;
+    m_slide = ImplicitAnimationController(); // the animation back on, for the slide back
+    m_root->setTranslationX(0);
+    if (reply)
+        onReply();
+}
 void MessageCard::onReact() { Card::call(m_list, "react", m_msg); }
 void MessageCard::onVotes() { Card::call(m_list, "showVoters", str("votesText")); }
 void MessageCard::onCopy() { Card::call(m_list, "copy", str("text")); }

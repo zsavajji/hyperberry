@@ -42,6 +42,9 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
     , m_rich(rich)
     , m_pressed(false)
     , m_timeOnPicture(false)
+    , m_downX(0)
+    , m_downY(0)
+    , m_swipe(0)
     , m_styled(false)
     , m_scale(0)
     , m_body(0)
@@ -173,6 +176,7 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
     setContextMenuHandler(handler);
     connect(handler, SIGNAL(populating(bb::cascades::ContextMenuShowingEvent *)), this,
             SLOT(onPopulating()));
+    connect(this, SIGNAL(touch(bb::cascades::TouchEvent *)), this, SLOT(onTouch(bb::cascades::TouchEvent *)));
 
     // The search match is tinted: the page sets foundId.
     if (!connect(list, SIGNAL(foundIdChanged()), this, SLOT(paintBackground())))
