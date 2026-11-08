@@ -84,6 +84,8 @@ signals:
     void typing(const QString &chat, const QString &who, bool on, bool voice);
     // A presence event; lastSeen in unix seconds, 0 when hidden.
     void presence(const QString &chat, bool online, qint64 lastSeen);
+    // A photo event: a group member's small picture arrived, "" when they have none.
+    void photo(const QString &jid, const QString &path);
     // A successful reply to a request, hello's excepted: its id (request()'s return value), the
     // cmd and the result. For C++ objects only: a connection ends with its object, so nothing
     // stays connected to a destroyed page (as with failure).

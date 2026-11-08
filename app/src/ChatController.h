@@ -34,7 +34,7 @@ class ChatController : public QObject
     Q_PROPERTY(QString replyName READ replyName NOTIFY replyChanged)
     Q_PROPERTY(QString replyText READ replyText NOTIFY replyChanged)
     // The last group.info result {subject, description, participants}, each participant with
-    // initials and color added; empty until it comes (groups only).
+    // initials and color added (and photo, when it has one); empty until it comes (groups only).
     Q_PROPERTY(QVariantMap groupInfo READ groupInfo NOTIFY groupInfoChanged)
 public:
     explicit ChatController(QObject *parent = 0);
@@ -105,8 +105,10 @@ private slots:
     void onIncoming();
     void onFullscreenChanged();
     void onReplied(const QString &id, const QString &cmd, const QVariant &result);
+    void onPhoto(const QString &jid, const QString &path);
 
 private:
+    void takeGroupInfo(QVariantMap info);
     void sendOpen();
     void askGroupInfo();
     void markRead();

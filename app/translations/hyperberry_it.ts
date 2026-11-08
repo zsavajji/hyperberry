@@ -147,12 +147,12 @@
 <context>
     <name>ChatController</name>
     <message>
-        <location filename="../src/ChatController.cpp" line="116"/>
+        <location filename="../src/ChatControllerGroup.cpp" line="23"/>
         <source>1 participant</source>
         <translation>1 partecipante</translation>
     </message>
     <message>
-        <location filename="../src/ChatController.cpp" line="116"/>
+        <location filename="../src/ChatControllerGroup.cpp" line="23"/>
         <source>%1 participants</source>
         <translation>%1 partecipanti</translation>
     </message>

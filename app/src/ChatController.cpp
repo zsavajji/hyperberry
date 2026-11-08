@@ -123,8 +123,6 @@ void ChatController::changeParticipant(const QString &jid, const QString &action
     m_changeId = m_engine->request("group.participants", args);
 }
 
-// Adds what the page draws to each participant: the tile's initials and the colour the name
-// has in the chat.
 void ChatController::onReplied(const QString &id, const QString &cmd, const QVariant &result)
 {
     if (cmd == "voice.play") {
@@ -137,20 +135,7 @@ void ChatController::onReplied(const QString &id, const QString &cmd, const QVar
     }
     if (cmd != "group.info" || id != m_infoId)
         return;
-    QVariantMap info = result.toMap();
-    QVariantList people;
-    foreach (const QVariant &v, info["participants"].toList()) {
-        QVariantMap p = v.toMap();
-        p["initials"] = initials(p["name"].toString());
-        p["color"] = pickColor(p["jid"].toString(), kSenders, kSenderCount);
-        people << p;
-    }
-    info["participants"] = people;
-    m_groupInfo = info;
-    emit groupInfoChanged();
-    const int n = people.size();
-    m_participants = n == 1 ? tr("1 participant") : tr("%1 participants").arg(n);
-    emit statusChanged();
+    takeGroupInfo(result.toMap());
 }
 
 void ChatController::open(const QVariantMap &chat)
@@ -166,6 +151,7 @@ void ChatController::open(const QVariantMap &chat)
             SLOT(onTyping(QString, QString, bool, bool)));
     connect(m_engine, SIGNAL(presence(QString, bool, qint64)), this,
             SLOT(onPresence(QString, bool, qint64)));
+    connect(m_engine, SIGNAL(photo(QString, QString)), this, SLOT(onPhoto(QString, QString)));
     connect(m_engine, SIGNAL(connectedChanged()), this, SLOT(onConnected()));
     connect(m_engine, SIGNAL(fullscreenChanged()), this, SLOT(onFullscreenChanged()));
     connect(m_engine, SIGNAL(replied(QString, QString, QVariant)), this,

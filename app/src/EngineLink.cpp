@@ -248,6 +248,8 @@ void EngineLink::readLines()
             } else if (ev == "presence")
                 emit presence(map["chat"].toString(), map["online"].toBool(),
                               map["lastSeen"].toLongLong());
+            else if (ev == "photo")
+                emit photo(map["jid"].toString(), map["photo"].toString());
         }
     }
 }

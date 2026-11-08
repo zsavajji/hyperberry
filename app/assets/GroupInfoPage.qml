@@ -119,14 +119,31 @@ Page {
                                   "initials": p.initials, "color": p.color}
         nav.push(c)
     }
+    // The same people in the same places (a picture came): only the rows that changed are replaced,
+    // so the list keeps its scroll. Another set clears and fills.
     function fill() {
-        people.clear()
-        var admin = false
-        if (info && info.participants) {
-            people.append(info.participants)
-            for (var i = 0; i < info.participants.length; i++) {
-                admin = admin || (info.participants[i].me && info.participants[i].admin)
+        var ps = info && info.participants ? info.participants : []
+        var same = people.size() == ps.length
+        var i
+        for (i = 0; same && i < ps.length; i++) {
+            same = people.value(i).jid == ps[i].jid
+        }
+        if (same) {
+            for (i = 0; i < ps.length; i++) {
+                var old = people.value(i)
+                if ((old.photo || "") != (ps[i].photo || "") || old.admin != ps[i].admin || old.name != ps[i].name) {
+                    people.replace(i, ps[i])
+                }
             }
+        } else {
+            people.clear()
+            if (ps.length > 0) {
+                people.append(ps)
+            }
+        }
+        var admin = false
+        for (i = 0; i < ps.length; i++) {
+            admin = admin || (ps[i].me && ps[i].admin)
         }
         amAdmin = admin
     }
@@ -285,6 +302,14 @@ Page {
                                     textStyle.fontSize: FontSize.PercentageValue
                                     textStyle.fontSizeValue: 118
                                     textStyle.color: Color.White
+                                }
+                                ImageView {
+                                    visible: !!ListItemData.photo
+                                    horizontalAlignment: HorizontalAlignment.Fill
+                                    verticalAlignment: VerticalAlignment.Fill
+                                    imageSource: ListItemData.photo ? "file://" + ListItemData.photo : ""
+                                    scalingMethod: ScalingMethod.AspectFill
+                                    loadEffect: ImageViewLoadEffect.None
                                 }
                             }
                             Label {
