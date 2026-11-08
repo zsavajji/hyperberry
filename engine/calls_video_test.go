@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"testing"
@@ -28,12 +29,13 @@ func (f *fakeCall) StartVideo() error {
 	f.mu.Unlock()
 	return nil
 }
+
+// As meowcaller's: the peer's video accepted, ours left as it is.
 func (f *fakeCall) AcceptVideo() error {
 	f.did("acceptvideo")
 	f.mu.Lock()
-	f.ours = true
-	f.mu.Unlock()
-	return nil
+	defer f.mu.Unlock()
+	return f.acceptErr
 }
 func (f *fakeCall) StopVideo() error {
 	f.did("stopvideo")
@@ -100,22 +102,43 @@ func TestVideoEvents(t *testing.T) {
 	f.mu.Unlock()
 	f.onVS(meowcaller.VideoState{Raw: 6})
 	wantVideo(t, r.ev(t), true, false, false, false, 1)
-	// The peer asks us to turn ours on; call.video on accepts it.
+	// The peer turns its video on: accepted by the engine at once, ours stays off, nobody is asked.
 	f.onVS(meowcaller.VideoState{Upgrade: true, Raw: 11})
-	wantVideo(t, r.ev(t), true, false, false, true, 1)
+	for i := 0; f.count("acceptvideo") == 0; i++ {
+		if i == 200 {
+			t.Fatal("the peer's video was not accepted")
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	f.mu.Lock()
+	f.theirs = true
+	f.mu.Unlock()
+	f.onVS(meowcaller.VideoState{Active: true, Raw: 1, Orientation: 1})
+	wantVideo(t, r.ev(t), true, false, true, false, 1)
+	// A failed accept leaves it to the UI: asked, and call.video on accepts.
+	f.mu.Lock()
+	f.acceptErr = errors.New("no pending peer video upgrade")
+	f.mu.Unlock()
+	f.onVS(meowcaller.VideoState{Upgrade: true, Raw: 11})
+	wantVideo(t, r.ev(t), true, false, true, true, 1)
+	f.mu.Lock()
+	f.acceptErr = nil
+	f.mu.Unlock()
 	if err := r.raw("call.video", `{"id":"V1","on":true}`); err != nil {
 		t.Fatal(err)
 	}
-	wantVideo(t, r.ev(t), true, true, false, false, 1)
-	if f.count("acceptvideo") != 1 || f.count("startvideo") != 0 {
+	wantVideo(t, r.ev(t), true, false, true, false, 1)
+	if f.count("acceptvideo") != 3 || f.count("startvideo") != 0 {
 		t.Errorf("calls: %v", f.calls)
 	}
-	// Off, then on again by our own start.
-	r.raw("call.video", `{"id":"V1","on":false}`)
-	wantVideo(t, r.ev(t), true, false, false, false, 1)
+	// Ours on by our own start, off, and on again.
 	r.raw("call.video", `{"id":"V1","on":true}`)
-	wantVideo(t, r.ev(t), true, true, false, false, 1)
-	if f.count("startvideo") != 1 {
+	wantVideo(t, r.ev(t), true, true, true, false, 1)
+	r.raw("call.video", `{"id":"V1","on":false}`)
+	wantVideo(t, r.ev(t), true, false, true, false, 1)
+	r.raw("call.video", `{"id":"V1","on":true}`)
+	wantVideo(t, r.ev(t), true, true, true, false, 1)
+	if f.count("startvideo") != 2 {
 		t.Errorf("calls: %v", f.calls)
 	}
 	if err := r.raw("call.video", `{"id":"nope","on":true}`); err == nil || err.(*Error).Code != "not_found" {

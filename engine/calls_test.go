@@ -28,6 +28,7 @@ type fakeCall struct {
 
 	// Video (calls_video_test.go).
 	video, ours, theirs bool
+	acceptErr           error // what AcceptVideo returns
 	vsink               meowcaller.VideoSink
 	onVS                func(meowcaller.VideoState)
 	onKey               func()

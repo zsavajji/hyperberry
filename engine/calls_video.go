@@ -98,16 +98,36 @@ func (c *Calls) hookVideo(cs *callState) {
 	})
 }
 
-// peerVideo follows the peer's <video> stanzas. meowcaller keeps whether the peer asked to itself,
-// so it is tracked here: any state but the request clears it (cancelled, rejected, or on already).
+// peerVideo follows the peer's <video> stanzas. The peer turning its video on is accepted at once,
+// ours staying off (the user's call, 2026-11-08: see theirs, start ours by hand); WhatsApp also
+// withdraws a request nobody answers within ~5 s (state 0, on the Q10). Only when that accept
+// fails does the UI ask ("asked"); any other state clears it (cancelled, rejected, or on already).
 func (c *Calls) peerVideo(cs *callState, v meowcaller.VideoState) {
 	c.log.Infof("call %s: peer video state %d (active %v, upgrade %v, orientation %d)", cs.id, v.Raw, v.Active, v.Upgrade, v.Orientation)
+	if v.Upgrade {
+		go c.acceptPeerVideo(cs) // off meowcaller's stanza handler: AcceptVideo sends two stanzas
+		return
+	}
 	c.mu.Lock()
-	cs.vid.f.asked = v.Upgrade
+	cs.vid.f.asked = false
 	c.mu.Unlock()
 	if v.Active && v.Orientation >= 0 && v.Orientation <= 3 {
 		cs.vid.peerOrient.Store(int32(v.Orientation))
 	}
+	c.videoChanged(cs)
+}
+
+// acceptPeerVideo takes the peer's video with ours off (meowcaller sends "stopped", then the accept).
+func (c *Calls) acceptPeerVideo(cs *callState) {
+	err := cs.call.AcceptVideo()
+	if err == nil {
+		c.log.Infof("call %s: the peer's video accepted, ours stays off", cs.id)
+		return
+	}
+	c.log.Warnf("call %s: accepting the peer's video: %v; the UI asks", cs.id, err)
+	c.mu.Lock()
+	cs.vid.f.asked = true
+	c.mu.Unlock()
 	c.videoChanged(cs)
 }
 
