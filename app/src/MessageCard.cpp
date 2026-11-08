@@ -264,7 +264,7 @@ void MessageCard::restyle()
     if (m_chip) {
         m_chip->setBackground(plain);
         m_chip->setLeftPadding(side);
-        Card::style(m_reactions, m_list, small);
+        Card::style(m_reactions, m_list, body); // the text's size, not the small one (the user, 2026-11-08)
     }
 }
 
