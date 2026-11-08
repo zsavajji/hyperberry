@@ -109,6 +109,7 @@ private:
     // What carries the background: the card, or in the picture card the frame around the head, the
     // picture and the card. m_head is there only in the picture card.
     bb::cascades::Container *m_frame;
+    bb::cascades::ImageView *m_bg; // the card's colour and rounded corners, behind m_frame
     bb::cascades::Container *m_head;
     bb::cascades::Container *m_card;
     bb::cascades::Container *m_col;

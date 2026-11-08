@@ -5,6 +5,7 @@
 #include <bb/cascades/ActiveTextTriggeredEvent>
 #include <bb/cascades/Button>
 #include <bb/cascades/Container>
+#include <bb/cascades/DockLayout>
 #include <bb/cascades/ContextMenuHandler>
 #include <bb/cascades/FontStyle>
 #include <bb/cascades/FontWeight>
@@ -113,22 +114,34 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
     m_card->add(m_col);
     m_card->add(m_timeBox);
 
-    // The foot, BBM's (Z30 screenshots, user 2026-11-08): the accent bar, 1 du, and beside it the
-    // tail, a triangle in the card's colour under the card's outer corner, theirs left, ours right.
+    // The foot, BBM's (Z30 screenshots, user 2026-11-08): the accent bar, 1 du, and over its outer
+    // end the tail, a triangle in the card's colour under the card's corner, theirs left, ours right.
+    // The bar runs under the tail, so the tail's slant cuts its end.
     m_foot = new Container();
     m_foot->setHorizontalAlignment(HorizontalAlignment::Fill);
-    m_foot->setLayout(Card::across());
-    m_tailL = makeTail("asset:///images/tail_l.png");
+    m_foot->setLayout(new DockLayout());
     m_underline = new Container();
-    Card::quota(m_underline, 1);
+    m_underline->setHorizontalAlignment(HorizontalAlignment::Fill);
     m_underline->setVerticalAlignment(VerticalAlignment::Top);
-    m_underline->setLeftMargin(0);
-    m_underline->setRightMargin(0);
     m_underline->setPreferredHeight(m_ui->du(1));
+    m_tailL = makeTail("asset:///images/tail_l.png");
+    m_tailL->setHorizontalAlignment(HorizontalAlignment::Left);
     m_tailR = makeTail("asset:///images/tail_r.png");
-    m_foot->add(m_tailL);
+    m_tailR->setHorizontalAlignment(HorizontalAlignment::Right);
     m_foot->add(m_underline);
+    m_foot->add(m_tailL);
     m_foot->add(m_tailR);
+
+    // The card's colour, BBM's rounded top corners: a white nine-slice under the card, tinted as
+    // the tail is. Cascades has no corner radius.
+    Container *body = new Container();
+    body->setHorizontalAlignment(HorizontalAlignment::Fill);
+    body->setLayout(new DockLayout());
+    m_bg = new ImageView();
+    m_bg->setImageSource(Card::url("asset:///images/card.amd"));
+    m_bg->setHorizontalAlignment(HorizontalAlignment::Fill);
+    m_bg->setVerticalAlignment(VerticalAlignment::Fill);
+    body->add(m_bg);
 
     // The picture card: the head and the card around the picture, which MessageCardBubbles puts
     // between them. No margins between the three: the paddings space them.
@@ -141,12 +154,12 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
         m_card->setTopMargin(0);
         m_frame->add(m_head);
         m_frame->add(m_card);
-        m_root->add(m_frame);
     } else {
         m_frame = m_card;
         m_head = 0;
-        m_root->add(m_card);
     }
+    body->add(m_frame);
+    m_root->add(body);
     m_root->add(m_foot);
     setRoot(m_root);
 
@@ -216,17 +229,11 @@ void MessageCard::show(const QVariantMap &msg)
 void MessageCard::paintBackground()
 {
     const QString found = Card::foundId(m_list);
-    Color c = m_ui->palette()->plain();
-    if (m_pressed)
-        c = Card::color(Card::pressColor(m_list));
-    else if (!found.isEmpty() && found == str("id"))
-        c = Card::color("#401bd862");
-    else if (str("media") == "sticker") {
-        m_frame->resetBackground();
-        return;
-    }
-    m_frame->setBackground(c);
-    // The tail is the card's, in its colour.
+    const bool match = !found.isEmpty() && found == str("id");
+    const Color c = m_pressed ? Card::color(Card::pressColor(m_list))
+                  : match ? Card::color("#401bd862") : m_ui->palette()->plain();
+    m_bg->setVisible(m_pressed || match || str("media") != "sticker");
+    m_bg->setFilterColor(c);
     m_tailL->setFilterColor(c);
     m_tailR->setFilterColor(c);
 }
