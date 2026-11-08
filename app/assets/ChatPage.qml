@@ -256,8 +256,9 @@ Page {
     // next key. Modifiers, Sym and Delete arrive cut to their low byte with a keycap of 0xE000 or more
     // (bb10-pitfalls); control characters (Enter, Backspace) and Ctrl shortcuts aren't text.
     function typeKey(event) {
-        // The search field is inside the page, so its keys come here too (Q10, 0.0.1.122); and a channel has no composer.
-        if (searchBar.typing || page.chat.kind == 3) {
+        // The search field and the composer (Composer.qml) are inside the page, so their keys come here too
+        // (Q10, 0.0.1.122; the composer typed letters twice, 0.0.1.231); and a channel has no composer.
+        if (searchBar.typing || composer.focused || page.chat.kind == 3) {
             return
         }
         var c = event.unicode
