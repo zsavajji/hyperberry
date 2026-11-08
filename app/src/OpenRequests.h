@@ -20,6 +20,8 @@ public:
 
 signals:
     void openChat(const QString &jid);
+    // The Share menu's file (a local path) or text; one of the two is empty.
+    void shared(const QString &path, const QString &text);
 
 private slots:
     void invoked(const bb::system::InvokeRequest &request);

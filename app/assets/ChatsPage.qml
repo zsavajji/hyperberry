@@ -103,6 +103,7 @@ Page {
         chatPage.chat = chat
         nav.push(chatPage)
         chatPage.focusComposer()
+        return chatPage
     }
     // Search again with text in the field goes back to typing; with none, it closes.
     function toggleSearch() {

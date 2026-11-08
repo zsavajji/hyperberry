@@ -80,6 +80,8 @@ TabbedPane {
             property string pressColor: settings.theme == 1 ? "#DCDCDC" : "#464646"
             // The chat a notification tap asked for, until the chat list is up to open it.
             property string pendingChat
+            // The Share menu's {path, text}, held like pendingChat until the chat list is up.
+            property variant pendingShare: ({})
             attachedObjects: [
                 ComponentDefinition {
                     id: chatsDef
@@ -113,6 +115,10 @@ TabbedPane {
                     id: albumDef
                     source: "AlbumPage.qml"
                 },
+                ComponentDefinition {
+                    id: shareDef
+                    source: "SharePage.qml"
+                },
                 TextStyleDefinition {
                     id: emoji
                     fontFamily: "sans-serif, HBEmoji"
@@ -140,6 +146,7 @@ TabbedPane {
             onCreationCompleted: {
                 // Not a Connections: Cascades' QML has none.
                 openRequests.openChat.connect(nav.openRequested)
+                openRequests.shared.connect(nav.shareRequested)
                 invites.offered.connect(nav.askToJoin)
                 invites.joined.connect(nav.openRequested)
                 // setCover, as the skills have it: cover belongs to Application, not to a page.
@@ -189,9 +196,25 @@ TabbedPane {
                 openPending()
             }
 
-            // The chat replaces whatever is above the list, so Back goes to the list.
+            function shareRequested(path, text) {
+                pendingShare = {"path": path, "text": text}
+                openPending()
+            }
+
+            // A share opens the Send to page over the list, Back drops it; a chat replaces whatever
+            // is above the list, so Back goes to the list.
             function openPending() {
-                if (pendingChat == "" || !linked || count() == 0)
+                if (!linked || count() == 0)
+                    return
+                if (pendingShare.path || pendingShare.text) {
+                    var picker = shareDef.createObject()
+                    picker.share = pendingShare
+                    pendingShare = {}
+                    root.activeTab = chatsTab
+                    backToList()
+                    push(picker)
+                }
+                if (pendingChat == "")
                     return
                 var chat = chats.chat(pendingChat)
                 pendingChat = ""
@@ -208,6 +231,14 @@ TabbedPane {
                 root.activeTab = chatsTab
                 backToList()
                 at(0).openChat(row)
+            }
+
+            // SharePage's pick: the Send to page goes out (destroy() is deferred, so it's safe from its
+            // own signal), and the chat opens with the file staged and the text in the composer.
+            function shareTo(chat, share) {
+                root.activeTab = chatsTab
+                backToList()
+                at(0).openChat(chat).share(share.path, share.text)
             }
 
             // A photo full screen (step 6.1): a received one, or an info page's picture.

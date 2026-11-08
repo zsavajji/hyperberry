@@ -246,6 +246,16 @@ Page {
         stagedInfo = info
         composer.requestFocus()
     }
+    // A file or text from the phone's Share menu (SharePage.qml): staged as the picker's file, the
+    // text in the composer, both waiting for Send.
+    function share(path, text) {
+        if (text) {
+            composer.text = text
+        }
+        if (path) {
+            stage(path)
+        }
+    }
     // Drops the file; the composer keeps its text.
     function unstage() {
         staged = ""

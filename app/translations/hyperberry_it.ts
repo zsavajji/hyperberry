@@ -47,6 +47,14 @@
     </message>
 </context>
 <context>
+    <name>SharePage</name>
+    <message>
+        <location filename="../assets/SharePage.qml" line="11"/>
+        <source>Send to</source>
+        <translation>Invia a</translation>
+    </message>
+</context>
+<context>
     <name>ChannelInfoPage</name>
     <message>
         <location filename="../assets/ChannelInfoPage.qml" line="19"/>

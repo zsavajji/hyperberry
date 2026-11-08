@@ -74,6 +74,18 @@
             <mime-type>application/vnd.zsavajji.hyperberry.chat</mime-type>
             <property var="uris" value="pim:"/>
         </filter>
+        <!-- The phone's Share menu: a file of any type, or a text. src/OpenRequests.cpp takes it,
+             SharePage.qml picks the chat. -->
+        <filter>
+            <action>bb.action.SHARE</action>
+            <mime-type>*</mime-type>
+            <property var="uris" value="file://"/>
+        </filter>
+        <filter>
+            <action>bb.action.SHARE</action>
+            <mime-type>text/plain</mime-type>
+            <property var="uris" value="data://local"/>
+        </filter>
     </invoke-target>
 
     <asset path="assets">assets</asset>
