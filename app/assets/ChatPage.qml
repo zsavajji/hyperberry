@@ -8,9 +8,14 @@ import hyperberry 1.0
 Page {
     id: page
     property variant chat
+    // The composer's TextArea (Composer.qml): text, editor and requestFocus() are used all over this page.
+    property variant composer: composerBar.field
+    // Back is in the title bar and the composer is ours: nothing left for the bar. openActionMenu()
+    // still opens the ⋮ menu with it hidden (Q10).
+    actionBarVisibility: ChromeVisibility.Hidden
     // Set by a send until our row goes in at the bottom.
     property bool followOwn: false
-    // The emoji picker is open, in the keyboard's place; only the Emoji action closes it.
+    // The emoji picker is open, in the keyboard's place; only the composer's Emoji button closes it.
     property bool picking: false
     // The file picked to send, waiting for Send (step 6.4), and MediaOpener.fileInfo's of it.
     property string staged: ""
@@ -29,8 +34,6 @@ Page {
         ctl.open(chat)
         if (chat.kind != 2) addAction(infoAction, ActionBarPlacement.InOverflow)
         if (chat.kind <= 1) addAction(pollAction, ActionBarPlacement.InOverflow)
-        // A channel is read-only (step 6.6g): the first four actions are the composer, Emoji, Send and Attach.
-        for (var a = 0; chat.kind == 3 && a < 4; a++) actionAt(a).enabled = false
         ctl.messages.itemAdded.connect(page.added)
         ctl.voiceReady.connect(player.ready)
         media.ready.connect(page.mediaReady)
@@ -117,49 +120,6 @@ Page {
         }
     ]
     actions: [
-        // The system composer (PLAN.md §7, step 3.2; user's choice A): Enter sends and the field keeps
-        // the focus, so the next message can be typed at once. It takes no text style, so emoji past
-        // Unicode 6 show as boxes until sent.
-        TextInputActionItem {
-            id: composer
-            hintText: qsTr("Message")
-            textFormat: TextFormat.Plain
-            input {
-                submitKey: SubmitKey.Send
-                submitKeyFocusBehavior: SubmitKeyFocusBehavior.Keep
-                // Off, Enter is a new line: the key still submits, so the field keeps its focus.
-                onSubmitted: settings.enterSends ? page.send() : composer.editor.insertPlainText("\n")
-            }
-            // composer.text notifies only when committed (as SearchBar's field), so mic follows this.
-            onTextChanging: {
-                page.typed = /\S/.test(text)
-                mentionBar.find(text)
-                ctl.composing(text)
-            }
-        },
-        ActionItem {
-            title: recorder.recording ? qsTr("Discard") : qsTr("Emoji")
-            imageSource: recorder.recording ? "file:///usr/share/icons/bb_action_delete.png"
-                                            : "asset:///images/emoji.png"
-            ActionBar.placement: ActionBarPlacement.OnBar
-            onTriggered: recorder.recording ? recorder.discard() : page.picking = !page.picking
-        },
-        // The touch path to sending (the Q10 has no on-screen submit key). The phone's own icon, read
-        // at run time, not shipped.
-        // Record while the composer is empty, as WhatsApp's: a tap starts, the next one sends.
-        ActionItem {
-            title: page.mic ? qsTr("Record") : qsTr("Send")
-            imageSource: page.mic ? "asset:///images/record.png"
-                                  : "file:///usr/share/icons/bb_action_sendtextmessage.png"
-            ActionBar.placement: ActionBarPlacement.OnBar
-            onTriggered: page.mic ? recorder.start() : recorder.recording ? recorder.finish() : page.send()
-        },
-        ActionItem {
-            title: qsTr("Attach")
-            imageSource: "asset:///images/attach_action.png"
-            ActionBar.placement: ActionBarPlacement.InOverflow
-            onTriggered: attachPicker.open()
-        },
         ActionItem {
             title: qsTr("Search")
             imageSource: "asset:///images/search.png"
@@ -422,7 +382,7 @@ Page {
                 layout: StackListLayout {
                     orientation: LayoutOrientation.BottomToTop
                 }
-                // The newest card keeps the cards' gap above the action bar.
+                // The newest card keeps the cards' gap above the composer.
                 bottomPadding: ui.du(1.5)
                 // The beginning is the bottom: a new message is followed only when the list was
                 // already there.
@@ -479,6 +439,26 @@ Page {
                     control.picked.connect(page.picked)
                 }
             }
+        }
+        // Last: the picker above it takes the keyboard's place, as stock.
+        Composer {
+            id: composerBar
+            mic: page.mic
+            recording: recorder.recording
+            readOnly: page.chat ? page.chat.kind == 3 : false
+            onEmoji: page.picking = !page.picking
+            onDiscard: recorder.discard()
+            onAttach: attachPicker.open()
+            onSend: page.mic ? recorder.start() : recorder.recording ? recorder.finish() : page.send()
+            // Off, Enter is a new line: the key still submits, so the field keeps its focus.
+            onSubmitted: settings.enterSends ? page.send() : composer.editor.insertPlainText("\n")
+            // The field's text notifies only when committed, so mic follows this.
+            onChanging: {
+                page.typed = /\S/.test(text)
+                mentionBar.find(text)
+                ctl.composing(text)
+            }
+            onMenu: page.openActionMenu()
         }
     }
 }

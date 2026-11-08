@@ -3,7 +3,7 @@ import bb.cascades 1.4
 // The "@" picker of a group chat, above the reply bar: typing "@" at the end of the composer's text
 // lists the members who have a name starting with what follows it; a tap writes "@name " and
 // remembers who, and ChatPage's send hands the engine the people the text still names (take).
-// people are the group's participants (jid, name, me, ...), field the composer (a TextInputActionItem;
+// people are the group's participants (jid, name, me, ...), field the composer (its TextArea;
 // not named composer, which a binding `composer: composer` could read as its own).
 // ponytail: only an "@" typed at the end of the text is matched, not one in the middle, and the
 // caption of a staged file gets no mentions; a cursor-aware match if either is missed.

@@ -287,7 +287,6 @@
     <name>ChatPage</name>
     <message>
         <location filename="../assets/ChatPage.qml" line="45"/>
-        <location filename="../assets/ChatPage.qml" line="167"/>
         <source>Attach</source>
         <translation>Allega</translation>
     </message>
@@ -355,31 +354,6 @@
         <location filename="../assets/ChatPage.qml" line="125"/>
         <source>Cancel</source>
         <translation>Annulla</translation>
-    </message>
-    <message>
-        <location filename="../assets/ChatPage.qml" line="139"/>
-        <source>Message</source>
-        <translation>Messaggio</translation>
-    </message>
-    <message>
-        <location filename="../assets/ChatPage.qml" line="150"/>
-        <source>Discard</source>
-        <translation>Scarta</translation>
-    </message>
-    <message>
-        <location filename="../assets/ChatPage.qml" line="150"/>
-        <source>Emoji</source>
-        <translation>Emoji</translation>
-    </message>
-    <message>
-        <location filename="../assets/ChatPage.qml" line="160"/>
-        <source>Record</source>
-        <translation>Registra</translation>
-    </message>
-    <message>
-        <location filename="../assets/ChatPage.qml" line="160"/>
-        <source>Send</source>
-        <translation>Invia</translation>
     </message>
     <message>
         <location filename="../assets/ChatPage.qml" line="173"/>
@@ -504,6 +478,14 @@
         <location filename="../assets/ChatsPage.qml" line="80"/>
         <source>Channels</source>
         <translation>Canali</translation>
+    </message>
+</context>
+<context>
+    <name>Composer</name>
+    <message>
+        <location filename="../assets/Composer.qml" line="73"/>
+        <source>Message</source>
+        <translation>Messaggio</translation>
     </message>
 </context>
 <context>
