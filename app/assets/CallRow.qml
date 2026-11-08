@@ -1,7 +1,7 @@
 import bb.cascades 1.4
 
 // One row of the Calls tab (step 7.4): the chat's tile, its name, what the call was (red when
-// missed) and when. call is a row of CallsModel; the work is the list's (ListItem.view).
+// missed) and when, laid out and sized as a chat list row (ChatRows.cpp), the call in the preview's place. call is a row of CallsModel; the work is the list's (ListItem.view).
 Container {
     id: row
     property variant call
@@ -58,7 +58,7 @@ Container {
                     textFormat: TextFormat.Plain
                     textStyle.base: row.ListItem.view.emojiStyle
                     textStyle.fontSize: FontSize.PercentageValue
-                    textStyle.fontSizeValue: row.ListItem.view.bodySize
+                    textStyle.fontSizeValue: Math.round(115 * row.ListItem.view.textScale)
                 }
                 Label {
                     verticalAlignment: VerticalAlignment.Center
@@ -69,11 +69,14 @@ Container {
                     textStyle.color: ui.palette.secondaryTextOnPlain
                 }
             }
+            // The chat row's preview (ChatRows.cpp): the same style and size, so its line sits where the
+            // preview's does (the user, 2026-11-08).
             Label {
                 text: row.call.detail
-                textStyle.base: SystemDefaults.TextStyles.SmallText
+                textFormat: TextFormat.Plain
+                textStyle.base: row.ListItem.view.emojiStyle
                 textStyle.fontSize: FontSize.PercentageValue
-                textStyle.fontSizeValue: row.ListItem.view.smallSize
+                textStyle.fontSizeValue: Math.round(90 * row.ListItem.view.textScale)
                 textStyle.color: row.call.missed ? Color.create("#FF3333") : ui.palette.secondaryTextOnPlain
             }
         }
