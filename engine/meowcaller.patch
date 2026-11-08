@@ -114,3 +114,93 @@
  
  	var rc [SmplLPCOrder]float32
  	ac2rcDbl(r[:], SmplLPCOrder, smplLPCReg, rc[:])
+--- a/rtp/rtcp_census.go	2026-11-08 17:20:20
++++ b/rtp/rtcp_census.go	2026-11-08 17:20:53
+@@ -2,6 +2,7 @@
+ 
+ import (
+ 	"encoding/binary"
++	"encoding/hex"
+ 	"fmt"
+ 	"sort"
+ 	"strings"
+@@ -14,8 +15,30 @@
+ 	counts      map[string]int
+ 	NackedSeqs  int // sequence numbers asked for retransmission
+ 	nackSamples []string
++	// hyperberry: the first few raw packets of each kind of feedback, logged once each (the
++	// bandwidth estimate, the compact 208, report blocks), to learn what to send back.
++	kept   map[string]int
++	unread []string
+ }
+ 
++// sampleKinds are the packets kept whole: their contents aren't known yet.
++func sampleKind(name string, rc uint8) bool {
++	switch name {
++	case "PSFB-APP(REMB?)", "PT208/1", "RR", "APP", "TWCC":
++		return true
++	case "SR":
++		return rc > 0 // one with report blocks: what the peer says about our streams
++	}
++	return false
++}
++
++// TakeSamples returns the packets kept since the last call, as "kind hex".
++func (c *RtcpCensus) TakeSamples() []string {
++	s := c.unread
++	c.unread = nil
++	return s
++}
++
+ func rtcpName(pt, fmtv uint8) string {
+ 	switch pt {
+ 	case 200:
+@@ -69,6 +92,13 @@
+ 		}
+ 		name := rtcpName(pt, fmtv)
+ 		c.counts[name]++
++		if sampleKind(name, fmtv) && c.kept[name] < 3 {
++			if c.kept == nil {
++				c.kept = make(map[string]int)
++			}
++			c.kept[name]++
++			c.unread = append(c.unread, name+" "+hex.EncodeToString(compound[off:off+length]))
++		}
+ 		if pt == 205 && fmtv == 1 && length >= 16 {
+ 			// Generic NACK FCI: PID (16) + BLP (16) bitmask of the following 16.
+ 			for fci := compound[off+12 : off+length]; len(fci) >= 4; fci = fci[4:] {
+--- a/rtp/rtcp_census_test.go	2026-11-08 17:20:20
++++ b/rtp/rtcp_census_test.go	2026-11-08 17:21:03
+@@ -22,3 +22,20 @@
+ 		t.Fatalf("census: %s nacked=%d", s, c.NackedSeqs)
+ 	}
+ }
++
++// hyperberry: a bandwidth estimate is kept whole once, a plain SR (no report blocks) isn't.
++func TestRtcpCensusKeepsSamples(t *testing.T) {
++	var c RtcpCensus
++	remb := []byte{0x8f, 206, 0, 2, 1, 2, 3, 4, 0, 0, 0, 0}
++	sr := []byte{0x80, 200, 0, 1, 9, 9, 9, 9}
++	for i := 0; i < 5; i++ {
++		c.Add(append(append([]byte{}, sr...), remb...))
++	}
++	got := c.TakeSamples()
++	if len(got) != 3 || got[0] != "PSFB-APP(REMB?) 8fce000201020304"+"00000000" {
++		t.Fatalf("samples: %q", got)
++	}
++	if more := c.TakeSamples(); len(more) != 0 {
++		t.Fatalf("taken twice: %q", more)
++	}
++}
+--- a/engine_media.go	2026-11-08 17:20:20
++++ b/engine_media.go	2026-11-08 17:20:53
+@@ -1272,6 +1272,9 @@
+ 				lastCensusLog = now
+ 				log.Info().Str("types", rtcpCensus.String()).Msg("peer rtcp census")
+ 			}
++			for _, sample := range rtcpCensus.TakeSamples() { // hyperberry: the raw feedback
++				log.Info().Str("packet", sample).Msg("peer rtcp sample")
++			}
+ 			// wa-poc patch: log how the peer is receiving our video (loss, jitter, keyframe asks).
+ 			if rb, ok := rtp.FindReportBlock(plain, videoSelfSsrc); ok {
+ 				if now := time.Now(); now.Sub(lastTxFeedbackLog) > 10*time.Second {
