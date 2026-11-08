@@ -260,7 +260,9 @@ void CallVideo::readLoop()
             if (type == 1) {
                 // The turn is the frame's own, and takes effect for the pictures decoded after it
                 // (the decoder holds a few frames, so a change shows a few pictures late: harmless).
-                m_window.setRotation((unsigned char)head[5]);
+                // WhatsApp counts its quarter turns anticlockwise, the window clockwise: turned as
+                // sent, Android's front camera (1) was upside down and its rear one (3) too (Q10, 0.0.1.206).
+                m_window.setRotation((4 - (unsigned char)head[5]) & 3);
                 if (decoding && m_decoder.broken()) {
                     qWarning("call video: the decoder stalled; opening it again");
                     decoding = m_decoder.open(Width, Height, Fps, MaxUnit);
