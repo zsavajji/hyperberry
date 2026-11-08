@@ -30,7 +30,7 @@ int main()
         unsigned char oy[5 * 8], ouv[5 * 8];
         memset(oy, 0xAA, sizeof oy);
         memset(ouv, 0xAA, sizeof ouv);
-        rotateNv12(y, uv, 4, 2, 6, turns, oy, 5, ouv, 5);                // destination strides of 5
+        rotateNv12(y, uv, 4, 2, 6, turns, false, oy, 5, ouv, 5);                // destination strides of 5
         for (int r = 0; r < dh; r++) {
             for (int c = 0; c < dw; c++)
                 assert(oy[r * 5 + c] == expY[turns][r * dw + c]);
@@ -41,6 +41,22 @@ int main()
                 assert(ouv[r * 5 + c] == expUv[turns][r * cw * 2 + c]);
             assert(ouv[r * 5 + cw * 2] == 0xAA);
         }
+    }
+    // Mirrored, then turned once: the mirror is 3 2 1 0 / 7 6 5 4 with pairs b, a.
+    {
+        unsigned char oy[4 * 2], ouv[2 * 2];
+        rotateNv12(y, uv, 4, 2, 6, 1, true, oy, 2, ouv, 2);
+        const unsigned char wantY[8] = { 7, 3,   6, 2,   5, 1,   4, 0 };
+        const unsigned char wantUv[4] = { 12, 13,   10, 11 };
+        for (int i = 0; i < 8; i++)
+            assert(oy[i] == wantY[i]);
+        for (int i = 0; i < 4; i++)
+            assert(ouv[i] == wantUv[i]);
+        rotateNv12(y, uv, 4, 2, 6, 0, true, oy, 4, ouv, 4);
+        const unsigned char flatY[8] = { 3, 2, 1, 0,   7, 6, 5, 4 };
+        for (int i = 0; i < 8; i++)
+            assert(oy[i] == flatY[i]);
+        assert(ouv[0] == 12 && ouv[1] == 13 && ouv[2] == 10 && ouv[3] == 11);
     }
     // The crop a fill shows: a portrait picture in a square view, a landscape one, no view yet.
     int x, yy, cw, ch;

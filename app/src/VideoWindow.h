@@ -30,6 +30,8 @@ public:
     // Quarter turns clockwise that make the next frames upright (the peer's orientation); any
     // thread, takes effect from the next frame. The RGB fallback ignores it.
     void setRotation(int quarterTurns) { m_turns = quarterTurns & 3; }
+    // Mirror each frame left to right before turning it (a peer's front camera); any thread.
+    void setMirror(bool on) { m_mirror = on ? 1 : 0; }
     // The size of the control showing the window; the picture is cropped to its aspect (a fill)
     // by Screen's source viewport, so the control never outgrows its parent (a Cascades parent
     // squeezes a bigger child: the picture was squeezed, 0.0.1.203). Any thread; next frame.
@@ -56,6 +58,7 @@ private:
     int m_format;
     int m_w, m_h;              // the buffers' size; written on the decoder's thread (and in create())
     QAtomicInt m_turns;
+    QAtomicInt m_mirror;
     QAtomicInt m_viewW, m_viewH;
     int m_cropForW, m_cropForH; // the view size the source viewport was set for; decoder thread
     QByteArray m_scratch;      // linear NV12 of the frame, before the turn and in the RGB fallback

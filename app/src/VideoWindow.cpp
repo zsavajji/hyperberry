@@ -91,6 +91,7 @@ bool VideoWindow::create(const QString &windowId, int width, int height, bool rg
     m_w = width;
     m_h = height;
     m_turns = 0;
+    m_mirror = 0;
     m_cropForW = m_cropForH = -1;
     m_warned = false;
     m_resizeWarned = false;
@@ -227,6 +228,7 @@ void VideoWindow::frame(const VideoDecoder::Frame &f)
     }
     // ponytail: the RGB fallback (only if Screen refuses NV12 windows) draws the picture unturned.
     const int turns = m_format == SCREEN_FORMAT_NV12 ? int(m_turns) & 3 : 0;
+    const bool mirror = m_format == SCREEN_FORMAT_NV12 && int(m_mirror);
     const int wantW = turns & 1 ? f.height : f.width, wantH = turns & 1 ? f.width : f.height;
     if (wantW != m_w || wantH != m_h) {
         if (!resize(wantW, wantH)) // logged once; the next frame tries again
@@ -258,13 +260,13 @@ void VideoWindow::frame(const VideoDecoder::Frame &f)
         // The chroma plane is where Screen says; right behind the luma rows if it says nothing.
         unsigned char *dy = base + offsets[0], *duv = base + (offsets[1] > 0 ? offsets[1] : stride * m_h);
         t0 = nowMs();
-        if (turns == 0) {
+        if (turns == 0 && !mirror) {
             toLinear(f, dy, stride, duv, stride);
         } else {
             // Linear first, then turned into the buffer: the tiles don't survive a turn.
             unsigned char *sy = (unsigned char *)m_scratch.data(), *suv = sy + f.width * f.height;
             toLinear(f, sy, f.width, suv, f.width);
-            rotateNv12(sy, suv, f.width, f.height, f.width, turns, dy, stride, duv, stride);
+            rotateNv12(sy, suv, f.width, f.height, f.width, turns, mirror, dy, stride, duv, stride);
         }
         ms = nowMs() - t0;
     } else {
