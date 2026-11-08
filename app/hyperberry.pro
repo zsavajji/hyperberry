@@ -6,7 +6,7 @@ CONFIG += qt warn_on release
 QT += declarative network sql gui
 # QtGui links anyway (QtDeclarative needs it); QImage and QImageReader make the photo previews and the
 # thumbnail sent with a photo (step 6.3), since the engine decodes no picture.
-LIBS += -lbbcascades -lbbdata -lbbsystem -lbbplatform -lbb -lbbutilityi18n -lslog2 -lbbpim -lbps -lasound -laudio_manager -lscreen -lcamapi
+LIBS += -lbbcascades -lbbdevice -lbbdata -lbbsystem -lbbplatform -lbb -lbbutilityi18n -lslog2 -lbbpim -lbps -lasound -laudio_manager -lscreen -lcamapi
 QMAKE_LFLAGS += -Wl,-rpath-link,$${QNX_DIR}/$${QNX_CPUDIR}/usr/lib/qt4/lib
 QMAKE_CXXFLAGS += -Wno-psabi
 

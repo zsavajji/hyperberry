@@ -20,6 +20,7 @@
 #include <bb/cascades/UIConfig>
 #include <bb/cascades/UIPalette>
 #include <bb/cascades/VerticalAlignment>
+#include <bb/device/DisplayInfo>
 #include <QStringList>
 
 #include "CardStyle.h"
@@ -63,11 +64,12 @@ ActivityIndicator *spinner()
 
 }
 
-MediaBubble::MediaBubble(ListView *list)
+MediaBubble::MediaBubble(ListView *list, bool wide)
     : m_list(list)
     , m_ui(list->ui())
     , m_picture(false)
     , m_sticker(false)
+    , m_wide(0)
     , m_styled(false)
     , m_body(0)
     , m_small(0)
@@ -82,7 +84,13 @@ MediaBubble::MediaBubble(ListView *list)
     // A picture: the thumbnail, or the page's colour with its name, and what is over it.
     m_photo = new Container();
     m_photo->setLayout(new DockLayout());
-    m_photo->setPreferredWidth(m_ui->du(40));
+    // Wide: the card's width, the screen's less the card's insets (MessageCard: 7 and 1.5 du).
+    // ponytail: the screen's width when the app started; a phone that rotates would want the list's.
+    if (wide) {
+        m_wide = bb::device::DisplayInfo().pixelSize().width() - m_ui->du(8.5);
+        m_photo->setHorizontalAlignment(HorizontalAlignment::Fill);
+    }
+    m_photo->setPreferredWidth(wide ? m_wide : m_ui->du(40));
     m_thumb = new ImageView();
     m_thumb->setHorizontalAlignment(HorizontalAlignment::Fill);
     m_thumb->setVerticalAlignment(VerticalAlignment::Fill);
@@ -99,7 +107,8 @@ MediaBubble::MediaBubble(ListView *list)
     m_play->textStyle()->setFontSize(FontSize::PercentageValue);
     m_play->textStyle()->setFontSizeValue(300);
     m_play->textStyle()->setColor(Color::White);
-    m_length = docked(HorizontalAlignment::Right, VerticalAlignment::Bottom);
+    // At the left in the picture card: the time takes the right, as on Android.
+    m_length = docked(wide ? HorizontalAlignment::Left : HorizontalAlignment::Right, VerticalAlignment::Bottom);
     m_length->textStyle()->setBase(SystemDefaults::TextStyles::smallText());
     m_length->textStyle()->setColor(Color::White);
 
@@ -118,6 +127,13 @@ MediaBubble::MediaBubble(ListView *list)
     m_photo->add(m_play);
     m_photo->add(m_length);
     m_photo->add(m_cover);
+    // The time's corner, 1 du in from the edges; empty unless the card puts the time in it.
+    m_stamp = new Container();
+    m_stamp->setHorizontalAlignment(HorizontalAlignment::Right);
+    m_stamp->setVerticalAlignment(VerticalAlignment::Bottom);
+    m_stamp->setRightPadding(m_ui->du(1));
+    m_stamp->setBottomPadding(m_ui->du(1));
+    m_photo->add(m_stamp);
     m_photo->add(m_photoSpin);
 
     // The sticker's picture, fit in a square; always an Image in thumb, an empty one without a
@@ -223,16 +239,19 @@ void MediaBubble::show(const QVariantMap &msg)
     restyle();
 
     // A caption follows a picture, with no margin of its own.
-    setBottomMargin(str("text").isEmpty() ? 0 : m_ui->du(0.5));
-    // Air above and below a picture, so it doesn't touch the card's name line or caption (user).
-    const float air = m_picture || m_sticker ? m_ui->du(1) : 0;
+    setBottomMargin(str("text").isEmpty() || m_wide ? 0 : m_ui->du(0.5));
+    // Air above and below a picture, so it doesn't touch the card's name line or caption (user);
+    // none in the picture card, where it spans the card.
+    const float air = (m_picture || m_sticker) && !m_wide ? m_ui->du(1) : 0;
     m_root->setTopPadding(air);
     m_root->setBottomPadding(air);
 
     m_photo->setVisible(m_picture);
     if (m_picture) {
-        // A tall photo is cut at 50 du; AspectFill crops it.
-        m_photo->setPreferredHeight(qMin(m_ui->du(50), m_ui->du(40) * float(m_msg.value("ratio").toDouble())));
+        // A tall photo is cut at 50 du, 60 in the picture card; AspectFill crops it.
+        const float ratio = m_msg.value("ratio").toDouble();
+        m_photo->setPreferredHeight(m_wide ? qMin(m_ui->du(60), m_wide * ratio)
+                                           : qMin(m_ui->du(50), m_ui->du(40) * ratio));
         m_thumb->setVisible(hasThumb);
         m_thumb->setImage(m_msg.value("thumb").value<Image>());
         m_none->setVisible(!hasThumb);

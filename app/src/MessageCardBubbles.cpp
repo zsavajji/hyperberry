@@ -20,7 +20,7 @@ void MessageCard::place(Control *part, Control *a, Control *b, Control *c, Contr
 {
     Control *const next[] = { a, b, c, d };
     for (int i = 0; i < 4; i++) {
-        if (next[i]) {
+        if (next[i] && m_col->indexOf(next[i]) >= 0) {
             m_col->insert(m_col->indexOf(next[i]), part);
             return;
         }
@@ -40,8 +40,12 @@ void MessageCard::makeBubbles()
         place(m_voice, m_media, m_album, m_label, m_text);
     }
     if (!str("media").isEmpty() && !m_media) {
-        m_media = new MediaBubble(m_list);
-        place(m_media, m_album, m_label, m_text);
+        // In the picture card it spans the card, between the head and the caption.
+        m_media = new MediaBubble(m_list, m_head != 0);
+        if (m_head)
+            m_frame->insert(1, m_media);
+        else
+            place(m_media, m_album, m_label, m_text);
     }
     if (!m_msg.value("album").toList().isEmpty() && !m_album) {
         m_album = new AlbumBubble(m_list);

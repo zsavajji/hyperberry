@@ -36,14 +36,16 @@ class VoiceBubble;
 // ticks, and filled by show() on each recycle. Every other part is made the first time a message
 // needs it, then kept and hidden when the next one doesn't, since rows are recycled; each goes into
 // the card's column at its QML place. The column holds, in order: sender, quote, [the voice, media
-// and album bubbles], label, text, [link preview], invite button, [poll].
+// and album bubbles], label, text, [link preview], invite button, [poll]. The picture card (a photo
+// or video) is a frame instead: a head with the sender and quote, the picture across the card's
+// width, and the card with the caption; with no caption the time sits on the picture.
 class MessageCard : public bb::cascades::CustomControl, public bb::cascades::ListItemListener
 {
     Q_OBJECT
 public:
-    MessageCard(bb::cascades::ListView *list, bool rich);
+    MessageCard(bb::cascades::ListView *list, bool rich, bool picture = false);
 
-    // msg is a "text" or "msg" row of MessageModel.
+    // msg is a "text", "msg" or "picture" row of MessageModel.
     void show(const QVariantMap &msg);
 
     // ListItemListener: a press tints the card; selection isn't used.
@@ -86,12 +88,14 @@ private:
     void fillFoot();
     void fillMenu();
     void fillBubbles();
+    void placeTime(bool onPicture);
 
     bb::cascades::ListView *m_list;
     bb::cascades::UIConfig *m_ui;
     bool m_rich;
     QVariantMap m_msg;
     bool m_pressed;
+    bool m_timeOnPicture;
 
     // What the styling was last set from: restyle() runs again when one of them changes.
     bool m_styled;
@@ -101,6 +105,10 @@ private:
     bb::cascades::Color m_plain;
 
     bb::cascades::Container *m_root;
+    // What carries the background: the card, or in the picture card the frame around the head, the
+    // picture and the card. m_head is there only in the picture card.
+    bb::cascades::Container *m_frame;
+    bb::cascades::Container *m_head;
     bb::cascades::Container *m_card;
     bb::cascades::Container *m_col;
     bb::cascades::Label *m_sender;

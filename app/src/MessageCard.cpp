@@ -24,6 +24,7 @@
 #include <bb/cascades/VerticalAlignment>
 
 #include "CardStyle.h"
+#include "MediaBubble.h"
 #include "PollBubble.h"
 
 using namespace bb::cascades;
@@ -33,11 +34,12 @@ namespace {
 const char *const kContext = "MessageItem";
 }
 
-MessageCard::MessageCard(ListView *list, bool rich)
+MessageCard::MessageCard(ListView *list, bool rich, bool picture)
     : m_list(list)
     , m_ui(list->ui())
     , m_rich(rich)
     , m_pressed(false)
+    , m_timeOnPicture(false)
     , m_styled(false)
     , m_scale(0)
     , m_body(0)
@@ -114,7 +116,23 @@ MessageCard::MessageCard(ListView *list, bool rich)
     m_underline->setHorizontalAlignment(HorizontalAlignment::Fill);
     m_underline->setPreferredHeight(m_ui->px(2));
 
-    m_root->add(m_card);
+    // The picture card: the head and the card around the picture, which MessageCardBubbles puts
+    // between them. No margins between the three: the paddings space them.
+    if (picture) {
+        m_frame = new Container();
+        m_frame->setHorizontalAlignment(HorizontalAlignment::Fill);
+        m_head = new Container();
+        m_head->setHorizontalAlignment(HorizontalAlignment::Fill);
+        m_head->setBottomMargin(0);
+        m_card->setTopMargin(0);
+        m_frame->add(m_head);
+        m_frame->add(m_card);
+        m_root->add(m_frame);
+    } else {
+        m_frame = m_card;
+        m_head = 0;
+        m_root->add(m_card);
+    }
     m_root->add(m_underline);
     setRoot(m_root);
 
@@ -173,11 +191,11 @@ void MessageCard::paintBackground()
 {
     const QString found = Card::foundId(m_list);
     if (m_pressed)
-        m_card->setBackground(Card::color(Card::pressColor(m_list)));
+        m_frame->setBackground(Card::color(Card::pressColor(m_list)));
     else if (!found.isEmpty() && found == str("id"))
-        m_card->setBackground(Card::color("#401bd862"));
+        m_frame->setBackground(Card::color("#401bd862"));
     else
-        m_card->setBackground(m_ui->palette()->plain());
+        m_frame->setBackground(m_ui->palette()->plain());
 }
 
 void MessageCard::select(bool)
@@ -222,9 +240,15 @@ void MessageCard::restyle()
     m_card->setRightPadding(side);
     m_card->setTopPadding(m_ui->du(1 * scale) + m_ui->px(2));
     m_card->setBottomPadding(m_ui->du(1 * scale) + m_ui->px(2));
+    if (m_head) {
+        m_head->setLeftPadding(side);
+        m_head->setRightPadding(side);
+        m_head->setTopPadding(m_ui->du(1 * scale) + m_ui->px(2));
+        m_head->setBottomPadding(m_ui->du(1 * scale));
+    }
     Card::style(m_text, m_list, body);
-    m_time->textStyle()->setFontSizeValue(qRound(100 * scale));
-    m_time->textStyle()->setColor(quiet);
+    // A little under SmallText (the user, 2026-11-08: the time a bit smaller).
+    m_time->textStyle()->setFontSizeValue(qRound(85 * scale));
     if (m_sender)
         Card::style(m_sender, m_list, small);
     if (m_quote) {
@@ -249,7 +273,7 @@ void MessageCard::makeSender()
     m_sender = new Label();
     m_sender->setBottomMargin(m_ui->du(0.5));
     m_sender->textStyle()->setFontWeight(FontWeight::Bold);
-    m_col->insert(0, m_sender);
+    (m_head ? m_head : m_col)->insert(0, m_sender);
     m_styled = false;
 }
 
@@ -288,7 +312,7 @@ void MessageCard::makeQuote()
     words->add(m_quoteText);
     m_quote->add(m_bar);
     m_quote->add(words);
-    m_col->insert(m_sender ? 1 : 0, m_quote);
+    (m_head ? m_head : m_col)->insert(m_sender ? 1 : 0, m_quote);
     m_styled = false;
 }
 
@@ -400,6 +424,13 @@ void MessageCard::fillColumn()
 
     if (m_join)
         m_join->setVisible(!str("invite").isEmpty() && !deleted);
+
+    // The picture card: the head when there's a sender or quote, the card when there's a caption
+    // (or no picture: a deleted one).
+    if (m_head) {
+        m_head->setVisible(!sender.isEmpty() || !quote.isEmpty());
+        m_card->setVisible(!text.isEmpty() || !str("label").isEmpty() || str("media").isEmpty());
+    }
 }
 
 // The time ("edited" before it) and our message's state, as in ChatRow: sending, sent, delivered,
@@ -413,16 +444,24 @@ void MessageCard::fillFoot()
     // (small), 12 px under body text, measured at 85 % and 105 % on the Q10, then scaled with the
     // text size setting.
     // ponytail: linear in the scale, not measured at 90-140 %.
-    const bool small = !str("sender").isEmpty() || !str("quote").isEmpty();
-    m_timeBox->setTopPadding(m_ui->px((small ? 7 : 12) * m_scale));
+    // In the picture card the head holds them, so the caption is the card's first line. +3 px for
+    // the time at 85 %, whose baseline sits higher.
+    // ponytail: the 3 px is estimated, not measured on the Q10.
+    const bool small = !m_head && (!str("sender").isEmpty() || !str("quote").isEmpty());
+    const bool onPicture = m_head && !m_card->isVisible();
+    placeTime(onPicture);
+    if (!onPicture)
+        m_timeBox->setTopPadding(m_ui->px((small ? 10 : 15) * m_scale));
+    // White on the picture's dark chip.
+    const Color quiet = onPicture ? Color::White : m_ui->palette()->secondaryTextOnPlain();
+    m_time->textStyle()->setColor(quiet);
 
     const bool ticked = out && state < 4;
     m_ticks->setVisible(ticked);
     if (ticked) {
         m_ticks->setImageSource(Card::url(state == 0 ? "asset:///images/clock.png"
                                     : state == 1 ? "asset:///images/tick.png" : "asset:///images/ticks.png"));
-        m_ticks->setFilterColor(state == 3 ? m_ui->palette()->primary()
-                                           : m_ui->palette()->secondaryTextOnPlain());
+        m_ticks->setFilterColor(state == 3 ? m_ui->palette()->primary() : quiet);
     }
     if (m_bang)
         m_bang->setVisible(out && state == 4);
@@ -437,3 +476,31 @@ void MessageCard::fillFoot()
     }
 }
 
+
+// The time and ticks: beside the card's first line, or on a photo with no caption at its bottom
+// right, on a dark chip so they read on any picture, as Android shows them. Moved only when the
+// place changes, since rows are recycled.
+void MessageCard::placeTime(bool onPicture)
+{
+    if (onPicture != m_timeOnPicture) {
+        m_timeOnPicture = onPicture;
+        if (onPicture) {
+            m_card->remove(m_timeBox);
+            m_media->stamp()->add(m_timeBox);
+        } else {
+            m_media->stamp()->remove(m_timeBox);
+            m_card->add(m_timeBox);
+        }
+    }
+    const float chip = onPicture ? m_ui->du(1) : 0;
+    m_timeBox->setLeftMargin(onPicture ? 0 : m_ui->du(1));
+    m_timeBox->setLeftPadding(chip);
+    m_timeBox->setRightPadding(chip);
+    m_timeBox->setBottomPadding(onPicture ? m_ui->du(0.5) : 0);
+    if (onPicture) {
+        m_timeBox->setTopPadding(m_ui->du(0.5));
+        m_timeBox->setBackground(Card::color("#80000000"));
+    } else {
+        m_timeBox->resetBackground();
+    }
+}

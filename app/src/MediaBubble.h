@@ -27,12 +27,16 @@ class UIConfig;
 // row of the system's add-contact icon, its names and its number (or "N contacts"); a tap imports
 // it into the Contacts app. A spoiler (6.6d) is a photo or video under a blurred cover with
 // "Spoiler" on it and no play mark or length: a tap takes the cover off (the model's unspoil), the
-// next opens it. The parts are all made here and shown by what the message is.
+// next opens it. The parts are all made here and shown by what the message is. Wide, in the
+// picture card, a photo or video spans the card with no air around it, and stamp() is the corner
+// at its bottom right where the card puts the time when there's no caption.
 class MediaBubble : public bb::cascades::CustomControl
 {
     Q_OBJECT
 public:
-    explicit MediaBubble(bb::cascades::ListView *list);
+    MediaBubble(bb::cascades::ListView *list, bool wide = false);
+
+    bb::cascades::Container *stamp() const { return m_stamp; }
 
     // msg is a "msg" row of MessageModel with a media: photo, video, sticker, audio, document,
     // location or contact.
@@ -52,6 +56,7 @@ private:
     QVariantMap m_msg;
     bool m_picture;
     bool m_sticker;
+    float m_wide; // the picture's width in the picture card, 0 elsewhere
 
     // What the styling was last set from: restyle() runs again when one of them changes.
     bool m_styled;
@@ -67,6 +72,7 @@ private:
     bb::cascades::Label *m_play;
     bb::cascades::Label *m_length;
     bb::cascades::Container *m_cover;
+    bb::cascades::Container *m_stamp;
     bb::cascades::ActivityIndicator *m_photoSpin;
     bb::cascades::ImageView *m_stickerImage;
     bb::cascades::Label *m_stickerText;
