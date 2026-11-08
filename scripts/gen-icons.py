@@ -6,7 +6,8 @@ The phone has only the trash can among the info page's and chat menu's icons (us
 2026-11-01), so these are drawn as action icons too: contacts_action (two people), save_action
 (a floppy disk), block_action (the "forbidden" sign), attach_action (a paperclip), plus_action
 (a plus, which the phone has only beside a contact, a place or an event), megaphone_action and
-help_action (a question mark in a ring, for About).
+help_action (a question mark in a ring, for About), back_action (a thin "<" chevron, the chat
+title bar's Back) and overflow_action (three vertical dots, the composer's ⋮ column).
 It also draws the app's icon, in every size, and the splash.
 
 They're white on transparent, so QML tints them with ImageView.filterColor (grey, or the
@@ -165,6 +166,18 @@ def main(out):
     for x, y in (wire[0], wire[-1]):  # round ends
         d.ellipse(pts((x - 0.035, y - 0.035), (x + 0.035, y + 0.035)), white)
     action(img.rotate(-45, Image.BICUBIC), out, "attach")
+
+    # A thin "<", as the stock Back: the chat title bar's, now that the page's action bar is hidden.
+    img, d = canvas(H)
+    d.line(pts((0.62, 0.18), (0.30, 0.5), (0.62, 0.82)), white, w, joint="curve")
+    action(img, out, "back")
+
+    # Three vertical dots: the composer's ⋮ column, which opens the action menu.
+    img, d = canvas(H)
+    r = 0.07 * H * S
+    for y in (0.22, 0.5, 0.78):
+        d.ellipse((0.5 * H * S - r, y * H * S - r, 0.5 * H * S + r, y * H * S + r), white)
+    action(img, out, "overflow")
 
     # A pushpin, drawn upright and turned 45 degrees.
     img, d = canvas(H)
