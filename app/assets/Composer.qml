@@ -83,9 +83,11 @@ Container {
                 textFormat: TextFormat.Plain
                 // The point of this row: the system composer couldn't take the emoji style.
                 textStyle.base: nav.emojiStyle
-                // The theme's own field: its see-through selection blue went navy over our black box,
-                // and the selected text, drawn dark for a light blue, couldn't be read (Q10, 0.0.1.232).
-                backgroundVisible: true
+                // Our colour, not the theme's: with no field background the selection blue goes navy
+                // over the black box and the theme drew the selected text dark on it (Q10, 0.0.1.232).
+                // The theme's background fixed that but is grey (0.0.1.233, the user: remove it).
+                textStyle.color: ui.palette.textOnPlain
+                backgroundVisible: false
                 focusHighlightEnabled: false
                 // A tap on Send, Attach or Emoji (not focusable) leaves the focus here, so the next key
                 // still goes through the input method (bb10-pitfalls).
