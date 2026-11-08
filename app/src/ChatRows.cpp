@@ -66,7 +66,7 @@ void ChatRows::updateItem(ListView *, VisualNode *listItem, const QString &type,
 ChatRow::ChatRow(ListView *list)
     : m_list(list)
     , m_ui(list->ui())
-    , m_calls(list->property("callList").toBool())
+    , m_calls(list->property("callRows").toBool())
     , m_pressed(false)
     , m_callItem(0)
     , m_readItem(0)

@@ -48,7 +48,7 @@ private:
 // The name 115 % and the preview 90 %: the cards' 105 and 85, capitals 2 and 1 px taller (the user,
 // 2026-11-08). Both grow with the text size setting.
 // The Calls tab's rows are the same row (the user, 2026-11-08: they look like chat rows), on a list
-// with callList set: a CallsModel row, what the call was in the preview's place, red when missed,
+// with callRows set: a CallsModel row, what the call was in the preview's place, red when missed,
 // and a menu of Call and Open chat (CallRow.qml's, gone since).
 class ChatRow : public bb::cascades::CustomControl, public bb::cascades::ListItemListener
 {

@@ -49,7 +49,7 @@ Page {
             property real textScale: settings.textScale
             property string pressColor: nav.pressColor
             // The rows are the chat list's (ChatRows.cpp), as a call's: the call in the preview's place.
-            property bool callList: true
+            property bool callRows: true
             function callBack(row) {
                 engine.request("call.start", {"chat": row.jid})
             }
