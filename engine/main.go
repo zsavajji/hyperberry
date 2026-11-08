@@ -91,8 +91,9 @@ func main() {
 // identity sets how this device presents itself when it links; the phone keeps it from then on.
 // A baileys client found (2026-09) that a web identity gets only the latest few chats, and
 // Windows as Desktop with full sync gets the whole history; macOS as Desktop was refused.
+// The version is Windows 11 23H2's, as WhatsApp for Windows reports it; the library's 0.1.0 marks it.
 func identity(osName string, days uint) {
-	store.SetOSInfo(osName, [3]uint32{0, 1, 0})
+	store.SetOSInfo(osName, [3]uint32{10, 0, 22631})
 	store.DeviceProps.PlatformType = waCompanionReg.DeviceProps_DESKTOP.Enum()
 	store.DeviceProps.RequireFullSync = proto.Bool(true)
 	if days > 0 {

@@ -305,8 +305,8 @@ func (s *Session) handleCode(req json.RawMessage) (any, error) {
 	case <-time.After(20 * time.Second):
 		return nil, &Error{"offline", "WhatsApp didn't answer; check the connection and try again"}
 	}
-	// The server accepts only "Browser (OS)" names it knows.
-	code, err := cli.PairPhone(context.Background(), digits, true, whatsmeow.PairClientChrome, "Chrome (Linux)")
+	// The server accepts only "Browser (OS)" names it knows; Windows, as identity's.
+	code, err := cli.PairPhone(context.Background(), digits, true, whatsmeow.PairClientChrome, "Chrome (Windows)")
 	if err != nil {
 		return nil, err
 	}
