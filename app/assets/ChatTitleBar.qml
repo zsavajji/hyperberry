@@ -1,7 +1,8 @@
 import bb.cascades 1.4
 
-// The chat page's title bar (PLAN.md §7, step 3.1), moved out of ChatPage to make room: the tile,
-// name and status line. chat is a ChatListModel row; a tap on the bar emits tapped().
+// The chat page's title bar (PLAN.md §7, step 3.1), moved out of ChatPage to make room: Back (the
+// page's action bar is hidden, the composer is ours), the tile, name and status line. chat is a
+// ChatListModel row; a tap on the name or the picture emits tapped(), on the arrow back().
 TitleBar {
     id: bar
     property variant chat
@@ -14,6 +15,7 @@ TitleBar {
     property bool canCall: !!bar.chat && bar.chat.kind == 0 && engine.linked
         && String(engine.link.me || "").split("@")[0].split(":")[0] != bar.chat.jid.split("@")[0]
     signal tapped
+    signal back
     kind: TitleBarKind.FreeForm
     // The status line must stay; the default let the bar scroll away with the list (Q10).
     scrollBehavior: TitleBarScrollBehavior.Sticky
@@ -24,10 +26,27 @@ TitleBar {
         Container {
             horizontalAlignment: HorizontalAlignment.Fill
             verticalAlignment: VerticalAlignment.Fill
-            leftPadding: ui.du(1.5)
             rightPadding: ui.px(7)
             layout: StackLayout {
                 orientation: LayoutOrientation.LeftToRight
+            }
+            // Back: the stock arrow's thin "<", in a box the bar's height that carries the margin.
+            Container {
+                verticalAlignment: VerticalAlignment.Fill
+                preferredWidth: ui.du(7)
+                layout: DockLayout {}
+                gestureHandlers: TapHandler {
+                    onTapped: bar.back()
+                }
+                ImageView {
+                    horizontalAlignment: HorizontalAlignment.Center
+                    verticalAlignment: VerticalAlignment.Center
+                    imageSource: "asset:///images/back_action.png"
+                    preferredWidth: ui.du(6)
+                    preferredHeight: ui.du(6)
+                    scalingMethod: ScalingMethod.AspectFit
+                    filterColor: ui.palette.textOnPlain
+                }
             }
             // The info page's tap is on the name and on the picture, not on the whole bar: a tap on
             // the call button reached the bar's handler too, and the contact page came up before

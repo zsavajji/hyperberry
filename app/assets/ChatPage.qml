@@ -312,6 +312,7 @@ Page {
         chat: page.chat
         status: ctl.status
         onTapped: infoAction.showInfo()
+        onBack: nav.pop()
     }
     Container {
         horizontalAlignment: HorizontalAlignment.Fill
