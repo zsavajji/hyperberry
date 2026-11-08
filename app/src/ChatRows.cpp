@@ -26,10 +26,12 @@ using namespace bb::cascades;
 namespace {
 // The QML file's name: the translations of ChatRow.qml's strings (hyperberry_it.ts) apply.
 const char *const kContext = "ChatRow";
+// The same for CallRow.qml's, the Calls tab's row.
+const char *const kCallContext = "CallRow";
 
-void setItem(ActionItem *item, const char *title, const char *icon)
+void setItem(ActionItem *item, const char *title, const char *icon, const char *context = kContext)
 {
-    item->setTitle(Card::tr(kContext, title));
+    item->setTitle(Card::tr(context, title));
     item->setImageSource(Card::url(icon));
 }
 }
@@ -64,12 +66,14 @@ void ChatRows::updateItem(ListView *, VisualNode *listItem, const QString &type,
 ChatRow::ChatRow(ListView *list)
     : m_list(list)
     , m_ui(list->ui())
+    , m_calls(list->property("callList").toBool())
     , m_pressed(false)
     , m_callItem(0)
     , m_readItem(0)
     , m_pinItem(0)
     , m_muteItem(0)
     , m_archiveItem(0)
+    , m_openItem(0)
 {
     // The row's own node and its root: a list item is as wide as its content unless it fills.
     setHorizontalAlignment(HorizontalAlignment::Fill);
@@ -240,10 +244,11 @@ void ChatRow::show(const QVariantMap &chat)
     }
     m_bang->setVisible(out && state == 4);
 
-    // Without U+20E3, a keycap's frame, as the message card's body (MessageCard.cpp).
+    // Without U+20E3, a keycap's frame, as the message card's body (MessageCard.cpp). A call's row
+    // has what the call was there, red when missed.
     Card::style(m_preview, m_list, qRound(90 * scale));
-    m_preview->textStyle()->setColor(quiet);
-    m_preview->setText(Card::noKeycaps(str("preview")));
+    m_preview->textStyle()->setColor(m_calls && flag("missed") ? Card::color("#FF3333") : quiet);
+    m_preview->setText(m_calls ? str("detail") : Card::noKeycaps(str("preview")));
 
     const Color badge = muted ? palette->plain() : primary;
     m_badge->setVisible(unread > 0);
@@ -293,6 +298,13 @@ ActionItem *ChatRow::action(const char *slot)
 
 void ChatRow::makeActions()
 {
+    if (m_calls) {
+        m_callItem = action(SLOT(onCall()));
+        setItem(m_callItem, "Call", "file:///usr/share/icons/ic_phone.png", kCallContext);
+        m_openItem = action(SLOT(onOpenChat()));
+        setItem(m_openItem, "Open chat", "file:///usr/share/icons/bb_action_sendtextmessage.png", kCallContext);
+        return;
+    }
     // Call (the user's ask, 2026-11-07): a person's chat only; greyed for the others, since an
     // ActionItem can't hide.
     m_callItem = action(SLOT(onCall()));
@@ -308,11 +320,13 @@ void ChatRow::onPopulating()
 {
     if (!m_callItem)
         makeActions();
+    m_menu->setTitle(str("name"));
+    if (m_calls)
+        return;
     const bool channels = m_list->property("channelList").toBool();
     const bool archived = m_list->property("archivedList").toBool();
     const bool unread = m_chat.value("unread").toInt() != 0;
 
-    m_menu->setTitle(str("name"));
     m_callItem->setEnabled(m_chat.value("kind").toInt() == 0 && m_list->property("linked").toBool());
     setItem(m_readItem, unread ? "Mark as read" : "Mark as unread",
             unread ? "file:///usr/share/icons/bb_action_markread.png"
@@ -328,8 +342,9 @@ void ChatRow::onPopulating()
                 "file:///usr/share/icons/bb_action_archive.png");
 }
 
-void ChatRow::onCall() { Card::call(m_list, "call", m_chat); }
+void ChatRow::onCall() { Card::call(m_list, m_calls ? "callBack" : "call", m_chat); }
 void ChatRow::onRead() { Card::call(m_list, "toggleUnread", m_chat); }
 void ChatRow::onPin() { Card::call(m_list, "togglePin", m_chat); }
 void ChatRow::onMute() { Card::call(m_list, "toggleMute", m_chat); }
 void ChatRow::onArchive() { Card::call(m_list, "toggleArchive", m_chat); }
+void ChatRow::onOpenChat() { Card::call(m_list, "openChat", m_chat); }

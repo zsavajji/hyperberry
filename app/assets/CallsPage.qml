@@ -1,4 +1,5 @@
 import bb.cascades 1.4
+import hyperberry 1.0
 
 // The Calls tab (step 7.4): the call rows of every chat, newest first, from callList (CallsModel),
 // which reads chats.db only while active (main.qml sets that when the tab is shown). A tap calls back; the long-press menu has Call and Open
@@ -47,6 +48,8 @@ Page {
             property int smallSize: nav.smallSize
             property real textScale: settings.textScale
             property string pressColor: nav.pressColor
+            // The rows are the chat list's (ChatRows.cpp), as a call's: the call in the preview's place.
+            property bool callList: true
             function callBack(row) {
                 engine.request("call.start", {"chat": row.jid})
             }
@@ -58,14 +61,7 @@ Page {
                     callBack(dataModel.data(indexPath))
                 }
             }
-            listItemComponents: [
-                ListItemComponent {
-                    type: "item"
-                    CallRow {
-                        call: ListItemData
-                    }
-                }
-            ]
+            listItemProvider: ChatRows {}
         }
         Label {
             visible: callList.empty
