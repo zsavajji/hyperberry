@@ -13,6 +13,7 @@
 #include <bb/cascades/Label>
 #include <bb/cascades/LabelAutoSizeProperties>
 #include <bb/cascades/ListView>
+#include <bb/cascades/ScalingMethod>
 #include <bb/cascades/SystemDefaults>
 #include <bb/cascades/TapHandler>
 #include <bb/cascades/TextContentFlag>
@@ -112,9 +113,22 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
     m_card->add(m_col);
     m_card->add(m_timeBox);
 
+    // The foot, BBM's (Z30 screenshots, user 2026-11-08): the accent bar, 1 du, and beside it the
+    // tail, a triangle in the card's colour under the card's outer corner, theirs left, ours right.
+    m_foot = new Container();
+    m_foot->setHorizontalAlignment(HorizontalAlignment::Fill);
+    m_foot->setLayout(Card::across());
+    m_tailL = makeTail("asset:///images/tail_l.png");
     m_underline = new Container();
-    m_underline->setHorizontalAlignment(HorizontalAlignment::Fill);
-    m_underline->setPreferredHeight(m_ui->px(2));
+    Card::quota(m_underline, 1);
+    m_underline->setVerticalAlignment(VerticalAlignment::Top);
+    m_underline->setLeftMargin(0);
+    m_underline->setRightMargin(0);
+    m_underline->setPreferredHeight(m_ui->du(1));
+    m_tailR = makeTail("asset:///images/tail_r.png");
+    m_foot->add(m_tailL);
+    m_foot->add(m_underline);
+    m_foot->add(m_tailR);
 
     // The picture card: the head and the card around the picture, which MessageCardBubbles puts
     // between them. No margins between the three: the paddings space them.
@@ -133,7 +147,7 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
         m_head = 0;
         m_root->add(m_card);
     }
-    m_root->add(m_underline);
+    m_root->add(m_foot);
     setRoot(m_root);
 
     // The long-press menu (step 3.3): the actions are made at the first populating, which comes just
@@ -149,6 +163,17 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
     // The search match is tinted: the page sets foundId.
     if (!connect(list, SIGNAL(foundIdChanged()), this, SLOT(paintBackground())))
         qWarning("cards: the list has no foundIdChanged");
+}
+
+ImageView *MessageCard::makeTail(const char *source)
+{
+    ImageView *tail = new ImageView();
+    tail->setImageSource(Card::url(source));
+    tail->setPreferredSize(m_ui->du(2), m_ui->du(2));
+    tail->setScalingMethod(ScalingMethod::Fill);
+    tail->setLeftMargin(0);
+    tail->setRightMargin(0);
+    return tail;
 }
 
 void MessageCard::show(const QVariantMap &msg)
@@ -186,16 +211,24 @@ void MessageCard::show(const QVariantMap &msg)
 }
 
 // Pressed: the page's pressColor. A search match: the primary colour at 25 % over the page, so it
-// reads in both themes. Else the page's own colour. An empty foundId matches nothing.
+// reads in both themes. Else the page's own colour; a sticker has none, it sits on the page (user).
+// An empty foundId matches nothing.
 void MessageCard::paintBackground()
 {
     const QString found = Card::foundId(m_list);
+    Color c = m_ui->palette()->plain();
     if (m_pressed)
-        m_frame->setBackground(Card::color(Card::pressColor(m_list)));
+        c = Card::color(Card::pressColor(m_list));
     else if (!found.isEmpty() && found == str("id"))
-        m_frame->setBackground(Card::color("#401bd862"));
-    else
-        m_frame->setBackground(m_ui->palette()->plain());
+        c = Card::color("#401bd862");
+    else if (str("media") == "sticker") {
+        m_frame->resetBackground();
+        return;
+    }
+    m_frame->setBackground(c);
+    // The tail is the card's, in its colour.
+    m_tailL->setFilterColor(c);
+    m_tailR->setFilterColor(c);
 }
 
 void MessageCard::select(bool)
@@ -434,7 +467,7 @@ void MessageCard::fillColumn()
 }
 
 // The time ("edited" before it) and our message's state, as in ChatRow: sending, sent, delivered,
-// read, or a red "!" when it failed; then the underline and the reactions' chip.
+// read, or a red "!" when it failed; then the foot and the reactions' chip.
 void MessageCard::fillFoot()
 {
     const bool out = flag("out");
@@ -466,6 +499,9 @@ void MessageCard::fillFoot()
         m_bang->setVisible(out && state == 4);
 
     m_underline->setBackground(out ? m_ui->palette()->primary() : m_ui->palette()->secondaryTextOnPlain());
+    m_foot->setVisible(str("media") != "sticker");
+    m_tailL->setVisible(!out);
+    m_tailR->setVisible(out);
 
     const int count = m_msg.value("reactionCount").toInt();
     if (m_chip) {

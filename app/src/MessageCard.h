@@ -32,7 +32,7 @@ class VoiceBubble;
 
 // One message as a BBM-style card (PLAN.md §7), mirroring MessageItem.qml (rich) and TextCard.qml
 // (plain, what a chat is mostly made of), both gone since step 8.6: flat, on the black page, theirs inset on the right and
-// ours on the left, with a hairline underline. Built once, with the body text and the time and
+// ours on the left, with BBM's accent bar and tail under them. Built once, with the body text and the time and
 // ticks, and filled by show() on each recycle. Every other part is made the first time a message
 // needs it, then kept and hidden when the next one doesn't, since rows are recycled; each goes into
 // the card's column at its QML place. The column holds, in order: sender, quote, [the voice, media
@@ -86,6 +86,7 @@ private:
     void restyle();
     void fillColumn();
     void fillFoot();
+    bb::cascades::ImageView *makeTail(const char *source);
     void fillMenu();
     void fillBubbles();
     void placeTime(bool onPicture);
@@ -129,7 +130,11 @@ private:
     bb::cascades::Label *m_time;
     bb::cascades::ImageView *m_ticks;
     bb::cascades::Label *m_bang;
+    // The foot: a tail either side of the accent bar, one shown.
+    bb::cascades::Container *m_foot;
+    bb::cascades::ImageView *m_tailL;
     bb::cascades::Container *m_underline;
+    bb::cascades::ImageView *m_tailR;
     bb::cascades::Container *m_chip;
     bb::cascades::Label *m_reactions;
 
