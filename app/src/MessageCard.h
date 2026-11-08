@@ -134,7 +134,7 @@ private:
     // The foot: a tail either side of the accent bar, one shown.
     bb::cascades::Container *m_foot;
     bb::cascades::ImageView *m_tailL;
-    bb::cascades::Container *m_underline;
+    bb::cascades::ImageView *m_underline;
     bb::cascades::ImageView *m_tailR;
     bb::cascades::Container *m_chip;
     bb::cascades::Label *m_reactions;

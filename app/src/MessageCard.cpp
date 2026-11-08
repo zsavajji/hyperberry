@@ -116,11 +116,12 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
 
     // The foot, BBM's (Z30 screenshots, user 2026-11-08): the accent bar, 1 du, and over its outer
     // end the tail, a triangle in the card's colour under the card's corner, theirs left, ours right.
-    // The bar runs under the tail, so the tail's slant cuts its end.
+    // The bar runs under the tail, so the tail's slant cuts its end; its other end has the card's
+    // rounded corner (bar_l/bar_r, nine-sliced and tinted).
     m_foot = new Container();
     m_foot->setHorizontalAlignment(HorizontalAlignment::Fill);
     m_foot->setLayout(new DockLayout());
-    m_underline = new Container();
+    m_underline = new ImageView();
     m_underline->setHorizontalAlignment(HorizontalAlignment::Fill);
     m_underline->setVerticalAlignment(VerticalAlignment::Top);
     m_underline->setPreferredHeight(m_ui->du(1));
@@ -505,7 +506,8 @@ void MessageCard::fillFoot()
     if (m_bang)
         m_bang->setVisible(out && state == 4);
 
-    m_underline->setBackground(out ? m_ui->palette()->primary() : m_ui->palette()->secondaryTextOnPlain());
+    m_underline->setImageSource(Card::url(out ? "asset:///images/bar_r.amd" : "asset:///images/bar_l.amd"));
+    m_underline->setFilterColor(out ? m_ui->palette()->primary() : m_ui->palette()->secondaryTextOnPlain());
     m_foot->setVisible(str("media") != "sticker");
     m_tailL->setVisible(!out);
     m_tailR->setVisible(out);
