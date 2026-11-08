@@ -3,6 +3,7 @@
 #include <bb/cascades/ActionItem>
 #include <bb/cascades/ActionSet>
 #include <bb/cascades/ActiveTextTriggeredEvent>
+#include <bb/cascades/Container>
 #include <bb/cascades/DeleteActionItem>
 #include <bb/cascades/ListView>
 #include <bb/cascades/TouchEvent>
