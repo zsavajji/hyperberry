@@ -192,15 +192,130 @@
 +		t.Fatalf("taken twice: %q", more)
 +	}
 +}
+--- a/rtp/rtcp_prst.go	1970-01-01 01:00:00
++++ b/rtp/rtcp_prst.go	2026-11-08 17:39:42
+@@ -0,0 +1,25 @@
++package rtp
++
++import "encoding/binary"
++
++// BuildPrst builds the bandwidth allowance a WhatsApp client sends its peer, as read off Android's
++// packets (hyperberry, 2026-11-08; no library documents it): PSFB (PT 206) FMT 15 with the name
++// "PRST", from the sender's audio SSRC, media SSRC 0, then a 2-byte length and a protobuf
++// {1: {1: bit/s}, 4: 1}, zero-padded to a word. Android sent 35000-57458 while we sent it ~13 kbit/s
++// of audio: an allowance above what it received, so presumably what the peer may send.
++func BuildPrst(senderSSRC, bps uint32) []byte {
++	inner := binary.AppendUvarint([]byte{0x08}, uint64(bps))
++	pb := append([]byte{0x0a, byte(len(inner))}, inner...)
++	pb = append(pb, 0x20, 0x01)
++	out := []byte{0x8f, 206, 0, 0}
++	out = binary.BigEndian.AppendUint32(out, senderSSRC)
++	out = binary.BigEndian.AppendUint32(out, 0)
++	out = append(out, 'P', 'R', 'S', 'T')
++	out = binary.BigEndian.AppendUint16(out, uint16(len(pb)))
++	out = append(out, pb...)
++	for len(out)%4 != 0 {
++		out = append(out, 0)
++	}
++	binary.BigEndian.PutUint16(out[2:4], uint16(len(out)/4-1))
++	return out
++}
+--- a/rtp/rtcp_prst_test.go	1970-01-01 01:00:00
++++ b/rtp/rtcp_prst_test.go	2026-11-08 17:39:42
+@@ -0,0 +1,21 @@
++package rtp
++
++import (
++	"encoding/hex"
++	"testing"
++)
++
++// The two allowances Android sent on 2026-11-08, byte for byte.
++func TestBuildPrstMatchesAndroid(t *testing.T) {
++	for bps, want := range map[uint32]string{
++		35000: "8fce0006618e67cc000000005052535400080a0408b8910220010000",
++		57458: "8fce0006618e67cc000000005052535400080a0408f2c00320010000",
++	} {
++		if got := hex.EncodeToString(BuildPrst(0x618e67cc, bps)); got != want {
++			t.Errorf("%d: %s, want %s", bps, got, want)
++		}
++	}
++	if p := BuildPrst(1, 1_000_000); len(p)%4 != 0 || int(p[3]+1)*4 != len(p) {
++		t.Errorf("1 Mbit/s: % x", p)
++	}
++}
 --- a/engine_media.go	2026-11-08 17:20:20
-+++ b/engine_media.go	2026-11-08 17:20:53
-@@ -1272,6 +1272,9 @@
++++ b/engine_media.go	2026-11-08 17:39:42
+@@ -984,6 +984,7 @@
+ 		ticker := time.NewTicker(1500 * time.Millisecond)
+ 		defer ticker.Stop()
+ 		var sent uint64
++		prstLogged := false
+ 		for {
+ 			select {
+ 			case <-ctx.Done():
+@@ -1016,8 +1017,10 @@
+ 					return
+ 				}
+ 				videoStats := txVideoPipe.SenderStats()
+-				if videoStats.PacketsSent > 0 {
+-					videoReports := videoReception.Reports(nowMs)
++				videoReports := videoReception.Reports(nowMs)
++				// hyperberry: with our camera off too, as Android reports on video it gets. Before,
++				// the peer's video was never reported on unless we sent ours.
++				if videoStats.PacketsSent > 0 || len(videoReports) > 0 {
+ 					_, err = sendMediaSrtcpReceptionReports(
+ 						videoRtcp,
+ 						videoStats,
+@@ -1031,6 +1034,20 @@
+ 					)
+ 					if err != nil {
+ 						return
++					}
++				}
++				// hyperberry: while the peer's video comes, the allowance it may send at (WhatsApp's
++				// PRST, rtp.BuildPrst); without one, Android's video never rose above 320x212.
++				// ponytail: a fixed allowance; 7c.4 sets it from what arrives (loss, jitter).
++				if len(videoReports) > 0 && !groupMode.Load() && sent%3 == 0 {
++					if packet, prstErr := audioRtcp.prst(prstAllowance); prstErr == nil {
++						if _, err = ch.Send(packet); err != nil {
++							return
++						}
++						if !prstLogged {
++							prstLogged = true
++							log.Info().Uint32("bps", prstAllowance).Msg("sending the peer a bandwidth allowance (PRST)")
++						}
+ 					}
+ 				}
+ 				sent++
+@@ -1271,6 +1288,9 @@
+ 			if now := time.Now(); now.Sub(lastCensusLog) > 10*time.Second {
  				lastCensusLog = now
  				log.Info().Str("types", rtcpCensus.String()).Msg("peer rtcp census")
- 			}
++			}
 +			for _, sample := range rtcpCensus.TakeSamples() { // hyperberry: the raw feedback
 +				log.Info().Str("packet", sample).Msg("peer rtcp sample")
-+			}
+ 			}
  			// wa-poc patch: log how the peer is receiving our video (loss, jitter, keyframe asks).
  			if rb, ok := rtp.FindReportBlock(plain, videoSelfSsrc); ok {
- 				if now := time.Now(); now.Sub(lastTxFeedbackLog) > 10*time.Second {
+@@ -1849,6 +1869,20 @@
+ 	}
+ 	lastSent[mediaSSRC] = now
+ 	return true
++}
++
++// prstAllowance is the bandwidth allowance sent to the peer, in bit/s (hyperberry).
++const prstAllowance = 1_000_000
++
++// prst protects a bandwidth allowance (rtp.BuildPrst) from this sender's SSRC (hyperberry).
++func (s *mediaSrtcpSender) prst(bps uint32) ([]byte, error) {
++	s.mu.Lock()
++	defer s.mu.Unlock()
++	packet, err := srtp.ProtectSrtcp(&s.keys, s.ssrc, s.index, rtp.BuildPrst(s.ssrc, bps))
++	if err == nil {
++		s.index++
++	}
++	return packet, err
+ }
+ 
+ func (s *mediaSrtcpSender) pictureLossIndication(mediaSSRC uint32) ([]byte, error) {
