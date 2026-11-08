@@ -991,6 +991,36 @@
         <source>Join group</source>
         <translation>Unisciti al gruppo</translation>
     </message>
+    <message>
+        <location filename="../src/MessageCardActions.cpp" line="24"/>
+        <source>Sending</source>
+        <translation>Invio in corso</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageCardActions.cpp" line="24"/>
+        <source>Sent</source>
+        <translation>Inviato</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageCardActions.cpp" line="24"/>
+        <source>Delivered</source>
+        <translation>Consegnato</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageCardActions.cpp" line="24"/>
+        <source>Read</source>
+        <translation>Letto</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageCardActions.cpp" line="24"/>
+        <source>Not sent</source>
+        <translation>Non inviato</translation>
+    </message>
+    <message>
+        <location filename="../src/MessageCardActions.cpp" line="24"/>
+        <source>Edited</source>
+        <translation>Modificato</translation>
+    </message>
 </context>
 <context>
     <name>MessageKinds</name>

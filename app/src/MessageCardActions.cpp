@@ -18,16 +18,24 @@ const char *const kContext = "MessageItem";
 
 // What a card does when touched: its long-press menu, the join button and a tapped link.
 
-// The menu's title is the message's text, or what stands for it.
+// The menu's title is when the message was sent, the day in full; ours have their state under it,
+// in words, since the title cannot hold the ticks' pictures (the user asked for both, 2026-11-08).
 void MessageCard::fillMenu()
 {
-    QString title;
-    if (!flag("deleted")) {
-        title = str("text");
-        if (m_rich && title.isEmpty())
-            title = str("summary").isEmpty() ? str("label") : str("summary");
+    m_menu->setTitle(str("stamp"));
+    QString state;
+    if (flag("out")) {
+        switch (m_msg.value("state").toInt()) {
+        case 0: state = Card::tr(kContext, "Sending"); break;
+        case 1: state = Card::tr(kContext, "Sent"); break;
+        case 2: state = Card::tr(kContext, "Delivered"); break;
+        case 3: state = Card::tr(kContext, "Read"); break;
+        default: state = Card::tr(kContext, "Not sent"); break;
+        }
     }
-    m_menu->setTitle(title);
+    if (flag("edited"))
+        state = state.isEmpty() ? Card::tr(kContext, "Edited") : state + QString::fromUtf8(" \xC2\xB7 ") + Card::tr(kContext, "Edited");
+    m_menu->setSubtitle(state);
 }
 
 void MessageCard::onPopulating()

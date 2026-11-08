@@ -104,6 +104,9 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
     m.data["revocable"] = out && !deleted && state >= 1 && state <= 3
                           && QDateTime::currentDateTime().toTime_t() - m.ts < 60 * 3600;
     m.data["time"] = time;
+    // The long-press menu's title: the day in full and the time.
+    m.data["stamp"] = capitalized(locale.toString(QDateTime::fromTime_t(m.ts).date(), QLocale::LongFormat))
+                      + ", " + time;
     m.data["label"] = label;
     const bool voice = kind == 3 && !deleted;
     m.data["voice"] = voice;

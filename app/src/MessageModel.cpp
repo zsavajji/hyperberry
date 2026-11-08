@@ -105,6 +105,7 @@ QVariantMap MessageModel::albumData(const Entry &e) const
     d["albumCount"] = members.size();
     d["media"] = QString(); // MediaBubble isn't built for it
     d["time"] = last["time"];
+    d["stamp"] = last["stamp"];
     d["state"] = last["state"];
     return d;
 }
