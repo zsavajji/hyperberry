@@ -24,10 +24,6 @@ static const int Fps = 15;
 static const int Bitrate = 400000;      // bit/s, CBR
 static const int KeyframeSeconds = 2;   // our IDR interval; also the longest a lost frame shows
 static const int MaxUnit = 256 * 1024;  // sizes the decoder's input buffers: a 640x480 IDR is a few tens of KB
-// The peer's frames come mirrored: Android WhatsApp's front camera, turned once, showed upside down
-// with its lettering reading left to right (Q10, 0.0.1.205). ponytail: always on; the rear camera is
-// untested, and if it comes the right way round this needs a per-frame flag from the peer.
-static const bool MirrorPeer = true;
 
 // A record is a 16-byte little-endian header and the payload (docs/protocol2.md); a longer one ends the link.
 static const int HeaderBytes = 16;
@@ -125,7 +121,6 @@ void CallVideo::start(const QString &callId, const QString &remoteWindowId, cons
         qWarning("call video: the window for the peer's picture could not be made");
         return;
     }
-    m_window.setMirror(MirrorPeer);
     m_group = main->groupId().toUtf8();
     m_viewfinderId = viewfinderWindowId.toUtf8();
     m_callId = callId;
