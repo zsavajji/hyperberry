@@ -13,6 +13,8 @@ Group calls, ours (not whatsapp-light's); applied by scripts/hypermeow-work.sh a
    the sink ran dry; a pause's frame decoded to 10 ms for its packet's 60; and 120 ms in, 240 ms at
    most was short of the ~125 ms the packets arrive off pace. Now silence keeps the pace, a short
    decode is padded to the frame, and the queues fill 180 ms and hold 480.
+5. The mix is paced by the time gone, not by its 10 ms ticker, which drops late ticks: on 253 the
+   sink still ran dry every ~2 s. A line at the call's end gives chunks and frames against the time.
 Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
 
 --- a/engine.go
@@ -232,3 +234,87 @@ Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
  	return decodedParticipantAudio{
  		ParticipantID: receiver.participantID,
  		UserJID:       receiver.userJID, DeviceJID: receiver.deviceJID,
+--- a/engine_media.go
++++ b/engine_media.go
+@@ -588,10 +588,23 @@
+ 	audioMixer := newParticipantAudioMixer()
+ 	var audioSinkFramer participantAudioSinkFramer
+ 	go func() {
+-		ticker := time.NewTicker(time.Duration(participantAudioMixChunkSamples) * time.Second / SampleRate)
++		chunkDur := time.Duration(participantAudioMixChunkSamples) * time.Second / SampleRate
++		ticker := time.NewTicker(chunkDur)
+ 		defer ticker.Stop()
+ 		playoutStarted := false
+ 		var writeFailures uint64
++		// hyperberry patch (7d): paced by the time gone, not by the ticks. A late tick is dropped by
++		// Go's ticker, not made up, and on the Q10 the mix fell behind: the sink ran dry every ~2 s
++		// (0.0.1.253). Each wake mixes every chunk due since mixing began; a stall of over 0.5 s
++		// starts the count again rather than bursting.
++		var mixStart time.Time
++		var mixed, frames, catchups uint64
++		defer func() {
++			if !mixStart.IsZero() {
++				log.Info().Dur("elapsed", time.Since(mixStart)).Uint64("chunks", mixed).Uint64("frames", frames).
++					Uint64("catchups", catchups).Msg("participant mix pacing")
++			}
++		}()
+ 		for {
+ 			select {
+ 			case <-ctx.Done():
+@@ -605,26 +618,39 @@
+ 			if sink == nil {
+ 				continue
+ 			}
+-			chunk, ok := audioMixer.MixChunk()
+-			if !ok {
+-				continue
++			if mixStart.IsZero() {
++				mixStart = time.Now()
+ 			}
+-			frame, ok := audioSinkFramer.Push(chunk)
+-			if !ok {
+-				continue
++			due := uint64(time.Since(mixStart)/chunkDur) + 1
++			if due-mixed > 50 {
++				mixStart, mixed, due = time.Now(), 0, 1
+ 			}
+-			if err := sink.WriteFrame(frame); err != nil {
+-				if writeFailures++; writeFailures == 1 {
+-					log.Warn().Err(err).Msg("failed to write mixed WhatsApp audio")
+-				}
+-				continue
++			if due-mixed > 1 {
++				catchups++
+ 			}
+-			if !playoutStarted {
+-				playoutStarted = true
+-				log.Info().
+-					Int("prefill_ms", participantAudioMixerPrefillSamples*1000/SampleRate).
+-					Int("chunk_ms", participantAudioMixChunkSamples*1000/SampleRate).
+-					Msg("started participant-mixed inbound audio playout")
++			for ; mixed < due; mixed++ {
++				chunk, ok := audioMixer.MixChunk()
++				if !ok {
++					continue
++				}
++				frame, ok := audioSinkFramer.Push(chunk)
++				if !ok {
++					continue
++				}
++				if err := sink.WriteFrame(frame); err != nil {
++					if writeFailures++; writeFailures == 1 {
++						log.Warn().Err(err).Msg("failed to write mixed WhatsApp audio")
++					}
++					continue
++				}
++				frames++
++				if !playoutStarted {
++					playoutStarted = true
++					log.Info().
++						Int("prefill_ms", participantAudioMixerPrefillSamples*1000/SampleRate).
++						Int("chunk_ms", participantAudioMixChunkSamples*1000/SampleRate).
++						Msg("started participant-mixed inbound audio playout")
++				}
+ 			}
+ 		}
+ 	}()
