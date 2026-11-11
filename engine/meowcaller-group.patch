@@ -144,3 +144,30 @@ Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
 +		}
 +	}
 +}
+--- a/group_media_receive.go
++++ b/group_media_receive.go
+@@ -55,6 +55,7 @@
+ 	appDataPipe   *MediaPipeline
+ 	srtcp         *mediaSrtcpReceiver
+ 	decoder       participantAudioDecoder
++	payloadsSeen  int // hyperberry debug (7d): payloads logged
+ }
+ 
+ type installedGroupRawEpoch struct {
+@@ -870,6 +871,16 @@
+ 		return decodedParticipantAudio{}, false
+ 	}
+ 	pcm := receiver.decoder.Decode(payload)
++	// hyperberry debug (7d): a group call decoded to silence; what the peers' payloads are.
++	if receiver.payloadsSeen++; receiver.payloadsSeen <= 12 || receiver.payloadsSeen%200 == 0 {
++		head := payload
++		if len(head) > 8 {
++			head = head[:8]
++		}
++		r.log.Info().Str("participant_id", receiver.participantID).Uint8("pt", authenticatedHeader.PayloadType).
++			Int("n", receiver.payloadsSeen).Int("bytes", len(payload)).Hex("head", head).Int("samples", len(pcm)).
++			Msg("group audio payload")
++	}
+ 	return decodedParticipantAudio{
+ 		ParticipantID: receiver.participantID,
+ 		UserJID:       receiver.userJID, DeviceJID: receiver.deviceJID,
