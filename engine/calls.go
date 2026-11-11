@@ -49,7 +49,8 @@ type liveCall interface {
 type callState struct {
 	call      liveCall // nil while an outgoing offer is going out
 	id        string
-	chat      string // the chats.db key of the person
+	chat      string // the chats.db key of the person, or of the group
+	group     bool   // a group call: chat is the group's key
 	name      string // for the Hub item and a new chat
 	out       bool
 	offer     int64         // unix seconds: the row's ts
@@ -73,8 +74,8 @@ type Calls struct {
 
 	// ready checks that a call to chat can be placed and gives the person's name.
 	ready func(chat string) (name string, err error)
-	// dial places the call.
-	dial func(ctx context.Context, target string, video bool) (liveCall, error)
+	// dial places the call; members, for a group, are the people rung.
+	dial func(ctx context.Context, target string, video bool, members []string) (liveCall, error)
 	// resolve is the chats.db key and the name of a caller.
 	resolve func(peer types.JID) (key, name string)
 
@@ -148,7 +149,7 @@ func callPhase(p meowcaller.CallPhase, out bool) string {
 // body is the `call` event. Call it with c.mu held.
 func (cs *callState) body(reason string) map[string]any {
 	m := map[string]any{"id": cs.id, "chat": cs.chat, "out": cs.out, "state": cs.state,
-		"reason": reason, "since": cs.since}
+		"reason": reason, "since": cs.since, "group": cs.group}
 	cs.videoBody(m)
 	return m
 }
@@ -174,17 +175,35 @@ func (c *Calls) get(req json.RawMessage) (*callState, error) {
 	return nil, &Error{"not_found", "no such live call"}
 }
 
+// isGroupKey is whether a chat key is a group's.
+func isGroupKey(chat string) bool {
+	jid, err := types.ParseJID(chat)
+	return err == nil && jid.Server == types.GroupServer
+}
+
 func (c *Calls) handleStart(req json.RawMessage) (any, error) {
 	var r struct {
-		Chat  string
-		Video bool
+		Chat    string
+		Video   bool
+		Members []string
 	}
 	json.Unmarshal(req, &r)
+	group := isGroupKey(r.Chat)
+	if group {
+		if r.Video {
+			return nil, &Error{"bad_request", "a group call is audio only"}
+		}
+		if len(r.Members) < 2 || len(r.Members) > 31 {
+			return nil, &Error{"bad_request", "a group call rings 2 to 31 members"}
+		}
+	} else {
+		r.Members = nil
+	}
 	name, err := c.ready(r.Chat)
 	if err != nil {
 		return nil, err
 	}
-	cs := &callState{chat: r.Chat, name: name, out: true, offer: time.Now().Unix()}
+	cs := &callState{chat: r.Chat, group: group, name: name, out: true, offer: time.Now().Unix()}
 	cs.vid.f.video = r.Video
 	c.mu.Lock()
 	if c.cur != nil {
@@ -196,7 +215,7 @@ func (c *Calls) handleStart(req json.RawMessage) (any, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
 	defer cancel()
-	call, err := c.dial(ctx, r.Chat, r.Video)
+	call, err := c.dial(ctx, r.Chat, r.Video, r.Members)
 	if err != nil {
 		c.mu.Lock()
 		if c.cur == cs {

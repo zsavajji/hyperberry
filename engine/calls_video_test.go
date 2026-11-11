@@ -160,9 +160,9 @@ func TestVideoCallStartAndRows(t *testing.T) {
 	r := newCallRig(t)
 	var asked bool
 	inner := r.c.dial
-	r.c.dial = func(ctx context.Context, target string, video bool) (liveCall, error) {
+	r.c.dial = func(ctx context.Context, target string, video bool, members []string) (liveCall, error) {
 		asked = video
-		return inner(ctx, target, video)
+		return inner(ctx, target, video, members)
 	}
 	f := r.fake("V2").videoOffer()
 	f.phase = meowcaller.CallPhaseCalling

@@ -39,8 +39,14 @@ func (s *Session) initCalls() {
 	c := newCalls(s.store, s.srv, s.log.Sub("calls"))
 	c.ready = s.callReady
 	c.resolve = s.callResolve
-	c.dial = func(ctx context.Context, target string, video bool) (liveCall, error) {
-		call, err := s.mc.Load().CallWithOptions(ctx, target, meowcaller.CallOptions{Video: video})
+	c.dial = func(ctx context.Context, target string, video bool, members []string) (liveCall, error) {
+		var call *meowcaller.Call
+		var err error
+		if len(members) > 0 {
+			call, err = s.mc.Load().GroupCallWithOptions(ctx, members, meowcaller.GroupCallOptions{GroupJID: target})
+		} else {
+			call, err = s.mc.Load().CallWithOptions(ctx, target, meowcaller.CallOptions{Video: video})
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -66,11 +72,20 @@ func (s *Session) callsOn(cli *whatsmeow.Client) {
 	s.mc.Store(mc)
 }
 
-// callReady checks that chat can be called, and gives the person's name.
+// callReady checks that chat can be called, and gives the name: the person's, or the group's
+// stored one.
 func (s *Session) callReady(chat string) (string, error) {
 	cli, jid, err := s.linked(chat)
 	if err != nil {
 		return "", err
+	}
+	if jid.Server == types.GroupServer {
+		if !cli.IsConnected() {
+			return "", &Error{"offline", "not connected to WhatsApp"}
+		}
+		var name string
+		s.store.runOp(func(t *storeTx) { t.tx.QueryRow("SELECT name FROM chats WHERE jid = ?", chat).Scan(&name) })
+		return name, nil
 	}
 	if jid.Server != types.DefaultUserServer && jid.Server != types.HiddenUserServer {
 		return "", &Error{"bad_chat", "not a person: " + chat}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"testing"
@@ -117,6 +118,10 @@ type callRig struct {
 	ui   *conn
 	next *fakeCall // what dial gives
 	mu   sync.Mutex
+	// What the last dial got, and how many there were.
+	target  string
+	members []string
+	dials   int
 }
 
 func newCallRig(t *testing.T) *callRig {
@@ -137,9 +142,10 @@ func newCallRig(t *testing.T) *callRig {
 	r.c = newCalls(st, ts.Server, waLog.Noop)
 	r.c.ready = func(chat string) (string, error) { return "Anna", nil }
 	r.c.resolve = func(peer types.JID) (string, string) { return annaKey, "Anna" }
-	r.c.dial = func(_ context.Context, target string, video bool) (liveCall, error) {
+	r.c.dial = func(_ context.Context, target string, video bool, members []string) (liveCall, error) {
 		r.mu.Lock()
 		defer r.mu.Unlock()
+		r.target, r.members, r.dials = target, members, r.dials+1
 		return r.next, nil
 	}
 	r.ui = ts.login(t)
@@ -226,7 +232,9 @@ func TestCallRows(t *testing.T) {
 	if err := r.req("call.start", ""); err != nil {
 		t.Fatal(err)
 	}
-	r.want(t, "calling", "")
+	if m := r.want(t, "calling", ""); m["group"] != false {
+		t.Errorf("a person's call event: group %v", m["group"])
+	}
 	f.setPhase(meowcaller.CallPhaseActive)
 	r.want(t, "active", "")
 	r.c.mu.Lock()
@@ -341,6 +349,60 @@ func TestCallEventSequenceAndHello(t *testing.T) {
 	}
 	if err := r.req("call.hangup", "S1"); err == nil || err.(*Error).Code != "not_found" {
 		t.Errorf("hangup after the end: %v", err)
+	}
+}
+
+func TestCallStartGroup(t *testing.T) {
+	r := newCallRig(t)
+	group := "120363000000000001@g.us"
+	f := r.fake("G1")
+	f.phase = meowcaller.CallPhaseCalling
+	r.next = f
+	res, err := r.ts.handlers["call.start"]([]byte(fmt.Sprintf(`{"chat":%q,"members":["1@lid","2@lid"]}`, group)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m, _ := res.(map[string]string); m["id"] != "G1" {
+		t.Errorf("reply: %v", res)
+	}
+	r.mu.Lock()
+	target, members := r.target, fmt.Sprint(r.members)
+	r.mu.Unlock()
+	if target != group || members != "[1@lid 2@lid]" {
+		t.Errorf("dial got %q %s", target, members)
+	}
+	if m := r.want(t, "calling", ""); m["group"] != true || m["chat"] != group {
+		t.Errorf("event: %v", m)
+	}
+	if err := r.req("call.hangup", "G1"); err != nil {
+		t.Fatal(err)
+	}
+	r.want(t, "ended", "hangup")
+	flush(t, r.st)
+}
+
+func TestCallStartGroupBadRequest(t *testing.T) {
+	r := newCallRig(t)
+	group := "120363000000000001@g.us"
+	many := make([]string, 32)
+	for i := range many {
+		many[i] = fmt.Sprintf("%d@lid", i+1)
+	}
+	list, _ := json.Marshal(many)
+	for name, body := range map[string]string{
+		"none":       fmt.Sprintf(`{"chat":%q}`, group),
+		"one":        fmt.Sprintf(`{"chat":%q,"members":["1@lid"]}`, group),
+		"thirty-two": fmt.Sprintf(`{"chat":%q,"members":%s}`, group, list),
+		"video":      fmt.Sprintf(`{"chat":%q,"members":["1@lid","2@lid"],"video":true}`, group),
+	} {
+		if err := r.raw("call.start", body); err == nil || err.(*Error).Code != "bad_request" {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.dials != 0 {
+		t.Errorf("dialled %d times", r.dials)
 	}
 }
 
