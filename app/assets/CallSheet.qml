@@ -274,15 +274,15 @@ Sheet {
             }
             // The call screen's page: everything but the sidebar and the ear's black cover. The drawer
             // slides it right by the sidebar's width (translationX is set by CallDrawer.place(), the
-            // glide is slide). While the drawer shows the page is black, and the video's windows are
-            // hidden (CallVideoTile, CallVideoView), so the sidebar's reveal is the stock look; shut it
-            // has no background, or the hole for the video's windows would be painted over (0.0.1.190).
+            // glide is slide). In a voice call the page is black while the drawer shows; with video it
+            // never has a background, or the hole for the video's windows would be painted over
+            // (0.0.1.190), and the windows stay on (264 hid them and the page went black).
             // Not clipped: the shadow below lies just left of it.
             Container {
                 id: callPage
                 horizontalAlignment: HorizontalAlignment.Fill
                 verticalAlignment: VerticalAlignment.Fill
-                background: drawer.shown ? Color.Black : Color.Transparent
+                background: drawer.shown && !sheet.isVideo ? Color.Black : Color.Transparent
                 clipContentToBounds: false
                 layout: DockLayout {}
                 // The drawer sets translationX itself, as the finger drags; an implicit animation

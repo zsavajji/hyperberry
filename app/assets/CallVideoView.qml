@@ -242,9 +242,8 @@ Container {
             id: finder
             windowId: "hyperberryCallFinder"
             updatedProperties: WindowProperty.Size | WindowProperty.Position | WindowProperty.Visible
-            // Hidden while the people drawer shows, as the tiles' (CallVideoTile): native windows
-            // don't necessarily follow the page's slide.
-            visible: sheet.isVideo && !!sheet.call.videoOurs && !drawer.shown
+            // Shown while the people drawer is out, as the tiles' (CallVideoTile).
+            visible: sheet.isVideo && !!sheet.call.videoOurs
             layoutProperties: AbsoluteLayoutProperties {
                 positionX: sheet.px(502)
                 positionY: sheet.controlsShown ? sheet.px(248) : sheet.px(552)

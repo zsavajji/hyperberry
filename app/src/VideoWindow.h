@@ -37,6 +37,8 @@ public:
     // The picture as drawn, after turning, 0 x 0 until the first frame has been posted. The window
     // follows the frames: its buffers are made again when a frame's (turned) size is not theirs.
     void pictureSize(int *w, int *h) const;
+    // Logs where Screen has the window (position and size), for the drawer's slide (7e).
+    void logPosition(const char *what) const;
 
     void frame(const VideoDecoder::Frame &frame);
 

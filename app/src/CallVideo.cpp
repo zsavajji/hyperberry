@@ -167,6 +167,14 @@ void CallVideo::stop()
     }
 }
 
+void CallVideo::logWindows(const QString &why)
+{
+    for (int i = 0; i < Tiles; i++) {
+        if (m_tile[i].hasWindow)
+            m_tile[i].window.logPosition(qPrintable(QString("tile %1, %2").arg(i).arg(why)));
+    }
+}
+
 void CallVideo::setTileViewSize(int tile, int w, int h)
 {
     if (tile >= 0 && tile < Tiles)

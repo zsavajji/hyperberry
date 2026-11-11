@@ -65,6 +65,9 @@ public:
     // tile's.
     Q_INVOKABLE void setViewSize(int w, int h) { setTileViewSize(0, w, h); }
     Q_INVOKABLE void setTileViewSize(int tile, int w, int h);
+    // Logs where each tile's window is, as the people drawer settles: whether native windows follow
+    // the page's slide (7e; they hid in 0.0.1.264).
+    Q_INVOKABLE void logWindows(const QString &why);
 
 signals:
     void runningChanged();

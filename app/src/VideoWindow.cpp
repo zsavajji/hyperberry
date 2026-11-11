@@ -133,6 +133,16 @@ void VideoWindow::destroy()
     m_picW = m_picH = 0;
 }
 
+void VideoWindow::logPosition(const char *what) const
+{
+    if (!m_win)
+        return;
+    int pos[2] = { 0, 0 }, size[2] = { 0, 0 };
+    screen_get_window_property_iv(m_win, SCREEN_PROPERTY_POSITION, pos);
+    screen_get_window_property_iv(m_win, SCREEN_PROPERTY_SIZE, size);
+    qDebug("video window: %s at %d,%d, %dx%d", what, pos[0], pos[1], size[0], size[1]);
+}
+
 void VideoWindow::pictureSize(int *w, int *h) const
 {
     QMutexLocker lock(&m_mu);

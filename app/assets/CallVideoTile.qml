@@ -26,11 +26,9 @@ Container {
     ForeignWindowControl {
         id: control
         updatedProperties: WindowProperty.Size | WindowProperty.Position | WindowProperty.Visible
-        // Hidden while the people drawer shows: the page slides right (CallSheet's callPage) and a
-        // native window does not necessarily follow a Cascades translation, so it would stay in
-        // place over the sidebar. The page is black then. The decoder goes on; only the window
-        // hides. A phone test may let us keep it visible.
-        visible: tile.visible && !drawer.shown
+        // Shown while the people drawer is out too (264 hid it and the page went black): whether the
+        // window follows the page's slide is logged as the drawer settles (CallVideo::logWindows).
+        visible: tile.visible
         horizontalAlignment: HorizontalAlignment.Fill
         verticalAlignment: VerticalAlignment.Fill
         attachedObjects: LayoutUpdateHandler {

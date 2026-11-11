@@ -158,6 +158,9 @@ Container {
     function settled() {
         animating = false
         place()
+        if (sheet.isVideo) {
+            callVideo.logWindows(open ? "drawer open" : "drawer shut")
+        }
         if (!open) {
             shown = false
         }
