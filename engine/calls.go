@@ -72,6 +72,7 @@ type callState struct {
 	// A group call's people (roster, below).
 	roster     []meowcaller.GroupCallParticipant // the group call's people, us left out
 	names      map[types.JID]string              // their names, looked up once per call
+	photos     map[types.JID]string              // their pictures' paths, "" when none
 	asked      map[types.JID]bool                // a lookup is running or done
 	peopleSent string                            // the people last sent, to send only changes
 }
@@ -88,6 +89,8 @@ type Calls struct {
 	dial func(ctx context.Context, target string, video bool, members []string) (liveCall, error)
 	// resolve is the chats.db key and the name of a caller.
 	resolve func(peer types.JID) (key, name string)
+	// photo is the small picture's path for a person's chat key, "" when none (the group page's lookup).
+	photo func(key string) string
 	// chatName is the name chats.db holds for a chat, "" if none.
 	chatName func(chat string) string
 	// isSelf is whether a jid (a LID or a number) is our own account's.
@@ -173,12 +176,12 @@ func (cs *callState) body(reason string) map[string]any {
 	return m
 }
 
-// people is the group call's people for the event, in the roster's order; "" is a name not yet
-// looked up. Call it with c.mu held.
+// people is the group call's people for the event, in the roster's order; "" is a name or a photo
+// not yet looked up, or none. Call it with c.mu held.
 func (cs *callState) people() []map[string]any {
 	out := make([]map[string]any, 0, len(cs.roster))
 	for _, p := range cs.roster {
-		out = append(out, map[string]any{"name": cs.names[p.JID], "connected": p.State == "connected"})
+		out = append(out, map[string]any{"name": cs.names[p.JID], "photo": cs.photos[p.JID], "connected": p.State == "connected"})
 	}
 	return out
 }
@@ -332,7 +335,7 @@ func (c *Calls) hook(cs *callState) {
 	cs.call.OnStateChange(func(p meowcaller.CallPhase) { c.phase(cs, p) })
 	cs.call.OnEnd(func(raw string) { c.finish(cs, raw) })
 	if cs.group {
-		cs.names, cs.asked = map[types.JID]string{}, map[types.JID]bool{}
+		cs.names, cs.photos, cs.asked = map[types.JID]string{}, map[types.JID]string{}, map[types.JID]bool{}
 		// On a goroutine of its own: meowcaller replays the roster inline, on the registering
 		// goroutine, and roster takes c.mu, which hook's caller holds (the engine deadlocked in
 		// 246). The replay is the latest roster, so registering late misses nothing.
@@ -365,10 +368,14 @@ func (c *Calls) roster(cs *callState, gs meowcaller.GroupCallState) {
 	c.mu.Unlock()
 	for _, j := range look {
 		go func(j types.JID) {
-			_, name := c.resolve(j)
+			key, name := c.resolve(j)
+			photo := ""
+			if c.photo != nil {
+				photo = c.photo(key)
+			}
 			c.mu.Lock()
 			defer c.mu.Unlock()
-			cs.names[j] = name
+			cs.names[j], cs.photos[j] = name, photo
 			if !cs.ended && c.cur == cs {
 				c.sendPeople(cs)
 			}

@@ -41,6 +41,11 @@ func (s *Session) initCalls() {
 	c := newCalls(s.store, s.srv, s.log.Sub("calls"))
 	c.ready = s.callReady
 	c.resolve = s.callResolve
+	c.photo = func(key string) string {
+		ps := []participant{{JID: key}}
+		s.photos.members(ps)
+		return ps[0].Photo
+	}
 	c.chatName = s.storedChatName
 	c.isSelf = func(j types.JID) bool {
 		cli := s.client()

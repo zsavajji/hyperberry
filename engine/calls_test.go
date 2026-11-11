@@ -459,8 +459,9 @@ func TestGroupRoster(t *testing.T) {
 	r.c.resolve = func(p types.JID) (string, string) {
 		n, _ := lookups.LoadOrStore(p.User, new(int32))
 		atomic.AddInt32(n.(*int32), 1)
-		return annaKey, "N" + p.User
+		return "k" + p.User, "N" + p.User
 	}
+	r.c.photo = func(key string) string { return "/p/" + key }
 	f := r.fake("GR1")
 	f.phase = meowcaller.CallPhaseCalling
 	r.next = f
@@ -487,7 +488,7 @@ func TestGroupRoster(t *testing.T) {
 		}
 	}
 	f.roster(gs)
-	people("[map[connected:true name:N1] map[connected:false name:N2]]")
+	people("[map[connected:true name:N1 photo:/p/k1] map[connected:false name:N2 photo:/p/k2]]")
 
 	// The same roster again: nothing new to say.
 	f.roster(gs)
@@ -496,7 +497,7 @@ func TestGroupRoster(t *testing.T) {
 	// Someone joins: an event at once, no second lookup.
 	gs.Participants[2].State = "connected"
 	f.roster(gs)
-	people("[map[connected:true name:N1] map[connected:true name:N2]]")
+	people("[map[connected:true name:N1 photo:/p/k1] map[connected:true name:N2 photo:/p/k2]]")
 	for _, u := range []string{"1", "2"} {
 		if n, _ := lookups.Load(u); n == nil || atomic.LoadInt32(n.(*int32)) != 1 {
 			t.Errorf("lookups of %s: %v", u, n)
