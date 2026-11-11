@@ -415,6 +415,29 @@
     </message>
 </context>
 <context>
+    <name>ChatTitleBar</name>
+    <message>
+        <location filename="../assets/ChatTitleBar.qml" line="1"/>
+        <source>Call</source>
+        <translation>Chiama</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChatTitleBar.qml" line="1"/>
+        <source>Audio only</source>
+        <translation>Solo audio</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChatTitleBar.qml" line="1"/>
+        <source>Video</source>
+        <translation>Video</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChatTitleBar.qml" line="1"/>
+        <source>Cancel</source>
+        <translation>Annulla</translation>
+    </message>
+</context>
+<context>
     <name>ChatsPage</name>
     <message>
         <location filename="../assets/ChatsPage.qml" line="28"/>

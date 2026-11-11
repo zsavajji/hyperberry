@@ -1,4 +1,5 @@
 import bb.cascades 1.4
+import bb.system 1.2
 
 // The chat page's title bar (PLAN.md §7, step 3.1), moved out of ChatPage to make room: Back (the
 // page's action bar is hidden, the composer is ours), the tile, name and status line. chat is a
@@ -82,8 +83,9 @@ TitleBar {
                     textStyle.color: ui.palette.secondaryTextOnPlain
                 }
             }
-            // The call button, outside the two parts that open the info page. call.start's failure
-            // is worded by main.qml's toast.
+            // The call button, outside the two parts that open the info page: it asks audio or video
+            // in a dialog of buttons (the user's ask, 2026-11-11). call.start's failure is worded by
+            // main.qml's toast.
             Container {
                 visible: bar.canCall
                 verticalAlignment: VerticalAlignment.Center
@@ -92,7 +94,21 @@ TitleBar {
                 minHeight: ui.px(81)
                 layout: DockLayout {}
                 gestureHandlers: TapHandler {
-                    onTapped: engine.request("call.start", {"chat": bar.chat.jid})
+                    onTapped: callKind.show()
+                }
+                attachedObjects: SystemDialog {
+                    id: callKind
+                    title: qsTr("Call")
+                    confirmButton.label: qsTr("Audio only")
+                    customButton.label: qsTr("Video")
+                    cancelButton.label: qsTr("Cancel")
+                    onFinished: {
+                        if (value == SystemUiResult.ConfirmButtonSelection) {
+                            engine.request("call.start", {"chat": bar.chat.jid})
+                        } else if (value == SystemUiResult.CustomButtonSelection) {
+                            engine.request("call.start", {"chat": bar.chat.jid, "video": true})
+                        }
+                    }
                 }
                 // The stock white handset, tinted with the primary colour as the bar's other live
                 // marks are; 45 px in an 81 px bar.
