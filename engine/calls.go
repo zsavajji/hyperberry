@@ -333,7 +333,10 @@ func (c *Calls) hook(cs *callState) {
 	cs.call.OnEnd(func(raw string) { c.finish(cs, raw) })
 	if cs.group {
 		cs.names, cs.asked = map[types.JID]string{}, map[types.JID]bool{}
-		cs.call.OnGroupState(func(gs meowcaller.GroupCallState) { c.roster(cs, gs) })
+		// On a goroutine of its own: meowcaller replays the roster inline, on the registering
+		// goroutine, and roster takes c.mu, which hook's caller holds (the engine deadlocked in
+		// 246). The replay is the latest roster, so registering late misses nothing.
+		go cs.call.OnGroupState(func(gs meowcaller.GroupCallState) { c.roster(cs, gs) })
 	}
 }
 

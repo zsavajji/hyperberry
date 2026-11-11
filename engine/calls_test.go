@@ -66,10 +66,17 @@ func (f *fakeCall) GroupState() (meowcaller.GroupCallState, bool) {
 	return *f.group, true
 }
 
+// OnGroupState replays the current roster at once, on the caller's goroutine, as meowcaller's
+// does (its notification queue runs inline when idle): registering it with Calls.mu held
+// deadlocked the engine on the Q10 (246).
 func (f *fakeCall) OnGroupState(fn func(meowcaller.GroupCallState)) {
 	f.mu.Lock()
 	f.onGS = fn
+	gs := f.group
 	f.mu.Unlock()
+	if gs != nil {
+		fn(*gs)
+	}
 }
 
 // roster is meowcaller sending the group call's roster.
