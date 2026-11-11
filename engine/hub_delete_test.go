@@ -98,10 +98,10 @@ func TestHubActionsReadded(t *testing.T) {
 		t.Errorf("old account: %s", got)
 	}
 	var hs hubState
-	if b, _ := os.ReadFile(state); json.Unmarshal(b, &hs) != nil || !hs.Account || hs.Actions != 2 || len(hs.Items) != 0 {
+	if b, _ := os.ReadFile(state); json.Unmarshal(b, &hs) != nil || !hs.Account || hs.Actions != 3 || len(hs.Items) != 0 {
 		t.Errorf("hub.json after: %+v", hs)
 	}
-	if got := ops(notifier(h, dir, func(n *Notifier) { n.link() })); got != "open account+" { // the once-a-run update
+	if got := ops(notifier(h, dir, func(n *Notifier) { n.link() })); got != "open" {
 		t.Errorf("current account: %s", got)
 	}
 	// A change to a chat whose item went with the old account does nothing; a message adds it.

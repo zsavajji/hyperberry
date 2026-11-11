@@ -148,9 +148,10 @@ type hubState struct {
 	Items   []string `json:"items"`
 }
 
-// hubActionSet is the item actions an account is added with: 1 was Mark read/unread, 2 adds
-// Delete. The Hub fixes them when the account is added, so a newer set means adding it again.
-const hubActionSet = 2
+// hubActionSet is what an account is added with: 1 was Mark read/unread, 2 adds Delete, 3 the
+// white icon hub_account.png. The Hub fixes them when the account is added (it refuses an account
+// update, uds 501 on the Q10), so a newer set means adding it again.
+const hubActionSet = 3
 
 // Notifier keeps the Hub account and its items from one goroutine, so UDS calls never run
 // inside the store's writer and always on the same thread.
@@ -174,7 +175,6 @@ type Notifier struct {
 	ready   bool            // registered with the Hub
 	acct    bool            // our account is in the Hub
 	actions int             // the hubActionSet it was added with; 0 from an older build
-	updated bool            // the account sent again this run, for an older build's icon
 	items   map[string]bool // chats with an item in the Hub
 }
 
@@ -254,21 +254,13 @@ func (n *Notifier) ensureAccount() {
 		n.dropAccount()
 	}
 	if n.acct {
-		// Once a run, as an update (the add is refused, and hb_uds_account updates): an account an
-		// older build added names its icon, and the update keeps the items, unlike a re-add.
-		if !n.updated {
-			n.updated = true
-			if err := n.account(true); err != nil {
-				n.log.Warnf("hub: update account: %v", err)
-			}
-		}
 		return
 	}
 	if err := n.account(true); err != nil {
 		n.log.Warnf("hub: add account: %v", err)
 		return
 	}
-	n.acct, n.actions, n.updated = true, hubActionSet, true
+	n.acct, n.actions = true, hubActionSet
 	n.save()
 	if again {
 		n.log.Infof("hub: account added again for its new actions")
