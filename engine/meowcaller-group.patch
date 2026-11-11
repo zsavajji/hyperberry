@@ -20,7 +20,11 @@ Group calls, ours (not whatsapp-light's); applied by scripts/hypermeow-work.sh a
    peer sends nothing while silent) changes nothing. Check: hyperberry_mix_test.go.
 7. A group call is mixed from its first remote participant, not its second: the switch from the
    direct playout emptied the first one's queue, ~0.3 s quiet as the second joined. An error ack
-   is logged whole (a group offer's 207 names no call; what it answers is unknown).
+   is logged whole.
+8. 207 on a group offer's ack is multi-status (the offer missed some devices, 427 each), not a
+   refusal: the ack is read as the group's first roster, relay and settings, which were dropped
+   (media waited ~7 s for a later update). The missed devices are logged. Check:
+   TestHyperberryGroupAck207.
 Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
 
 --- a/engine.go
@@ -362,11 +366,16 @@ Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
  		}
  	}()
 --- /dev/null
-+++ b/hyperberry_mix_test.go	2026-11-11 22:53:17
-@@ -0,0 +1,35 @@
++++ b/hyperberry_mix_test.go	2026-11-11 23:05:05
+@@ -0,0 +1,74 @@
 +package meowcaller
 +
-+import "testing"
++import (
++	"testing"
++
++	waBinary "github.com/polymorfa/hypermeow/binary"
++	"github.com/polymorfa/hypermeow/types"
++)
 +
 +// A queue that runs out mid-speech holds a frame more; one that runs out after silence doesn't.
 +func TestHyperberryMixTarget(t *testing.T) {
@@ -399,14 +408,70 @@ Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
 +		t.Fatalf("target %d, want the cap %d", got, participantAudioMixerMaxTarget)
 +	}
 +}
++
++// A group offer's ack with error 207 (a device missed, 427) is the group's first roster, not a refusal.
++func TestHyperberryGroupAck207(t *testing.T) {
++	eng, call, creator := testGroupEngine("GROUP")
++	eng.calls["GROUP"].direction = CallDirectionOutgoing
++	participant := types.NewJID("200", types.HiddenUserServer)
++	ack := &waBinary.Node{
++		Tag:   "ack",
++		Attrs: waBinary.Attrs{"class": "call", "type": "offer", "id": "REQUEST", "error": "207"},
++		Content: []waBinary.Node{{
++			Tag: "group_info",
++			Attrs: waBinary.Attrs{
++				"call-id": "GROUP", "call-creator": creator,
++				"transaction-id": "6", "connected-limit": "32", "media": "audio", "joinable": "1",
++			},
++			Content: []waBinary.Node{{
++				Tag:   "user",
++				Attrs: waBinary.Attrs{"jid": participant, "state": "outgoing"},
++				Content: []waBinary.Node{
++					{Tag: "device", Attrs: waBinary.Attrs{"jid": types.NewADJID("200", 0, 0)}},
++					{Tag: "device", Attrs: waBinary.Attrs{"jid": types.NewADJID("200", 0, 46), "error": "427"}},
++				},
++			}},
++		}},
++	}
++	eng.onCallAck(ack)
++	state, ok := call.GroupState()
++	if !ok || state.TransactionID != 6 || len(state.Participants) != 1 {
++		t.Fatalf("group state = %#v, present=%v", state, ok)
++	}
++	if eng.calls["GROUP"] == nil {
++		t.Fatal("the call ended on a 207")
++	}
++}
 --- a/engine.go
 +++ b/engine.go
-@@ -1154,7 +1154,8 @@
+@@ -1149,12 +1149,29 @@
+ // allocation arrives here (whatsmeow otherwise drops the ack), which is what lets the
+ // caller bring up media. An error ack tears the call down.
+ func (e *engine) onCallAck(ack *waBinary.Node) {
+-	if errCode := ack.AttrGetter().String("error"); errCode != "" {
++	errCode := ack.AttrGetter().String("error")
++	// hyperberry patch (7d): 207 on a group offer's ack is multi-status, not a refusal: the ack
++	// carries the roster, relay and voip_settings, and errors only on the devices the offer
++	// missed (427 on a user's linked devices, 0.0.1.257). Read as a refusal, all of that was
++	// dropped and media waited ~7 s for a later group update.
++	if gi := findChild(ack, "group_info"); errCode == "207" && gi != nil {
++		var missed []string
++		for _, u := range gi.GetChildrenByTag("user") {
++			for _, d := range u.GetChildrenByTag("device") {
++				if de := d.AttrGetter().OptionalString("error"); de != "" {
++					missed = append(missed, d.AttrGetter().OptionalString("jid")+"="+de)
++				}
++			}
++		}
++		e.c.log.Info().Strs("missed_devices", missed).Msg("group offer delivered, some devices missed (207)")
++		errCode = ""
++	}
++	if errCode != "" {
+ 		callID := ""
  		if en := findChild(ack, "error"); en != nil {
  			callID = en.AttrGetter().String("call-id")
  		}
 -		e.c.log.Warn().Str("call_id", callID).Str("error_code", errCode).Msg("call rejected by server")
-+		// hyperberry patch (7d): the whole ack, to learn what a group offer's 207 (no call id) answers.
 +		e.c.log.Warn().Str("call_id", callID).Str("error_code", errCode).Str("ack", ack.String()).Msg("call rejected by server")
  		e.finishCall(callID, "server:"+errCode)
  		return
