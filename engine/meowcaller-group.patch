@@ -18,6 +18,9 @@ Group calls, ours (not whatsapp-light's); applied by scripts/hypermeow-work.sh a
 6. A queue that runs out mid-speech holds a frame more from then on, up to 360 ms: on 254 one
    person paused once, their packets later than the 180 ms held. Running out in a pause (the
    peer sends nothing while silent) changes nothing. Check: hyperberry_mix_test.go.
+7. A group call is mixed from its first remote participant, not its second: the switch from the
+   direct playout emptied the first one's queue, ~0.3 s quiet as the second joined. An error ack
+   is logged whole (a group offer's 207 names no call; what it answers is unknown).
 Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
 
 --- a/engine.go
@@ -186,7 +189,18 @@ Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
  }
  
  type participantAudioMixer struct {
-@@ -56,7 +65,7 @@
+@@ -38,7 +47,9 @@
+ 
+ func shouldStartParticipantMixing(activeParticipantIDs []string) bool {
+ 	// Source of truth: https://github.com/purpshell/meowcaller/blob/ca4ba64503efeb86c337ee37cb00c4da540c632c/datasheets/group-media-receive.md#L24-L35
+-	return len(activeParticipantIDs) > 1
++	// hyperberry patch (7d): from the first one. Switching from the direct playout when a second
++	// joined emptied the first one's queue, and they went quiet while it filled (~0.3 s).
++	return len(activeParticipantIDs) > 0
+ }
+ 
+ func (m *participantAudioMixer) Add(participantID string, pcm []float32) bool {
+@@ -56,7 +67,7 @@
  	}
  	queue := m.streams[participantID]
  	if queue == nil {
@@ -195,7 +209,7 @@ Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
  		m.streams[participantID] = queue
  	}
  	if len(pcm) >= participantAudioMixerMaxSamples {
-@@ -104,31 +113,36 @@
+@@ -104,31 +115,36 @@
  	slices.Sort(participantIDs)
  
  	mixed := make([]float32, participantAudioMixChunkSamples)
@@ -385,3 +399,15 @@ Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
 +		t.Fatalf("target %d, want the cap %d", got, participantAudioMixerMaxTarget)
 +	}
 +}
+--- a/engine.go
++++ b/engine.go
+@@ -1154,7 +1154,8 @@
+ 		if en := findChild(ack, "error"); en != nil {
+ 			callID = en.AttrGetter().String("call-id")
+ 		}
+-		e.c.log.Warn().Str("call_id", callID).Str("error_code", errCode).Msg("call rejected by server")
++		// hyperberry patch (7d): the whole ack, to learn what a group offer's 207 (no call id) answers.
++		e.c.log.Warn().Str("call_id", callID).Str("error_code", errCode).Str("ack", ack.String()).Msg("call rejected by server")
+ 		e.finishCall(callID, "server:"+errCode)
+ 		return
+ 	}
