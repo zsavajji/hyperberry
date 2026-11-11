@@ -25,7 +25,8 @@ type fakeCall struct {
 	onEnd func(string)
 	src   meowcaller.AudioSource
 	sink  meowcaller.AudioSink
-	calls []string // "answer", "reject", "hangup", "startvideo", ...
+	calls []string                   // "answer", "reject", "hangup", "startvideo", ...
+	group *meowcaller.GroupCallState // nil: not a group call
 
 	// Video (calls_video_test.go).
 	video, ours, theirs bool
@@ -55,6 +56,12 @@ func (f *fakeCall) Play(s meowcaller.AudioSource) *meowcaller.Player {
 	return meowcaller.NewPlayer()
 }
 func (f *fakeCall) Receive(s meowcaller.AudioSink) { f.sink = s }
+func (f *fakeCall) GroupState() (meowcaller.GroupCallState, bool) {
+	if f.group == nil {
+		return meowcaller.GroupCallState{}, false
+	}
+	return *f.group, true
+}
 
 func (f *fakeCall) did(what string) {
 	f.mu.Lock()
@@ -107,7 +114,11 @@ func (f *fakeCall) Answer() error {
 func (f *fakeCall) Reject() error { f.did("reject"); f.end("rejected"); return nil }
 func (f *fakeCall) Hangup() error { f.did("hangup"); f.end("hangup"); return nil }
 
-const annaKey = "111@lid"
+const (
+	annaKey  = "111@lid"
+	teamKey  = "120363000000000001@g.us"
+	teamName = "Team"
+)
 
 // callRig is Calls on a real writer, a fake Hub and a connected UI.
 type callRig struct {
@@ -142,6 +153,7 @@ func newCallRig(t *testing.T) *callRig {
 	r.c = newCalls(st, ts.Server, waLog.Noop)
 	r.c.ready = func(chat string) (string, error) { return "Anna", nil }
 	r.c.resolve = func(peer types.JID) (string, string) { return annaKey, "Anna" }
+	r.c.chatName = func(chat string) string { return teamName }
 	r.c.dial = func(_ context.Context, target string, video bool, members []string) (liveCall, error) {
 		r.mu.Lock()
 		defer r.mu.Unlock()
@@ -197,6 +209,23 @@ FROM messages WHERE chat = ?2 AND id = ?1 AND kind = ?3`, "call-"+id, annaKey, m
 	return text, out, state, extra, unread, true
 }
 
+// groupFake is a call bound to the Team group, started by Anna.
+func (r *callRig) groupFake(id string) *fakeCall {
+	f := r.fake(id)
+	f.group = &meowcaller.GroupCallState{GroupJID: types.NewJID("120363000000000001", types.GroupServer)}
+	return f
+}
+
+// groupRow is the call row of id in the Team group's chat: its text and the chat's unread count and
+// kind; ok is false when there is no row or no chat.
+func (r *callRig) groupRow(t *testing.T, id string) (text string, unread, kind int, ok bool) {
+	t.Helper()
+	flush(t, r.st)
+	err := r.st.db.QueryRow(`SELECT m.text, c.unread, c.kind FROM messages m JOIN chats c ON c.jid = m.chat
+WHERE m.chat = ? AND m.id = ? AND m.kind = ?`, teamKey, "call-"+id, msgNotice).Scan(&text, &unread, &kind)
+	return text, unread, kind, err == nil
+}
+
 func (r *callRig) answered(t *testing.T, f *fakeCall) {
 	t.Helper()
 	r.c.offer(f)
@@ -232,8 +261,8 @@ func TestCallRows(t *testing.T) {
 	if err := r.req("call.start", ""); err != nil {
 		t.Fatal(err)
 	}
-	if m := r.want(t, "calling", ""); m["group"] != false {
-		t.Errorf("a person's call event: group %v", m["group"])
+	if m := r.want(t, "calling", ""); m["group"] != false || m["by"] != "" {
+		t.Errorf("a person's call event: group %v by %v", m["group"], m["by"])
 	}
 	f.setPhase(meowcaller.CallPhaseActive)
 	r.want(t, "active", "")
@@ -428,6 +457,77 @@ func TestSecondOfferRejected(t *testing.T) {
 	// And a call of ours is busy.
 	if err := r.req("call.start", ""); err == nil || err.(*Error).Code != "busy" {
 		t.Errorf("start while live: %v", err)
+	}
+}
+
+// An incoming call bound to a group rings as the group's, and its rows go in the group's chat,
+// made as a group when it didn't exist.
+func TestGroupOfferInGroupChat(t *testing.T) {
+	r := newCallRig(t)
+	f := r.groupFake("GO1")
+	r.c.offer(f)
+	m := r.want(t, "ringing", "")
+	if m["chat"] != teamKey || m["group"] != true || m["by"] != "Anna" {
+		t.Errorf("ringing event: %v", m)
+	}
+	f.end("")
+	r.want(t, "ended", "hangup")
+	if text, unread, kind, ok := r.groupRow(t, "GO1"); !ok || text != "missed_call" || unread != 1 || kind != chatGroup {
+		t.Errorf("missed group call: %q unread=%d kind=%d ok=%v", text, unread, kind, ok)
+	}
+	if _, _, _, _, _, ok := r.row(t, "GO1"); ok {
+		t.Error("the row went in the starter's chat")
+	}
+	var ring bool
+	for _, c := range r.hub.take() {
+		if c.op == "add" && c.item.id == callItemID(teamKey) {
+			ring = c.item.alert && c.item.title == teamName && c.item.body == "Incoming group voice call"
+		}
+	}
+	if !ring {
+		t.Error("no ring item for the group")
+	}
+}
+
+func TestGroupOfferBusyInGroupChat(t *testing.T) {
+	r := newCallRig(t)
+	f := r.fake("GB1")
+	r.c.offer(f)
+	r.want(t, "ringing", "")
+	g := r.groupFake("GB2")
+	r.c.offer(g)
+	for i := 0; g.count("reject") == 0 && i < 200; i++ {
+		time.Sleep(10 * time.Millisecond)
+	}
+	if g.count("reject") != 1 {
+		t.Fatal("the group offer wasn't rejected")
+	}
+	if text, unread, kind, ok := r.groupRow(t, "GB2"); !ok || text != "missed_call" || unread != 1 || kind != chatGroup {
+		t.Errorf("turned-away group call: %q unread=%d kind=%d ok=%v", text, unread, kind, ok)
+	}
+	if _, _, _, _, _, ok := r.row(t, "GB2"); ok {
+		t.Error("the row went in the starter's chat")
+	}
+}
+
+func TestEndedGroupOfferLogged(t *testing.T) {
+	r := newCallRig(t)
+	offer := func(id string, attrs waBinary.Attrs) *events.CallOffer {
+		e := &events.CallOffer{Data: &waBinary.Node{Tag: "offer", Attrs: attrs}}
+		e.CallID, e.From, e.Timestamp = id, types.NewJID("111", types.HiddenUserServer), time.Unix(1700000000, 0)
+		e.GroupJID = types.NewJID("120363000000000001", types.GroupServer)
+		return e
+	}
+	r.c.endedOffer(offer("GE1", waBinary.Attrs{"is_call_ended": "1"}))
+	if text, unread, kind, ok := r.groupRow(t, "GE1"); !ok || text != "missed_call" || unread != 1 || kind != chatGroup {
+		t.Fatalf("ended group offer: %q unread=%d kind=%d ok=%v", text, unread, kind, ok)
+	}
+	if _, _, _, _, _, ok := r.row(t, "GE1"); ok {
+		t.Error("the row went in the starter's chat")
+	}
+	r.c.endedOffer(offer("GE2", waBinary.Attrs{"terminate_reason": "accepted_elsewhere"}))
+	if _, _, _, ok := r.groupRow(t, "GE2"); ok {
+		t.Error("a group call taken elsewhere wrote a row")
 	}
 }
 

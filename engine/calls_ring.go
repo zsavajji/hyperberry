@@ -64,7 +64,7 @@ func ringAllowed(status, global string) bool {
 func (c *Calls) startRing(cs *callState) {
 	cs.ring = make(chan struct{})
 	cs.item = true
-	c.st.nt.callRing(cs.chat, cs.name, cs.offer)
+	c.st.nt.callRing(cs.chat, cs.name, cs.offer, cs.group)
 	// Read here: the goroutine may outlive a test's swap.
 	start, pps, status, global := ringStart, ringPPS, notifyStatus, notifyGlobal
 	go func(done <-chan struct{}) {

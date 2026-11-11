@@ -43,6 +43,8 @@ type liveCall interface {
 	SendVideoWithDuration(au []byte, d time.Duration) error
 	OnVideoState(func(meowcaller.VideoState))
 	OnVideoKeyframeRequest(func())
+	// Group calls, phase 7d (the group's JID is empty for an ad-hoc one).
+	GroupState() (meowcaller.GroupCallState, bool)
 }
 
 // callState is the live call. Calls.mu guards it, except link.
@@ -52,6 +54,7 @@ type callState struct {
 	chat      string // the chats.db key of the person, or of the group
 	group     bool   // a group call: chat is the group's key
 	name      string // for the Hub item and a new chat
+	by        string // a group call's starter, by name (incoming)
 	out       bool
 	offer     int64         // unix seconds: the row's ts
 	state     string        // the last state sent
@@ -78,6 +81,8 @@ type Calls struct {
 	dial func(ctx context.Context, target string, video bool, members []string) (liveCall, error)
 	// resolve is the chats.db key and the name of a caller.
 	resolve func(peer types.JID) (key, name string)
+	// chatName is the name chats.db holds for a chat, "" if none.
+	chatName func(chat string) string
 
 	mu  sync.Mutex
 	cur *callState
@@ -149,7 +154,7 @@ func callPhase(p meowcaller.CallPhase, out bool) string {
 // body is the `call` event. Call it with c.mu held.
 func (cs *callState) body(reason string) map[string]any {
 	m := map[string]any{"id": cs.id, "chat": cs.chat, "out": cs.out, "state": cs.state,
-		"reason": reason, "since": cs.since, "group": cs.group}
+		"reason": reason, "since": cs.since, "group": cs.group, "by": cs.by}
 	cs.videoBody(m)
 	return m
 }
@@ -314,8 +319,8 @@ func (c *Calls) offer(call liveCall) {
 		go c.turnAway(call)
 		return
 	}
-	key, name := c.resolve(call.Peer())
-	cs := &callState{call: call, id: call.ID(), chat: key, name: name, offer: time.Now().Unix()}
+	key, name, by, group := c.whose(call)
+	cs := &callState{call: call, id: call.ID(), chat: key, group: group, name: name, by: by, offer: time.Now().Unix()}
 	c.mu.Lock()
 	if c.cur != nil {
 		c.mu.Unlock()
@@ -329,13 +334,25 @@ func (c *Calls) offer(call liveCall) {
 	c.phase(cs, meowcaller.CallPhaseRinging)
 }
 
+// whose is the chat a call belongs in, and its name: the group's for a call bound to a group
+// (then by is its starter's name), else the caller's.
+func (c *Calls) whose(call liveCall) (key, name, by string, group bool) {
+	if gs, ok := call.GroupState(); ok && !gs.GroupJID.IsEmpty() {
+		key = gs.GroupJID.ToNonAD().String()
+		_, by = c.resolve(call.Peer())
+		return key, c.chatName(key), by, true
+	}
+	key, name = c.resolve(call.Peer())
+	return key, name, "", false
+}
+
 // endedOffer is an offer that comes already over: the call rang while the engine was off, and
 // WhatsApp hands it on at the next connection, marked is_call_ended or with a terminate reason.
 // meowcaller drops it ("not a live call"), so here it is a missed call, as the main phone shows,
-// unless another device of ours took it (a reason with "elsewhere"). Group calls aren't logged:
-// this phase is 1:1 only. A row already written (the same call id) isn't counted twice.
+// unless another device of ours took it (a reason with "elsewhere"). A group call is logged in
+// the group's chat. A row already written (the same call id) isn't counted twice.
 func (c *Calls) endedOffer(e *events.CallOffer) {
-	if e.Data == nil || !e.GroupJID.IsEmpty() {
+	if e.Data == nil {
 		return
 	}
 	ag := e.Data.AttrGetter()
@@ -355,8 +372,15 @@ func (c *Calls) endedOffer(e *events.CallOffer) {
 	if e.Timestamp.IsZero() {
 		ts = time.Now().Unix()
 	}
-	key, name := c.resolve(peer)
-	cs := &callState{id: e.CallID, chat: key, name: name, offer: ts}
+	var key, name string
+	group := !e.GroupJID.IsEmpty()
+	if group {
+		key = e.GroupJID.ToNonAD().String()
+		name = c.chatName(key)
+	} else {
+		key, name = c.resolve(peer)
+	}
+	cs := &callState{id: e.CallID, chat: key, group: group, name: name, offer: ts}
 	cs.vid.f.video = hasChild(e.Data, "video")
 	c.writeRow(cs, "missed_call", -1, true)
 }
@@ -371,8 +395,8 @@ func (c *Calls) turnAway(call liveCall) {
 	if err := call.Reject(); err != nil {
 		c.log.Warnf("call %s: reject: %v", call.ID(), err)
 	}
-	key, name := c.resolve(call.Peer())
-	cs := &callState{id: call.ID(), chat: key, name: name, offer: time.Now().Unix()}
+	key, name, _, group := c.whose(call)
+	cs := &callState{id: call.ID(), chat: key, group: group, name: name, offer: time.Now().Unix()}
 	cs.vid.f.video = call.IsVideo()
 	c.writeRow(cs, "missed_call", 0, true)
 }
@@ -486,7 +510,11 @@ func (c *Calls) writeRow(cs *callState, text string, secs int, missed bool) {
 	}
 	c.st.ops <- func(t *storeTx) {
 		if !t.hasChat(cs.chat) {
-			t.ensureChat(cs.chat, chatUser)
+			kind := chatUser
+			if isGroupKey(cs.chat) {
+				kind = chatGroup
+			}
+			t.ensureChat(cs.chat, kind)
 			t.setName(cs.chat, cs.name)
 		}
 		fresh := t.insertMessage(row)

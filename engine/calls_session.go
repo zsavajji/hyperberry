@@ -39,6 +39,7 @@ func (s *Session) initCalls() {
 	c := newCalls(s.store, s.srv, s.log.Sub("calls"))
 	c.ready = s.callReady
 	c.resolve = s.callResolve
+	c.chatName = s.storedChatName
 	c.dial = func(ctx context.Context, target string, video bool, members []string) (liveCall, error) {
 		var call *meowcaller.Call
 		var err error
@@ -83,9 +84,7 @@ func (s *Session) callReady(chat string) (string, error) {
 		if !cli.IsConnected() {
 			return "", &Error{"offline", "not connected to WhatsApp"}
 		}
-		var name string
-		s.store.runOp(func(t *storeTx) { t.tx.QueryRow("SELECT name FROM chats WHERE jid = ?", chat).Scan(&name) })
-		return name, nil
+		return s.storedChatName(chat), nil
 	}
 	if jid.Server != types.DefaultUserServer && jid.Server != types.HiddenUserServer {
 		return "", &Error{"bad_chat", "not a person: " + chat}
@@ -99,6 +98,21 @@ func (s *Session) callReady(chat string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), netTimeout)
 	defer cancel()
 	return displayName(ctx, cli, jid, types.EmptyJID), nil
+}
+
+// storedChatName is the name chats.db holds for chat. A group with no chat (since 238 a joined
+// group gets one only with a message) is asked of WhatsApp, so a call's Hub item and new chat
+// have its subject; "" if neither knows.
+func (s *Session) storedChatName(chat string) (name string) {
+	s.store.runOp(func(t *storeTx) { t.tx.QueryRow("SELECT name FROM chats WHERE jid = ?", chat).Scan(&name) })
+	if jid, err := types.ParseJID(chat); name == "" && err == nil && jid.Server == types.GroupServer {
+		ctx, cancel := context.WithTimeout(context.Background(), netTimeout)
+		defer cancel()
+		if info, err := s.client().GetGroupInfo(ctx, jid); err == nil && info != nil {
+			name = info.Name
+		}
+	}
+	return name
 }
 
 // callResolve maps a caller to the chat key a message from them would have, and their name.

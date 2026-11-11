@@ -9,11 +9,11 @@ import (
 // item, which a missed call later updates through its row. hubChat finds the chat in both.
 func callItemID(chat string) string { return "call_" + hex.EncodeToString([]byte(chat)) }
 
-// callRing puts the "Incoming voice call" item in the Hub, alerting. Like the chat items it
-// lives on the notifier's thread; unlike them it isn't kept in hub.json: it lasts as long as the
-// ringing. ponytail: an engine that dies while ringing leaves the item behind; it goes with the
+// callRing puts the "Incoming voice call" item (a group's: "Incoming group voice call") in the
+// Hub, alerting. Like the chat items it lives on the notifier's thread; unlike them it isn't kept
+// in hub.json: it lasts as long as the ringing. ponytail: an engine that dies while ringing leaves the item behind; it goes with the
 // account on the next unlink.
-func (n *Notifier) callRing(chat, title string, ts int64) {
+func (n *Notifier) callRing(chat, title string, ts int64, group bool) {
 	n.queue(func() {
 		n.ensureAccount()
 		if !n.acct {
@@ -25,7 +25,11 @@ func (n *Notifier) callRing(chat, title string, ts int64) {
 		if title == "" {
 			title = "Unknown"
 		}
-		it := hubItem{callItemID(chat), title, word("Incoming voice call"), 1, ts * 1000, true}
+		text := word("Incoming voice call")
+		if group {
+			text = word("Incoming group voice call")
+		}
+		it := hubItem{callItemID(chat), title, text, 1, ts * 1000, true}
 		// The Hub may still hold one from a call that ended while the Hub was away: update then.
 		err := n.item(it, true)
 		if err != nil {
