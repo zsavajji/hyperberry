@@ -39,7 +39,6 @@
 #include "Proximity.h"
 #include "QrImage.h"
 #include "Settings.h"
-#include "VideoTest.h"
 
 using namespace bb::cascades;
 
@@ -154,7 +153,6 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     qmlRegisterType<MediaOpener>("hyperberry", 1, 0, "MediaOpener");
     qmlRegisterType<MessageCards>("hyperberry", 1, 0, "MessageCards");
     qmlRegisterType<Profile>("hyperberry", 1, 0, "Profile");
-    qmlRegisterType<VideoTest>("hyperberry", 1, 0, "VideoTest");
     QmlDocument *document = QmlDocument::create("asset:///main.qml").parent(&app);
     if (!loaded(document, "main.qml"))
         return 1;
