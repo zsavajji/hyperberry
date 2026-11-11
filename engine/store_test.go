@@ -92,3 +92,17 @@ func TestStoreEvents(t *testing.T) {
 		t.Errorf("%d rows after clear", n)
 	}
 }
+
+func TestDropEmptyGroups(t *testing.T) {
+	tx, _ := newTestTx(t)
+	tx.ensureChat("empty@g.us", chatGroup)  // what syncGroups added: dropped
+	tx.ensureChat("joined@g.us", chatGroup) // stamped (JoinedGroup, history): kept
+	tx.stampChat("joined@g.us", 10)
+	tx.ensureChat("talk@g.us", chatGroup) // holds a message: kept
+	tx.insertMessage(msgRow{Chat: "talk@g.us", ID: "1", TS: 1, Kind: msgText, Text: "hi"})
+	tx.ensureChat("a@s.whatsapp.net", chatUser) // not a group: kept
+	tx.dropEmptyGroups()
+	if n := count(t, tx, "SELECT count(*) FROM chats"); n != 3 || count(t, tx, "SELECT count(*) FROM chats WHERE jid = 'empty@g.us'") != 0 {
+		t.Errorf("%d chats left", n)
+	}
+}

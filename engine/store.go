@@ -178,7 +178,9 @@ func (st *Store) handle(cli *whatsmeow.Client, evt any) {
 }
 
 // syncGroups fetches the group subjects off the writer, since it is a network call, and
-// queues the result.
+// queues the result. It names the groups we have and adds none: the server lists every group we
+// are in, the community parents and the ones the phone doesn't show among them, and as WhatsApp
+// Web we list a group once history or a message brings it (they sat at the bottom, "No messages").
 func (st *Store) syncGroups(cli *whatsmeow.Client) {
 	ctx := context.Background()
 	groups, err := cli.GetJoinedGroups(ctx)
@@ -187,7 +189,6 @@ func (st *Store) syncGroups(cli *whatsmeow.Client) {
 	}
 	st.ops <- func(t *storeTx) {
 		for _, g := range groups {
-			t.ensureChat(g.JID.String(), chatGroup)
 			t.setName(g.JID.String(), g.Name)
 		}
 		sweep(ctx, t, cli.Store.LIDs)
@@ -227,6 +228,7 @@ func (st *Store) dispatch(t *storeTx, cli *whatsmeow.Client, evt any) {
 	case *events.JoinedGroup:
 		t.ensureChat(e.JID.String(), chatGroup)
 		t.setName(e.JID.String(), e.Name)
+		t.stampChat(e.JID.String(), time.Now().Unix()) // on top, as the phone's "You were added"; tidy keeps it
 	case *events.Receipt:
 		st.receipt(ctx, t, cli, e)
 	case *events.ChatPresence:
@@ -368,6 +370,14 @@ func (t *storeTx) ensureChat(jid string, kind int) {
 func (t *storeTx) setName(jid, name string) {
 	if name != "" {
 		t.touch(jid, "UPDATE chats SET name = ?1 WHERE name IS NOT ?1 AND jid = ?2", name)
+	}
+}
+
+// stampChat gives a chat with no time one, so it takes its place in the list with no preview, as a
+// cleared chat does, and tidy's dropEmptyGroups keeps it.
+func (t *storeTx) stampChat(jid string, ts int64) {
+	if ts > 0 {
+		t.touch(jid, "UPDATE chats SET last_ts = ? WHERE last_ts IS NULL AND jid = ?", ts)
 	}
 }
 

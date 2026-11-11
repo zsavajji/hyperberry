@@ -7,15 +7,38 @@ import (
 
 // tidy fixes what earlier builds left, at every connect: the empty chats with ourselves that our
 // own phone's protocol messages made (a chat with ourselves that holds messages stays: it is
-// "message yourself"), the "+0" that named WhatsApp's account, and archived chats' Hub items.
+// "message yourself"), the empty groups syncGroups used to add, the "+0" that named WhatsApp's
+// account, and archived chats' Hub items.
 func (t *storeTx) tidy(cli *whatsmeow.Client) {
 	for _, me := range []types.JID{cli.Store.GetJID(), cli.Store.GetLID()} {
 		if !me.IsEmpty() {
 			t.dropEmptyChat(me.ToNonAD().String())
 		}
 	}
+	t.dropEmptyGroups()
 	t.setName(types.PSAJID.String(), "WhatsApp")
 	t.dropArchivedItems()
+}
+
+// dropEmptyGroups deletes the groups with no message and no time: the ones syncGroups added before
+// 0.0.1.237. A cleared group, one we just joined, or one the history sync listed has a time.
+func (t *storeTx) dropEmptyGroups() {
+	rows, err := t.tx.Query("SELECT jid FROM chats WHERE kind = ? AND last_ts IS NULL", chatGroup)
+	if err != nil {
+		t.log.Warnf("empty groups: %v", err)
+		return
+	}
+	var jids []string
+	for rows.Next() {
+		var j string
+		if rows.Scan(&j) == nil {
+			jids = append(jids, j)
+		}
+	}
+	rows.Close()
+	for _, j := range jids {
+		t.dropEmptyChat(j)
+	}
 }
 
 // dropArchivedItems takes away the Hub items of archived chats. The notifier ignores a chat with none.
