@@ -1,7 +1,7 @@
 import bb.cascades 1.4
 
-// One row of the address book (NewChatPage, NewGroupPage): the tile the chat will have in the
-// chat list, the name, a 2 px separator, and a check when the contact is chosen. contact is a
+// One row of the address book (NewChatPage, NewGroupPage) or of a group's members (CallPickPage):
+// the tile the chat will have in the chat list, its picture over it when the row has one, the name, a 2 px separator, and a check when the contact is chosen. contact is a
 // row of ContactPicker's model; the view supplies the emoji style and sizes as the chat list's.
 Container {
     property variant contact
@@ -31,6 +31,16 @@ Container {
                 textStyle.fontSize: FontSize.PercentageValue
                 textStyle.fontSizeValue: 118
                 textStyle.color: Color.White
+            }
+            // The picture over the initials, when the row has one (a group's members do, from
+            // group.info: the call picker's and the group page's).
+            ImageView {
+                visible: !!row.contact.photo
+                horizontalAlignment: HorizontalAlignment.Fill
+                verticalAlignment: VerticalAlignment.Fill
+                imageSource: row.contact.photo ? "file://" + row.contact.photo : ""
+                scalingMethod: ScalingMethod.AspectFill
+                loadEffect: ImageViewLoadEffect.None
             }
         }
         Label {
