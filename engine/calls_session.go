@@ -46,6 +46,13 @@ func (s *Session) initCalls() {
 		s.photos.members(ps)
 		return ps[0].Photo
 	}
+	c.picture = func(chat string) string {
+		jid, err := types.ParseJID(chat)
+		if err != nil {
+			return ""
+		}
+		return s.photos.full(jid)
+	}
 	c.chatName = s.storedChatName
 	c.isSelf = func(j types.JID) bool {
 		cli := s.client()

@@ -42,8 +42,8 @@ Sheet {
     property bool group: !!call.group
     // The clock shows from the answer to the hang-up, and stays at the end.
     property bool timed: (phase == "active" || ended) && call.since > 0
-    // The caller's picture, if the chat has one.
-    property bool hasPhoto: !!who.photo
+    // The caller's picture, the full size once the engine has it, else the chat's preview.
+    property bool hasPhoto: !!(call.picture || who.photo)
     // The name of a caller we have no chat with: their number.
     property string number: (call.chat || "").split("@")[0]
     peekEnabled: false
@@ -295,7 +295,7 @@ Sheet {
                     preferredHeight: (sheet.ringing ? sheet.px(510) : sheet.px(415)) + sheet.shift
                     scalingMethod: ScalingMethod.AspectFill
                     loadEffect: ImageViewLoadEffect.None
-                    imageSource: sheet.hasPhoto ? "file://" + sheet.who.photo : ""
+                    imageSource: sheet.hasPhoto ? "file://" + (sheet.call.picture || sheet.who.photo) : ""
                 }
                 ImageView {
                     visible: sheet.hasPhoto && !sheet.showPicture

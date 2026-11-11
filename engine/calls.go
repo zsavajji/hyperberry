@@ -68,6 +68,7 @@ type callState struct {
 	mic       *micSource
 	link      atomic.Pointer[audioLink]
 	vid       videoState
+	picture   string // the chat's full-size picture, once fetched ("" until then, or none)
 
 	// A group call's people (roster, below).
 	roster     []meowcaller.GroupCallParticipant // the group call's people, us left out
@@ -91,6 +92,8 @@ type Calls struct {
 	resolve func(peer types.JID) (key, name string)
 	// photo is the small picture's path for a person's chat key, "" when none (the group page's lookup).
 	photo func(key string) string
+	// picture is a chat's full-size picture's path, "" when none; it may ask the network.
+	picture func(chat string) string
 	// chatName is the name chats.db holds for a chat, "" if none.
 	chatName func(chat string) string
 	// isSelf is whether a jid (a LID or a number) is our own account's.
@@ -166,7 +169,7 @@ func callPhase(p meowcaller.CallPhase, out bool) string {
 // body is the `call` event. Call it with c.mu held.
 func (cs *callState) body(reason string) map[string]any {
 	m := map[string]any{"id": cs.id, "chat": cs.chat, "out": cs.out, "state": cs.state,
-		"reason": reason, "since": cs.since, "group": cs.group, "by": cs.by}
+		"reason": reason, "since": cs.since, "group": cs.group, "by": cs.by, "picture": cs.picture}
 	cs.videoBody(m)
 	if cs.group {
 		p := cs.people()
@@ -340,6 +343,24 @@ func (c *Calls) hook(cs *callState) {
 		// goroutine, and roster takes c.mu, which hook's caller holds (the engine deadlocked in
 		// 246). The replay is the latest roster, so registering late misses nothing.
 		go cs.call.OnGroupState(func(gs meowcaller.GroupCallState) { c.roster(cs, gs) })
+	}
+	if c.picture != nil {
+		go c.fetchPicture(cs)
+	}
+}
+
+// fetchPicture looks the chat's full-size picture up once per call, off the lock (it may ask the
+// network), and sends the event again with it: the call screen shows the preview until then.
+func (c *Calls) fetchPicture(cs *callState) {
+	p := c.picture(cs.chat)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if p == "" || cs.ended || c.cur != cs {
+		return
+	}
+	cs.picture = p
+	if cs.state != "" {
+		c.srv.Emit("call", cs.body(""))
 	}
 }
 

@@ -406,6 +406,19 @@ func TestCallEventSequenceAndHello(t *testing.T) {
 	}
 }
 
+func TestCallPicture(t *testing.T) {
+	r := newCallRig(t)
+	r.c.picture = func(chat string) string { return "/full/" + chat }
+	r.c.offer(r.fake("P1"))
+	for i := 0; ; i++ {
+		if m := r.ev(t); m["picture"] == "/full/"+annaKey {
+			break
+		} else if i == 4 {
+			t.Fatalf("no event carried the picture; last %v", m)
+		}
+	}
+}
+
 func TestCallStartGroup(t *testing.T) {
 	r := newCallRig(t)
 	group := "120363000000000001@g.us"
