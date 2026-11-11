@@ -8,8 +8,11 @@ import hyperberry 1.0
 // videoAsked} (docs/plan/phase7.md, docs/protocol2.md). The stage is the Q10's 720 px screen, kept
 // to the bottom, so what the stock app measures from there stays where it was; px() scales its px
 // to the screen's width (not by du: the Classic is 8 px/du to the Q10's 9, which left the stage
-// 640 px wide on a Q20). A call with video (step 7c.3) puts CallVideoView over the stage and under
-// the panel: the peer's picture fills the sheet, and the controls hide a few seconds after it shows.
+// 640 px wide on a Q20). On a tall screen (the Z10) the stage runs up to the top and its contents
+// move down by shift, as the stock app's do; the caller's picture fills from the top, and the panel
+// lays its controls out as the stock Z10 grid. A call with video (step 7c.3) puts CallVideoView
+// over the stage and under the panel: the peer's picture fills the sheet, and the controls hide a
+// few seconds after it shows.
 // A group call (step 7d.G4, audio only) adds group, by and people to engine.call: it rings as the
 // group's, and while it is active the middle line names who is in it.
 Sheet {
@@ -45,6 +48,14 @@ Sheet {
     property string number: (call.chat || "").split("@")[0]
     peekEnabled: false
 
+    // What a tall screen adds above the 720 stage (0 on a square one).
+    property real extra: ui.px(Math.max(0, screenHeight - screenWidth))
+    // How far the stage's contents rise from the foot of a tall screen, from the stock Z10's frames
+    // (2026-11-11): ringing, the name sits at 511 px and the slide bar ends at 1007, the foot left
+    // empty; in a call the name sits at 640 and the controls take the bottom 540 px. 0 when square.
+    property real lift: Math.min(extra, ringing ? px(274) : px(192))
+    // Where the stage's 720 square starts: the Q10's layout moved down this far.
+    property real shift: extra - lift
     function px(n) {
         return ui.px(n * screenWidth / 720)
     }
@@ -241,16 +252,31 @@ Sheet {
             horizontalAlignment: HorizontalAlignment.Fill
             verticalAlignment: VerticalAlignment.Fill
             // The peer's picture shows through the sheet's hole: no background over it.
-            background: sheet.showPicture ? Color.Transparent : Color.create("#132a1c") // the stock #1b132a in the primary colour's hue
+            background: sheet.showPicture ? Color.Transparent : Color.Black
             layout: DockLayout {}
             Container {
                 horizontalAlignment: HorizontalAlignment.Center
                 verticalAlignment: VerticalAlignment.Bottom
                 preferredWidth: sheet.px(720)
-                preferredHeight: sheet.px(720)
+                preferredHeight: sheet.px(720) + sheet.extra
                 layout: AbsoluteLayout {}
+                // Fills a tall screen above the background picture, whose foot is black like the rest
+                // below.
+                Container {
+                    layoutProperties: AbsoluteLayoutProperties {
+                        positionX: 0
+                        positionY: 0
+                    }
+                    visible: !sheet.showPicture && sheet.shift > 0
+                    preferredWidth: sheet.px(720)
+                    preferredHeight: sheet.shift
+                    background: Color.create("#132a1c") // the stock #1b132a in the primary colour's hue
+                }
                 ImageView {
                     visible: !sheet.showPicture
+                    layoutProperties: AbsoluteLayoutProperties {
+                        positionY: sheet.shift
+                    }
                     preferredWidth: sheet.px(720)
                     preferredHeight: sheet.px(720)
                     scalingMethod: ScalingMethod.AspectFit
@@ -260,7 +286,7 @@ Sheet {
                 ImageView {
                     visible: sheet.hasPhoto && !sheet.showPicture
                     preferredWidth: sheet.px(720)
-                    preferredHeight: sheet.ringing ? sheet.px(510) : sheet.px(415)
+                    preferredHeight: (sheet.ringing ? sheet.px(510) : sheet.px(415)) + sheet.shift
                     scalingMethod: ScalingMethod.AspectFill
                     loadEffect: ImageViewLoadEffect.None
                     imageSource: sheet.hasPhoto ? "file://" + sheet.who.photo : ""
@@ -268,7 +294,7 @@ Sheet {
                 ImageView {
                     visible: sheet.hasPhoto && !sheet.showPicture
                     layoutProperties: AbsoluteLayoutProperties {
-                        positionY: sheet.ringing ? sheet.px(250) : sheet.px(155)
+                        positionY: (sheet.ringing ? sheet.px(250) : sheet.px(155)) + sheet.shift
                     }
                     preferredWidth: sheet.px(720)
                     preferredHeight: sheet.px(260)
@@ -280,7 +306,7 @@ Sheet {
                     visible: !sheet.isVideo
                     layoutProperties: AbsoluteLayoutProperties {
                         positionX: sheet.px(30)
-                        positionY: sheet.ringing ? sheet.px(284) : sheet.px(312)
+                        positionY: (sheet.ringing ? sheet.px(284) : sheet.px(312)) + sheet.shift
                     }
                     preferredWidth: sheet.timed ? sheet.px(450) : sheet.px(650)
                     multiline: false
@@ -295,7 +321,7 @@ Sheet {
                     visible: !sheet.isVideo
                     layoutProperties: AbsoluteLayoutProperties {
                         positionX: sheet.px(29)
-                        positionY: sheet.ringing ? sheet.px(360) : sheet.px(372)
+                        positionY: (sheet.ringing ? sheet.px(360) : sheet.px(372)) + sheet.shift
                     }
                     // Short of the clock when it shows: a group's names run long.
                     preferredWidth: sheet.timed ? sheet.px(430) : sheet.px(650)
@@ -307,7 +333,7 @@ Sheet {
                     visible: sheet.timed && !sheet.isVideo
                     layoutProperties: AbsoluteLayoutProperties {
                         positionX: sheet.px(467)
-                        positionY: sheet.px(373)
+                        positionY: sheet.px(373) + sheet.shift
                     }
                     preferredWidth: sheet.px(220)
                     text: sheet.clock
@@ -319,6 +345,9 @@ Sheet {
                 }
                 CallRinging {
                     id: ringControls
+                    layoutProperties: AbsoluteLayoutProperties {
+                        positionY: sheet.shift
+                    }
                     visible: sheet.ringing
                     video: !!sheet.call.video && !sheet.group
                     // A voice call is answered as one; a video call with or without ours.
@@ -342,6 +371,7 @@ Sheet {
                 verticalAlignment: VerticalAlignment.Bottom
                 visible: !sheet.ringing && (!sheet.isVideo || sheet.controlsShown)
                 ended: sheet.ended
+                lift: sheet.lift
                 video: sheet.isVideo
                 group: sheet.group
                 videoOn: !!sheet.call.videoOurs
