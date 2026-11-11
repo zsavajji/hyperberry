@@ -65,7 +65,7 @@ static int hb_uds_account(long long id, int add, const char *markRead, const cha
 	uds_account_data_set_id(a, id);
 	uds_account_data_set_name(a, "HyperBerry");
 	uds_account_data_set_description(a, "WhatsApp");
-	uds_account_data_set_icon(a, "hub.png");
+	uds_account_data_set_icon(a, "hub.png"); // white: the lock screen and the instant preview draw it
 	uds_account_data_set_target_name(a, "com.zsavajji.hyperberry");
 	uds_account_data_set_supports_compose(a, false);
 	uds_account_data_set_type(a, UDS_ACCOUNT_TYPE_IM);
@@ -97,7 +97,7 @@ static int hb_uds_item(long long account, int add, const char *source, const cha
 	uds_inbox_item_data_set_name(i, name);
 	uds_inbox_item_data_set_description(i, desc);
 	// The Hub is light (a white glyph vanished, Q10, 0.0.1.100) and tints nothing: yellow unread, grey read.
-	uds_inbox_item_data_set_icon(i, unread > 0 ? "hub_unread.png" : "hub.png");
+	uds_inbox_item_data_set_icon(i, unread > 0 ? "hub_unread.png" : "hub_read.png");
 	uds_inbox_item_data_set_mime_type(i, HB_MIME);
 	uds_inbox_item_data_set_unread_count(i, unread);
 	uds_inbox_item_data_set_total_count(i, 1);

@@ -1,7 +1,7 @@
 """Draws the chat list's small marks into app/assets/images/: ticks, clock, mute, pin and mic,
 the action bar's record icon, the row menu's pin and mute, the voice bubble's play, pause and
 retry discs, and the Hub's: the item menu's tick_action, unread_action and delete_action, and
-hub.png and hub_unread.png (the app icon's bubble, grey and yellow, at the Hub's 81 px).
+the items' hub_read.png and hub_unread.png (grey and yellow) and the account's white hub.png.
 The phone has only the trash can among the info page's and chat menu's icons (user's choice,
 2026-11-01), so these are drawn as action icons too: contacts_action (two people), save_action
 (a floppy disk), block_action (the "forbidden" sign), attach_action (a paperclip), plus_action
@@ -19,7 +19,7 @@ import math
 import re
 import sys
 
-from PIL import Image, ImageChops, ImageDraw
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 HANDSET = "M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"
 
@@ -247,7 +247,7 @@ def main(out):
     # (message.png's proportions: 55 by 38, its tail a fifth of the width from the left, and nearly square
     # corners), and WhatsApp's handset in it. Every size BB10 picks from (bb10-devices), then the
     # splash: the same tile on the dark theme's black, shown from the tap until the app's first frame.
-    def app_icon(px, mono=None):
+    def app_icon(px, mono=None, fill=0.62):
         """mono: a colour for the bubble alone, the handset cut out of it, filling the px box."""
         n = 1024
         img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
@@ -285,7 +285,7 @@ def main(out):
         hole.paste(phone.getchannel("A"), at)
         img.putalpha(ImageChops.subtract(img.getchannel("A"), hole))
         img = img.crop(img.getbbox())
-        k = 0.62 * px / max(img.size)  # 50 px of 81, as the Hub's own call glyph (Q10, 2026-11-11)
+        k = fill * px / max(img.size)  # 0.62: 50 px of 81, as the Hub's own call glyph (Q10, 2026-11-11)
         img = img.resize((round(img.width * k), round(img.height * k)), Image.LANCZOS)
         box = Image.new("RGBA", (px, px), (0, 0, 0, 0))
         box.paste(img, ((px - img.width) // 2, (px - img.height) // 2), img)
@@ -297,8 +297,15 @@ def main(out):
     # choice, 2026-11-11). As the system's items: grey when read, yellow when unread, sampled from a
     # notification's bell on the Q10 (2026-11-11). The Hub tints nothing: the app swaps the file.
     # 81 px, as the Hub draws it.
-    app_icon(81, (0x88, 0x88, 0x88, 255)).save(f"{out}/hub.png")
+    app_icon(81, (0x88, 0x88, 0x88, 255)).save(f"{out}/hub_read.png")
     app_icon(81, (0xEC, 0xBB, 0x18, 255)).save(f"{out}/hub_unread.png")
+    # The account's own, which the lock screen and the instant preview draw (both showed hub.png's grey,
+    # Q10 2026-11-11): white as the lock screen's system glyphs, larger for the banner (the user's ask),
+    # with a thin dark rim so it still shows on the banner's light grey.
+    acct = app_icon(81, (255, 255, 255, 255), fill=0.84)
+    rim = Image.new("RGBA", acct.size, (0, 0, 0, 0))
+    rim.putalpha(acct.getchannel("A").filter(ImageFilter.MaxFilter(5)).point(lambda a: a * 0.45))
+    Image.alpha_composite(rim, acct).save(f"{out}/hub.png")  # the name the account was added with
     # One per screen an app that stays in portrait can meet (bb10-devices): the Q10 and Classic, the Z30, the
     # Z10, the Passport. The tile is 30 % of the width, in the middle, so it looks the same on each.
     for w, h in ((720, 720), (720, 1280), (768, 1280), (1440, 1440)):
