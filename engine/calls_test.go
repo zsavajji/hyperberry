@@ -39,6 +39,8 @@ type fakeCall struct {
 	onKey               func()
 	sent                []sentAU
 	orients             []int
+	onPVF               func(meowcaller.ParticipantVideoFrame) // group video, calls_tiles_test.go
+	keyframes           []uint32                               // the SSRCs RequestParticipantKeyframe got
 }
 
 func (f *fakeCall) ID() string      { return f.id }
@@ -79,12 +81,19 @@ func (f *fakeCall) OnGroupState(fn func(meowcaller.GroupCallState)) {
 	}
 }
 
-// roster is meowcaller sending the group call's roster.
+// roster is meowcaller sending the group call's roster. OnGroupState is registered on a goroutine of
+// its own (calls.go hook), so it may not be in yet.
 func (f *fakeCall) roster(gs meowcaller.GroupCallState) {
-	f.mu.Lock()
-	fn := f.onGS
-	f.mu.Unlock()
-	fn(gs)
+	for {
+		f.mu.Lock()
+		fn := f.onGS
+		f.mu.Unlock()
+		if fn != nil {
+			fn(gs)
+			return
+		}
+		time.Sleep(time.Millisecond)
+	}
 }
 
 func (f *fakeCall) did(what string) {
@@ -501,7 +510,7 @@ func TestGroupRoster(t *testing.T) {
 		}
 	}
 	f.roster(gs)
-	people("[map[connected:true name:N1 photo:/p/k1] map[connected:false name:N2 photo:/p/k2]]")
+	people("[map[connected:true jid:1@lid name:N1 photo:/p/k1 tile:-1 video:false] map[connected:false jid:2@lid name:N2 photo:/p/k2 tile:-1 video:false]]")
 
 	// The same roster again: nothing new to say.
 	f.roster(gs)
@@ -510,7 +519,7 @@ func TestGroupRoster(t *testing.T) {
 	// Someone joins: an event at once, no second lookup.
 	gs.Participants[2].State = "connected"
 	f.roster(gs)
-	people("[map[connected:true name:N1 photo:/p/k1] map[connected:true name:N2 photo:/p/k2]]")
+	people("[map[connected:true jid:1@lid name:N1 photo:/p/k1 tile:-1 video:false] map[connected:true jid:2@lid name:N2 photo:/p/k2 tile:-1 video:false]]")
 	for _, u := range []string{"1", "2"} {
 		if n, _ := lookups.Load(u); n == nil || atomic.LoadInt32(n.(*int32)) != 1 {
 			t.Errorf("lookups of %s: %v", u, n)
@@ -539,7 +548,6 @@ func TestCallStartGroupBadRequest(t *testing.T) {
 		"none":       fmt.Sprintf(`{"chat":%q}`, group),
 		"one":        fmt.Sprintf(`{"chat":%q,"members":["1@lid"]}`, group),
 		"thirty-two": fmt.Sprintf(`{"chat":%q,"members":%s}`, group, list),
-		"video":      fmt.Sprintf(`{"chat":%q,"members":["1@lid","2@lid"],"video":true}`, group),
 	} {
 		if err := r.raw("call.start", body); err == nil || err.(*Error).Code != "bad_request" {
 			t.Errorf("%s: %v", name, err)

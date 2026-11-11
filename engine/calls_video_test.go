@@ -59,6 +59,17 @@ func (f *fakeCall) SendVideoWithDuration(au []byte, d time.Duration) error {
 	f.mu.Unlock()
 	return nil
 }
+func (f *fakeCall) OnParticipantVideoFrame(fn func(meowcaller.ParticipantVideoFrame)) {
+	f.mu.Lock()
+	f.onPVF = fn
+	f.mu.Unlock()
+}
+func (f *fakeCall) RequestParticipantKeyframe(ssrc uint32) error {
+	f.mu.Lock()
+	f.keyframes = append(f.keyframes, ssrc)
+	f.mu.Unlock()
+	return nil
+}
 func (f *fakeCall) nsent() int { f.mu.Lock(); defer f.mu.Unlock(); return len(f.sent) }
 
 func (f *fakeCall) videoOffer() *fakeCall { f.ours, f.theirs = true, true; return f }

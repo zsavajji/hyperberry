@@ -89,7 +89,14 @@ func (c *Calls) videoChanged(cs *callState) {
 func (c *Calls) hookVideo(cs *callState) {
 	cs.vid.t0 = time.Now()
 	cs.vid.read(cs)
-	cs.call.ReceiveVideo(videoSink{c, cs})
+	if cs.group {
+		// A group's frames come by sender (calls_tiles.go). On a goroutine of its own, as OnGroupState
+		// in hook: meowcaller may call back inline, and groupFrame takes c.mu, which our caller holds.
+		go cs.call.OnParticipantVideoFrame(func(f meowcaller.ParticipantVideoFrame) { c.groupFrame(cs, f) })
+		go c.sweepTiles(cs, tileSweep)
+	} else {
+		cs.call.ReceiveVideo(videoSink{c, cs})
+	}
 	cs.call.OnVideoState(func(v meowcaller.VideoState) { c.peerVideo(cs, v) })
 	cs.call.OnVideoKeyframeRequest(func() {
 		if l := cs.vid.link.Load(); l != nil {
@@ -111,7 +118,11 @@ func (c *Calls) peerVideo(cs *callState, v meowcaller.VideoState) {
 	c.mu.Lock()
 	cs.vid.f.asked = false
 	c.mu.Unlock()
-	if v.Active && v.Orientation >= 0 && v.Orientation <= 3 {
+	if cs.group {
+		if !v.Active {
+			c.senderOff(cs, v.Sender) // in a group the orientation is per sender, in their frames
+		}
+	} else if v.Active && v.Orientation >= 0 && v.Orientation <= 3 {
 		cs.vid.peerOrient.Store(int32(v.Orientation))
 	}
 	c.videoChanged(cs)
@@ -234,9 +245,13 @@ func (c *Calls) readVideo(cs *callState, l *audioLink) {
 		}
 		switch hdr[4] {
 		case vKeyReq:
-			// meowcaller exports no way to ask the peer for a keyframe: it sends its own picture-loss
-			// request when RTP packets go missing, and that is all there is.
-			c.log.Infof("call %s: the UI's decoder asks for a keyframe (meowcaller can't pass it on)", cs.id)
+			// In a group call the tile is in the flags' high byte, and its sender is asked (7e V1). A
+			// 1:1 call's peer SSRC isn't known here: meowcaller asks by itself when packets go missing.
+			if cs.group {
+				c.tileKeyframe(cs, int(binary.LittleEndian.Uint16(hdr[6:])>>8))
+			} else {
+				c.log.Infof("call %s: the UI's decoder asks for a keyframe (meowcaller can't pass it on)", cs.id)
+			}
 		case vAU:
 			ts := int64(binary.LittleEndian.Uint64(hdr[8:]))
 			if o := int(hdr[5] & 3); o != orient {

@@ -46,6 +46,9 @@ type liveCall interface {
 	// Group calls, phase 7d (the group's JID is empty for an ad-hoc one).
 	GroupState() (meowcaller.GroupCallState, bool)
 	OnGroupState(func(meowcaller.GroupCallState))
+	// Group video, phase 7e (calls_tiles.go).
+	OnParticipantVideoFrame(func(meowcaller.ParticipantVideoFrame))
+	RequestParticipantKeyframe(ssrc uint32) error
 }
 
 // callState is the live call. Calls.mu guards it, except link.
@@ -76,6 +79,7 @@ type callState struct {
 	photos     map[types.JID]string              // their pictures' paths, "" when none
 	asked      map[types.JID]bool                // a lookup is running or done
 	peopleSent string                            // the people last sent, to send only changes
+	tiles      tileState                         // a group video call's tiles (calls_tiles.go)
 }
 
 // Calls owns the live call. The seams are what Session fills in; tests fill their own.
@@ -114,6 +118,7 @@ func newCalls(st *Store, srv *Server, log waLog.Logger) *Calls {
 	srv.Handle("call.hangup", c.handleHangup)
 	srv.Handle("call.silence", c.handleSilence)
 	srv.Handle("call.video", c.handleVideo)
+	srv.Handle("call.tiles", c.handleTiles)
 	return c
 }
 
@@ -122,7 +127,7 @@ func registerSimCalls(srv *Server) {
 	srv.Handle("call.start", func(json.RawMessage) (any, error) {
 		return nil, &Error{"simulated", "the simulated account has no calls"}
 	})
-	for _, cmd := range []string{"call.answer", "call.reject", "call.hangup", "call.silence", "call.video"} {
+	for _, cmd := range []string{"call.answer", "call.reject", "call.hangup", "call.silence", "call.video", "call.tiles"} {
 		srv.Handle(cmd, func(json.RawMessage) (any, error) { return nil, &Error{"not_found", "no such live call"} })
 	}
 }
@@ -180,11 +185,13 @@ func (cs *callState) body(reason string) map[string]any {
 }
 
 // people is the group call's people for the event, in the roster's order; "" is a name or a photo
-// not yet looked up, or none. Call it with c.mu held.
+// not yet looked up, or none; video is whether they send, tile the tile they are in (-1: none). Call it with c.mu held.
 func (cs *callState) people() []map[string]any {
 	out := make([]map[string]any, 0, len(cs.roster))
 	for _, p := range cs.roster {
-		out = append(out, map[string]any{"name": cs.names[p.JID], "photo": cs.photos[p.JID], "connected": p.State == "connected"})
+		j := p.JID.ToNonAD()
+		out = append(out, map[string]any{"name": cs.names[p.JID], "photo": cs.photos[p.JID], "connected": p.State == "connected",
+			"jid": j.String(), "video": cs.tiles.sending(j), "tile": cs.tiles.tileOf(j)})
 	}
 	return out
 }
@@ -225,9 +232,6 @@ func (c *Calls) handleStart(req json.RawMessage) (any, error) {
 	json.Unmarshal(req, &r)
 	group := isGroupKey(r.Chat)
 	if group {
-		if r.Video {
-			return nil, &Error{"bad_request", "a group call is audio only"}
-		}
 		if len(r.Members) < 2 || len(r.Members) > 31 {
 			return nil, &Error{"bad_request", "a group call rings 2 to 31 members"}
 		}
@@ -339,6 +343,7 @@ func (c *Calls) hook(cs *callState) {
 	cs.call.OnEnd(func(raw string) { c.finish(cs, raw) })
 	if cs.group {
 		cs.names, cs.photos, cs.asked = map[types.JID]string{}, map[types.JID]string{}, map[types.JID]bool{}
+		cs.tiles = tileState{stale: videoStale, senders: map[types.JID]*sender{}}
 		// On a goroutine of its own: meowcaller replays the roster inline, on the registering
 		// goroutine, and roster takes c.mu, which hook's caller holds (the engine deadlocked in
 		// 246). The replay is the latest roster, so registering late misses nothing.

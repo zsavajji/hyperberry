@@ -63,7 +63,7 @@ func (s *Session) initCalls() {
 		var call *meowcaller.Call
 		var err error
 		if len(members) > 0 {
-			call, err = s.mc.Load().GroupCallWithOptions(ctx, members, meowcaller.GroupCallOptions{GroupJID: target})
+			call, err = s.mc.Load().GroupCallWithOptions(ctx, members, meowcaller.GroupCallOptions{GroupJID: target, Video: video})
 		} else {
 			call, err = s.mc.Load().CallWithOptions(ctx, target, meowcaller.CallOptions{Video: video})
 		}
