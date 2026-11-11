@@ -113,6 +113,7 @@ void CallsModel::reload()
         const int age = when.date().daysTo(today);
         QVariantMap row;
         row["jid"] = jid;
+        row["kind"] = q.value(8).toInt(); // CallsPage tells a group's row from a person's
         row["name"] = name;
         row["initials"] = initials(name);
         row["color"] = pickColor(jid, kColors, kColorCount);

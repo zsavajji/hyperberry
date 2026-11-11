@@ -10,6 +10,8 @@ import hyperberry 1.0
 // to the screen's width (not by du: the Classic is 8 px/du to the Q10's 9, which left the stage
 // 640 px wide on a Q20). A call with video (step 7c.3) puts CallVideoView over the stage and under
 // the panel: the peer's picture fills the sheet, and the controls hide a few seconds after it shows.
+// A group call (step 7d.G4, audio only) adds group, by and people to engine.call: it rings as the
+// group's, and while it is active the middle line names who is in it.
 Sheet {
     id: sheet
     property variant call: engine.call
@@ -31,7 +33,10 @@ Sheet {
     property bool showPicture: isVideo && !!call.videoTheirs && callVideo.pictureWidth > 0
     property bool controlsShown: true
     property string clock: "0:00"
-    property string line: wording(phase, call.reason, call.video)
+    // What wording reads is passed in, so a change in any of it (people, say) redraws the line.
+    property string line: wording(phase, call.reason, call.video, !!call.group, call.by || "", call.people)
+    // A group call has no video: no camera toggles, and no video choice on the ringing screen.
+    property bool group: !!call.group
     // The clock shows from the answer to the hang-up, and stays at the end.
     property bool timed: (phase == "active" || ended) && call.since > 0
     // The caller's picture, if the chat has one.
@@ -44,19 +49,44 @@ Sheet {
         return ui.px(n * screenWidth / 720)
     }
 
-    function wording(phase, reason, video) {
+    function wording(phase, reason, video, group, by, people) {
         switch (phase) {
         case "calling":
             return qsTr("Calling…")
         case "ringing":
+            if (group) {
+                return by != "" ? qsTr("Incoming group voice call · %1").arg(by) : qsTr("Incoming group voice call")
+            }
             return video ? qsTr("Incoming video call") : qsTr("Incoming voice call")
         case "connecting":
             return qsTr("Connecting…")
+        case "active":
+            return group ? peopleLine(people) : ""
         case "ended":
             var word = reasonWord(reason)
             return qsTr("Call ended") + (word != "" ? " · " + word : "")
         }
         return ""
+    }
+    // Who is in a group call: the connected people's names, "Anna", "Anna and Bob" or "Anna, Bob and 2
+    // more"; "" while none is (or their names are not looked up yet), so the line keeps its old text.
+    function peopleLine(people) {
+        var names = []
+        for (var i = 0; people && i < people.length; i++) {
+            if (people[i].connected && people[i].name != "") {
+                names.push(people[i].name)
+            }
+        }
+        if (names.length == 0) {
+            return ""
+        }
+        if (names.length == 1) {
+            return names[0]
+        }
+        if (names.length == 2) {
+            return qsTr("%1 and %2").arg(names[0]).arg(names[1])
+        }
+        return qsTr("%1, %2 and %3 more").arg(names[0]).arg(names[1]).arg(names.length - 2)
     }
     function reasonWord(reason) {
         switch (reason) {
@@ -168,7 +198,7 @@ Sheet {
         if (!opened) {
             callAudio.muted = false
             callAudio.speaker = !!call.video
-            ringControls.withVideo = !!call.video
+            ringControls.withVideo = !!call.video && !call.group
             open()
         }
         // After open(), so the controls the windows bind to are in the sheet. Video goes to the
@@ -267,7 +297,8 @@ Sheet {
                         positionX: sheet.px(29)
                         positionY: sheet.ringing ? sheet.px(360) : sheet.px(372)
                     }
-                    preferredWidth: sheet.px(650)
+                    // Short of the clock when it shows: a group's names run long.
+                    preferredWidth: sheet.timed ? sheet.px(430) : sheet.px(650)
                     text: sheet.line
                     textFormat: TextFormat.Plain
                     textStyle.color: Color.White
@@ -289,7 +320,7 @@ Sheet {
                 CallRinging {
                     id: ringControls
                     visible: sheet.ringing
-                    video: !!sheet.call.video
+                    video: !!sheet.call.video && !sheet.group
                     // A voice call is answered as one; a video call with or without ours.
                     onAnswered: engine.request("call.answer", sheet.call.video ? {"id": sheet.call.id, "video": ringControls.withVideo} : {"id": sheet.call.id})
                     onDeclined: engine.request("call.reject", {"id": sheet.call.id})
@@ -312,6 +343,7 @@ Sheet {
                 visible: !sheet.ringing && (!sheet.isVideo || sheet.controlsShown)
                 ended: sheet.ended
                 video: sheet.isVideo
+                group: sheet.group
                 videoOn: !!sheet.call.videoOurs
                 onTouched: sheet.wake()
                 onHangup: engine.request("call.hangup", {"id": sheet.call.id})

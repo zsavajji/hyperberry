@@ -71,6 +71,10 @@ Page {
             chatCtl: ctl
         },
         PollAction { id: pollAction; jid: page.chat ? page.chat.jid : "" },
+        ComponentDefinition {
+            id: callPickDef
+            source: "CallPickPage.qml"
+        },
         SystemToast {
             id: notSent
             body: qsTr("Not sent: HyperBerry is reconnecting. Try again in a moment.")
@@ -272,8 +276,21 @@ Page {
     titleBar: ChatTitleBar {
         chat: page.chat
         status: ctl.status
+        members: ctl.groupInfo.participants ? ctl.groupInfo.participants.length : 0
         onTapped: infoAction.showInfo()
         onBack: nav.pop()
+        onGroupCall: page.pickGroupCall()
+    }
+    // A group call (step 7d.G4): who to ring is picked on a page of its own; it pops once the call
+    // is asked for, and the call screen opens on the engine's first call event.
+    function pickGroupCall() {
+        var p = callPickDef.createObject()
+        p.load(page.chat.jid)
+        p.done.connect(page.callPlaced)
+        nav.push(p)
+    }
+    function callPlaced() {
+        nav.pop()
     }
     Container {
         horizontalAlignment: HorizontalAlignment.Fill

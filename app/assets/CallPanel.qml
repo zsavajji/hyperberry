@@ -11,6 +11,8 @@ Container {
     property bool video: false
     // We send our video.
     property bool videoOn: false
+    // A group call (step 7d.G4) has no video: no Stop video / Start video, no Switch camera.
+    property bool group: false
     property bool pressed: false
     signal hangup
     signal videoTapped
@@ -62,6 +64,7 @@ Container {
     }
     // Lit while our video is off, as Mute is while muted.
     CallToggle {
+        visible: !panel.group
         layoutProperties: AbsoluteLayoutProperties {
             positionX: panel.px(480)
             positionY: panel.px(432)
@@ -78,6 +81,7 @@ Container {
     }
     // Needs our camera: dimmed and inert while we send nothing.
     CallToggle {
+        visible: !panel.group
         layoutProperties: AbsoluteLayoutProperties {
             positionX: panel.px(18)
             positionY: panel.px(520)

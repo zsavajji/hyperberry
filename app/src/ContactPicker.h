@@ -16,6 +16,8 @@ class EngineLink;
 // attachedObjects so it dies with the page. It asks contacts.list, draws each contact as a
 // chat-list row (the tile the chat will have) and filters them as the user types. The new
 // group page also ticks contacts here (m_chosen, so a filter keeps the ticks) and creates the group.
+// The group-call page (step 7d.G4) uses it in a group-members mode: loadGroup() fills it with the
+// group's members instead (us left out), toggle() stops at 31, and startGroupCall() rings the ticked.
 class ContactPicker : public QObject
 {
     Q_OBJECT
@@ -24,8 +26,8 @@ class ContactPicker : public QObject
     // The rows shown: jid, kind 0, name, initials, color.
     Q_PROPERTY(bb::cascades::DataModel *model READ model CONSTANT)
     Q_PROPERTY(bool loaded READ loaded NOTIFY loadedChanged)
-    // How many contacts there are in all, and how many the filter shows (the model's size()
-    // isn't re-read by a binding).
+    // How many contacts (in group mode: members other than us) there are in all, and how many the
+    // filter shows (the model's size() isn't re-read by a binding).
     Q_PROPERTY(int total READ total NOTIFY loadedChanged)
     Q_PROPERTY(int shown READ shown NOTIFY shownChanged)
     // How many contacts the new group page has ticked.
@@ -42,13 +44,21 @@ public:
     int chosenCount() const;
 
     Q_INVOKABLE void load();
+    // The group-members mode: asks group.info for chat and lists its members but us, with a limit
+    // of 31 ticks (a group call's most).
+    Q_INVOKABLE void loadGroup(const QString &chat);
     // Shows the contacts with a word of the name starting with text, ignoring case; "" shows all.
     Q_INVOKABLE void filter(const QString &text);
-    // Ticks or unticks the row at indexPath, and redraws just that row.
-    Q_INVOKABLE void toggle(const QVariantList &indexPath);
+    // Ticks or unticks the row at indexPath, and redraws just that row. False, and nothing
+    // changes, when ticking would go past the limit (there is none outside group mode).
+    Q_INVOKABLE bool toggle(const QVariantList &indexPath);
     // Asks group.create for a group of the ticked contacts; the request's id, "" when the
     // engine isn't connected. The reply comes as groupCreated.
     Q_INVOKABLE QString createGroup(const QString &name);
+    // Asks call.start for a call of the group loadGroup() was given, with the ticked members; the
+    // request's id, "" when the engine isn't connected. The call screen opens on the call event,
+    // and a failure is worded by main.qml.
+    Q_INVOKABLE QString startGroupCall();
 
 signals:
     void loadedChanged();
@@ -68,7 +78,9 @@ private:
     bb::cascades::ArrayDataModel *m_model;
     QVariantList m_all;
     QString m_text;
-    QString m_askId; // the contacts.list request we wait for
+    QString m_askId; // the contacts.list (or group.info) request we wait for
+    QString m_chat; // the group of loadGroup(), "" for the address book
+    int m_limit; // most ticks, 0 for no limit
     QString m_createId; // the group.create request we wait for
     QSet<QString> m_chosen; // jids, kept across filters
     bool m_loaded;

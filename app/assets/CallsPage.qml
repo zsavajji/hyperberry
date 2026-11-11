@@ -3,15 +3,21 @@ import hyperberry 1.0
 
 // The Calls tab (step 7.4): the call rows of every chat, newest first, from callList (CallsModel),
 // which reads chats.db only while active (main.qml sets that when the tab is shown). A tap calls back; the long-press menu has Call and Open
-// chat. A failed call.start is worded by main.qml's toast, whoever sent it.
+// chat. A group's row asks who to ring first (CallPickPage, step 7d.G4). A failed call.start is worded by main.qml's toast, whoever sent it.
 Page {
     id: page
     // New call (the user's ask, 2026-11-07): New chat's contact picker, titled for a call; a pick
     // places the call and the picker goes, so the sheet comes up over the Calls list.
-    attachedObjects: ComponentDefinition {
-        id: pickerDef
-        source: "NewChatPage.qml"
-    }
+    attachedObjects: [
+        ComponentDefinition {
+            id: pickerDef
+            source: "NewChatPage.qml"
+        },
+        ComponentDefinition {
+            id: callPickDef
+            source: "CallPickPage.qml"
+        }
+    ]
     actions: ActionItem {
         title: qsTr("New call")
         imageSource: "file:///usr/share/icons/ic_phone.png"
@@ -30,6 +36,16 @@ Page {
     }
     function callPicked(contact) {
         engine.request("call.start", {"chat": contact.jid})
+        callsNav.pop()
+    }
+    // A group's members are picked first; the picker pops once the call is asked for.
+    function pickGroup(jid) {
+        var p = callPickDef.createObject()
+        p.load(jid)
+        p.done.connect(page.callPlaced)
+        callsNav.push(p)
+    }
+    function callPlaced() {
         callsNav.pop()
     }
     titleBar: TitleBar {
@@ -51,7 +67,11 @@ Page {
             // The rows are the chat list's (ChatRows.cpp), as a call's: the call in the preview's place.
             property bool callRows: true
             function callBack(row) {
-                engine.request("call.start", {"chat": row.jid})
+                if (row.kind == 1) {
+                    page.pickGroup(row.jid)
+                } else {
+                    engine.request("call.start", {"chat": row.jid})
+                }
             }
             function openChat(row) {
                 nav.openRequested(row.jid)

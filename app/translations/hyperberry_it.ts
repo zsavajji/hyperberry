@@ -1727,6 +1727,16 @@
     </message>
     <message>
         <location filename="../assets/CallSheet.qml" line="1"/>
+        <source>Incoming group voice call</source>
+        <translation>Chiamata vocale di gruppo in arrivo</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallSheet.qml" line="1"/>
+        <source>Incoming group voice call · %1</source>
+        <translation>Chiamata vocale di gruppo in arrivo · %1</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallSheet.qml" line="1"/>
         <source>Connecting…</source>
         <translation>Connessione…</translation>
     </message>
@@ -1770,6 +1780,16 @@
         <source>WhatsApp: video call</source>
         <translation>WhatsApp: videochiamata</translation>
     </message>
+    <message>
+        <location filename="../assets/CallSheet.qml" line="1"/>
+        <source>%1 and %2</source>
+        <translation>%1 e %2</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallSheet.qml" line="1"/>
+        <source>%1, %2 and %3 more</source>
+        <translation>%1, %2 e altri %3</translation>
+    </message>
 </context>
 <context>
     <name>CallPanel</name>
@@ -1807,6 +1827,49 @@
         <location filename="../assets/CallPanel.qml" line="1"/>
         <source>Switch camera</source>
         <translation>Cambia fotocamera</translation>
+    </message>
+</context>
+<context>
+    <name>CallPickPage</name>
+    <message>
+        <location filename="../assets/CallPickPage.qml" line="1"/>
+        <source>Call</source>
+        <translation>Chiama</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallPickPage.qml" line="1"/>
+        <source>At most 31 people in a call</source>
+        <translation>Al massimo 31 persone in una chiamata</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallPickPage.qml" line="1"/>
+        <source>Not sent: HyperBerry is reconnecting. Try again in a moment.</source>
+        <translation>Non inviato: HyperBerry si sta riconnettendo. Riprova tra un attimo.</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallPickPage.qml" line="1"/>
+        <source>Call %1 people?</source>
+        <translation>Chiamare %1 persone?</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallPickPage.qml" line="1"/>
+        <source>Cancel</source>
+        <translation>Annulla</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallPickPage.qml" line="1"/>
+        <source>Search members</source>
+        <translation>Cerca membri</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallPickPage.qml" line="1"/>
+        <source>%1 chosen</source>
+        <translation>%1 scelti</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallPickPage.qml" line="1"/>
+        <source>Loading…</source>
+        <translation>Caricamento…</translation>
     </message>
 </context>
 <context>

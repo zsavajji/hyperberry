@@ -9,6 +9,7 @@
 ContactPicker::ContactPicker(QObject *parent)
     : QObject(parent)
     , m_model(new bb::cascades::ArrayDataModel(this))
+    , m_limit(0)
     , m_loaded(false)
     , m_wanted(false)
 {
@@ -60,11 +61,25 @@ void ContactPicker::load()
     ask();
 }
 
+void ContactPicker::loadGroup(const QString &chat)
+{
+    m_chat = chat;
+    m_limit = 31;
+    m_wanted = true;
+    ask();
+}
+
 void ContactPicker::ask()
 {
     if (m_loaded || !m_engine || !m_engine->connected())
         return;
-    m_askId = m_engine->request("contacts.list", QVariantMap());
+    if (m_chat.isEmpty()) {
+        m_askId = m_engine->request("contacts.list", QVariantMap());
+        return;
+    }
+    QVariantMap args;
+    args["chat"] = m_chat;
+    m_askId = m_engine->request("group.info", args);
 }
 
 // Asks again on a reconnect if the first ask never came back.
@@ -74,8 +89,8 @@ void ContactPicker::onConnected()
         ask();
 }
 
-// Adds what the page draws to each contact: the tile's initials and the colour the chat's tile
-// has in the chat list.
+// Adds what the page draws to each contact (or group member, us left out): the tile's initials
+// and the colour the chat's tile has in the chat list.
 void ContactPicker::onReplied(const QString &id, const QString &cmd, const QVariant &result)
 {
     if (cmd == "group.create" && id == m_createId) {
@@ -84,11 +99,16 @@ void ContactPicker::onReplied(const QString &id, const QString &cmd, const QVari
         emit groupCreated(r["jid"].toString(), r["refused"].toInt());
         return;
     }
-    if (cmd != "contacts.list" || id != m_askId)
+    if ((cmd != "contacts.list" && cmd != "group.info") || id != m_askId)
         return;
+    QVariantList people = result.toList();
+    if (cmd == "group.info")
+        people = result.toMap()["participants"].toList();
     m_all.clear();
-    foreach (const QVariant &v, result.toList()) {
+    foreach (const QVariant &v, people) {
         QVariantMap c = v.toMap();
+        if (c["me"].toBool())
+            continue;
         c["kind"] = 0;
         c["initials"] = initials(c["name"].toString());
         c["color"] = pickColor(c["jid"].toString(), kColors, kColorCount);
@@ -125,14 +145,16 @@ void ContactPicker::filter(const QString &text)
     emit shownChanged();
 }
 
-void ContactPicker::toggle(const QVariantList &indexPath)
+bool ContactPicker::toggle(const QVariantList &indexPath)
 {
     const int i = indexPath.value(0).toInt();
     if (i < 0 || i >= m_model->size())
-        return;
+        return true;
     QVariantMap row = m_model->value(i).toMap();
     const QString jid = row["jid"].toString();
     const bool on = !m_chosen.contains(jid);
+    if (on && m_limit > 0 && m_chosen.size() >= m_limit)
+        return false;
     if (on)
         m_chosen.insert(jid);
     else
@@ -140,6 +162,7 @@ void ContactPicker::toggle(const QVariantList &indexPath)
     row["chosen"] = on;
     m_model->replace(i, row);
     emit chosenChanged();
+    return true;
 }
 
 QString ContactPicker::createGroup(const QString &name)
@@ -154,4 +177,17 @@ QString ContactPicker::createGroup(const QString &name)
     req["participants"] = members;
     m_createId = m_engine->request("group.create", req);
     return m_createId;
+}
+
+QString ContactPicker::startGroupCall()
+{
+    if (!m_engine || !m_engine->connected())
+        return QString();
+    QVariantList members;
+    foreach (const QString &jid, m_chosen)
+        members << jid;
+    QVariantMap req;
+    req["chat"] = m_chat;
+    req["members"] = members;
+    return m_engine->request("call.start", req);
 }

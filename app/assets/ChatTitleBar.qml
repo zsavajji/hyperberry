@@ -11,12 +11,18 @@ TitleBar {
     // Fetched while open: the chat keeps the row it opened with, so the picture is read from the table as the name is.
     property string photo: bar.chat ? (chats.revision >= 0 && chats.chat(bar.chat.jid).photo) || bar.chat.photo || "" : ""
     property bool hasPhoto: photo != ""
-    // A call button (step 7.4) for a person's chat only, not our own: groups, channels and broadcasts
-    // are other kinds. The user part of our JID (before ':' and '@') against the chat's.
-    property bool canCall: !!bar.chat && bar.chat.kind == 0 && engine.linked
-        && String(engine.link.me || "").split("@")[0].split(":")[0] != bar.chat.jid.split("@")[0]
+    // How many are in the group, us included (ChatPage reads it from the group info); 0 until known.
+    property int members: 0
+    // A call button (step 7.4) for a person's chat, not our own, and (step 7d.G4) for a group of 3
+    // or more (a group of two has no call); channels and broadcasts are other kinds. The user part
+    // of our JID (before ':' and '@') against the chat's.
+    property bool canCall: !!bar.chat && engine.linked
+        && ((bar.chat.kind == 0 && String(engine.link.me || "").split("@")[0].split(":")[0] != bar.chat.jid.split("@")[0])
+            || (bar.chat.kind == 1 && bar.members >= 3))
     signal tapped
     signal back
+    // The call button on a group: the page picks who to ring.
+    signal groupCall
     kind: TitleBarKind.FreeForm
     // The status line must stay; the default let the bar scroll away with the list (Q10).
     scrollBehavior: TitleBarScrollBehavior.Sticky
@@ -83,9 +89,9 @@ TitleBar {
                     textStyle.color: ui.palette.secondaryTextOnPlain
                 }
             }
-            // The call button, outside the two parts that open the info page: it asks audio or video
-            // in a dialog of buttons (the user's ask, 2026-11-11). call.start's failure is worded by
-            // main.qml's toast.
+            // The call button, outside the two parts that open the info page: on a person it asks audio
+            // or video in a dialog of buttons (the user's ask, 2026-11-11); on a group it emits
+            // groupCall (audio only). call.start's failure is worded by main.qml's toast.
             Container {
                 visible: bar.canCall
                 verticalAlignment: VerticalAlignment.Center
@@ -94,7 +100,13 @@ TitleBar {
                 minHeight: ui.px(81)
                 layout: DockLayout {}
                 gestureHandlers: TapHandler {
-                    onTapped: callKind.show()
+                    onTapped: {
+                        if (bar.chat.kind == 1) {
+                            bar.groupCall()
+                        } else {
+                            callKind.show()
+                        }
+                    }
                 }
                 attachedObjects: SystemDialog {
                     id: callKind
