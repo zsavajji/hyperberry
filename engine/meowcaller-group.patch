@@ -5,6 +5,10 @@ Group calls, ours (not whatsapp-light's); applied by scripts/hypermeow-work.sh a
 2. An offer that is already over (is_call_ended, terminate_reason) is ignored before the group
    branch, which had no such check: a group call that rang while the engine was off was
    preaccepted and rung as live. The 1:1 path had the check already; it moved into isEndedOffer.
+3. Audio of payload type 121 is MLow in a SplitRed (RED) container: group-call peers switch to it
+   after their first packets, and decoded as a bare frame it was 10 ms of silence (0.0.1.248's
+   diagnostics). DecodeAudio, the one decode path of 1:1 and group calls, sets the decoder's
+   redundancy from the payload type. It also logs each participant's first payloads (debug, 249).
 Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
 
 --- a/engine.go
@@ -154,8 +158,19 @@ Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
  }
  
  type installedGroupRawEpoch struct {
-@@ -870,6 +871,16 @@
+@@ -868,8 +869,27 @@
+ 			Str("participant_id", receiver.participantID).
+ 			Msg("participant audio failed authentication")
  		return decodedParticipantAudio{}, false
++	}
++	// hyperberry patch (7d): payload type 121 is MLow in a SplitRed (RED) container, which
++	// group-call peers send after their first packets; decoded as a bare frame it was silence.
++	if d, ok := receiver.decoder.(interface{ SetRedundancy(int) }); ok {
++		red := 0
++		if authenticatedHeader.PayloadType == 121 {
++			red = 1
++		}
++		d.SetRedundancy(red)
  	}
  	pcm := receiver.decoder.Decode(payload)
 +	// hyperberry debug (7d): a group call decoded to silence; what the peers' payloads are.
