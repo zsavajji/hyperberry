@@ -1,0 +1,146 @@
+Group calls, ours (not whatsapp-light's); applied by scripts/hypermeow-work.sh after meowcaller.patch.
+1. One member with no devices (an account that left WhatsApp) no longer fails the whole group
+   offer: discoverGroupParticipants leaves them out with a warning, and placeGroupCall dials only
+   the targets that remain (reachableTargets, still at least two).
+2. An offer that is already over (is_call_ended, terminate_reason) is ignored before the group
+   branch, which had no such check: a group call that rang while the engine was off was
+   preaccepted and rung as live. The 1:1 path had the check already; it moved into isEndedOffer.
+Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
+
+--- a/engine.go
++++ b/engine.go
+@@ -626,6 +626,12 @@
+ // OnIncomingCall listener. Only the <accept> is deferred to Answer.
+ func (e *engine) onOffer(ev *events.CallOffer) {
+ 	// Source of truth: https://github.com/purpshell/meowcaller/blob/33854919e64bdd4b053054ac9764d8fc63027b57/datasheets/voip-group-invite-accept.md#L28-L40
++	// hyperberry patch: the ended check comes before the group branch, which had none, so a
++	// group call that rang while we were away is no longer preaccepted and rung as live.
++	if isEndedOffer(ev.Data) {
++		e.c.log.Warn().Str("call_id", ev.CallID).Msg("ignoring already-ended offer; not a live call")
++		return
++	}
+ 	groupSnapshot, isGroup, groupErr := signaling.ParseGroupInviteSnapshot(ev.Data)
+ 	if groupErr != nil {
+ 		e.c.log.Warn().Err(groupErr).Str("call_id", ev.CallID).Msg("parse inbound group offer failed")
+@@ -636,15 +642,6 @@
+ 		return
+ 	}
+ 
+-	// A "call ended" notification arrives offer-shaped, carrying is_call_ended/
+-	// terminate_reason (e.g. accepted_elsewhere). It is not a live call — engaging it
+-	// (preaccept/accept) just earns an "accept error 500". Ignore it.
+-	oag := ev.Data.AttrGetter()
+-	if oag.OptionalString("is_call_ended") == "1" || oag.OptionalString("terminate_reason") != "" {
+-		e.c.log.Warn().Str("call_id", ev.CallID).Msg("ignoring already-ended offer; not a live call")
+-		return
+-	}
+-
+ 	callKey, err := decryptInboundCallKey(context.Background(), e.c.wa, ev)
+ 	if err != nil {
+ 		e.c.log.Warn().Err(err).Str("call_id", ev.CallID).Msg("decrypt callKey failed")
+@@ -711,6 +708,14 @@
+ 	}
+ }
+ 
++// isEndedOffer: a "call ended" notification arrives offer-shaped, carrying is_call_ended/
++// terminate_reason (e.g. accepted_elsewhere). It is not a live call — engaging it
++// (preaccept/accept) just earns an "accept error 500".
++func isEndedOffer(offer *waBinary.Node) bool {
++	ag := offer.AttrGetter()
++	return ag.OptionalString("is_call_ended") == "1" || ag.OptionalString("terminate_reason") != ""
++}
++
+ func (e *engine) onGroupOffer(ev *events.CallOffer, update groupCallUpdate) {
+ 	// Source of truth: https://github.com/purpshell/meowcaller/blob/33854919e64bdd4b053054ac9764d8fc63027b57/datasheets/voip-group-invite-accept.md#L28-L40
+ 	peer := ev.CallCreator
+--- a/engine_group_api.go
++++ b/engine_group_api.go
+@@ -35,6 +35,9 @@
+ 	}
+ 	participants, err := e.discoverGroupParticipants(ctx, append([]types.JID{self.ToNonAD()}, selected...))
+ 	if err != nil {
++		return nil, err
++	}
++	if selected, err = reachableTargets(selected, participants); err != nil {
+ 		return nil, err
+ 	}
+ 	callID := newCallID()
+@@ -309,7 +312,10 @@
+ 		user = user.ToNonAD()
+ 		userDevices := byUser[user]
+ 		if len(userDevices) == 0 {
+-			return nil, fmt.Errorf("meowcaller: participant %s has no reachable devices", user)
++			// hyperberry patch: one member with no devices (an account that left WhatsApp) no
++			// longer fails the call; placeGroupCall drops them from the targets too.
++			e.c.log.Warn().Str("participant", user.String()).Msg("group call: no reachable devices, left out")
++			continue
+ 		}
+ 		participant := signaling.GroupCallParticipant{JID: user}
+ 		for _, device := range userDevices {
+@@ -325,6 +331,25 @@
+ 	return participants, nil
+ }
+ 
++// reachableTargets is selected without the users discovery left out (hyperberry patch). Fewer than
++// two remote targets left is the same error as asking for fewer than two.
++func reachableTargets(selected []types.JID, participants []signaling.GroupCallParticipant) ([]types.JID, error) {
++	kept := make(map[types.JID]struct{}, len(participants))
++	for _, p := range participants {
++		kept[p.JID.ToNonAD()] = struct{}{}
++	}
++	out := make([]types.JID, 0, len(selected))
++	for _, t := range selected {
++		if _, ok := kept[t]; ok {
++			out = append(out, t)
++		}
++	}
++	if len(out) < 2 {
++		return nil, errors.New("meowcaller: group call requires at least two reachable remote targets")
++	}
++	return out, nil
++}
++
+ func parseOptionalGroupJID(raw string) (types.JID, error) {
+ 	// Source of truth: https://github.com/purpshell/meowcaller/blob/ceaa2156015e8f24e09328fb7a9c89203295efff/datasheets/api-initial-group-call.md#L82-L96
+ 	raw = strings.TrimSpace(raw)
+--- a/public_group_api_test.go
++++ b/public_group_api_test.go
+@@ -4,7 +4,9 @@
+ 	"bytes"
+ 	"testing"
+ 
++	waBinary "github.com/polymorfa/hypermeow/binary"
+ 	"github.com/polymorfa/hypermeow/types"
++	"github.com/purpshell/meowcaller/signaling"
+ )
+ 
+ func TestGroupStateSnapshotsOwnNestedSlicesAndRejectStaleTransactions(t *testing.T) {
+@@ -229,3 +231,28 @@
+ 		t.Fatalf("waiting-room transition stopped at %v", session.Phase())
+ 	}
+ }
++
++func TestReachableTargetsDropsUsersDiscoveryLeftOut(t *testing.T) {
++	a, b, c := types.NewJID("1", "lid"), types.NewJID("2", "lid"), types.NewJID("3", "lid")
++	got, err := reachableTargets([]types.JID{a, b, c}, []signaling.GroupCallParticipant{{JID: a}, {JID: c}})
++	if err != nil || len(got) != 2 || got[0] != a || got[1] != c {
++		t.Fatalf("got %v, %v", got, err)
++	}
++	if _, err = reachableTargets([]types.JID{a, b, c}, []signaling.GroupCallParticipant{{JID: a}}); err == nil {
++		t.Fatal("one reachable target left must fail")
++	}
++}
++
++func TestIsEndedOffer(t *testing.T) {
++	for attrs, want := range map[string]bool{"": false, "is_call_ended": true, "terminate_reason": true} {
++		n := &waBinary.Node{Tag: "offer", Attrs: waBinary.Attrs{}}
++		if attrs == "is_call_ended" {
++			n.Attrs[attrs] = "1"
++		} else if attrs != "" {
++			n.Attrs[attrs] = "accepted_elsewhere"
++		}
++		if got := isEndedOffer(n); got != want {
++			t.Fatalf("%q: got %v", attrs, got)
++		}
++	}
++}

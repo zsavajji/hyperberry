@@ -20,6 +20,7 @@ for p in /src/engine/meowcaller/*.patch; do
 	patch -s --fuzz=0 -p1 -d /tmp/meowcaller <"$p" >&2
 done
 patch -s --fuzz=0 -p1 -d /tmp/meowcaller </src/engine/meowcaller.patch >&2
+patch -s --fuzz=0 -p1 -d /tmp/meowcaller </src/engine/meowcaller-group.patch >&2
 cat >/tmp/go.work <<EOF
 go $(go list -m -f '{{.GoVersion}}')
 use /src/engine
