@@ -40,6 +40,11 @@ func (s *Session) initCalls() {
 	c.ready = s.callReady
 	c.resolve = s.callResolve
 	c.chatName = s.storedChatName
+	c.isSelf = func(j types.JID) bool {
+		cli := s.client()
+		j = j.ToNonAD()
+		return j == cli.Store.GetLID().ToNonAD() || cli.Store.ID != nil && j == cli.Store.ID.ToNonAD()
+	}
 	c.dial = func(ctx context.Context, target string, video bool, members []string) (liveCall, error) {
 		var call *meowcaller.Call
 		var err error

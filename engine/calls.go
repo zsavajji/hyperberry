@@ -45,6 +45,7 @@ type liveCall interface {
 	OnVideoKeyframeRequest(func())
 	// Group calls, phase 7d (the group's JID is empty for an ad-hoc one).
 	GroupState() (meowcaller.GroupCallState, bool)
+	OnGroupState(func(meowcaller.GroupCallState))
 }
 
 // callState is the live call. Calls.mu guards it, except link.
@@ -67,6 +68,12 @@ type callState struct {
 	mic       *micSource
 	link      atomic.Pointer[audioLink]
 	vid       videoState
+
+	// A group call's people (roster, below).
+	roster     []meowcaller.GroupCallParticipant // the group call's people, us left out
+	names      map[types.JID]string              // their names, looked up once per call
+	asked      map[types.JID]bool                // a lookup is running or done
+	peopleSent string                            // the people last sent, to send only changes
 }
 
 // Calls owns the live call. The seams are what Session fills in; tests fill their own.
@@ -83,6 +90,8 @@ type Calls struct {
 	resolve func(peer types.JID) (key, name string)
 	// chatName is the name chats.db holds for a chat, "" if none.
 	chatName func(chat string) string
+	// isSelf is whether a jid (a LID or a number) is our own account's.
+	isSelf func(types.JID) bool
 
 	mu  sync.Mutex
 	cur *callState
@@ -156,7 +165,22 @@ func (cs *callState) body(reason string) map[string]any {
 	m := map[string]any{"id": cs.id, "chat": cs.chat, "out": cs.out, "state": cs.state,
 		"reason": reason, "since": cs.since, "group": cs.group, "by": cs.by}
 	cs.videoBody(m)
+	if cs.group {
+		p := cs.people()
+		b, _ := json.Marshal(p)
+		m["people"], cs.peopleSent = p, string(b)
+	}
 	return m
+}
+
+// people is the group call's people for the event, in the roster's order; "" is a name not yet
+// looked up. Call it with c.mu held.
+func (cs *callState) people() []map[string]any {
+	out := make([]map[string]any, 0, len(cs.roster))
+	for _, p := range cs.roster {
+		out = append(out, map[string]any{"name": cs.names[p.JID], "connected": p.State == "connected"})
+	}
+	return out
 }
 
 // helloEvent is the live call, for the UI that just said hello.
@@ -307,6 +331,54 @@ func (c *Calls) hook(cs *callState) {
 	c.hookVideo(cs)
 	cs.call.OnStateChange(func(p meowcaller.CallPhase) { c.phase(cs, p) })
 	cs.call.OnEnd(func(raw string) { c.finish(cs, raw) })
+	if cs.group {
+		cs.names, cs.asked = map[types.JID]string{}, map[types.JID]bool{}
+		cs.call.OnGroupState(func(gs meowcaller.GroupCallState) { c.roster(cs, gs) })
+	}
+}
+
+// roster follows a group call's roster: who is in the call and who is only rung. A name is looked
+// up once per call, off meowcaller's goroutine (a lookup may ask the network), and the event goes
+// out again as each arrives.
+func (c *Calls) roster(cs *callState, gs meowcaller.GroupCallState) {
+	c.mu.Lock()
+	if cs.ended || c.cur != cs {
+		c.mu.Unlock()
+		return
+	}
+	cs.roster = nil
+	var look []types.JID
+	for _, p := range gs.Participants {
+		if c.isSelf(p.JID) {
+			continue
+		}
+		cs.roster = append(cs.roster, p)
+		if !cs.asked[p.JID] {
+			cs.asked[p.JID] = true
+			look = append(look, p.JID)
+		}
+	}
+	c.sendPeople(cs)
+	c.mu.Unlock()
+	for _, j := range look {
+		go func(j types.JID) {
+			_, name := c.resolve(j)
+			c.mu.Lock()
+			defer c.mu.Unlock()
+			cs.names[j] = name
+			if !cs.ended && c.cur == cs {
+				c.sendPeople(cs)
+			}
+		}(j)
+	}
+}
+
+// sendPeople sends the `call` event again if the people changed since the last one. Before the
+// first state there is no event to send: the first phase event carries them. Call it with c.mu held.
+func (c *Calls) sendPeople(cs *callState) {
+	if b, _ := json.Marshal(cs.people()); cs.state != "" && string(b) != cs.peopleSent {
+		c.srv.Emit("call", cs.body(""))
+	}
 }
 
 // offer is an incoming call. A second one while a call is live is turned away at once, and is a

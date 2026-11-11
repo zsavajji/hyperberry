@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -27,6 +29,7 @@ type fakeCall struct {
 	sink  meowcaller.AudioSink
 	calls []string                   // "answer", "reject", "hangup", "startvideo", ...
 	group *meowcaller.GroupCallState // nil: not a group call
+	onGS  func(meowcaller.GroupCallState)
 
 	// Video (calls_video_test.go).
 	video, ours, theirs bool
@@ -61,6 +64,20 @@ func (f *fakeCall) GroupState() (meowcaller.GroupCallState, bool) {
 		return meowcaller.GroupCallState{}, false
 	}
 	return *f.group, true
+}
+
+func (f *fakeCall) OnGroupState(fn func(meowcaller.GroupCallState)) {
+	f.mu.Lock()
+	f.onGS = fn
+	f.mu.Unlock()
+}
+
+// roster is meowcaller sending the group call's roster.
+func (f *fakeCall) roster(gs meowcaller.GroupCallState) {
+	f.mu.Lock()
+	fn := f.onGS
+	f.mu.Unlock()
+	fn(gs)
 }
 
 func (f *fakeCall) did(what string) {
@@ -154,6 +171,7 @@ func newCallRig(t *testing.T) *callRig {
 	r.c.ready = func(chat string) (string, error) { return "Anna", nil }
 	r.c.resolve = func(peer types.JID) (string, string) { return annaKey, "Anna" }
 	r.c.chatName = func(chat string) string { return teamName }
+	r.c.isSelf = func(j types.JID) bool { return j.ToNonAD().String() == "999@lid" }
 	r.c.dial = func(_ context.Context, target string, video bool, members []string) (liveCall, error) {
 		r.mu.Lock()
 		defer r.mu.Unlock()
@@ -261,8 +279,8 @@ func TestCallRows(t *testing.T) {
 	if err := r.req("call.start", ""); err != nil {
 		t.Fatal(err)
 	}
-	if m := r.want(t, "calling", ""); m["group"] != false || m["by"] != "" {
-		t.Errorf("a person's call event: group %v by %v", m["group"], m["by"])
+	if m := r.want(t, "calling", ""); m["group"] != false || m["by"] != "" || m["people"] != nil {
+		t.Errorf("a person's call event: group %v by %v people %v", m["group"], m["by"], m["people"])
 	}
 	f.setPhase(meowcaller.CallPhaseActive)
 	r.want(t, "active", "")
@@ -404,6 +422,84 @@ func TestCallStartGroup(t *testing.T) {
 		t.Errorf("event: %v", m)
 	}
 	if err := r.req("call.hangup", "G1"); err != nil {
+		t.Fatal(err)
+	}
+	r.want(t, "ended", "hangup")
+	flush(t, r.st)
+}
+
+// quiet fails if a `call` event comes within d.
+func (r *callRig) quiet(t *testing.T, d time.Duration) {
+	t.Helper()
+	end := time.Now().Add(d)
+	for {
+		r.ui.SetReadDeadline(end)
+		line, err := r.ui.r.ReadBytes('\n')
+		if err != nil {
+			return
+		}
+		if strings.Contains(string(line), `"ev":"call"`) {
+			t.Fatalf("an event nobody should have sent: %s", line)
+		}
+	}
+}
+
+// A group call's roster comes in the `call` event as people: us left out, names looked up once and
+// sent as they arrive, and an event only when the people change.
+func TestGroupRoster(t *testing.T) {
+	r := newCallRig(t)
+	var lookups sync.Map
+	r.c.resolve = func(p types.JID) (string, string) {
+		n, _ := lookups.LoadOrStore(p.User, new(int32))
+		atomic.AddInt32(n.(*int32), 1)
+		return annaKey, "N" + p.User
+	}
+	f := r.fake("GR1")
+	f.phase = meowcaller.CallPhaseCalling
+	r.next = f
+	if err := r.raw("call.start", fmt.Sprintf(`{"chat":%q,"members":["1@lid","2@lid"]}`, teamKey)); err != nil {
+		t.Fatal(err)
+	}
+	if p, ok := r.want(t, "calling", "")["people"].([]any); !ok || len(p) != 0 {
+		t.Errorf("people before the roster: %v", p)
+	}
+
+	lid := func(u string) types.JID { return types.NewJID(u, types.HiddenUserServer) }
+	gs := meowcaller.GroupCallState{Participants: []meowcaller.GroupCallParticipant{
+		{JID: lid("999"), State: "connected"}, {JID: lid("1"), State: "connected"}, {JID: lid("2"), State: "outgoing"},
+	}}
+	// The first event may still have empty names; read until they are in.
+	people := func(want string) {
+		t.Helper()
+		var m map[string]any
+		for i := 0; i < 4 && fmt.Sprint(m["people"]) != want; i++ {
+			m = r.ev(t)
+		}
+		if got := fmt.Sprint(m["people"]); got != want {
+			t.Fatalf("people %s; want %s", got, want)
+		}
+	}
+	f.roster(gs)
+	people("[map[connected:true name:N1] map[connected:false name:N2]]")
+
+	// The same roster again: nothing new to say.
+	f.roster(gs)
+	r.quiet(t, 200*time.Millisecond)
+
+	// Someone joins: an event at once, no second lookup.
+	gs.Participants[2].State = "connected"
+	f.roster(gs)
+	people("[map[connected:true name:N1] map[connected:true name:N2]]")
+	for _, u := range []string{"1", "2"} {
+		if n, _ := lookups.Load(u); n == nil || atomic.LoadInt32(n.(*int32)) != 1 {
+			t.Errorf("lookups of %s: %v", u, n)
+		}
+	}
+	if _, ok := lookups.Load("999"); ok {
+		t.Error("we were looked up")
+	}
+
+	if err := r.req("call.hangup", "GR1"); err != nil {
 		t.Fatal(err)
 	}
 	r.want(t, "ended", "hangup")
