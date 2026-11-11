@@ -28,6 +28,9 @@ Sheet {
     // The proximity sensor and the awake screen are held while the call is live, from dialling to
     // hang-up (and released when the sheet closes, whatever the state).
     property bool held: false
+    // At the ear: the screen goes black and takes no touch. Never on the loudspeaker, where the phone
+    // is held away (a video call starts there).
+    property bool atEar: held && proximity.near && !callAudio.speaker
     // The call the audio link was started for, so connecting -> active doesn't restart it.
     property string audioFor: ""
     // The call the video link was started for.
@@ -516,9 +519,10 @@ Sheet {
             CallDrawer {
                 id: drawer
             }
-            // At the ear: black, and every touch stops here, so a cheek presses nothing.
+            // At the ear: black, and every touch stops here, so a cheek presses nothing. Our camera's
+            // viewfinder is a window above Cascades that this can't cover: it hides itself (CallVideoView).
             Container {
-                visible: sheet.held && proximity.near && !callAudio.speaker
+                visible: sheet.atEar
                 horizontalAlignment: HorizontalAlignment.Fill
                 verticalAlignment: VerticalAlignment.Fill
                 background: Color.Black
