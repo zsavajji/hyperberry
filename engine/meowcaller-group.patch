@@ -15,6 +15,9 @@ Group calls, ours (not whatsapp-light's); applied by scripts/hypermeow-work.sh a
    decode is padded to the frame, and the queues fill 180 ms and hold 480.
 5. The mix is paced by the time gone, not by its 10 ms ticker, which drops late ticks: on 253 the
    sink still ran dry every ~2 s. A line at the call's end gives chunks and frames against the time.
+6. A queue that runs out mid-speech holds a frame more from then on, up to 360 ms: on 254 one
+   person paused once, their packets later than the 180 ms held. Running out in a pause (the
+   peer sends nothing while silent) changes nothing. Check: hyperberry_mix_test.go.
 Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
 
 --- a/engine.go
@@ -156,20 +159,43 @@ Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
 +}
 --- a/group_audio_mixer.go
 +++ b/group_audio_mixer.go
-@@ -7,8 +7,10 @@
+@@ -6,14 +6,23 @@
+ )
  
  const (
- 	participantAudioMixChunkSamples     = SampleRate / 100
+-	participantAudioMixChunkSamples     = SampleRate / 100
 -	participantAudioMixerPrefillSamples = 2 * FrameSamples
 -	participantAudioMixerMaxSamples     = 4 * FrameSamples
++	participantAudioMixChunkSamples = SampleRate / 100
 +	// hyperberry patch (7d): a group call's packets arrive up to ~125 ms off their pace (p99, the
 +	// Q10 through the relay, 0.0.1.251); 120 ms in and 240 ms at most ran dry and dropped words.
 +	participantAudioMixerPrefillSamples = 3 * FrameSamples
 +	participantAudioMixerMaxSamples     = 8 * FrameSamples
++	participantAudioMixerMaxTarget      = 6 * FrameSamples
  )
  
  type participantAudioMixQueue struct {
-@@ -104,7 +106,6 @@
+ 	pending []float32
+ 	started bool
++	// hyperberry patch (7d): how much is held before playing again, raised a frame each time the
++	// queue runs out mid-speech (their packets came later than it held), up to
++	// participantAudioMixerMaxTarget; a pause's running out (zeros last) leaves it. Not lowered
++	// within a call. speaking: the last chunk played had sound.
++	target   int
++	speaking bool
+ }
+ 
+ type participantAudioMixer struct {
+@@ -56,7 +65,7 @@
+ 	}
+ 	queue := m.streams[participantID]
+ 	if queue == nil {
+-		queue = &participantAudioMixQueue{}
++		queue = &participantAudioMixQueue{target: participantAudioMixerPrefillSamples}
+ 		m.streams[participantID] = queue
+ 	}
+ 	if len(pcm) >= participantAudioMixerMaxSamples {
+@@ -104,31 +113,36 @@
  	slices.Sort(participantIDs)
  
  	mixed := make([]float32, participantAudioMixChunkSamples)
@@ -177,7 +203,28 @@ Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
  	for _, participantID := range participantIDs {
  		queue := m.streams[participantID]
  		if !queue.started {
-@@ -124,11 +125,9 @@
+-			if len(queue.pending) < participantAudioMixerPrefillSamples {
++			if len(queue.pending) < queue.target {
+ 				continue
+ 			}
+ 			queue.started = true
+ 		}
+ 		if len(queue.pending) < participantAudioMixChunkSamples {
+ 			queue.started = false
++			if queue.speaking && queue.target < participantAudioMixerMaxTarget {
++				queue.target += FrameSamples
++			}
++			queue.speaking = false
+ 			continue
+ 		}
++		queue.speaking = false
+ 		for i := range mixed {
+ 			mixed[i] += queue.pending[i]
++			if queue.pending[i] != 0 {
++				queue.speaking = true
++			}
+ 		}
+ 		queue.pending = queue.pending[participantAudioMixChunkSamples:]
  		if len(queue.pending) == 0 {
  			queue.pending = nil
  		}
@@ -300,3 +347,41 @@ Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
  			}
  		}
  	}()
+--- /dev/null
++++ b/hyperberry_mix_test.go	2026-11-11 22:53:17
+@@ -0,0 +1,35 @@
++package meowcaller
++
++import "testing"
++
++// A queue that runs out mid-speech holds a frame more; one that runs out after silence doesn't.
++func TestHyperberryMixTarget(t *testing.T) {
++	m := newParticipantAudioMixer()
++	tone := make([]float32, 3*FrameSamples)
++	for i := range tone {
++		tone[i] = 0.1
++	}
++	drain := func() {
++		for i := 0; i < 400; i++ {
++			m.MixChunk()
++		}
++	}
++	m.Add("a", tone)
++	drain()
++	if got := m.streams["a"].target; got != 4*FrameSamples {
++		t.Fatalf("after speech ran out: target %d, want %d", got, 4*FrameSamples)
++	}
++	m.Add("a", make([]float32, 4*FrameSamples))
++	drain()
++	if got := m.streams["a"].target; got != 4*FrameSamples {
++		t.Fatalf("after silence ran out: target %d, want %d", got, 4*FrameSamples)
++	}
++	for i := 0; i < 5; i++ {
++		m.Add("a", tone)
++		m.Add("a", tone[:FrameSamples])
++		drain()
++	}
++	if got := m.streams["a"].target; got != participantAudioMixerMaxTarget {
++		t.Fatalf("target %d, want the cap %d", got, participantAudioMixerMaxTarget)
++	}
++}
