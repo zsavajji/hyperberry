@@ -177,7 +177,8 @@ Container {
     function pick(p) {
         if (sheet.isVideo && p) {
             if (p.tile >= 0) {
-                videoView.focusTile = p.tile
+                // The one already full screen goes back to the grid.
+                videoView.focusTile = p.tile == videoView.solo ? -1 : p.tile
             } else if (p.video) {
                 var t = videoView.solo >= 0 ? videoView.solo : 3
                 var jids = ["", "", "", ""]

@@ -1,4 +1,5 @@
 import bb.cascades 1.4
+import hyperberry 1.0
 
 // The video of a call (step 7c.3), over the call screen's stage and under its controls (CallPanel):
 // the peer's picture fills the sheet, our own camera sits in a corner, and a dark band across the top
@@ -32,23 +33,37 @@ Container {
     // when there are three pictures.
     property variant cells: place(visibleMask, w, h)
     property variant gridCells: place(15, w, h)
-    // The last tap, so that one reaching both a tile's handler and this view's counts once.
-    property real lastTap: 0
+    // When a tile last took a tap. One tap reaches both the tile's handler and this view's, in an
+    // order that isn't known: a tile acts at once, the view waits a moment and lets a tile's tap win
+    // (0.0.1.266: with the view's first, a full-screen tile never went back to the grid).
+    property real lastTileTap: 0
     horizontalAlignment: HorizontalAlignment.Fill
     verticalAlignment: VerticalAlignment.Fill
     // Off while it rings, so the ringing controls under it get their touches; else on even for a
     // voice call, so the windows are bound when video starts.
     visible: !sheet.ringing
     layout: DockLayout {}
-    attachedObjects: LayoutUpdateHandler {
-        onLayoutFrameChanged: {
-            view.w = layoutFrame.width
-            view.h = layoutFrame.height
+    attachedObjects: [
+        Timer {
+            id: viewTap
+            singleShot: true
+            interval: 60
+            onTimeout: {
+                if (new Date().getTime() - view.lastTileTap > 250) {
+                    sheet.toggleControls()
+                }
+            }
+        },
+        LayoutUpdateHandler {
+            onLayoutFrameChanged: {
+                view.w = layoutFrame.width
+                view.h = layoutFrame.height
+            }
         }
-    }
-    // What is not a tile: the controls toggle.
+    ]
+    // What is not a tile: the controls toggle, unless a tile took this tap.
     gestureHandlers: TapHandler {
-        onTapped: view.tap(-1)
+        onTapped: viewTap.start()
     }
     function bits(mask) {
         var n = 0
@@ -103,15 +118,11 @@ Container {
         }
         return out
     }
-    // A tap on tile (-1: not on one). In a group call a tile shows alone, or all again; with only
-    // one tile on screen there is nothing to show, and it toggles the controls as in a 1:1 call.
+    // A tap on a tile. In a group call it shows alone, or all again; with only one tile on screen
+    // there is nothing to show, and it toggles the controls as in a 1:1 call.
     function tap(tile) {
-        var now = new Date().getTime()
-        if (now - lastTap < 150) {
-            return
-        }
-        lastTap = now
-        if (tile >= 0 && sheet.group && (solo >= 0 || bits(shownMask) > 1)) {
+        lastTileTap = new Date().getTime()
+        if (sheet.group && (solo >= 0 || bits(shownMask) > 1)) {
             focusTile = solo >= 0 ? -1 : tile
             sheet.wake()
         } else {
