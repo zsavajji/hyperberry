@@ -3,7 +3,7 @@ app's look (measured from the user's screenshots, 720x720, 1 du = 9 px): call_bg
 the default-contact silhouette), call_fade (a photo's fade to black), call_track (the answer bar:
 capsule, green and red arcs, the red handset, the chevrons; 665x148), call_knob, call_btn (the
 round button's disc) and the white glyphs call_message, call_speaker, call_mute,
-call_unmute, call_end, call_video, call_video_off and call_switch, which QML tints with
+call_unmute, call_end, call_video, call_video_off, call_switch, call_preview and call_preview_off, which QML tints with
 ImageView.filterColor. Everything is drawn at 8x and scaled down. The people drawer's
 (step 7e V3) are call_drawer_shadow (the shadow the page casts on the sidebar: 12x8, clear at its
 left, black at 20 % at its right, stretched vertically) and the hint's (Hint.qml, the lock screen's tutorial look): call_hint_info (the white
@@ -308,7 +308,27 @@ def hint_chevrons(out):
     save(img, out, "call_hint_chevrons")
 
 
+def pip():
+    """Our own preview: a screen's outline, and a small filled picture at its lower right."""
+    img, d = new(50, 50)
+    d.rounded_rectangle(sc(3, 9, 47, 41), 4 * S, outline=WHITE, width=3 * S)
+    d.rounded_rectangle(sc(24, 24, 41, 36), 2 * S, WHITE)
+    return img, d
+
+
+def preview(out):
+    save(pip()[0], out, "call_preview")
+
+
+def preview_off(out):
+    """The preview struck through, as the camcorder is."""
+    img, d = pip()
+    d.line(sc(6, 5, 44, 46), CLEAR, 8 * S)
+    d.line(sc(6, 5, 44, 46), WHITE, 3 * S)
+    save(img, out, "call_preview_off")
+
+
 if __name__ == "__main__":
     for f in (background, fade, track, knob, button, message, speaker, mute, unmute, end, video, video_off, switch,
-              drawer_shadow, hint_info, hint_chevrons):
+              drawer_shadow, hint_info, hint_chevrons, preview, preview_off):
         f(sys.argv[1])

@@ -1,7 +1,7 @@
 import bb.cascades 1.4
 
-// The controls of a call that isn't ringing (step 7.4): the black panel with Speaker, Mute, Video
-// and Switch camera (a WhatsApp call has no keypad, note or second call; Video turns a voice call
+// The controls of a call that isn't ringing (step 7.4): the black panel with Speaker, Mute, Video,
+// Switch camera and Hide preview (a WhatsApp call has no keypad, note or second call; Video turns a voice call
 // into a video one), and the red End call bar. Over the call screen's 720 px stage, whose size px()
 // scales. On a video call the panel is see-through, over the peer's picture (step 7c.3).
 Container {
@@ -14,6 +14,8 @@ Container {
     // A group call (step 7d.G4) with no video (a voice one) has no Stop video / Start video and no
     // Switch camera; one with video (step 7e) has them, as a 1:1 call's.
     property bool group: false
+    // Our own preview is hidden (the sheet's previewHidden).
+    property bool previewHidden: false
     property bool pressed: false
     // How far a tall screen's panel grows up into the stage, from CallSheet (0 on a square screen).
     property real lift: 0
@@ -21,6 +23,7 @@ Container {
     signal hangup
     signal videoTapped
     signal switchTapped
+    signal previewTapped
     // Any control was tapped: the call screen holds off hiding them.
     signal touched
     preferredWidth: px(720)
@@ -102,6 +105,27 @@ Container {
         text: qsTr("Switch camera")
         onTapped: {
             panel.switchTapped()
+            panel.touched()
+        }
+    }
+    // Hides or shows our own preview; our video still goes out. Lit while hidden, as Mute is while
+    // muted; dimmed and inert while we send nothing, as Switch camera.
+    CallToggle {
+        visible: !panel.group || panel.video
+        stacked: panel.tall
+        layoutProperties: AbsoluteLayoutProperties {
+            positionX: panel.tall ? panel.px(240) : panel.px(249)
+            positionY: panel.tall ? panel.px(390) : panel.px(520)
+        }
+        enabled: panel.videoOn
+        opacity: panel.videoOn ? 1 : 0.5
+        icon: "asset:///images/call_preview.png"
+        text: qsTr("Hide preview")
+        iconOn: "asset:///images/call_preview_off.png"
+        textOn: qsTr("Show preview")
+        on: panel.previewHidden
+        onTapped: {
+            panel.previewTapped()
             panel.touched()
         }
     }

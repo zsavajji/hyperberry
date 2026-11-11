@@ -255,7 +255,7 @@ Container {
             updatedProperties: WindowProperty.Size | WindowProperty.Position | WindowProperty.Visible
             // Shown while the people drawer is out, as the tiles' (CallVideoTile).
             // Hidden at the ear: the window is above Cascades, so the sheet's black can't cover it.
-            visible: sheet.isVideo && !!sheet.call.videoOurs && !sheet.atEar
+            visible: sheet.isVideo && !!sheet.call.videoOurs && !sheet.atEar && !sheet.previewHidden
             layoutProperties: AbsoluteLayoutProperties {
                 positionX: sheet.px(502)
                 positionY: sheet.controlsShown ? sheet.px(248) : sheet.px(552)

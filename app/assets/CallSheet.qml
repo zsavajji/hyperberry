@@ -31,6 +31,9 @@ Sheet {
     // At the ear: the screen goes black and takes no touch. Never on the loudspeaker, where the phone
     // is held away (a video call starts there).
     property bool atEar: held && proximity.near && !callAudio.speaker
+    // Our own preview hidden by the panel's toggle (the user's ask); our video still goes out. Shown
+    // again with each call.
+    property bool previewHidden: false
     // The call the audio link was started for, so connecting -> active doesn't restart it.
     property string audioFor: ""
     // The call the video link was started for.
@@ -158,6 +161,7 @@ Sheet {
         callVideo.stop()
         videoFor = ""
         videoView.focusTile = -1
+        previewHidden = false
     }
     // Without a picture the controls stay; with it they count down.
     onShowPictureChanged: {
@@ -421,10 +425,12 @@ Sheet {
                     video: sheet.isVideo
                     group: sheet.group
                     videoOn: !!sheet.call.videoOurs
+                    previewHidden: sheet.previewHidden
                     onTouched: sheet.wake()
                     onHangup: engine.request("call.hangup", {"id": sheet.call.id})
                     onVideoTapped: engine.request("call.video", {"id": sheet.call.id, "on": !sheet.call.videoOurs})
                     onSwitchTapped: callVideo.front = !callVideo.front
+                    onPreviewTapped: sheet.previewHidden = !sheet.previewHidden
                 }
                 // The header band, as the stock app's, under no status bar here.
                 Container {
