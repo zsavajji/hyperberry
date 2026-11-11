@@ -20,6 +20,7 @@
 #include "ChatRows.h"
 #include "CallAudio.h"
 #include <bb/ApplicationInfo>
+#include <bb/device/DisplayInfo>
 #include <QDeclarativeContext>
 #include "CallVideo.h"
 #include "CallsModel.h"
@@ -164,6 +165,8 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     // About shows it where a profile shows the number: versionNumber.buildId, from the .bar.
     document->documentContext()->setContextProperty("appVersion", bb::ApplicationInfo().version());
     document->setContextProperty("callVideo", &callVideo);
+    // The call screen's px(): its 720 px stage scaled to the screen's width.
+    document->documentContext()->setContextProperty("screenWidth", bb::device::DisplayInfo().pixelSize().width());
     document->setContextProperty("proximity", &proximity);
     document->setContextProperty("emojis", &emojis);
     document->setContextProperty("qr", &qr);

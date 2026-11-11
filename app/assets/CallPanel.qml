@@ -21,7 +21,7 @@ Container {
     preferredHeight: px(720)
     layout: AbsoluteLayout {}
     function px(n) {
-        return ui.du(n / 9)
+        return ui.px(n * screenWidth / 720)
     }
     Container {
         layoutProperties: AbsoluteLayoutProperties {

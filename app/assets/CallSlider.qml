@@ -21,7 +21,7 @@ Container {
     preferredHeight: px(148)
     layout: AbsoluteLayout {}
     function px(n) {
-        return ui.du(n / 9)
+        return ui.px(n * screenWidth / 720)
     }
     ImageView {
         preferredWidth: slider.px(665)

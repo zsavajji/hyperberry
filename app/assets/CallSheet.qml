@@ -7,7 +7,8 @@ import hyperberry 1.0
 // (CallPanel). engine.call is {id, chat, out, state, reason, since, video, videoOurs, videoTheirs,
 // videoAsked} (docs/plan/phase7.md, docs/protocol2.md). The stage is the Q10's 720 px screen, kept
 // to the bottom, so what the stock app measures from there stays where it was; px() scales its px
-// by the device's du. A call with video (step 7c.3) puts CallVideoView over the stage and under
+// to the screen's width (not by du: the Classic is 8 px/du to the Q10's 9, which left the stage
+// 640 px wide on a Q20). A call with video (step 7c.3) puts CallVideoView over the stage and under
 // the panel: the peer's picture fills the sheet, and the controls hide a few seconds after it shows.
 Sheet {
     id: sheet
@@ -40,7 +41,7 @@ Sheet {
     peekEnabled: false
 
     function px(n) {
-        return ui.du(n / 9)
+        return ui.px(n * screenWidth / 720)
     }
 
     function wording(phase, reason, video) {

@@ -21,7 +21,7 @@ Container {
         orientation: LayoutOrientation.LeftToRight
     }
     function px(n) {
-        return ui.du(n / 9)
+        return ui.px(n * screenWidth / 720)
     }
     ImageView {
         verticalAlignment: VerticalAlignment.Center
