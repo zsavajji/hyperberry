@@ -25,6 +25,9 @@ Group calls, ours (not whatsapp-light's); applied by scripts/hypermeow-work.sh a
    refusal: the ack is read as the group's first roster, relay and settings, which were dropped
    (media waited ~7 s for a later update). The missed devices are logged. Check:
    TestHyperberryGroupAck207.
+9. (7e V1) Call.RequestParticipantKeyframe(ssrc) sends a PLI to one participant's video SSRC
+   through the media's video SRTCP sender; a group call's tile that starts showing a sender needs
+   their next IDR. Check: TestHyperberryRequestParticipantKeyframe.
 Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
 
 --- a/engine.go
@@ -258,6 +261,19 @@ Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
  			mixed[i] = 1
 --- a/group_media_receive.go
 +++ b/group_media_receive.go
+@@ -6,11 +6,11 @@
+ 	"slices"
+ 	"sync"
+ 
++	"github.com/polymorfa/hypermeow/types"
+ 	"github.com/purpshell/meowcaller/mlow"
+ 	"github.com/purpshell/meowcaller/rtp"
+ 	"github.com/purpshell/meowcaller/srtp"
+ 	"github.com/rs/zerolog"
+-	"github.com/polymorfa/hypermeow/types"
+ )
+ 
+ type participantAudioDecoder interface {
 @@ -868,8 +868,22 @@
  			Str("participant_id", receiver.participantID).
  			Msg("participant audio failed authentication")
@@ -365,9 +381,30 @@ Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
  			}
  		}
  	}()
+@@ -879,7 +905,20 @@
+ 		pipe: txVideoPipe, stream: rtp.NewVideoRtpStream(videoSelfSsrc, defaultVideoRtpStepSamples),
+ 		ch: ch, ssrc: videoSelfSsrc, callID: callID, keyframeRequired: true,
+ 		log: log, diag: e.c.diag,
++	}
++	// hyperberry patch (7e V1): a keyframe request to one participant's video SSRC, from outside
++	// the loop (a group call's tile that starts showing a sender needs their next IDR).
++	e.mu.Lock()
++	if m := e.calls[callID]; m != nil {
++		m.keyframe = func(ssrc uint32) error {
++			packet, err := videoRtcp.pictureLossIndication(ssrc)
++			if err == nil {
++				_, err = ch.Send(packet)
++			}
++			return err
++		}
+ 	}
++	e.mu.Unlock()
+ 	txAppDataPipe, err := NewMediaPipeline(callKey, selfLID, peerLID, appDataSelfSsrc, FrameSamples, WithLogger(log))
+ 	if err != nil {
+ 		return err
 --- /dev/null
-+++ b/hyperberry_mix_test.go	2026-11-11 23:05:05
-@@ -0,0 +1,74 @@
++++ b/hyperberry_mix_test.go	2026-11-11 23:16:18
+@@ -0,0 +1,87 @@
 +package meowcaller
 +
 +import (
@@ -442,9 +479,34 @@ Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
 +		t.Fatal("the call ended on a 207")
 +	}
 +}
++
++// A keyframe request goes to the media's PLI sender with the SSRC asked, and fails with no media.
++func TestHyperberryRequestParticipantKeyframe(t *testing.T) {
++	eng, call, _ := testGroupEngine("GROUP")
++	if err := call.RequestParticipantKeyframe(7); err == nil {
++		t.Fatal("a keyframe request with no media running succeeded")
++	}
++	var got uint32
++	eng.calls["GROUP"].keyframe = func(ssrc uint32) error { got = ssrc; return nil }
++	if err := call.RequestParticipantKeyframe(7); err != nil || got != 7 {
++		t.Fatalf("keyframe request: err %v, ssrc %d", err, got)
++	}
++}
 --- a/engine.go
 +++ b/engine.go
-@@ -1149,12 +1149,29 @@
+@@ -63,8 +63,9 @@
+ 	localOrientation  int          // wa-poc patch: CVO quarter turns stamped on outgoing video RTP
+ 	appDataTx         *appDataSender
+ 	rekeyPeer         func(string) error
+-	link              *relayLink            // wa-poc patch: the media's relay link, live while media runs
+-	lastCheck         *events.CallTransport // wa-poc patch: the peer's latest transport check
++	link              *relayLink              // wa-poc patch: the media's relay link, live while media runs
++	keyframe          func(ssrc uint32) error // hyperberry patch (7e): a PLI to one SSRC, live while media runs
++	lastCheck         *events.CallTransport   // wa-poc patch: the peer's latest transport check
+ 	group             bool
+ 	groupUpdate       *groupCallUpdate
+ 	groupReceivers    *participantReceiveRegistry
+@@ -1149,12 +1150,29 @@
  // allocation arrives here (whatsmeow otherwise drops the ack), which is what lets the
  // caller bring up media. An error ack tears the call down.
  func (e *engine) onCallAck(ack *waBinary.Node) {
@@ -476,3 +538,41 @@ Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
  		e.finishCall(callID, "server:"+errCode)
  		return
  	}
+--- a/livecall.go
++++ b/livecall.go
+@@ -2,11 +2,12 @@
+ 
+ import (
+ 	"context"
++	"errors"
+ 	"sync"
+ 	"time"
+ 
+-	"github.com/purpshell/meowcaller/signaling"
+ 	"github.com/polymorfa/hypermeow/types"
++	"github.com/purpshell/meowcaller/signaling"
+ )
+ 
+ // Call is one live direct or group call. A direct call may become an ad-hoc group
+@@ -300,6 +301,21 @@
+ // StopVideo stops this client's outbound video while preserving peer video and audio.
+ func (c *Call) StopVideo() error {
+ 	return c.eng.transitionVideo(c.id, signaling.VideoStateStopped)
++}
++
++// RequestParticipantKeyframe asks the sender of a video SSRC for a keyframe (an RTCP PLI). A
++// group call's view that starts showing a sender needs their next IDR. hyperberry patch (7e V1).
++func (c *Call) RequestParticipantKeyframe(ssrc uint32) error {
++	c.eng.mu.Lock()
++	var fn func(uint32) error
++	if m := c.eng.calls[c.id]; m != nil {
++		fn = m.keyframe
++	}
++	c.eng.mu.Unlock()
++	if fn == nil {
++		return errors.New("meowcaller: no media running for a keyframe request")
++	}
++	return fn(ssrc)
+ }
+ 
+ // SetVideoEnabled mutes or unmutes this client's outbound camera flow with state 0/1.
