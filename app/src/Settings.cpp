@@ -4,7 +4,6 @@
 #include <bb/cascades/Color>
 #include <bb/cascades/ThemeSupport>
 #include <bb/cascades/VisualStyle>
-#include <bb/platform/Notification>
 #include <bb/system/InvokeDateTime>
 #include <bb/system/InvokeManager>
 #include <bb/system/InvokeRecurrenceRule>
@@ -19,8 +18,6 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QTime>
-#include <QTimer>
-#include <QUrl>
 
 #include "EngineLink.h"
 #include "sizes.h"
@@ -28,7 +25,6 @@
 Settings::Settings(EngineLink *engine, QObject *parent)
     : QObject(parent),
       m_file(QDir::homePath() + "/settings.ini", QSettings::IniFormat),
-      m_banner(0),
       m_engine(engine),
       m_region(bb::system::LocaleType::Region)
 {
@@ -244,30 +240,4 @@ QString Settings::clearCache()
             freed += size;
     }
     return cacheText(freed, m_region.locale());
-}
-
-void Settings::testBanner()
-{
-    if (m_banner)
-        return;
-    bb::platform::Notification *n = new bb::platform::Notification(this);
-    // The public assets: the sandbox's app link is /apps/<package>, the Hub's icons in public/.
-    const QString icon = QFileInfo(QDir::current().absoluteFilePath("app")).canonicalFilePath() + "/public/hub.png";
-    n->setTitle("HyperBerry");
-    n->setBody(tr("Test banner: is this icon grey?"));
-    n->setIconUrl(QUrl::fromLocalFile(icon));
-    const int rc = n->notify();
-    qDebug("test banner: notify -> %d, icon %s (exists %d)", rc, qPrintable(n->iconUrl().toString()), int(QFile::exists(icon)));
-    m_banner = n;
-    QTimer::singleShot(10000, this, SLOT(dropBanner()));
-}
-
-void Settings::dropBanner()
-{
-    bb::platform::Notification *n = static_cast<bb::platform::Notification *>(m_banner);
-    m_banner = 0;
-    if (!n)
-        return;
-    qDebug("test banner: delete from the Hub -> %d", int(n->deleteFromInbox()));
-    n->deleteLater();
 }
