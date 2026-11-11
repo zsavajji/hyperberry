@@ -1,8 +1,9 @@
 import bb.cascades 1.4
 
 // One row of the address book (NewChatPage, NewGroupPage) or of a group's members (CallPickPage):
-// the tile the chat will have in the chat list, its picture over it when the row has one, the name, a 2 px separator, and a check when the contact is chosen. contact is a
-// row of ContactPicker's model; the view supplies the emoji style and sizes as the chat list's.
+// the tile the chat will have in the chat list, its picture over it when the row has one, the name,
+// a 2 px separator, and a check when the contact is chosen. contact is a row of ContactPicker's
+// model; the view supplies the emoji style and sizes as the chat list's.
 Container {
     property variant contact
     id: row
