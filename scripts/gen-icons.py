@@ -20,7 +20,7 @@ import math
 import re
 import sys
 
-from PIL import Image, ImageChops, ImageDraw, ImageFilter
+from PIL import Image, ImageChops, ImageDraw
 
 HANDSET = "M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"
 
@@ -303,13 +303,9 @@ def main(out):
     grey.save(f"{out}/hub.png")  # items written up to 0.0.1.241 name it, and the Hub keeps the name
     app_icon(81, (0xEC, 0xBB, 0x18, 255)).save(f"{out}/hub_unread.png")
     # The account's own, which the lock screen and the instant preview draw (both showed hub.png's grey,
-    # Q10 2026-11-11): white as the lock screen's system glyphs, larger for the banner (the user's ask),
-    # with a thin dark rim so it still shows on the banner's light grey.
-    acct = app_icon(81, (255, 255, 255, 255), fill=0.84)
-    rim = Image.new("RGBA", acct.size, (0, 0, 0, 0))
-    rim.putalpha(acct.getchannel("A").filter(ImageFilter.MaxFilter(5)).point(lambda a: a * 0.45))
+    # Q10 2026-11-11): white as the lock screen's system glyphs, larger for the banner (the user's ask), no rim
     # A new name: 242 drew it into hub.png, which the read items of older builds name (Q10, 2026-11-11).
-    Image.alpha_composite(rim, acct).save(f"{out}/hub_account.png")
+    app_icon(81, (255, 255, 255, 255), fill=0.84).save(f"{out}/hub_account.png")
     # One per screen an app that stays in portrait can meet (bb10-devices): the Q10 and Classic, the Z30, the
     # Z10, the Passport. The tile is 30 % of the width, in the middle, so it looks the same on each.
     for w, h in ((720, 720), (720, 1280), (768, 1280), (1440, 1440)):
