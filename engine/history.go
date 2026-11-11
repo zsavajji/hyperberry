@@ -40,7 +40,6 @@ func (st *Store) history(ctx context.Context, t *storeTx, cli *whatsmeow.Client,
 		}
 		key := chatKey(ctx, t, lids, chat, alt)
 		t.ensureChat(key, chatKind(chat))
-		t.stampChat(key, int64(conv.GetConversationTimestamp())) // a chat the phone lists, though it sent no message
 		if chat.Server == types.DefaultUserServer || chat.Server == types.HiddenUserServer {
 			t.setName(key, displayName(ctx, cli, chat, alt))
 		} else if n := conv.GetName(); n != "" {
@@ -70,6 +69,9 @@ func (st *Store) history(ctx context.Context, t *storeTx, cli *whatsmeow.Client,
 			historyReactions(ctx, t, cli, key, chat, alt, ev)
 			historyVotes(ctx, t, cli, key, chat, alt, ev)
 		}
+
+		// After the messages: a time set first would keep setLast from writing the preview.
+		t.stampChat(key, int64(conv.GetConversationTimestamp())) // a chat the phone lists, though it sent no message
 
 		unread := int(conv.GetUnreadCount())
 		if unread == 0 && conv.GetMarkedAsUnread() {
