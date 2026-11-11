@@ -44,6 +44,10 @@ public:
     void setCallHints(int count);
     Q_INVOKABLE QString cacheSize();
     Q_INVOKABLE QString clearCache();
+    // A developer test: one BB10 notification with the grey hub.png as its iconUrl (the SDK: "the
+    // icon to be shown in the preview"), taken back from the Hub after 10 s. Whether the instant
+    // preview draws it, where the Hub account's white icon shows today.
+    Q_INVOKABLE void testBanner();
 
 signals:
     void themeChanged();
@@ -57,12 +61,14 @@ signals:
 
 private slots:
     void bootTimerReplied();
+    void dropBanner();
 
 private:
     void applyTheme();
     void applyBootTimer(bool on);
     void store(const char *key, const QVariant &value);
     QSettings m_file;
+    QObject *m_banner; // testBanner()'s notification, until dropBanner()
     EngineLink *m_engine;
     bb::system::LocaleHandler m_region; // for the size text, as the chat models have it
 };

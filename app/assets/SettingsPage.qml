@@ -39,6 +39,13 @@ Page {
             imageSource: "asset:///images/play.png"
             ActionBar.placement: ActionBarPlacement.InOverflow
             onTriggered: nav.push(videoTestDef.createObject())
+        },
+        // A developer test: a banner with our grey Hub icon (Settings::testBanner).
+        ActionItem {
+            title: qsTr("Test banner icon")
+            imageSource: "asset:///images/play.png"
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            onTriggered: settings.testBanner()
         }
     ]
     ScrollView {
