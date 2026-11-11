@@ -65,7 +65,7 @@ static int hb_uds_account(long long id, int add, const char *markRead, const cha
 	uds_account_data_set_id(a, id);
 	uds_account_data_set_name(a, "HyperBerry");
 	uds_account_data_set_description(a, "WhatsApp");
-	uds_account_data_set_icon(a, "hub.png"); // white: the lock screen and the instant preview draw it
+	uds_account_data_set_icon(a, "hub_account.png"); // white: the lock screen and the instant preview draw it
 	uds_account_data_set_target_name(a, "com.zsavajji.hyperberry");
 	uds_account_data_set_supports_compose(a, false);
 	uds_account_data_set_type(a, UDS_ACCOUNT_TYPE_IM);

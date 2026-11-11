@@ -1,7 +1,8 @@
 """Draws the chat list's small marks into app/assets/images/: ticks, clock, mute, pin and mic,
 the action bar's record icon, the row menu's pin and mute, the voice bubble's play, pause and
 retry discs, and the Hub's: the item menu's tick_action, unread_action and delete_action, and
-the items' hub_read.png and hub_unread.png (grey and yellow) and the account's white hub.png.
+the items' hub_read.png and hub_unread.png (grey and yellow, hub.png the grey again for the items older
+builds wrote) and the account's white hub_account.png.
 The phone has only the trash can among the info page's and chat menu's icons (user's choice,
 2026-11-01), so these are drawn as action icons too: contacts_action (two people), save_action
 (a floppy disk), block_action (the "forbidden" sign), attach_action (a paperclip), plus_action
@@ -297,7 +298,9 @@ def main(out):
     # choice, 2026-11-11). As the system's items: grey when read, yellow when unread, sampled from a
     # notification's bell on the Q10 (2026-11-11). The Hub tints nothing: the app swaps the file.
     # 81 px, as the Hub draws it.
-    app_icon(81, (0x88, 0x88, 0x88, 255)).save(f"{out}/hub_read.png")
+    grey = app_icon(81, (0x88, 0x88, 0x88, 255))
+    grey.save(f"{out}/hub_read.png")
+    grey.save(f"{out}/hub.png")  # items written up to 0.0.1.241 name it, and the Hub keeps the name
     app_icon(81, (0xEC, 0xBB, 0x18, 255)).save(f"{out}/hub_unread.png")
     # The account's own, which the lock screen and the instant preview draw (both showed hub.png's grey,
     # Q10 2026-11-11): white as the lock screen's system glyphs, larger for the banner (the user's ask),
@@ -305,7 +308,8 @@ def main(out):
     acct = app_icon(81, (255, 255, 255, 255), fill=0.84)
     rim = Image.new("RGBA", acct.size, (0, 0, 0, 0))
     rim.putalpha(acct.getchannel("A").filter(ImageFilter.MaxFilter(5)).point(lambda a: a * 0.45))
-    Image.alpha_composite(rim, acct).save(f"{out}/hub.png")  # the name the account was added with
+    # A new name: 242 drew it into hub.png, which the read items of older builds name (Q10, 2026-11-11).
+    Image.alpha_composite(rim, acct).save(f"{out}/hub_account.png")
     # One per screen an app that stays in portrait can meet (bb10-devices): the Q10 and Classic, the Z30, the
     # Z10, the Passport. The tile is 30 % of the width, in the middle, so it looks the same on each.
     for w, h in ((720, 720), (720, 1280), (768, 1280), (1440, 1440)):

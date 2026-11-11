@@ -371,7 +371,7 @@ func TestHubStateKept(t *testing.T) {
 		t.Errorf("first message: %s", got)
 	}
 	// A new engine on the same dir: the account is there, and the item is known.
-	if got := ops(notifier(h, dir, send)); got != "open update" {
+	if got := ops(notifier(h, dir, send)); got != "open account+ update" {
 		t.Errorf("after a restart: %s", got)
 	}
 	// The Hub never saw this registration: it holds nothing, whatever the file says.
@@ -404,10 +404,10 @@ func TestHubRefusals(t *testing.T) {
 	}
 	// One the Hub lost is added again for a message, but a plain change leaves it be.
 	h.set(false, "update")
-	if got := ops(notifier(h, dir, send(true))); got != "open update add" {
+	if got := ops(notifier(h, dir, send(true))); got != "open account+ update add" {
 		t.Errorf("update refused: %s", got)
 	}
-	if got := ops(notifier(h, dir, send(false))); got != "open update" {
+	if got := ops(notifier(h, dir, send(false))); got != "open account+ update" {
 		t.Errorf("update refused, no message: %s", got)
 	}
 }
