@@ -220,6 +220,12 @@ Sheet {
             callAudio.speaker = true
             callVideo.start(call.id, videoView.remoteId, videoView.finderId)
         }
+        // The list of who is in a group call follows the call event's people.
+        peopleModel.clear()
+        var p = call.people
+        for (var i = 0; p && i < p.length; i++) {
+            peopleModel.append(p[i])
+        }
     }
     attachedObjects: [
         Timer {
@@ -300,6 +306,63 @@ Sheet {
                     preferredHeight: sheet.px(260)
                     scalingMethod: ScalingMethod.AspectFit
                     imageSource: "asset:///images/call_fade.png"
+                }
+                // Who is in a group call, over the group's picture: each person's picture and name,
+                // dimmed until they are connected.
+                ListView {
+                    id: peopleList
+                    visible: sheet.group && !sheet.ringing && !sheet.ended
+                    layoutProperties: AbsoluteLayoutProperties {
+                        positionX: sheet.px(30)
+                        positionY: sheet.px(70)
+                    }
+                    preferredWidth: sheet.px(660)
+                    preferredHeight: sheet.px(230) + sheet.shift
+                    dataModel: ArrayDataModel { id: peopleModel }
+                    property variant emojiStyle: nav.emojiStyle
+                    property real tile: sheet.px(56)
+                    listItemComponents: [
+                        ListItemComponent {
+                            Container {
+                                id: personRow
+                                opacity: ListItemData.connected ? 1.0 : 0.5
+                                bottomPadding: ui.px(8)
+                                layout: StackLayout {
+                                    orientation: LayoutOrientation.LeftToRight
+                                }
+                                Container {
+                                    verticalAlignment: VerticalAlignment.Center
+                                    preferredWidth: personRow.ListItem.view.tile
+                                    preferredHeight: personRow.ListItem.view.tile
+                                    background: Color.create("#555555")
+                                    layout: DockLayout {}
+                                    Label {
+                                        horizontalAlignment: HorizontalAlignment.Center
+                                        verticalAlignment: VerticalAlignment.Center
+                                        text: (ListItemData.name || "?").charAt(0).toUpperCase()
+                                        textFormat: TextFormat.Plain
+                                        textStyle.color: Color.White
+                                    }
+                                    ImageView {
+                                        visible: !!ListItemData.photo
+                                        horizontalAlignment: HorizontalAlignment.Fill
+                                        verticalAlignment: VerticalAlignment.Fill
+                                        imageSource: ListItemData.photo ? "file://" + ListItemData.photo : ""
+                                        scalingMethod: ScalingMethod.AspectFill
+                                        loadEffect: ImageViewLoadEffect.None
+                                    }
+                                }
+                                Label {
+                                    verticalAlignment: VerticalAlignment.Center
+                                    leftMargin: ui.px(16)
+                                    text: ListItemData.name || "…"
+                                    textFormat: TextFormat.Plain
+                                    textStyle.base: personRow.ListItem.view.emojiStyle
+                                    textStyle.color: Color.White
+                                }
+                            }
+                        }
+                    ]
                 }
                 // The video view's top band says the name, the line and the clock of a call with video.
                 Label {
