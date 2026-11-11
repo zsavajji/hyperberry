@@ -248,8 +248,9 @@ def main(out):
     # (message.png's proportions: 55 by 38, its tail a fifth of the width from the left, and nearly square
     # corners), and WhatsApp's handset in it. Every size BB10 picks from (bb10-devices), then the
     # splash: the same tile on the dark theme's black, shown from the tap until the app's first frame.
-    def app_icon(px, mono=None, fill=0.62):
-        """mono: a colour for the bubble alone, the handset cut out of it, filling the px box."""
+    def app_icon(px, mono=None, fill=0.62, foot=None):
+        """mono: a colour for the bubble alone, the handset cut out of it, filling the px box; with foot,
+        mono is the top's colour and foot the bottom's, a straight fade between."""
         n = 1024
         img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
         d = ImageDraw.Draw(img)
@@ -288,8 +289,14 @@ def main(out):
         img = img.crop(img.getbbox())
         k = fill * px / max(img.size)  # 0.62: 50 px of 81, as the Hub's own call glyph (Q10, 2026-11-11)
         img = img.resize((round(img.width * k), round(img.height * k)), Image.LANCZOS)
+        # Painted flat (or faded) over the resized shape, and pasted with no mask: a masked paste blends
+        # the edges with the box's transparent black and darkens them.
+        fade = Image.linear_gradient("L").resize(img.size)
+        paint = Image.composite(Image.new("RGBA", img.size, foot or mono), Image.new("RGBA", img.size, mono), fade)
+        paint.putalpha(img.getchannel("A"))
+        img = paint
         box = Image.new("RGBA", (px, px), (0, 0, 0, 0))
-        box.paste(img, ((px - img.width) // 2, (px - img.height) // 2), img)
+        box.paste(img, ((px - img.width) // 2, (px - img.height) // 2))
         return box
 
     for px in (86, 90, 96, 110, 144):
@@ -298,10 +305,12 @@ def main(out):
     # choice, 2026-11-11). As the system's items: grey when read, yellow when unread, sampled from a
     # notification's bell on the Q10 (2026-11-11). The Hub tints nothing: the app swaps the file.
     # 81 px, as the Hub draws it.
-    grey = app_icon(81, (0x88, 0x88, 0x88, 255))
+    # Faded top to bottom as the system's: the read root v4 bell runs #9E9E9E to #818181 (Q10, 2026-11-11);
+    # the yellow by the same ratios (158 and 129 to the 136 it was sampled at), red capped.
+    grey = app_icon(81, (0x9E, 0x9E, 0x9E, 255), foot=(0x81, 0x81, 0x81, 255))
     grey.save(f"{out}/hub_read.png")
     grey.save(f"{out}/hub.png")  # items written up to 0.0.1.241 name it, and the Hub keeps the name
-    app_icon(81, (0xEC, 0xBB, 0x18, 255)).save(f"{out}/hub_unread.png")
+    app_icon(81, (255, 0xD9, 0x1C, 255), foot=(0xE0, 0xB2, 0x17, 255)).save(f"{out}/hub_unread.png")
     # The account's own, which the lock screen and the instant preview draw (both showed hub.png's grey,
     # Q10 2026-11-11): white as the lock screen's system glyphs, larger for the banner (the user's ask), no rim
     # A new name: 242 drew it into hub.png, which the read items of older builds name (Q10, 2026-11-11).
