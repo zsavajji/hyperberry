@@ -11,7 +11,8 @@ Container {
     property bool video: false
     // We send our video.
     property bool videoOn: false
-    // A group call (step 7d.G4) has no video: no Stop video / Start video, no Switch camera.
+    // A group call (step 7d.G4) with no video (a voice one) has no Stop video / Start video and no
+    // Switch camera; one with video (step 7e) has them, as a 1:1 call's.
     property bool group: false
     property bool pressed: false
     // How far a tall screen's panel grows up into the stage, from CallSheet (0 on a square screen).
@@ -71,7 +72,7 @@ Container {
     }
     // Lit while our video is off, as Mute is while muted.
     CallToggle {
-        visible: !panel.group
+        visible: !panel.group || panel.video
         stacked: panel.tall
         layoutProperties: AbsoluteLayoutProperties {
             positionX: panel.px(480)
@@ -89,7 +90,7 @@ Container {
     }
     // Needs our camera: dimmed and inert while we send nothing.
     CallToggle {
-        visible: !panel.group
+        visible: !panel.group || panel.video
         stacked: panel.tall
         layoutProperties: AbsoluteLayoutProperties {
             positionX: panel.tall ? 0 : panel.px(18)

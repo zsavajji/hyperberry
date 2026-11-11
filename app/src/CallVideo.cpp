@@ -51,7 +51,6 @@ static quint64 getLe(const char *p, int bytes)
 CallVideo::CallVideo(EngineLink *engine, QObject *parent)
     : QObject(parent)
     , m_engine(engine)
-    , m_decoder(&m_window)
     , m_encoder(this)
     , m_reader(this, false)
     , m_camera(this, true)
@@ -60,6 +59,7 @@ CallVideo::CallVideo(EngineLink *engine, QObject *parent)
     , m_running(false)
     , m_picW(0)
     , m_picH(0)
+    , m_tileMask(0)
     , m_ticks(0)
 {
     m_front = 1;
@@ -104,7 +104,8 @@ void CallVideo::setRunning(bool on)
     if (on) {
         m_ticks = 0;
         m_recordsIn = 0;
-        m_feedRefused = 0;
+        for (int i = 0; i < Tiles; i++)
+            m_tile[i].refused = 0;
         m_timer.start();
     } else {
         m_timer.stop();
@@ -112,13 +113,23 @@ void CallVideo::setRunning(bool on)
     emit runningChanged();
 }
 
-void CallVideo::start(const QString &callId, const QString &remoteWindowId, const QString &viewfinderWindowId)
+void CallVideo::start(const QString &callId, const QStringList &remoteWindowIds, const QString &viewfinderWindowId)
 {
     stop();
     signal(SIGPIPE, SIG_IGN); // a send to a closed link must fail, not kill the app
     const bb::cascades::Window *main = bb::cascades::Application::instance()->mainWindow();
-    if (!main || !m_window.create(remoteWindowId, Width, Height, false, false)) {
+    // Tile 0 is the 1:1 call's picture: without its window there is no video. A window of the
+    // others that can't be made leaves that tile without a picture, and its records are dropped.
+    for (int i = 0; i < Tiles; i++) {
+        Tile &t = m_tile[i];
+        t.state = Tile::Idle;
+        t.hasWindow = main && i < remoteWindowIds.size() && t.window.create(remoteWindowIds.at(i), Width, Height, false, false);
+        if (!t.hasWindow && i > 0)
+            qWarning("call video: the window for tile %d could not be made", i);
+    }
+    if (!m_tile[0].hasWindow) {
         qWarning("call video: the window for the peer's picture could not be made");
+        stop(); // the windows of the other tiles
         return;
     }
     m_group = main->groupId().toUtf8();
@@ -140,53 +151,78 @@ void CallVideo::stop()
         if (m_fd >= 0)
             ::shutdown(m_fd, SHUT_RDWR);
     }
-    m_reader.wait();  // it closes the link and the decoder before it ends
+    m_reader.wait();  // it closes the link and the decoders before it ends
     m_camera.wait();  // and this one the camera
-    m_decoder.close();
-    m_window.destroy();
+    for (int i = 0; i < Tiles; i++) {
+        m_tile[i].decoder.close();
+        m_tile[i].window.destroy();
+        m_tile[i].hasWindow = false;
+    }
     // What the threads queued before they ended: a stale "running" must not arrive after this.
     QCoreApplication::removePostedEvents(this, QEvent::MetaCall);
     setRunning(false);
-    if (m_picW || m_picH) {
-        m_picW = m_picH = 0;
+    if (m_picW || m_picH || m_tileMask) {
+        m_picW = m_picH = m_tileMask = 0;
         emit pictureChanged();
     }
 }
 
+void CallVideo::setTileViewSize(int tile, int w, int h)
+{
+    if (tile >= 0 && tile < Tiles)
+        m_tile[tile].window.setViewSize(w, h);
+}
+
 void CallVideo::tick()
 {
-    int w = 0, h = 0;
-    m_window.pictureSize(&w, &h);
-    if (w != m_picW || h != m_picH) {
+    int w = 0, h = 0, mask = 0;
+    for (int i = 0; i < Tiles; i++) {
+        int tw = 0, th = 0;
+        m_tile[i].window.pictureSize(&tw, &th);
+        if (tw > 0)
+            mask |= 1 << i;
+        if (i == 0) {
+            w = tw;
+            h = th;
+        }
+    }
+    if (w != m_picW || h != m_picH || mask != m_tileMask) {
         m_picW = w;
         m_picH = h;
+        m_tileMask = mask;
         emit pictureChanged();
     }
     if (++m_ticks % SummaryTicks == 0)
         summarize();
 }
 
+// One line per open decoder, as many as there are tiles with a picture coming in; tile 0's always.
 void CallVideo::summarize()
 {
     CameraEncoder::Stats e;
-    VideoDecoder::Stats d;
     memset(&e, 0, sizeof e);
-    memset(&d, 0, sizeof d);
     if (m_encoder.isRunning())
         e = m_encoder.stats();
-    if (m_decoder.isOpen())
-        d = m_decoder.stats();
-    qDebug("call video: encoder %.1f fps %.0f kbit/s %d keyframes | link in %d records | decoder in %d out %d "
-           "(%d refused), latency mean %.1f max %.1f ms | cpu %.0f%% of a core (whole process)",
-           e.wallMs > 0 ? e.frames * 1000.0 / e.wallMs : 0, e.wallMs > 0 ? e.bytes * 8 / e.wallMs : 0, e.keyframes,
-           int(m_recordsIn), d.framesIn, d.framesOut, int(m_feedRefused), d.latencyMeanMs, d.latencyMaxMs,
-           d.wallMs > 0 ? 100 * d.cpuMs / d.wallMs : 0);
+    for (int i = 0; i < Tiles; i++) {
+        VideoDecoder &decoder = m_tile[i].decoder;
+        if (i > 0 && !decoder.isOpen())
+            continue;
+        VideoDecoder::Stats d;
+        memset(&d, 0, sizeof d);
+        if (decoder.isOpen()) {
+            d = decoder.stats();
+            decoder.resetStats();
+        }
+        qDebug("call video: encoder %.1f fps %.0f kbit/s %d keyframes | link in %d records | tile %d decoder in %d out %d "
+               "(%d refused), latency mean %.1f max %.1f ms | cpu %.0f%% of a core (whole process)",
+               e.wallMs > 0 ? e.frames * 1000.0 / e.wallMs : 0, e.wallMs > 0 ? e.bytes * 8 / e.wallMs : 0, e.keyframes,
+               int(m_recordsIn), i, d.framesIn, d.framesOut, int(m_tile[i].refused), d.latencyMeanMs, d.latencyMaxMs,
+               d.wallMs > 0 ? 100 * d.cpuMs / d.wallMs : 0);
+        m_tile[i].refused = 0;
+    }
     if (m_encoder.isRunning())
         m_encoder.resetStats();
-    if (m_decoder.isOpen())
-        m_decoder.resetStats();
     m_recordsIn = 0;
-    m_feedRefused = 0;
 }
 
 // Connects and says hello, as the audio link does. m_fd is set from the first moment so stop() can
@@ -231,7 +267,24 @@ void CallVideo::closeLink()
     m_fd = -1;
 }
 
-// The reader thread: opens the link and the decoder, then the engine's records to the decoder.
+// Opens a tile's decoder on the reader thread; false after logging why when it won't (the tile's
+// records are then dropped, our picture still goes out). midStream: the stream is already running,
+// so the engine is asked for the tile's next keyframe (flags' high byte = the tile, no payload).
+bool CallVideo::openTile(int tile, bool midStream)
+{
+    Tile &t = m_tile[tile];
+    if (!t.decoder.open(Width, Height, Fps, MaxUnit)) {
+        qWarning("call video: the hardware decoder did not open for tile %d; no picture from there", tile);
+        t.state = Tile::Dropped;
+        return false;
+    }
+    t.state = Tile::Decoding;
+    if (midStream)
+        sendRecord(2, 0, tile << 8, 0, QByteArray());
+    return true;
+}
+
+// The reader thread: opens the link and tile 0's decoder, then the engine's records to the decoders.
 void CallVideo::readLoop()
 {
     if (openLink()) {
@@ -240,10 +293,7 @@ void CallVideo::readLoop()
             m_linked = 1;
         }
         QMetaObject::invokeMethod(this, "setRunning", Qt::QueuedConnection, Q_ARG(bool, true));
-        // Without a decoder our picture still goes out; the records are read and dropped.
-        bool decoding = m_decoder.open(Width, Height, Fps, MaxUnit);
-        if (!decoding)
-            qWarning("call video: the hardware decoder did not open; no picture from the peer");
+        openTile(0, false);
         char head[HeaderBytes];
         QByteArray payload;
         while (!m_stopping && LinkIo::recvAll(m_fd, head, HeaderBytes)) { // false: the engine closed it, or stop()
@@ -258,24 +308,31 @@ void CallVideo::readLoop()
             m_recordsIn.ref();
             const int type = (unsigned char)head[4];
             if (type == 1) {
+                const int tile = int(getLe(head + 6, 2) >> 8);
+                if (tile >= Tiles || !m_tile[tile].hasWindow)
+                    continue;
+                Tile &t = m_tile[tile];
                 // The turn is the frame's own, and takes effect for the pictures decoded after it
                 // (the decoder holds a few frames, so a change shows a few pictures late: harmless).
                 // WhatsApp counts its quarter turns anticlockwise, the window clockwise: turned as
                 // sent, Android's front camera (1) was upside down and its rear one (3) too (Q10, 0.0.1.206).
-                m_window.setRotation((4 - (unsigned char)head[5]) & 3);
-                if (decoding && m_decoder.broken()) {
-                    qWarning("call video: the decoder stalled; opening it again");
-                    decoding = m_decoder.open(Width, Height, Fps, MaxUnit);
+                t.window.setRotation((4 - (unsigned char)head[5]) & 3);
+                if (t.state == Tile::Idle) {
+                    openTile(tile, true); // the first record of a tile after 0
+                } else if (t.state == Tile::Decoding && t.decoder.broken()) {
+                    qWarning("call video: the decoder of tile %d stalled; opening it again", tile);
+                    openTile(tile, true);
                 }
-                if (decoding && !m_decoder.feed(payload, qint64(getLe(head + 8, 8))))
-                    m_feedRefused.ref(); // no free input buffer: this picture is lost, the next IDR mends it
+                if (t.state == Tile::Decoding && !t.decoder.feed(payload, qint64(getLe(head + 8, 8))))
+                    t.refused.ref(); // no free input buffer: this picture is lost, the next IDR mends it
             } else if (type == 2) {
                 m_keyframeWanted = 1; // passed to the encoder by the camera thread, which owns its handle
             }
         }
     }
     closeLink();
-    m_decoder.close();
+    for (int i = 0; i < Tiles; i++)
+        m_tile[i].decoder.close();
     QMetaObject::invokeMethod(this, "setRunning", Qt::QueuedConnection, Q_ARG(bool, false));
 }
 
@@ -307,16 +364,22 @@ void CallVideo::cameraLoop()
 // On the camera library's thread: one record, the encoder's unit as it is.
 void CallVideo::accessUnit(const QByteArray &annexB, qint64 tsUs, bool keyframe, int orientation)
 {
-    if (!m_linked || quint32(annexB.size()) > MaxRecord)
+    sendRecord(1, orientation, keyframe ? 1 : 0, tsUs, annexB);
+}
+
+// One record to the engine, from the camera library's thread or the reader's.
+void CallVideo::sendRecord(int type, int orientation, int flags, qint64 tsUs, const QByteArray &payload)
+{
+    if (!m_linked || quint32(payload.size()) > MaxRecord)
         return;
-    QByteArray record(HeaderBytes + annexB.size(), 0);
+    QByteArray record(HeaderBytes + payload.size(), 0);
     char *p = record.data();
-    putLe(p, quint32(annexB.size()), 4);
-    p[4] = 1;
+    putLe(p, quint32(payload.size()), 4);
+    p[4] = char(type);
     p[5] = char(orientation);
-    putLe(p + 6, keyframe ? 1 : 0, 2);
+    putLe(p + 6, flags, 2);
     putLe(p + 8, quint64(tsUs), 8);
-    memcpy(p + HeaderBytes, annexB.constData(), annexB.size());
+    memcpy(p + HeaderBytes, payload.constData(), payload.size());
     QMutexLocker lock(&m_sendLock);
     if (!m_linked) // closeLink() got in first: the descriptor may be gone
         return;

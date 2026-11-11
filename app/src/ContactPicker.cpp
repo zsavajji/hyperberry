@@ -179,7 +179,7 @@ QString ContactPicker::createGroup(const QString &name)
     return m_createId;
 }
 
-QString ContactPicker::startGroupCall()
+QString ContactPicker::startGroupCall(bool video)
 {
     if (!m_engine || !m_engine->connected())
         return QString();
@@ -189,5 +189,7 @@ QString ContactPicker::startGroupCall()
     QVariantMap req;
     req["chat"] = m_chat;
     req["members"] = members;
+    if (video)
+        req["video"] = true;
     return m_engine->request("call.start", req);
 }

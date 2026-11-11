@@ -3,17 +3,37 @@ import bb.cascades 1.4
 // The video of a call (step 7c.3), over the call screen's stage and under its controls (CallPanel):
 // the peer's picture fills the sheet, our own camera sits in a corner, and a dark band across the top
 // carries the name and the clock while the controls show. A tap anywhere in it, the picture included,
-// shows or hides the controls. The two native windows are CallVideo's (callVideo.start takes the ids
-// below); they sit under Cascades' hole, so this view and every ancestor of the controls must have no
-// background of their own, or the hole is painted over (0.0.1.190). Sizes in the Q10's px, scaled by
-// sheet.px(); the picture's in the frame's own px.
+// shows or hides the controls. A group call (step 7e) has up to four pictures, tiles 0 to 3, as they
+// come in: one fills the sheet, two are stacked, three or four make a 2x2 grid; a tap on a tile shows
+// it alone, full, and a tap again goes back to the grid (the others keep decoding), and each tile
+// names its sender. The windows are CallVideo's (callVideo.start takes the ids below); they sit
+// under Cascades' hole, so this view and every ancestor of the controls must have no background of
+// their own, or the hole is painted over (0.0.1.190). Sizes in the Q10's px, scaled by sheet.px();
+// the pictures' in the frame's own px.
 Container {
     id: view
-    property alias remoteId: remote.windowId
+    // The four tiles' window ids, tile 0 first: callVideo.start's.
+    property variant remoteIds: ["hyperberryCallVideo0", "hyperberryCallVideo1", "hyperberryCallVideo2", "hyperberryCallVideo3"]
     property alias finderId: finder.windowId
     // The view's own frame.
     property real w: 0
     property real h: 0
+    // A group call's tile shown alone, -1 for them all.
+    property int focusTile: -1
+    // Bit i: tile i has a picture to show. In a 1:1 call that is tile 0 once the sheet shows the
+    // picture. In a group call it is also held by someone (their tile in the call's people): a tile
+    // that nobody holds any more keeps its last picture in its window, and is not shown.
+    property int shownMask: sheet.group ? callVideo.tileMask & held(sheet.call.people) : (sheet.showPicture ? 1 : 0)
+    // The tile shown alone: focusTile while it is still shown, else -1.
+    property int solo: sheet.group && focusTile >= 0 && (shownMask & (1 << focusTile)) ? focusTile : -1
+    // Bit i: tile i is on screen now.
+    property int visibleMask: solo >= 0 ? 1 << solo : shownMask
+    // Where each tile sits, [x, y, w, h]; and the same for a full grid, whose 4th cell is black
+    // when there are three pictures.
+    property variant cells: place(visibleMask, w, h)
+    property variant gridCells: place(15, w, h)
+    // The last tap, so that one reaching both a tile's handler and this view's counts once.
+    property real lastTap: 0
     horizontalAlignment: HorizontalAlignment.Fill
     verticalAlignment: VerticalAlignment.Fill
     // Off while it rings, so the ringing controls under it get their touches; else on even for a
@@ -24,23 +44,131 @@ Container {
         onLayoutFrameChanged: {
             view.w = layoutFrame.width
             view.h = layoutFrame.height
-            callVideo.setViewSize(layoutFrame.width, layoutFrame.height)
         }
     }
-    // The children's taps reach this one, and the controls aren't in here.
+    // What is not a tile: the controls toggle.
     gestureHandlers: TapHandler {
-        onTapped: sheet.toggleControls()
+        onTapped: view.tap(-1)
     }
-    // The peer's picture fills the frame: the control is the frame's size and CallVideo crops the
-    // picture to its aspect (Screen's source viewport). A control bigger than the frame was squeezed
-    // into it by Cascades, not cropped (0.0.1.203). ponytail: fill crops; fit would letterbox.
-    ForeignWindowControl {
-        id: remote
-        windowId: "hyperberryCallVideo"
-        updatedProperties: WindowProperty.Size | WindowProperty.Position | WindowProperty.Visible
-        visible: sheet.showPicture
+    function bits(mask) {
+        var n = 0
+        for (var i = 0; i < 4; i++) {
+            if (mask & (1 << i)) {
+                n++
+            }
+        }
+        return n
+    }
+    // Which tiles the call's people hold (their tile, -1 for none).
+    function held(people) {
+        var mask = 0
+        for (var i = 0; people && i < people.length; i++) {
+            var t = people[i].tile
+            if (t >= 0 && t < 4) {
+                mask |= 1 << t
+            }
+        }
+        return mask
+    }
+    function nameOf(people, tile) {
+        for (var i = 0; people && i < people.length; i++) {
+            if (people[i].tile == tile) {
+                return people[i].name
+            }
+        }
+        return ""
+    }
+    // The tiles in mask, in tile order, in a w x h frame: one fills it, two are stacked, more make
+    // a 2x2 grid. Halves are rounded down, the second half takes the rest. A tile not in mask gets
+    // the whole frame (it is hidden).
+    function place(mask, w, h) {
+        var n = bits(mask)
+        var hw = Math.floor(w / 2)
+        var hh = Math.floor(h / 2)
+        var out = []
+        var rank = 0
+        for (var i = 0; i < 4; i++) {
+            var c = [0, 0, w, h]
+            if (mask & (1 << i)) {
+                var col = rank % 2
+                var row = (rank - col) / 2
+                if (n == 2) {
+                    c = [0, rank == 0 ? 0 : hh, w, rank == 0 ? hh : h - hh]
+                } else if (n > 2) {
+                    c = [col == 0 ? 0 : hw, row == 0 ? 0 : hh, col == 0 ? hw : w - hw, row == 0 ? hh : h - hh]
+                }
+                rank++
+            }
+            out.push(c)
+        }
+        return out
+    }
+    // A tap on tile (-1: not on one). In a group call a tile shows alone, or all again; with only
+    // one tile on screen there is nothing to show, and it toggles the controls as in a 1:1 call.
+    function tap(tile) {
+        var now = new Date().getTime()
+        if (now - lastTap < 150) {
+            return
+        }
+        lastTap = now
+        if (tile >= 0 && sheet.group && (solo >= 0 || bits(shownMask) > 1)) {
+            focusTile = solo >= 0 ? -1 : tile
+            sheet.wake()
+        } else {
+            sheet.toggleControls()
+        }
+    }
+    // The pictures fill their cells: each control is its cell's size and CallVideo crops the picture
+    // to its aspect (Screen's source viewport). A control bigger than its cell was squeezed into it
+    // by Cascades, not cropped (0.0.1.203). ponytail: fill crops; fit would letterbox.
+    Container {
         horizontalAlignment: HorizontalAlignment.Fill
         verticalAlignment: VerticalAlignment.Fill
+        layout: AbsoluteLayout {}
+        CallVideoTile {
+            index: 0
+            windowId: view.remoteIds[0]
+            cell: view.cells[0]
+            visible: (view.visibleMask & 1) != 0
+            name: view.nameOf(sheet.call.people, 0)
+            onTapped: view.tap(0)
+        }
+        CallVideoTile {
+            index: 1
+            windowId: view.remoteIds[1]
+            cell: view.cells[1]
+            visible: (view.visibleMask & 2) != 0
+            name: view.nameOf(sheet.call.people, 1)
+            onTapped: view.tap(1)
+        }
+        CallVideoTile {
+            index: 2
+            windowId: view.remoteIds[2]
+            cell: view.cells[2]
+            visible: (view.visibleMask & 4) != 0
+            name: view.nameOf(sheet.call.people, 2)
+            onTapped: view.tap(2)
+        }
+        CallVideoTile {
+            index: 3
+            windowId: view.remoteIds[3]
+            cell: view.cells[3]
+            visible: (view.visibleMask & 8) != 0
+            name: view.nameOf(sheet.call.people, 3)
+            onTapped: view.tap(3)
+        }
+        // The empty 4th cell of three pictures, black: nothing else is drawn there. It is no tile,
+        // so it has no tap of its own and the view's toggles the controls.
+        Container {
+            visible: view.bits(view.visibleMask) == 3
+            layoutProperties: AbsoluteLayoutProperties {
+                positionX: view.gridCells[3][0]
+                positionY: view.gridCells[3][1]
+            }
+            preferredWidth: view.gridCells[3][2]
+            preferredHeight: view.gridCells[3][3]
+            background: Color.Black
+        }
     }
     // The name and the clock, as the stock app's video call: white on a dark band across the top.
     Container {

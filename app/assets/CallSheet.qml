@@ -13,8 +13,9 @@ import hyperberry 1.0
 // lays its controls out as the stock Z10 grid. A call with video (step 7c.3) puts CallVideoView
 // over the stage and under the panel: the peer's picture fills the sheet, and the controls hide a
 // few seconds after it shows.
-// A group call (step 7d.G4, audio only) adds group, by and people to engine.call: it rings as the
-// group's, and while it is active the middle line names who is in it.
+// A group call (step 7d.G4) adds group, by and people to engine.call: it rings as the group's, and
+// while it is active the middle line names who is in it. With video (step 7e) the view shows up to
+// four of the people's pictures at once, tiles 0 to 3 (CallVideoView).
 Sheet {
     id: sheet
     property variant call: engine.call
@@ -32,13 +33,14 @@ Sheet {
     property string videoFor: ""
     // The call has video, or the peer asks for ours: the screen takes the video look.
     property bool isVideo: !ringing && !!(call.video || call.videoOurs || call.videoTheirs || call.videoAsked)
-    // The peer's picture is on screen: it is the background, and the controls may hide.
-    property bool showPicture: isVideo && !!call.videoTheirs && callVideo.pictureWidth > 0
+    // The peer's picture is on screen: it is the background, and the controls may hide. A group
+    // call has one when any of its tiles shows a picture (the view says which).
+    property bool showPicture: isVideo && (group ? videoView.shownMask != 0 : !!call.videoTheirs && callVideo.pictureWidth > 0)
     property bool controlsShown: true
     property string clock: "0:00"
     // What wording reads is passed in, so a change in any of it (people, say) redraws the line.
     property string line: wording(phase, call.reason, call.video, !!call.group, call.by || "", call.people)
-    // A group call has no video: no camera toggles, and no video choice on the ringing screen.
+    // A group call: it rings as the group's, and its video is a grid of tiles, not one picture.
     property bool group: !!call.group
     // The clock shows from the answer to the hang-up, and stays at the end.
     property bool timed: (phase == "active" || ended) && call.since > 0
@@ -66,6 +68,9 @@ Sheet {
             return qsTr("Calling…")
         case "ringing":
             if (group) {
+                if (video) {
+                    return by != "" ? qsTr("Incoming group video call · %1").arg(by) : qsTr("Incoming group video call")
+                }
                 return by != "" ? qsTr("Incoming group voice call · %1").arg(by) : qsTr("Incoming group voice call")
             }
             return video ? qsTr("Incoming video call") : qsTr("Incoming voice call")
@@ -148,6 +153,7 @@ Sheet {
     function stopVideo() {
         callVideo.stop()
         videoFor = ""
+        videoView.focusTile = -1
     }
     // Without a picture the controls stay; with it they count down.
     onShowPictureChanged: {
@@ -209,7 +215,7 @@ Sheet {
         if (!opened) {
             callAudio.muted = false
             callAudio.speaker = !!call.video
-            ringControls.withVideo = !!call.video && !call.group
+            ringControls.withVideo = !!call.video
             open()
         }
         // After open(), so the controls the windows bind to are in the sheet. Video goes to the
@@ -218,7 +224,7 @@ Sheet {
             videoFor = call.id
             callVideo.front = true
             callAudio.speaker = true
-            callVideo.start(call.id, videoView.remoteId, videoView.finderId)
+            callVideo.start(call.id, videoView.remoteIds, videoView.finderId)
         }
         // The list of who is in a group call follows the call event's people.
         peopleModel.clear()
@@ -311,7 +317,8 @@ Sheet {
                 // dimmed until they are connected.
                 ListView {
                     id: peopleList
-                    visible: sheet.group && !sheet.ringing && !sheet.ended
+                    // Not over the video's pictures: what the page draws shows over their windows.
+                    visible: sheet.group && !sheet.ringing && !sheet.ended && !sheet.showPicture
                     layoutProperties: AbsoluteLayoutProperties {
                         positionX: sheet.px(30)
                         positionY: sheet.px(70)
@@ -412,7 +419,7 @@ Sheet {
                         positionY: sheet.shift
                     }
                     visible: sheet.ringing
-                    video: !!sheet.call.video && !sheet.group
+                    video: !!sheet.call.video
                     // A voice call is answered as one; a video call with or without ours.
                     onAnswered: engine.request("call.answer", sheet.call.video ? {"id": sheet.call.id, "video": ringControls.withVideo} : {"id": sheet.call.id})
                     onDeclined: engine.request("call.reject", {"id": sheet.call.id})

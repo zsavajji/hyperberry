@@ -3,18 +3,22 @@ import bb.system 1.2
 import hyperberry 1.0
 
 // Who to call in a group (step 7d.G4): its members, ours left out, ticked as NewGroupPage ticks
-// contacts. Call stays off below two ticked; it asks first when everyone or more than 5 are ticked.
-// done fires once call.start is sent (a failure is worded by main.qml's toast); the pusher pops.
+// contacts, for a voice call or a video one (step 7e). Both stay off below two ticked; they ask first
+// when everyone or more than 5 are ticked. done fires once call.start is sent (a failure is worded by
+// main.qml's toast); the pusher pops.
 Page {
     id: page
     property string chat
+    // Which call the confirm dialog is for.
+    property bool pendingVideo: false
     signal done
     // The pusher calls this before the push: chat is set first, then the members are asked for.
     function load(jid) {
         chat = jid
         picker.loadGroup(jid)
     }
-    function confirmCall() {
+    function confirmCall(video) {
+        pendingVideo = video
         if (picker.chosenCount == picker.total || picker.chosenCount > 5) {
             sure.show()
         } else {
@@ -22,7 +26,7 @@ Page {
         }
     }
     function place() {
-        if (picker.startGroupCall() == "") {
+        if (picker.startGroupCall(pendingVideo) == "") {
             notSent.show()
             return
         }
@@ -31,13 +35,22 @@ Page {
     titleBar: TitleBar {
         title: qsTr("Call")
     }
-    actions: ActionItem {
-        title: qsTr("Call")
-        imageSource: "file:///usr/share/icons/ic_phone.png"
-        ActionBar.placement: ActionBarPlacement.OnBar
-        enabled: picker.chosenCount >= 2
-        onTriggered: page.confirmCall()
-    }
+    actions: [
+        ActionItem {
+            title: qsTr("Voice call")
+            imageSource: "file:///usr/share/icons/ic_phone.png"
+            ActionBar.placement: ActionBarPlacement.Signature
+            enabled: picker.chosenCount >= 2
+            onTriggered: page.confirmCall(false)
+        },
+        ActionItem {
+            title: qsTr("Video call")
+            imageSource: "file:///usr/share/icons/ic_chat_video.png"
+            ActionBar.placement: ActionBarPlacement.OnBar
+            enabled: picker.chosenCount >= 2
+            onTriggered: page.confirmCall(true)
+        }
+    ]
     attachedObjects: [
         ContactPicker {
             id: picker
