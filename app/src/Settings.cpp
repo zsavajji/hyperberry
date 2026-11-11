@@ -46,6 +46,7 @@ bool Settings::mediaOnMobile() const { return m_file.value("mediaOnMobile", true
 int Settings::cacheLimit() const { return qBound(64, m_file.value("cacheLimit", 64).toInt(), 512); }
 // Larger (3, 140 %) went at the user's word (2026-11-01); a saved 3 reads as Large.
 int Settings::textSize() const { return qBound(0, m_file.value("textSize", 1).toInt(), 2); }
+int Settings::callHints() const { return qMax(0, m_file.value("callHints", 0).toInt()); }
 
 qreal Settings::textScale() const
 {
@@ -188,6 +189,15 @@ void Settings::setTextSize(int size)
         return;
     store("textSize", size);
     emit textSizeChanged();
+}
+
+void Settings::setCallHints(int count)
+{
+    count = qMax(0, count);
+    if (count == callHints())
+        return;
+    store("callHints", count);
+    emit callHintsChanged();
 }
 
 // The cache is data/cache/ except upload/, which holds an upload in progress. Everything else in

@@ -20,6 +20,8 @@ class Settings : public QObject
     Q_PROPERTY(int cacheLimit READ cacheLimit WRITE setCacheLimit NOTIFY cacheLimitChanged)         // MB
     Q_PROPERTY(int textSize READ textSize WRITE setTextSize NOTIFY textSizeChanged) // 0..2
     Q_PROPERTY(qreal textScale READ textScale NOTIFY textSizeChanged)
+    // How many group calls showed the people drawer's first-time hint (CallDrawer.qml shows it in the first 2).
+    Q_PROPERTY(int callHints READ callHints WRITE setCallHints NOTIFY callHintsChanged)
 
 public:
     explicit Settings(EngineLink *engine, QObject *parent = 0);
@@ -31,6 +33,7 @@ public:
     int cacheLimit() const;
     int textSize() const;
     qreal textScale() const;
+    int callHints() const;
     void setTheme(int theme);
     void setEnterSends(bool on);
     void setNotifyPreview(bool on);
@@ -38,6 +41,7 @@ public:
     void setMediaOnMobile(bool on);
     void setCacheLimit(int mb);
     void setTextSize(int size);
+    void setCallHints(int count);
     Q_INVOKABLE QString cacheSize();
     Q_INVOKABLE QString clearCache();
 
@@ -49,6 +53,7 @@ signals:
     void mediaOnMobileChanged();
     void cacheLimitChanged();
     void textSizeChanged();
+    void callHintsChanged();
 
 private slots:
     void bootTimerReplied();

@@ -4,7 +4,10 @@ the default-contact silhouette), call_fade (a photo's fade to black), call_track
 capsule, green and red arcs, the red handset, the chevrons; 665x148), call_knob, call_btn (the
 round button's disc) and the white glyphs call_message, call_speaker, call_mute,
 call_unmute, call_end, call_video, call_video_off and call_switch, which QML tints with
-ImageView.filterColor. Everything is drawn at 8x and scaled down.
+ImageView.filterColor. Everything is drawn at 8x and scaled down. The people drawer's
+(step 7e V3) are call_drawer_shadow (the short shadow at its right edge: 12x8, stretched
+vertically) and the hint's (Hint.qml, the lock screen's tutorial look): call_hint_info (the white
+disc with the italic "i") and call_hint_chevrons (two white chevrons pointing up, turned in QML).
 Run by hand when one changes, in the image fetch-emoji.sh builds:
     docker run --rm -v "$PWD:/src" hyperberry-font python -I /src/scripts/gen-call-images.py /src/app/assets/images
 """
@@ -252,6 +255,59 @@ def switch(out):
     save(img, out, "call_switch")
 
 
+def drawer_shadow(out):
+    """The people drawer's shadow, 12x8: black at 60 % at the panel's edge, fading to nothing; QML
+    stretches it down the panel's height."""
+    img = Image.new("RGBA", (12, 8))
+    px = img.load()
+    for x in range(12):
+        a = round(255 * 0.6 * (1 - (x + 0.5) / 12) ** 1.6)
+        for y in range(8):
+            px[x, y] = (0, 0, 0, a)
+    img.save(f"{out}/call_drawer_shadow.png")
+
+
+def brush(d, p0, p1, p2, w0, w1, color):
+    """A stroke along the quadratic curve p0, p1, p2 (final px), its width going from w0 to w1: round
+    dabs close together, the way a pen's thick and thin strokes are."""
+    steps = 240
+    for i in range(steps + 1):
+        t = i / steps
+        x = (1 - t) ** 2 * p0[0] + 2 * t * (1 - t) * p1[0] + t * t * p2[0]
+        y = (1 - t) ** 2 * p0[1] + 2 * t * (1 - t) * p1[1] + t * t * p2[1]
+        r = (w0 + (w1 - w0) * t) / 2
+        d.ellipse(sc(x - r, y - r, x + r, y + r), color)
+
+
+def hint_info(out):
+    """The hint's badge, 96x96: a white disc with a serif italic lowercase i in #66661F. Drawn by
+    hand (no font here): a slanted stem, the flag at its top left, the foot's hook to the right and
+    the dot, each a brushstroke thick where a pen's would be and thin at its end."""
+    img, d = new(96, 96)
+    ink = hexa("#66661F")
+    d.ellipse(sc(0, 0, 96, 96), WHITE)
+    mid = lambda a, b: ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+    top, foot = (52, 40), (44.5, 68)
+    brush(d, top, mid(top, foot), foot, 7.6, 7.6, ink)  # the stem
+    brush(d, (52.5, 40.5), (43, 41), (38.5, 49), 5.5, 2.2, ink)  # the flag
+    brush(d, foot, (43.5, 73.5), (56, 65), 6.5, 2.4, ink)  # the foot
+    d.ellipse(sc(47.2, 22, 58.8, 33.6), ink)  # the dot
+    save(img, out, "call_hint_info")
+
+
+def hint_chevrons(out):
+    """Two white chevrons stacked, pointing up, as the lock screen's tutorial hints have; 110x110, so
+    that turned a quarter it keeps its box."""
+    img, d = new(110, 110)
+    for top in (9, 49):
+        pts = sc(8, top + 41, 55, top, 102, top + 41)
+        d.line(pts, WHITE, 9 * S, joint="curve")
+        for x, y in ((8, top + 41), (102, top + 41)):
+            d.ellipse(sc(x - 4.5, y - 4.5, x + 4.5, y + 4.5), WHITE)
+    save(img, out, "call_hint_chevrons")
+
+
 if __name__ == "__main__":
-    for f in (background, fade, track, knob, button, message, speaker, mute, unmute, end, video, video_off, switch):
+    for f in (background, fade, track, knob, button, message, speaker, mute, unmute, end, video, video_off, switch,
+              drawer_shadow, hint_info, hint_chevrons):
         f(sys.argv[1])

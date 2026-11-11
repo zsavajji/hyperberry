@@ -14,8 +14,9 @@ import hyperberry 1.0
 // over the stage and under the panel: the peer's picture fills the sheet, and the controls hide a
 // few seconds after it shows.
 // A group call (step 7d.G4) adds group, by and people to engine.call: it rings as the group's, and
-// while it is active the middle line names who is in it. With video (step 7e) the view shows up to
-// four of the people's pictures at once, tiles 0 to 3 (CallVideoView).
+// while it is active the middle line names who is in it, and a drawer from the left (CallDrawer) lists
+// them. With video (step 7e) the view shows up to four of the people's pictures at once, tiles 0 to 3
+// (CallVideoView).
 Sheet {
     id: sheet
     property variant call: engine.call
@@ -169,6 +170,7 @@ Sheet {
         callAudio.stop()
         audioFor = ""
         stopVideo()
+        drawer.reset()
     }
     // The state is read from call itself, never from phase, ended or ringing: in Qt 4.8 this
     // handler can run before those bindings catch up with the same change. Reading them left the
@@ -226,11 +228,9 @@ Sheet {
             callAudio.speaker = true
             callVideo.start(call.id, videoView.remoteIds, videoView.finderId)
         }
-        // The list of who is in a group call follows the call event's people.
-        peopleModel.clear()
-        var p = call.people
-        for (var i = 0; p && i < p.length; i++) {
-            peopleModel.append(p[i])
+        // The drawer's rows follow the call event's people, from call itself (as above).
+        if (call.group) {
+            drawer.sync(call.people)
         }
     }
     attachedObjects: [
@@ -312,64 +312,6 @@ Sheet {
                     preferredHeight: sheet.px(260)
                     scalingMethod: ScalingMethod.AspectFit
                     imageSource: "asset:///images/call_fade.png"
-                }
-                // Who is in a group call, over the group's picture: each person's picture and name,
-                // dimmed until they are connected.
-                ListView {
-                    id: peopleList
-                    // Not over the video's pictures: what the page draws shows over their windows.
-                    visible: sheet.group && !sheet.ringing && !sheet.ended && !sheet.showPicture
-                    layoutProperties: AbsoluteLayoutProperties {
-                        positionX: sheet.px(30)
-                        positionY: sheet.px(70)
-                    }
-                    preferredWidth: sheet.px(660)
-                    preferredHeight: sheet.px(230) + sheet.shift
-                    dataModel: ArrayDataModel { id: peopleModel }
-                    property variant emojiStyle: nav.emojiStyle
-                    property real tile: sheet.px(56)
-                    listItemComponents: [
-                        ListItemComponent {
-                            Container {
-                                id: personRow
-                                opacity: ListItemData.connected ? 1.0 : 0.5
-                                bottomPadding: ui.px(8)
-                                layout: StackLayout {
-                                    orientation: LayoutOrientation.LeftToRight
-                                }
-                                Container {
-                                    verticalAlignment: VerticalAlignment.Center
-                                    preferredWidth: personRow.ListItem.view.tile
-                                    preferredHeight: personRow.ListItem.view.tile
-                                    background: Color.create("#555555")
-                                    layout: DockLayout {}
-                                    Label {
-                                        horizontalAlignment: HorizontalAlignment.Center
-                                        verticalAlignment: VerticalAlignment.Center
-                                        text: (ListItemData.name || "?").charAt(0).toUpperCase()
-                                        textFormat: TextFormat.Plain
-                                        textStyle.color: Color.White
-                                    }
-                                    ImageView {
-                                        visible: !!ListItemData.photo
-                                        horizontalAlignment: HorizontalAlignment.Fill
-                                        verticalAlignment: VerticalAlignment.Fill
-                                        imageSource: ListItemData.photo ? "file://" + ListItemData.photo : ""
-                                        scalingMethod: ScalingMethod.AspectFill
-                                        loadEffect: ImageViewLoadEffect.None
-                                    }
-                                }
-                                Label {
-                                    verticalAlignment: VerticalAlignment.Center
-                                    leftMargin: ui.px(16)
-                                    text: ListItemData.name || "…"
-                                    textFormat: TextFormat.Plain
-                                    textStyle.base: personRow.ListItem.view.emojiStyle
-                                    textStyle.color: Color.White
-                                }
-                            }
-                        }
-                    ]
                 }
                 // The video view's top band says the name, the line and the clock of a call with video.
                 Label {
@@ -457,8 +399,9 @@ Sheet {
                 visible: !sheet.isVideo
                 preferredHeight: sheet.px(55)
                 background: Color.create("#0b1910") // the stock #0f0b19 in the primary colour's hue
-                // Padding, not a margin: a margin doesn't count from the container's edge.
-                leftPadding: sheet.px(30)
+                // Padding, not a margin: a margin doesn't count from the container's edge. A group call
+                // has the People button at the left.
+                leftPadding: sheet.group ? sheet.px(80) : sheet.px(30)
                 layout: DockLayout {}
                 Label {
                     verticalAlignment: VerticalAlignment.Center
@@ -468,6 +411,11 @@ Sheet {
                     textStyle.fontSizeValue: 85
                     textStyle.color: Color.create("#e8e8e8")
                 }
+            }
+            // Who is in a group call, voice or video: the slide-out from the left, with its People
+            // button, edge and hint. Over the video and the controls, under the ear's black.
+            CallDrawer {
+                id: drawer
             }
             // At the ear: black, and every touch stops here, so a cheek presses nothing.
             Container {
