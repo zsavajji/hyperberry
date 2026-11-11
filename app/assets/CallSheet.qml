@@ -230,7 +230,7 @@ Sheet {
         }
         // The drawer's rows follow the call event's people, from call itself (as above).
         if (call.group) {
-            drawer.sync(call.people)
+            sidebar.sync(call.people)
         }
     }
     attachedObjects: [
@@ -266,154 +266,253 @@ Sheet {
             // The peer's picture shows through the sheet's hole: no background over it.
             background: sheet.showPicture ? Color.Transparent : Color.Black
             layout: DockLayout {}
+            // The people drawer's sidebar (CallDrawer has the logic): it never moves, and sits UNDER the
+            // page, which slides right off it (the stock sidebar's reveal); it shows only while the drawer
+            // does, as an opaque sidebar under the page would hide the video's windows.
+            CallSidebar {
+                id: sidebar
+            }
+            // The call screen's page: everything but the sidebar and the ear's black cover. The drawer
+            // slides it right by the sidebar's width (translationX is set by CallDrawer.place(), the
+            // glide is slide). While the drawer shows the page is black, and the video's windows are
+            // hidden (CallVideoTile, CallVideoView), so the sidebar's reveal is the stock look; shut it
+            // has no background, or the hole for the video's windows would be painted over (0.0.1.190).
+            // Not clipped: the shadow below lies just left of it.
             Container {
-                horizontalAlignment: HorizontalAlignment.Center
-                verticalAlignment: VerticalAlignment.Bottom
-                preferredWidth: sheet.px(720)
-                preferredHeight: sheet.px(720) + sheet.extra
-                layout: AbsoluteLayout {}
-                // Fills a tall screen above the background picture, whose foot is black like the rest
-                // below.
-                Container {
-                    layoutProperties: AbsoluteLayoutProperties {
-                        positionX: 0
-                        positionY: 0
-                    }
-                    visible: !sheet.showPicture && sheet.shift > 0
-                    preferredWidth: sheet.px(720)
-                    preferredHeight: sheet.shift
-                    background: Color.create("#132a1c") // the stock #1b132a in the primary colour's hue
-                }
-                ImageView {
-                    visible: !sheet.showPicture
-                    layoutProperties: AbsoluteLayoutProperties {
-                        positionY: sheet.shift
-                    }
-                    preferredWidth: sheet.px(720)
-                    preferredHeight: sheet.px(720)
-                    scalingMethod: ScalingMethod.AspectFit
-                    imageSource: "asset:///images/call_bg.png"
-                }
-                // The picture fills the area above the controls and fades to black at its foot.
-                ImageView {
-                    visible: sheet.hasPhoto && !sheet.showPicture
-                    preferredWidth: sheet.px(720)
-                    preferredHeight: (sheet.ringing ? sheet.px(510) : sheet.px(415)) + sheet.shift
-                    scalingMethod: ScalingMethod.AspectFill
-                    loadEffect: ImageViewLoadEffect.None
-                    imageSource: sheet.hasPhoto ? "file://" + (sheet.call.picture || sheet.who.photo) : ""
-                }
-                ImageView {
-                    visible: sheet.hasPhoto && !sheet.showPicture
-                    layoutProperties: AbsoluteLayoutProperties {
-                        positionY: (sheet.ringing ? sheet.px(250) : sheet.px(155)) + sheet.shift
-                    }
-                    preferredWidth: sheet.px(720)
-                    preferredHeight: sheet.px(260)
-                    scalingMethod: ScalingMethod.AspectFit
-                    imageSource: "asset:///images/call_fade.png"
-                }
-                // The video view's top band says the name, the line and the clock of a call with video.
-                Label {
-                    visible: !sheet.isVideo
-                    layoutProperties: AbsoluteLayoutProperties {
-                        positionX: sheet.px(30)
-                        positionY: (sheet.ringing ? sheet.px(284) : sheet.px(312)) + sheet.shift
-                    }
-                    preferredWidth: sheet.timed ? sheet.px(450) : sheet.px(650)
-                    multiline: false
-                    text: sheet.who.name || sheet.number
-                    textFormat: TextFormat.Plain
-                    textStyle.base: nav.emojiStyle
-                    textStyle.fontSize: FontSize.PercentageValue
-                    textStyle.fontSizeValue: sheet.ringing ? 200 : 170
-                    textStyle.color: Color.White
-                }
-                Label {
-                    visible: !sheet.isVideo
-                    layoutProperties: AbsoluteLayoutProperties {
-                        positionX: sheet.px(29)
-                        positionY: (sheet.ringing ? sheet.px(360) : sheet.px(372)) + sheet.shift
-                    }
-                    // Short of the clock when it shows: a group's names run long.
-                    preferredWidth: sheet.timed ? sheet.px(430) : sheet.px(650)
-                    text: sheet.line
-                    textFormat: TextFormat.Plain
-                    textStyle.color: Color.White
-                }
-                Label {
-                    visible: sheet.timed && !sheet.isVideo
-                    layoutProperties: AbsoluteLayoutProperties {
-                        positionX: sheet.px(467)
-                        positionY: sheet.px(373) + sheet.shift
-                    }
-                    preferredWidth: sheet.px(220)
-                    text: sheet.clock
-                    textFormat: TextFormat.Plain
-                    textStyle.fontSize: FontSize.PercentageValue
-                    textStyle.fontSizeValue: 95
-                    textStyle.textAlign: TextAlign.Right
-                    textStyle.color: Color.White
-                }
-                CallRinging {
-                    id: ringControls
-                    layoutProperties: AbsoluteLayoutProperties {
-                        positionY: sheet.shift
-                    }
-                    visible: sheet.ringing
-                    video: !!sheet.call.video
-                    // A voice call is answered as one; a video call with or without ours.
-                    onAnswered: engine.request("call.answer", sheet.call.video ? {"id": sheet.call.id, "video": ringControls.withVideo} : {"id": sheet.call.id})
-                    onDeclined: engine.request("call.reject", {"id": sheet.call.id})
-                    // Declines, then the caller's chat opens with the composer, as a contact page's
-                    // Message does, for a chat we may not have yet.
-                    onMessage: {
-                        engine.request("call.reject", {"id": sheet.call.id})
-                        sheet.close()
-                        nav.openRow(sheet.who.jid ? sheet.who : {"jid": sheet.call.chat, "name": sheet.number, "initials": "", "color": "#087099"})
-                    }
-                }
-            }
-            // Over the stage, under the panel: the panel's taps and picture are above the video's.
-            CallVideoView {
-                id: videoView
-            }
-            CallPanel {
-                horizontalAlignment: HorizontalAlignment.Center
-                verticalAlignment: VerticalAlignment.Bottom
-                visible: !sheet.ringing && (!sheet.isVideo || sheet.controlsShown)
-                ended: sheet.ended
-                lift: sheet.lift
-                video: sheet.isVideo
-                group: sheet.group
-                videoOn: !!sheet.call.videoOurs
-                onTouched: sheet.wake()
-                onHangup: engine.request("call.hangup", {"id": sheet.call.id})
-                onVideoTapped: engine.request("call.video", {"id": sheet.call.id, "on": !sheet.call.videoOurs})
-                onSwitchTapped: callVideo.front = !callVideo.front
-            }
-            // The header band, as the stock app's, under no status bar here.
-            Container {
+                id: callPage
                 horizontalAlignment: HorizontalAlignment.Fill
-                verticalAlignment: VerticalAlignment.Top
-                visible: !sheet.isVideo
-                preferredHeight: sheet.px(55)
-                background: Color.create("#0b1910") // the stock #0f0b19 in the primary colour's hue
-                // Padding, not a margin: a margin doesn't count from the container's edge. A group call
-                // has the People button at the left.
-                leftPadding: sheet.group ? sheet.px(80) : sheet.px(30)
+                verticalAlignment: VerticalAlignment.Fill
+                background: drawer.shown ? Color.Black : Color.Transparent
+                clipContentToBounds: false
                 layout: DockLayout {}
-                Label {
-                    verticalAlignment: VerticalAlignment.Center
-                    text: sheet.call.video ? qsTr("WhatsApp: video call") : qsTr("WhatsApp: voice call")
-                    textFormat: TextFormat.Plain
-                    textStyle.fontSize: FontSize.PercentageValue
-                    textStyle.fontSizeValue: 85
-                    textStyle.color: Color.create("#e8e8e8")
+                // The drawer sets translationX itself, as the finger drags; an implicit animation
+                // would trail it.
+                attachedObjects: ImplicitAnimationController {
+                    propertyName: "translationX"
+                    enabled: false
+                }
+                animations: TranslateTransition {
+                    id: slide
+                    duration: 200
+                    easingCurve: StockCurve.CubicOut
+                    onEnded: drawer.settled()
+                }
+                Container {
+                    horizontalAlignment: HorizontalAlignment.Center
+                    verticalAlignment: VerticalAlignment.Bottom
+                    preferredWidth: sheet.px(720)
+                    preferredHeight: sheet.px(720) + sheet.extra
+                    layout: AbsoluteLayout {}
+                    // Fills a tall screen above the background picture, whose foot is black like the rest
+                    // below.
+                    Container {
+                        layoutProperties: AbsoluteLayoutProperties {
+                            positionX: 0
+                            positionY: 0
+                        }
+                        visible: !sheet.showPicture && sheet.shift > 0
+                        preferredWidth: sheet.px(720)
+                        preferredHeight: sheet.shift
+                        background: Color.create("#132a1c") // the stock #1b132a in the primary colour's hue
+                    }
+                    ImageView {
+                        visible: !sheet.showPicture
+                        layoutProperties: AbsoluteLayoutProperties {
+                            positionY: sheet.shift
+                        }
+                        preferredWidth: sheet.px(720)
+                        preferredHeight: sheet.px(720)
+                        scalingMethod: ScalingMethod.AspectFit
+                        imageSource: "asset:///images/call_bg.png"
+                    }
+                    // The picture fills the area above the controls and fades to black at its foot.
+                    ImageView {
+                        visible: sheet.hasPhoto && !sheet.showPicture
+                        preferredWidth: sheet.px(720)
+                        preferredHeight: (sheet.ringing ? sheet.px(510) : sheet.px(415)) + sheet.shift
+                        scalingMethod: ScalingMethod.AspectFill
+                        loadEffect: ImageViewLoadEffect.None
+                        imageSource: sheet.hasPhoto ? "file://" + (sheet.call.picture || sheet.who.photo) : ""
+                    }
+                    ImageView {
+                        visible: sheet.hasPhoto && !sheet.showPicture
+                        layoutProperties: AbsoluteLayoutProperties {
+                            positionY: (sheet.ringing ? sheet.px(250) : sheet.px(155)) + sheet.shift
+                        }
+                        preferredWidth: sheet.px(720)
+                        preferredHeight: sheet.px(260)
+                        scalingMethod: ScalingMethod.AspectFit
+                        imageSource: "asset:///images/call_fade.png"
+                    }
+                    // The video view's top band says the name, the line and the clock of a call with video.
+                    Label {
+                        visible: !sheet.isVideo
+                        layoutProperties: AbsoluteLayoutProperties {
+                            positionX: sheet.px(30)
+                            positionY: (sheet.ringing ? sheet.px(284) : sheet.px(312)) + sheet.shift
+                        }
+                        preferredWidth: sheet.timed ? sheet.px(450) : sheet.px(650)
+                        multiline: false
+                        text: sheet.who.name || sheet.number
+                        textFormat: TextFormat.Plain
+                        textStyle.base: nav.emojiStyle
+                        textStyle.fontSize: FontSize.PercentageValue
+                        textStyle.fontSizeValue: sheet.ringing ? 200 : 170
+                        textStyle.color: Color.White
+                    }
+                    Label {
+                        visible: !sheet.isVideo
+                        layoutProperties: AbsoluteLayoutProperties {
+                            positionX: sheet.px(29)
+                            positionY: (sheet.ringing ? sheet.px(360) : sheet.px(372)) + sheet.shift
+                        }
+                        // Short of the clock when it shows: a group's names run long.
+                        preferredWidth: sheet.timed ? sheet.px(430) : sheet.px(650)
+                        text: sheet.line
+                        textFormat: TextFormat.Plain
+                        textStyle.color: Color.White
+                    }
+                    Label {
+                        visible: sheet.timed && !sheet.isVideo
+                        layoutProperties: AbsoluteLayoutProperties {
+                            positionX: sheet.px(467)
+                            positionY: sheet.px(373) + sheet.shift
+                        }
+                        preferredWidth: sheet.px(220)
+                        text: sheet.clock
+                        textFormat: TextFormat.Plain
+                        textStyle.fontSize: FontSize.PercentageValue
+                        textStyle.fontSizeValue: 95
+                        textStyle.textAlign: TextAlign.Right
+                        textStyle.color: Color.White
+                    }
+                    CallRinging {
+                        id: ringControls
+                        layoutProperties: AbsoluteLayoutProperties {
+                            positionY: sheet.shift
+                        }
+                        visible: sheet.ringing
+                        video: !!sheet.call.video
+                        // A voice call is answered as one; a video call with or without ours.
+                        onAnswered: engine.request("call.answer", sheet.call.video ? {"id": sheet.call.id, "video": ringControls.withVideo} : {"id": sheet.call.id})
+                        onDeclined: engine.request("call.reject", {"id": sheet.call.id})
+                        // Declines, then the caller's chat opens with the composer, as a contact page's
+                        // Message does, for a chat we may not have yet.
+                        onMessage: {
+                            engine.request("call.reject", {"id": sheet.call.id})
+                            sheet.close()
+                            nav.openRow(sheet.who.jid ? sheet.who : {"jid": sheet.call.chat, "name": sheet.number, "initials": "", "color": "#087099"})
+                        }
+                    }
+                }
+                // Over the stage, under the panel: the panel's taps and picture are above the video's.
+                CallVideoView {
+                    id: videoView
+                }
+                CallPanel {
+                    horizontalAlignment: HorizontalAlignment.Center
+                    verticalAlignment: VerticalAlignment.Bottom
+                    visible: !sheet.ringing && (!sheet.isVideo || sheet.controlsShown)
+                    ended: sheet.ended
+                    lift: sheet.lift
+                    video: sheet.isVideo
+                    group: sheet.group
+                    videoOn: !!sheet.call.videoOurs
+                    onTouched: sheet.wake()
+                    onHangup: engine.request("call.hangup", {"id": sheet.call.id})
+                    onVideoTapped: engine.request("call.video", {"id": sheet.call.id, "on": !sheet.call.videoOurs})
+                    onSwitchTapped: callVideo.front = !callVideo.front
+                }
+                // The header band, as the stock app's, under no status bar here.
+                Container {
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    verticalAlignment: VerticalAlignment.Top
+                    visible: !sheet.isVideo
+                    preferredHeight: sheet.px(55)
+                    background: Color.create("#0b1910") // the stock #0f0b19 in the primary colour's hue
+                    // Padding, not a margin: a margin doesn't count from the container's edge. A group call
+                    // has the People button at the left.
+                    leftPadding: sheet.group ? sheet.px(80) : sheet.px(30)
+                    layout: DockLayout {}
+                    Label {
+                        verticalAlignment: VerticalAlignment.Center
+                        text: sheet.call.video ? qsTr("WhatsApp: video call") : qsTr("WhatsApp: voice call")
+                        textFormat: TextFormat.Plain
+                        textStyle.fontSize: FontSize.PercentageValue
+                        textStyle.fontSizeValue: 85
+                        textStyle.color: Color.create("#e8e8e8")
+                    }
+                }
+                // The People button of a group call (CallDrawer): a 72 px touch target at the top left
+                // (in a voice call over the header band, in a video call with the controls). The icon
+                // sits in the band's height. CallDrawer's edge strip lies over its left 30 px and passes
+                // a tap there on.
+                Container {
+                    visible: drawer.buttonShown
+                    horizontalAlignment: HorizontalAlignment.Left
+                    verticalAlignment: VerticalAlignment.Top
+                    preferredWidth: sheet.px(72)
+                    preferredHeight: sheet.px(72)
+                    topPadding: sheet.px(3)
+                    layout: DockLayout {}
+                    ImageView {
+                        horizontalAlignment: HorizontalAlignment.Center
+                        verticalAlignment: VerticalAlignment.Top
+                        preferredWidth: sheet.px(48)
+                        preferredHeight: sheet.px(48)
+                        scalingMethod: ScalingMethod.AspectFit
+                        loadEffect: ImageViewLoadEffect.None
+                        imageSource: "asset:///images/contacts_action.png"
+                        filterColor: Color.White
+                    }
+                    gestureHandlers: TapHandler {
+                        onTapped: drawer.toggle()
+                    }
+                }
+                // The shadow the page casts on the sidebar: the sidebar's last 12 px, from clear to black
+                // at 20 % at the page's edge, so just left of the page and moving with it.
+                ImageView {
+                    visible: drawer.shown
+                    horizontalAlignment: HorizontalAlignment.Left
+                    verticalAlignment: VerticalAlignment.Fill
+                    translationX: -sheet.px(12)
+                    preferredWidth: sheet.px(12)
+                    scalingMethod: ScalingMethod.Fill
+                    loadEffect: ImageViewLoadEffect.None
+                    imageSource: "asset:///images/call_drawer_shadow.png"
+                }
+                // The dimmed page: black over it, up to 70 % as the page slides, moving and fading with
+                // it. It takes the touches of the page that shows while the drawer is out: a tap closes
+                // the drawer, a drag to the left pushes it shut (CallDrawer's thresholds), and nothing
+                // under it is pressed.
+                Container {
+                    id: dim
+                    visible: drawer.shown
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    verticalAlignment: VerticalAlignment.Fill
+                    opacity: 0
+                    background: Color.create("#b3000000")
+                    attachedObjects: ImplicitAnimationController {
+                        propertyName: "opacity"
+                        enabled: false
+                    }
+                    animations: FadeTransition {
+                        id: fade
+                        duration: 200
+                    }
+                    onTouch: drawer.dragTouch(event, 0)
+                    onTouchExit: {
+                        if (drawer.dragging) {
+                            drawer.release()
+                        }
+                    }
+                    gestureHandlers: TapHandler {
+                        onTapped: drawer.glide(false)
+                    }
                 }
             }
-            // Who is in a group call, voice or video: the slide-out from the left, with its People
-            // button, edge and hint. Over the video and the controls, under the ear's black.
+            // The people drawer's logic, edge strip and hint: still, over the page and under the ear's
+            // black.
             CallDrawer {
                 id: drawer
             }

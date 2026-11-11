@@ -26,7 +26,11 @@ Container {
     ForeignWindowControl {
         id: control
         updatedProperties: WindowProperty.Size | WindowProperty.Position | WindowProperty.Visible
-        visible: tile.visible
+        // Hidden while the people drawer shows: the page slides right (CallSheet's callPage) and a
+        // native window does not necessarily follow a Cascades translation, so it would stay in
+        // place over the sidebar. The page is black then. The decoder goes on; only the window
+        // hides. A phone test may let us keep it visible.
+        visible: tile.visible && !drawer.shown
         horizontalAlignment: HorizontalAlignment.Fill
         verticalAlignment: VerticalAlignment.Fill
         attachedObjects: LayoutUpdateHandler {

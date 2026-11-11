@@ -5,8 +5,8 @@ capsule, green and red arcs, the red handset, the chevrons; 665x148), call_knob,
 round button's disc) and the white glyphs call_message, call_speaker, call_mute,
 call_unmute, call_end, call_video, call_video_off and call_switch, which QML tints with
 ImageView.filterColor. Everything is drawn at 8x and scaled down. The people drawer's
-(step 7e V3) are call_drawer_shadow (the short shadow at its right edge: 12x8, stretched
-vertically) and the hint's (Hint.qml, the lock screen's tutorial look): call_hint_info (the white
+(step 7e V3) are call_drawer_shadow (the shadow the page casts on the sidebar: 12x8, clear at its
+left, black at 20 % at its right, stretched vertically) and the hint's (Hint.qml, the lock screen's tutorial look): call_hint_info (the white
 disc with the italic "i") and call_hint_chevrons (two white chevrons pointing up, turned in QML).
 Run by hand when one changes, in the image fetch-emoji.sh builds:
     docker run --rm -v "$PWD:/src" hyperberry-font python -I /src/scripts/gen-call-images.py /src/app/assets/images
@@ -256,12 +256,13 @@ def switch(out):
 
 
 def drawer_shadow(out):
-    """The people drawer's shadow, 12x8: black at 60 % at the panel's edge, fading to nothing; QML
-    stretches it down the panel's height."""
+    """The shadow the page casts on the people drawer's sidebar, 12x8: the sidebar's last 12 px, clear
+    at the left and black at 20 % at the right (the page's edge; the stock sidebar goes from #1e1e1e to
+    about #181818 there); QML stretches it down the sidebar's height."""
     img = Image.new("RGBA", (12, 8))
     px = img.load()
     for x in range(12):
-        a = round(255 * 0.6 * (1 - (x + 0.5) / 12) ** 1.6)
+        a = round(255 * 0.2 * (x + 1) / 12)
         for y in range(8):
             px[x, y] = (0, 0, 0, a)
     img.save(f"{out}/call_drawer_shadow.png")
