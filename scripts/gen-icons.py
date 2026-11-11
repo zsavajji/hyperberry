@@ -1,7 +1,7 @@
 """Draws the chat list's small marks into app/assets/images/: ticks, clock, mute, pin and mic,
 the action bar's record icon, the row menu's pin and mute, the voice bubble's play, pause and
 retry discs, and the Hub's: the item menu's tick_action, unread_action and delete_action, and
-the account's hub.png (the app's icon, at the Hub's 81 px).
+the account's hub.png (the app icon's bubble in grey, at the Hub's 81 px).
 The phone has only the trash can among the info page's and chat menu's icons (user's choice,
 2026-11-01), so these are drawn as action icons too: contacts_action (two people), save_action
 (a floppy disk), block_action (the "forbidden" sign), attach_action (a paperclip), plus_action
@@ -19,7 +19,7 @@ import math
 import re
 import sys
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageChops, ImageDraw
 
 HANDSET = "M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"
 
@@ -247,12 +247,14 @@ def main(out):
     # (message.png's proportions: 55 by 38, its tail a fifth of the width from the left, and nearly square
     # corners), and WhatsApp's handset in it. Every size BB10 picks from (bb10-devices), then the
     # splash: the same tile on the dark theme's black, shown from the tap until the app's first frame.
-    def app_icon(px):
+    def app_icon(px, mono=None):
+        """mono: a colour for the bubble alone, the handset cut out of it, filling the px box."""
         n = 1024
         img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
         d = ImageDraw.Draw(img)
-        green, bubble = (0x1B, 0xD8, 0x62, 255), (255, 255, 255, 255)
-        d.rounded_rectangle((0, 0, n - 1, n - 1), round(0.18 * n), green)
+        green, bubble = (0x1B, 0xD8, 0x62, 255), mono or (255, 255, 255, 255)
+        if not mono:
+            d.rounded_rectangle((0, 0, n - 1, n - 1), round(0.18 * n), green)
         d.rounded_rectangle((0.15 * n, 0.19 * n, 0.85 * n, 0.674 * n), round(0.02 * n), bubble)
         d.polygon([(0.276 * n, 0.66 * n), (0.276 * n, 0.83 * n), (0.42 * n, 0.66 * n)], bubble)
         # WhatsApp's handset (the user's choice, 2026-11-06), a trace of WhatsApp in BlackBerry's bubble: the
@@ -275,14 +277,26 @@ def main(out):
         # Fitted into the bubble, centred: it fills most of the bubble's height with air around it.
         side = round(0.37 * n)
         phone = phone.resize((side, round(side * phone.height / phone.width)), Image.LANCZOS)
-        img.paste(phone, ((n - phone.width) // 2, round(0.432 * n) - phone.height // 2), phone)
-        return img.resize((px, px), Image.LANCZOS)
+        at = ((n - phone.width) // 2, round(0.432 * n) - phone.height // 2)
+        if not mono:
+            img.paste(phone, at, phone)
+            return img.resize((px, px), Image.LANCZOS)
+        hole = Image.new("L", (n, n), 0)
+        hole.paste(phone.getchannel("A"), at)
+        img.putalpha(ImageChops.subtract(img.getchannel("A"), hole))
+        img = img.crop(img.getbbox())
+        k = 0.84 * px / max(img.size)  # the bubble's long side 84 % of the box
+        img = img.resize((round(img.width * k), round(img.height * k)), Image.LANCZOS)
+        box = Image.new("RGBA", (px, px), (0, 0, 0, 0))
+        box.paste(img, ((px - img.width) // 2, (px - img.height) // 2), img)
+        return box
 
     for px in (86, 90, 96, 110, 144):
         app_icon(px).save(f"{out}/icon-{px}.png")
-    # The Hub's account and items, and so its alerts, show the app's icon: the old green tile with the
-    # bare bubble stayed there after the icon changed (Q10, 2026-11-07). 81 px, as the Hub draws it.
-    app_icon(81).save(f"{out}/hub.png")
+    # The Hub's account and items, and so its alerts: the icon's bubble alone, monochrome (the user's
+    # choice, 2026-11-11). Mid grey, as the Hub's list is light and a white glyph vanished there (Q10,
+    # 0.0.1.100). 81 px, as the Hub draws it.
+    app_icon(81, (0x80, 0x80, 0x80, 255)).save(f"{out}/hub.png")
     # One per screen an app that stays in portrait can meet (bb10-devices): the Q10 and Classic, the Z30, the
     # Z10, the Passport. The tile is 30 % of the width, in the middle, so it looks the same on each.
     for w, h in ((720, 720), (720, 1280), (768, 1280), (1440, 1440)):
