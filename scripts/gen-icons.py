@@ -1,7 +1,7 @@
 """Draws the chat list's small marks into app/assets/images/: ticks, clock, mute, pin and mic,
 the action bar's record icon, the row menu's pin and mute, the voice bubble's play, pause and
 retry discs, and the Hub's: the item menu's tick_action, unread_action and delete_action, and
-the account's hub.png (the app icon's bubble in grey, at the Hub's 81 px).
+hub.png and hub_unread.png (the app icon's bubble, grey and yellow, at the Hub's 81 px).
 The phone has only the trash can among the info page's and chat menu's icons (user's choice,
 2026-11-01), so these are drawn as action icons too: contacts_action (two people), save_action
 (a floppy disk), block_action (the "forbidden" sign), attach_action (a paperclip), plus_action
@@ -285,7 +285,7 @@ def main(out):
         hole.paste(phone.getchannel("A"), at)
         img.putalpha(ImageChops.subtract(img.getchannel("A"), hole))
         img = img.crop(img.getbbox())
-        k = 0.84 * px / max(img.size)  # the bubble's long side 84 % of the box
+        k = 0.62 * px / max(img.size)  # 50 px of 81, as the Hub's own call glyph (Q10, 2026-11-11)
         img = img.resize((round(img.width * k), round(img.height * k)), Image.LANCZOS)
         box = Image.new("RGBA", (px, px), (0, 0, 0, 0))
         box.paste(img, ((px - img.width) // 2, (px - img.height) // 2), img)
@@ -294,9 +294,11 @@ def main(out):
     for px in (86, 90, 96, 110, 144):
         app_icon(px).save(f"{out}/icon-{px}.png")
     # The Hub's account and items, and so its alerts: the icon's bubble alone, monochrome (the user's
-    # choice, 2026-11-11). Mid grey, as the Hub's list is light and a white glyph vanished there (Q10,
-    # 0.0.1.100). 81 px, as the Hub draws it.
-    app_icon(81, (0x80, 0x80, 0x80, 255)).save(f"{out}/hub.png")
+    # choice, 2026-11-11). As the system's items: grey when read, yellow when unread, sampled from a
+    # notification's bell on the Q10 (2026-11-11). The Hub tints nothing: the app swaps the file.
+    # 81 px, as the Hub draws it.
+    app_icon(81, (0x88, 0x88, 0x88, 255)).save(f"{out}/hub.png")
+    app_icon(81, (0xEC, 0xBB, 0x18, 255)).save(f"{out}/hub_unread.png")
     # One per screen an app that stays in portrait can meet (bb10-devices): the Q10 and Classic, the Z30, the
     # Z10, the Passport. The tile is 30 % of the width, in the middle, so it looks the same on each.
     for w, h in ((720, 720), (720, 1280), (768, 1280), (1440, 1440)):
