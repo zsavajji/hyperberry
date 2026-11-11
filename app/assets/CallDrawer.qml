@@ -36,6 +36,9 @@ Container {
     property bool active: sheet.group && sheet.phase == "active"
     property string hintedFor: ""
     visible: allowed
+    // It covers the whole call screen, the drawer shut too: without this it took every touch under it,
+    // and the controls could not come back nor be pressed (0.0.1.263). Its own parts still take theirs.
+    overlapTouchPolicy: OverlapTouchPolicy.Allow
     horizontalAlignment: HorizontalAlignment.Fill
     verticalAlignment: VerticalAlignment.Fill
     layout: DockLayout {}
@@ -388,11 +391,14 @@ Container {
             imageSource: "asset:///images/call_drawer_shadow.png"
         }
     }
-    // The first-time hint, over the middle of the screen. Under the edge strip, so that a swipe that
-    // starts on its chevrons still opens the drawer.
+    // The first-time hint, near the top: our camera's viewfinder is a window above Cascades from
+    // y 248 at the right, and a hint in the middle went under it (0.0.1.263). Its chevrons fall at the
+    // left edge, clear of it. Under the edge strip, so that a swipe that starts on them still opens
+    // the drawer.
     Hint {
         id: hint
-        verticalAlignment: VerticalAlignment.Center
+        verticalAlignment: VerticalAlignment.Top
+        topPadding: sheet.px(70)
         text: qsTr("Swipe from the left edge to see who is in the call")
         arrowRotation: 90
         arrowAtLeft: true
