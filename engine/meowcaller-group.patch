@@ -9,6 +9,10 @@ Group calls, ours (not whatsapp-light's); applied by scripts/hypermeow-work.sh a
    after their first packets, and decoded as a bare frame it was 10 ms of silence (0.0.1.248's
    diagnostics). DecodeAudio, the one decode path of 1:1 and group calls, sets the decoder's
    redundancy from the payload type. It also logs each participant's first payloads (debug, 249).
+4. Group playout popped and dropped words (0.0.1.251): the mixer sent nothing while nobody spoke, so
+   the sink ran dry; a pause's frame decoded to 10 ms for its packet's 60; and 120 ms in, 240 ms at
+   most was short of the ~125 ms the packets arrive off pace. Now silence keeps the pace, a short
+   decode is padded to the frame, and the queues fill 180 ms and hold 480.
 Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
 
 --- a/engine.go
@@ -148,6 +152,43 @@ Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
 +		}
 +	}
 +}
+--- a/group_audio_mixer.go
++++ b/group_audio_mixer.go
+@@ -7,8 +7,10 @@
+ 
+ const (
+ 	participantAudioMixChunkSamples     = SampleRate / 100
+-	participantAudioMixerPrefillSamples = 2 * FrameSamples
+-	participantAudioMixerMaxSamples     = 4 * FrameSamples
++	// hyperberry patch (7d): a group call's packets arrive up to ~125 ms off their pace (p99, the
++	// Q10 through the relay, 0.0.1.251); 120 ms in and 240 ms at most ran dry and dropped words.
++	participantAudioMixerPrefillSamples = 3 * FrameSamples
++	participantAudioMixerMaxSamples     = 8 * FrameSamples
+ )
+ 
+ type participantAudioMixQueue struct {
+@@ -104,7 +106,6 @@
+ 	slices.Sort(participantIDs)
+ 
+ 	mixed := make([]float32, participantAudioMixChunkSamples)
+-	contributed := false
+ 	for _, participantID := range participantIDs {
+ 		queue := m.streams[participantID]
+ 		if !queue.started {
+@@ -124,11 +125,9 @@
+ 		if len(queue.pending) == 0 {
+ 			queue.pending = nil
+ 		}
+-		contributed = true
+ 	}
+-	if !contributed {
+-		return nil, false
+-	}
++	// hyperberry patch (7d): silence while nobody speaks, so the sink keeps its pace instead of
++	// running dry and popping as it starts again.
+ 	for i, sample := range mixed {
+ 		if sample > 1 {
+ 			mixed[i] = 1
 --- a/group_media_receive.go
 +++ b/group_media_receive.go
 @@ -55,6 +55,7 @@
@@ -158,7 +199,7 @@ Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
  }
  
  type installedGroupRawEpoch struct {
-@@ -868,8 +869,27 @@
+@@ -868,8 +869,32 @@
  			Str("participant_id", receiver.participantID).
  			Msg("participant audio failed authentication")
  		return decodedParticipantAudio{}, false
@@ -173,6 +214,11 @@ Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
 +		d.SetRedundancy(red)
  	}
  	pcm := receiver.decoder.Decode(payload)
++	// hyperberry patch (7d): a pause's frame decodes to 10 ms but stands for the packet's 60;
++	// short, it drained the mixer's queue.
++	if len(pcm) < FrameSamples {
++		pcm = append(pcm, make([]float32, FrameSamples-len(pcm))...)
++	}
 +	// hyperberry debug (7d): a group call decoded to silence; what the peers' payloads are.
 +	if receiver.payloadsSeen++; receiver.payloadsSeen <= 12 || receiver.payloadsSeen%200 == 0 {
 +		head := payload
