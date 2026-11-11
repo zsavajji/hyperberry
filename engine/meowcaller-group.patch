@@ -8,7 +8,7 @@ Group calls, ours (not whatsapp-light's); applied by scripts/hypermeow-work.sh a
 3. Audio of payload type 121 is MLow in a SplitRed (RED) container: group-call peers switch to it
    after their first packets, and decoded as a bare frame it was 10 ms of silence (0.0.1.248's
    diagnostics). DecodeAudio, the one decode path of 1:1 and group calls, sets the decoder's
-   redundancy from the payload type. It also logs each participant's first payloads (debug, 249).
+   redundancy from the payload type.
 4. Group playout popped and dropped words (0.0.1.251): the mixer sent nothing while nobody spoke, so
    the sink ran dry; a pause's frame decoded to 10 ms for its packet's 60; and 120 ms in, 240 ms at
    most was short of the ~125 ms the packets arrive off pace. Now silence keeps the pace, a short
@@ -193,15 +193,7 @@ Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
  			mixed[i] = 1
 --- a/group_media_receive.go
 +++ b/group_media_receive.go
-@@ -55,6 +55,7 @@
- 	appDataPipe   *MediaPipeline
- 	srtcp         *mediaSrtcpReceiver
- 	decoder       participantAudioDecoder
-+	payloadsSeen  int // hyperberry debug (7d): payloads logged
- }
- 
- type installedGroupRawEpoch struct {
-@@ -868,8 +869,32 @@
+@@ -868,8 +868,22 @@
  			Str("participant_id", receiver.participantID).
  			Msg("participant audio failed authentication")
  		return decodedParticipantAudio{}, false
@@ -220,16 +212,6 @@ Tests: TestReachableTargetsDropsUsersDiscoveryLeftOut, TestIsEndedOffer.
 +	// short, it drained the mixer's queue.
 +	if len(pcm) < FrameSamples {
 +		pcm = append(pcm, make([]float32, FrameSamples-len(pcm))...)
-+	}
-+	// hyperberry debug (7d): a group call decoded to silence; what the peers' payloads are.
-+	if receiver.payloadsSeen++; receiver.payloadsSeen <= 12 || receiver.payloadsSeen%200 == 0 {
-+		head := payload
-+		if len(head) > 8 {
-+			head = head[:8]
-+		}
-+		r.log.Info().Str("participant_id", receiver.participantID).Uint8("pt", authenticatedHeader.PayloadType).
-+			Int("n", receiver.payloadsSeen).Int("bytes", len(payload)).Hex("head", head).Int("samples", len(pcm)).
-+			Msg("group audio payload")
 +	}
  	return decodedParticipantAudio{
  		ParticipantID: receiver.participantID,

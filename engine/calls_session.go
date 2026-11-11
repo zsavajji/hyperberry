@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -11,7 +12,6 @@ import (
 	"github.com/polymorfa/hypermeow/types/events"
 	waLog "github.com/polymorfa/hypermeow/util/log"
 	"github.com/purpshell/meowcaller"
-	"github.com/purpshell/meowcaller/diag"
 	"github.com/rs/zerolog"
 )
 
@@ -77,13 +77,10 @@ func (s *Session) initCalls() {
 
 // callsOn puts meowcaller on a new client. It must come before the client connects.
 func (s *Session) callsOn(cli *whatsmeow.Client) {
-	opts := []meowcaller.Option{meowcaller.WithLogger(meowcallerLog(s.log.Sub("meowcaller")))}
-	// ponytail: debug only (7d, no audio in a group call): meowcaller's per-frame levels and SRTP
-	// events into data/logs/calldiag; it dumps key material, so drop it once group audio works.
-	if rec, err := diag.NewRecorder(filepath.Join(s.srv.dir, "logs", "calldiag")); err == nil {
-		opts = append(opts, meowcaller.WithDiagnostics(rec))
-	}
-	mc := meowcaller.NewClient(cli, opts...)
+	// 248-254 recorded meowcaller's diagnostics, key material included, for the group calls'
+	// audio (7d); what they left goes.
+	os.RemoveAll(filepath.Join(s.srv.dir, "logs", "calldiag"))
+	mc := meowcaller.NewClient(cli, meowcaller.WithLogger(meowcallerLog(s.log.Sub("meowcaller"))))
 	mc.OnIncomingCall(func(call *meowcaller.Call) {
 		if cli == s.client() {
 			s.calls.offer(call)
