@@ -17,14 +17,16 @@ QString MediaData::clock(int seconds)
     return QString("%1:%2").arg(seconds / 60).arg(seconds % 60, 2, 10, QChar('0'));
 }
 
-// The bubble's picture for a downloaded photo (step 6.3): a JPEG of at most 320 px, made the first
-// time from the file and kept in data/cache/previews/ (the engine wipes data/cache/ on unlink). The
+// The bubble's picture for a downloaded photo (step 6.3): a JPEG whose short side is at most 640 px
+// (long side 1280), made the first time from the file and kept in data/cache/previews/ as
+// <id>-640.jpg (the engine wipes data/cache/ on unlink). The
 // engine decodes no picture, and Qt's reader decodes straight to the smaller size. Fills width and
 // height from the file when the row has none. Empty when the photo can't be read.
 // ponytail: made on the UI thread, tens of ms on the Q10; a worker thread if scrolling stutters.
+static const int PreviewSide = 640; // the knob: the preview's short side, in px
 static QByteArray preview(const QString &id, const QString &path, int &width, int &height)
 {
-    const QString file = QDir::homePath() + "/cache/previews/" + id + ".jpg";
+    const QString file = QDir::homePath() + "/cache/previews/" + id + "-640.jpg";
     const bool have = QFile::exists(file);
     if (!have || width <= 0 || height <= 0) {
         QImageReader reader(path);
@@ -37,8 +39,12 @@ static QByteArray preview(const QString &id, const QString &path, int &width, in
             if (!size.isValid())
                 return QByteArray();
             QSize to = size;
-            if (to.width() > 320 || to.height() > 320)
-                to.scale(320, 320, Qt::KeepAspectRatio);
+            // The card is ~640 px wide and crops to a square: the short side sets the sharpness.
+            // A panorama's long side is capped so its decoded image stays a few MB.
+            if (qMin(to.width(), to.height()) > PreviewSide)
+                to.scale(PreviewSide, PreviewSide, Qt::KeepAspectRatioByExpanding);
+            if (qMax(to.width(), to.height()) > 2 * PreviewSide)
+                to.scale(2 * PreviewSide, 2 * PreviewSide, Qt::KeepAspectRatio);
             reader.setScaledSize(to);
             const QImage image = reader.read();
             if (image.isNull() || !QDir().mkpath(QFileInfo(file).path()))
