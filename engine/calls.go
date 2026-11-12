@@ -53,25 +53,26 @@ type liveCall interface {
 
 // callState is the live call. Calls.mu guards it, except link.
 type callState struct {
-	call      liveCall // nil while an outgoing offer is going out
-	id        string
-	chat      string // the chats.db key of the person, or of the group
-	group     bool   // a group call: chat is the group's key
-	name      string // for the Hub item and a new chat
-	by        string // a group call's starter, by name (incoming)
-	out       bool
-	offer     int64         // unix seconds: the row's ts
-	state     string        // the last state sent
-	since     int64         // unix ms of "active"
-	answering bool          // we pressed Answer
-	forced    string        // the reason to end with, whatever meowcaller says (offline)
-	ring      chan struct{} // the ringtone, nil once silenced
-	item      bool          // the Hub item is up
-	ended     bool
-	mic       *micSource
-	link      atomic.Pointer[audioLink]
-	vid       videoState
-	picture   string // the chat's full-size picture, once fetched ("" until then, or none)
+	call         liveCall // nil while an outgoing offer is going out
+	id           string
+	chat         string // the chats.db key of the person, or of the group
+	group        bool   // a group call: chat is the group's key
+	name         string // for the Hub item and a new chat
+	by           string // a group call's starter, by name (incoming)
+	out          bool
+	offer        int64         // unix seconds: the row's ts
+	state        string        // the last state sent
+	since        int64         // unix ms of "active"
+	reconnecting bool          // meowcaller is restoring the media link (phase7b.md 7b.5)
+	answering    bool          // we pressed Answer
+	forced       string        // the reason to end with, whatever meowcaller says (offline)
+	ring         chan struct{} // the ringtone, nil once silenced
+	item         bool          // the Hub item is up
+	ended        bool
+	mic          *micSource
+	link         atomic.Pointer[audioLink]
+	vid          videoState
+	picture      string // the chat's full-size picture, once fetched ("" until then, or none)
 
 	// A group call's people (roster, below).
 	roster     []meowcaller.GroupCallParticipant // the group call's people, us left out
@@ -174,7 +175,7 @@ func callPhase(p meowcaller.CallPhase, out bool) string {
 // body is the `call` event. Call it with c.mu held.
 func (cs *callState) body(reason string) map[string]any {
 	m := map[string]any{"id": cs.id, "chat": cs.chat, "out": cs.out, "state": cs.state,
-		"reason": reason, "since": cs.since, "group": cs.group, "by": cs.by, "picture": cs.picture}
+		"reason": reason, "since": cs.since, "reconnecting": cs.reconnecting, "group": cs.group, "by": cs.by, "picture": cs.picture}
 	cs.videoBody(m)
 	if cs.group {
 		p := cs.people()
@@ -509,29 +510,37 @@ func (c *Calls) turnAway(call liveCall) {
 	c.writeRow(cs, "missed_call", 0, true)
 }
 
-// phase follows meowcaller's phase changes; the ending comes through finish.
+// phase follows meowcaller's phase changes; the ending comes through finish. Reconnecting is no
+// state: the state stays and the flag says it.
 func (c *Calls) phase(cs *callState, p meowcaller.CallPhase) {
+	re := p == meowcaller.CallPhaseReconnecting
 	st := callPhase(p, cs.out)
-	if st == "" {
+	if st == "" && !re {
 		return
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if cs.ended || c.cur != cs || cs.state == st {
+	if re {
+		st = cs.state
+	}
+	if st == "" || cs.ended || c.cur != cs || (st == cs.state && re == cs.reconnecting) {
 		return
 	}
-	if st == "ringing" {
-		c.startRing(cs)
-	} else if cs.state == "ringing" {
-		c.stopRing(cs)
-	}
-	cs.state = st
-	if st == "active" {
-		cs.since = time.Now().UnixMilli()
-		if cs.vid.voiceOnly {
-			go c.voiceOnly(cs)
+	if st != cs.state {
+		if st == "ringing" {
+			c.startRing(cs)
+		} else if cs.state == "ringing" {
+			c.stopRing(cs)
+		}
+		cs.state = st
+		if st == "active" {
+			cs.since = time.Now().UnixMilli()
+			if cs.vid.voiceOnly {
+				go c.voiceOnly(cs)
+			}
 		}
 	}
+	cs.reconnecting = re
 	c.srv.Emit("call", cs.body(""))
 }
 
@@ -601,6 +610,17 @@ func (c *Calls) drop() {
 		}
 		c.finish(cs, "hangup")
 	}()
+}
+
+// reconnecting is whether the live call's media link is being restored (the connection to
+// WhatsApp is not).
+func (c *Calls) reconnecting() bool {
+	if c == nil {
+		return false
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.cur != nil && c.cur.reconnecting
 }
 
 // writeRow writes the call's row in its chat, through the writer, as a live message would: a

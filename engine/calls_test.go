@@ -375,6 +375,35 @@ func TestCallRows(t *testing.T) {
 	}
 }
 
+// A lost media link is a flag on the event, not a state: the state and since stay.
+func TestCallReconnecting(t *testing.T) {
+	r := newCallRig(t)
+	f := r.fake("R1")
+	r.answered(t, f)
+	r.c.mu.Lock()
+	since := float64(r.c.cur.since)
+	r.c.mu.Unlock()
+	if r.c.reconnecting() {
+		t.Error("reconnecting before the link was lost")
+	}
+
+	f.setPhase(meowcaller.CallPhaseReconnecting)
+	if m := r.want(t, "active", ""); m["reconnecting"] != true || m["since"] != since {
+		t.Errorf("link lost: %v", m)
+	}
+	if !r.c.reconnecting() {
+		t.Error("not reconnecting after the link was lost")
+	}
+
+	f.setPhase(meowcaller.CallPhaseActive)
+	if m := r.want(t, "active", ""); m["reconnecting"] != false || m["since"] != since {
+		t.Errorf("link back: %v", m)
+	}
+	if r.c.reconnecting() {
+		t.Error("still reconnecting after the link came back")
+	}
+}
+
 func TestCallEventSequenceAndHello(t *testing.T) {
 	r := newCallRig(t)
 	f := r.fake("S1")
