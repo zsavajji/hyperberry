@@ -1,0 +1,16 @@
+--- a/message.go
++++ b/message.go
+@@ -93,6 +93,13 @@
+ }
+ 
+ func (cli *Client) handleUnencryptedMessage(ctx context.Context, node *waBinary.Node) {
++	// HyperBerry: a user's story reaches a linked device as <status type="media"|"text"> carrying an
++	// encrypted <enc> payload, as a <message> does. Newsletter statuses are plaintext and have none. Upstream
++	// acknowledged the others and dropped them, so no story ever reached the app: decrypt them as a message.
++	if _, ok := node.GetOptionalChildByTag("enc"); ok {
++		cli.handleEncryptedMessage(ctx, node)
++		return
++	}
+ 	info, err := cli.parseMessageInfo(node)
+ 	if err != nil {
+ 		cli.Log.Warnf("Failed to parse message: %v", err)
