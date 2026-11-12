@@ -391,15 +391,25 @@ Sheet {
                 visible: !sheet.own
                 horizontalAlignment: HorizontalAlignment.Fill
                 verticalAlignment: VerticalAlignment.Bottom
-                ControlDelegate {
-                    id: pickerSlot
-                    source: "EmojiPicker.qml"
-                    delegateActive: false
+                // On a ground of its own, with a line above: over a story the picker would otherwise be emoji on a picture.
+                Container {
                     visible: sheet.picking
                     horizontalAlignment: HorizontalAlignment.Fill
-                    onControlChanged: {
-                        if (control) {
-                            control.picked.connect(sheet.react)
+                    background: Color.create("#161616")
+                    Container {
+                        horizontalAlignment: HorizontalAlignment.Fill
+                        preferredHeight: ui.px(1)
+                        background: Color.create("#3A3A3A")
+                    }
+                    ControlDelegate {
+                        id: pickerSlot
+                        source: "EmojiPicker.qml"
+                        delegateActive: false
+                        horizontalAlignment: HorizontalAlignment.Fill
+                        onControlChanged: {
+                            if (control) {
+                                control.picked.connect(sheet.react)
+                            }
                         }
                     }
                 }
