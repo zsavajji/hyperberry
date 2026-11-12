@@ -120,6 +120,20 @@ void ContactPicker::onReplied(const QString &id, const QString &cmd, const QVari
     emit loadedChanged();
 }
 
+QStringList ContactPicker::chosen() const
+{
+    return m_chosen.toList();
+}
+
+void ContactPicker::clearChosen()
+{
+    if (m_chosen.isEmpty())
+        return;
+    m_chosen.clear();
+    filter(m_text); // redraws the rows without their ticks
+    emit chosenChanged();
+}
+
 // ponytail: a linear pass per keystroke; fine for a few thousand contacts.
 void ContactPicker::filter(const QString &text)
 {

@@ -5,7 +5,7 @@ import hyperberry 1.0
 // The story composer (docs/plan/stories.md): a Sheet for posting a story of our own, from StoriesPage. A photo
 // or a video picked from the phone gets a caption; a text story is words on a colour, chosen in a bar along the
 // bottom as the chat's emoji picker is: an icon (a mosaic of the colours) opens a strip of them, and typing again
-// closes it. Post sends story.post and closes: the story shows up in "My story" at once, and a failure
+// closes it. A bar along the top says who it is shared with (everyone, or the people StoryAudienceSheet chose). Post sends story.post and closes: the story shows up in "My story" at once, and a failure
 // comes back as a toast (storyList.postFailed). compose(mode, path) sets it up: mode is "photo", "video" or
 // "text", path the file for the first two.
 Sheet {
@@ -19,6 +19,8 @@ Sheet {
     property variant colours: ["#075E54", "#128C7E", "#6A1B9A", "#C62828", "#1565C0", "#37474F"]
     // The colour strip is open.
     property bool picking: false
+    // The chat keys of the people it goes to; none is everyone (the account's status privacy settings).
+    property variant audience: []
     property bool valid: sheet.mode == "text" ? story.text.replace(/\s/g, "") != "" : sheet.path != ""
 
     function compose(mode, path) {
@@ -26,6 +28,8 @@ Sheet {
         sheet.path = path
         sheet.colour = 0
         sheet.picking = false
+        sheet.audience = []
+        audienceSheet.reset()
         sheet.info = path ? media.fileInfo(path) : ({})
         caption.text = ""
         story.text = ""
@@ -33,6 +37,9 @@ Sheet {
     }
     function post() {
         var args = {}
+        if (sheet.audience.length > 0) {
+            args.audience = sheet.audience
+        }
         if (sheet.mode == "text") {
             args.text = story.text.substring(0, 700) // WhatsApp's limit
             args.bg = sheet.colours[sheet.colour]
@@ -108,6 +115,10 @@ Sheet {
                     background: Color.create(cell.tint)
                 }
             }
+        },
+        StoryAudienceSheet {
+            id: audienceSheet
+            onChosen: sheet.audience = jids
         },
         MediaOpener {
             id: media
@@ -283,6 +294,44 @@ Sheet {
                     id: caption
                     hintText: qsTr("Add a caption")
                     input.submitKey: SubmitKey.Done
+                }
+            }
+            // Who sees it: a bar along the top that opens the audience sheet.
+            Container {
+                horizontalAlignment: HorizontalAlignment.Fill
+                verticalAlignment: VerticalAlignment.Top
+                background: Color.create(0.0, 0.0, 0.0, 0.55)
+                minHeight: ui.du(8)
+                leftPadding: ui.du(1.5)
+                rightPadding: ui.du(1.5)
+                layout: StackLayout {
+                    orientation: LayoutOrientation.LeftToRight
+                }
+                gestureHandlers: TapHandler {
+                    onTapped: audienceSheet.open()
+                }
+                Label {
+                    verticalAlignment: VerticalAlignment.Center
+                    text: qsTr("Share with")
+                    textFormat: TextFormat.Plain
+                    textStyle.color: Color.create("#CCCCCC")
+                }
+                Label {
+                    verticalAlignment: VerticalAlignment.Center
+                    layoutProperties: StackLayoutProperties {
+                        spaceQuota: 1
+                    }
+                    leftMargin: ui.du(1)
+                    text: sheet.audience.length == 0 ? qsTr("Everyone") : qsTr("%1 chosen").arg(sheet.audience.length)
+                    textFormat: TextFormat.Plain
+                    textStyle.color: Color.White
+                }
+                Label {
+                    verticalAlignment: VerticalAlignment.Center
+                    text: "\u203A"
+                    textFormat: TextFormat.Plain
+                    textStyle.color: Color.White
+                    textStyle.fontSize: FontSize.XLarge
                 }
             }
         }

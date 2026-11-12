@@ -44,6 +44,8 @@ Sheet {
     // The video is on screen (playing, or paused by us): until then its thumbnail stays and the spinner turns, since the
     // player takes a second or so to prepare after the file is here.
     property bool playing: false
+    // The emoji picker is open: the story waits.
+    property bool picking: false
     property bool own: sheet.poster.poster == "me"
 
     // The first story not seen, else the first.
@@ -76,6 +78,7 @@ Sheet {
         i = Math.max(i, 0)
         player.stop()
         sheet.playing = false
+        sheet.picking = false
         reply.text = ""
         sheet.index = i
         sheet.progress = 0
@@ -114,11 +117,28 @@ Sheet {
         reply.loseFocus()
     }
     function heart() {
-        if (sheet.hearted || sheet.index < 0) {
+        sheet.react("\u2764\uFE0F")
+    }
+    // A reaction to the story on screen: the heart, or the emoji picked. Marks it, once per story.
+    function react(emoji) {
+        sheet.picking = false
+        sheet.paused = reply.focused
+        if (sheet.index < 0 || sheet.hearted) {
             return
         }
         sheet.reacted += sheet.cur.id + ","
-        storyList.react(sheet.poster.poster, sheet.cur.id, "\u2764\uFE0F")
+        storyList.react(sheet.poster.poster, sheet.cur.id, emoji)
+        emojis.use(emoji)
+    }
+    function togglePicker() {
+        if (!pickerSlot.delegateActive) {
+            pickerSlot.delegateActive = true // made at the first open, then kept
+        }
+        sheet.picking = !sheet.picking
+        sheet.paused = sheet.picking || reply.focused
+        if (sheet.picking) {
+            reply.loseFocus()
+        }
     }
     function replyFailed(p, id) {
         if (p == sheet.poster.poster) {
@@ -205,6 +225,8 @@ Sheet {
         sheet.index = -1
         sheet.items = []
         sheet.segs = []
+        sheet.picking = false
+        sheet.paused = false
         bar.removeAll()
     }
     attachedObjects: [
@@ -363,52 +385,91 @@ Sheet {
                     }
                 }
             }
-            // The reply field and the heart, over a band at the bottom. Not on our own stories.
+            // The bottom of the story, not on our own: the emoji picker when it is open, over the reply bar. The picker
+            // is made at the first open and kept, as the chat's is.
             Container {
                 visible: !sheet.own
                 horizontalAlignment: HorizontalAlignment.Fill
                 verticalAlignment: VerticalAlignment.Bottom
-                background: Color.create(0.0, 0.0, 0.0, 0.55)
-                leftPadding: ui.du(1)
-                rightPadding: ui.du(0.5)
-                topPadding: ui.du(1)
-                bottomPadding: ui.du(1)
-                layout: StackLayout {
-                    orientation: LayoutOrientation.LeftToRight
-                }
-                TextField {
-                    id: reply
-                    verticalAlignment: VerticalAlignment.Center
-                    layoutProperties: StackLayoutProperties {
-                        spaceQuota: 1
-                    }
-                    hintText: qsTr("Reply")
-                    input.submitKey: SubmitKey.Send
-                    input.onSubmitted: sheet.sendReply()
-                    onFocusedChanged: {
-                        sheet.paused = reply.focused
-                        if (!reply.focused) {
-                            sheet.lostAt = new Date().getTime()
+                ControlDelegate {
+                    id: pickerSlot
+                    source: "EmojiPicker.qml"
+                    delegateActive: false
+                    visible: sheet.picking
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    onControlChanged: {
+                        if (control) {
+                            control.picked.connect(sheet.react)
                         }
                     }
                 }
-                // A box 10 du square, the touch target.
+                // The reply field, the emoji button and the heart, over a band.
                 Container {
-                    verticalAlignment: VerticalAlignment.Center
-                    preferredWidth: ui.du(10)
-                    preferredHeight: ui.du(10)
-                    layout: DockLayout {}
-                    ImageView {
-                        horizontalAlignment: HorizontalAlignment.Center
-                        verticalAlignment: VerticalAlignment.Center
-                        preferredWidth: ui.du(5.5)
-                        preferredHeight: ui.du(5.5)
-                        imageSource: "asset:///images/heart.png"
-                        filterColor: sheet.hearted ? Color.create("#E53935") : Color.White
-                        opacity: sheet.hearted ? 1.0 : 0.75
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    background: Color.create(0.0, 0.0, 0.0, 0.55)
+                    leftPadding: ui.du(1)
+                    rightPadding: ui.du(0.5)
+                    topPadding: ui.du(1)
+                    bottomPadding: ui.du(1)
+                    layout: StackLayout {
+                        orientation: LayoutOrientation.LeftToRight
                     }
-                    gestureHandlers: TapHandler {
-                        onTapped: sheet.heart()
+                    TextField {
+                        id: reply
+                        verticalAlignment: VerticalAlignment.Center
+                        layoutProperties: StackLayoutProperties {
+                            spaceQuota: 1
+                        }
+                        hintText: qsTr("Reply")
+                        input.submitKey: SubmitKey.Send
+                        input.onSubmitted: sheet.sendReply()
+                        onFocusedChanged: {
+                            if (reply.focused) {
+                                sheet.picking = false
+                            }
+                            sheet.paused = reply.focused || sheet.picking
+                            if (!reply.focused) {
+                                sheet.lostAt = new Date().getTime()
+                            }
+                        }
+                    }
+                    // The emoji button: opens the picker to react with any emoji. A box 10 du square, the touch target.
+                    Container {
+                        verticalAlignment: VerticalAlignment.Center
+                        preferredWidth: ui.du(10)
+                        preferredHeight: ui.du(10)
+                        layout: DockLayout {}
+                        ImageView {
+                            horizontalAlignment: HorizontalAlignment.Center
+                            verticalAlignment: VerticalAlignment.Center
+                            preferredWidth: ui.du(5.5)
+                            preferredHeight: ui.du(5.5)
+                            imageSource: "asset:///images/emoji.png"
+                            filterColor: sheet.picking ? ui.palette.primary : Color.White
+                            opacity: sheet.picking ? 1.0 : 0.75
+                        }
+                        gestureHandlers: TapHandler {
+                            onTapped: sheet.togglePicker()
+                        }
+                    }
+                    // The heart: the quick reaction. A box 10 du square, the touch target.
+                    Container {
+                        verticalAlignment: VerticalAlignment.Center
+                        preferredWidth: ui.du(10)
+                        preferredHeight: ui.du(10)
+                        layout: DockLayout {}
+                        ImageView {
+                            horizontalAlignment: HorizontalAlignment.Center
+                            verticalAlignment: VerticalAlignment.Center
+                            preferredWidth: ui.du(5.5)
+                            preferredHeight: ui.du(5.5)
+                            imageSource: "asset:///images/heart.png"
+                            filterColor: sheet.hearted ? Color.create("#E53935") : Color.White
+                            opacity: sheet.hearted ? 1.0 : 0.75
+                        }
+                        gestureHandlers: TapHandler {
+                            onTapped: sheet.heart()
+                        }
                     }
                 }
             }

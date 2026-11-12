@@ -7,6 +7,7 @@
 #include <QPointer>
 #include <QSet>
 #include <QString>
+#include <QStringList>
 #include <QVariant>
 #include <QVariantList>
 
@@ -53,6 +54,10 @@ public:
     // Ticks or unticks the row at indexPath, and redraws just that row. False, and nothing
     // changes, when ticking would go past the limit (there is none outside group mode).
     Q_INVOKABLE bool toggle(const QVariantList &indexPath);
+    // The ticked contacts' jids, for a story's audience (StoryAudienceSheet); in no order.
+    Q_INVOKABLE QStringList chosen() const;
+    // Unticks every contact ("Everyone" in the audience sheet).
+    Q_INVOKABLE void clearChosen();
     // Asks group.create for a group of the ticked contacts; the request's id, "" when the
     // engine isn't connected. The reply comes as groupCreated.
     Q_INVOKABLE QString createGroup(const QString &name);
