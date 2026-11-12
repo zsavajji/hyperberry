@@ -27,29 +27,26 @@ static const char *const kDb = "stories";
 // A story lives 24 h (docs/protocol.md): rows older than that are hidden even if the engine hasn't swept.
 static const uint kLife = 24 * 60 * 60;
 
-// The tile is 310 x 211 px on the Q10; the picture is made a little larger and the ImageView crops it.
-static const int TileW = 320;
-static const int TileH = 220;
-
-// The tile's picture as a file: the downloaded photo scaled down (made once, kept in data/cache/previews/,
-// which the engine wipes on unlink), else the story's inline thumbnail written out as it is. "" when
-// the story has neither (a text story, a video whose thumbnail didn't come).
+// A story's picture as a file: the downloaded photo scaled to w x h (made once, kept in data/cache/previews/ as
+// <id>-<what>.jpg, which the engine wipes on unlink), else the story's inline thumbnail written out as it is.
+// "" when the story has neither (a text story, a video whose thumbnail didn't come).
 // ponytail: made on the UI thread, tens of ms on the Q10 and once per photo; a worker thread if the tab stutters.
-static QString tileFile(const QString &id, int kind, const QString &path, QSqlDatabase &db, const QString &poster)
+static QString pictureFile(const QString &id, int kind, const QString &path, QSqlDatabase &db, const QString &poster,
+                           const char *what, int w, int h, Qt::AspectRatioMode mode, int quality)
 {
     const QString dir = QDir::homePath() + "/cache/previews/";
     if (kind == 1 && !path.isEmpty() && QFile::exists(path)) {
-        const QString file = dir + id + "-tile.jpg";
+        const QString file = dir + id + "-" + what + ".jpg";
         if (QFile::exists(file))
             return file;
         QImageReader reader(path);
         QSize to = reader.size(); // from the header
         if (to.isValid()) {
-            to.scale(TileW, TileH, Qt::KeepAspectRatioByExpanding);
+            to.scale(w, h, mode);
             reader.setScaledSize(to);
             const QImage image = reader.read();
             if (!image.isNull() && QDir().mkpath(dir)) {
-                if (image.save(file, "JPEG", 80))
+                if (image.save(file, "JPEG", quality))
                     return file;
                 QFile::remove(file); // no half-written preview left to be taken for a good one
             }
@@ -73,6 +70,18 @@ static QString tileFile(const QString &id, int kind, const QString &path, QSqlDa
     return file;
 }
 
+// The tile is 310 x 211 px on the Q10; its picture is made a little larger and the ImageView crops it.
+static QString tileFile(const QString &id, int kind, const QString &path, QSqlDatabase &db, const QString &poster)
+{
+    return pictureFile(id, kind, path, db, poster, "tile", 320, 220, Qt::KeepAspectRatioByExpanding, 80);
+}
+
+// The viewer's picture fits the Q10's 720 px square, which a larger screen's ImageView scales up.
+static QString viewFile(const QString &id, int kind, const QString &path, QSqlDatabase &db, const QString &poster)
+{
+    return pictureFile(id, kind, path, db, poster, "view", 720, 720, Qt::KeepAspectRatio, 85);
+}
+
 // A text story's colour: WhatsApp's ARGB number as "#RRGGBB", "" when it has none.
 static QString argb(const QVariantMap &extra, const char *key)
 {
@@ -90,6 +99,7 @@ static bool before(const QVariantMap &a, const QVariantMap &b)
 
 StoriesModel::StoriesModel(EngineLink *engine, QObject *parent)
     : DataModel(parent)
+    , m_engine(engine)
     , m_active(false)
     , m_unseen(0)
     , m_days(RelativeDateFormat::NonTimeCritical)
@@ -104,6 +114,8 @@ StoriesModel::StoriesModel(EngineLink *engine, QObject *parent)
     connect(&m_soon, SIGNAL(timeout()), this, SLOT(reload()));
     connect(engine, SIGNAL(storiesChanged()), this, SLOT(reloadSoon()));
     connect(engine, SIGNAL(connectedChanged()), this, SLOT(reloadSoon()));
+    connect(engine, SIGNAL(replied(QString, QString, QVariant)), this, SLOT(onReplied(QString, QString, QVariant)));
+    connect(engine, SIGNAL(failureChanged()), this, SLOT(onFailure()));
     reloadSoon();
 }
 
@@ -233,4 +245,110 @@ void StoriesModel::reload()
         if (wasEmpty != m_rows.isEmpty())
             emit emptyChanged();
     }
+}
+
+static const char *const kStoryCols = "poster, id, ts, kind, text, path, extra, seen, duration, width, height";
+
+QVariantMap StoriesModel::storyMap(QSqlQuery &q, QSqlDatabase &db)
+{
+    const QString poster = q.value(0).toString();
+    const QString id = q.value(1).toString();
+    const int kind = q.value(3).toInt();
+    const QString path = q.value(5).toString();
+    const bool here = !path.isEmpty() && QFile::exists(path);
+    QVariantMap extra;
+    bb::data::JsonDataAccess json;
+    const QVariant parsed = json.loadFromBuffer(q.value(6).toByteArray());
+    if (!json.hasError() && parsed.type() == QVariant::Map)
+        extra = parsed.toMap();
+    const QString bg = argb(extra, "bg");
+    const QString fg = argb(extra, "fg");
+    const QDateTime when = QDateTime::fromTime_t(q.value(2).toUInt());
+    m_days.applyCurrentTimeAsAnchor();
+    const QLocale locale = m_region.locale();
+    QVariantMap row;
+    row["id"] = id;
+    row["poster"] = poster;
+    row["kind"] = kind;
+    row["text"] = q.value(4).toString();
+    row["bg"] = bg.isEmpty() ? QString(pickColor(poster, kColors, kColorCount)) : bg;
+    row["fg"] = fg.isEmpty() ? QString("#FFFFFF") : fg;
+    row["seen"] = q.value(7).toInt() != 0;
+    row["time"] = dayLabel(when, QDate::currentDate(), locale, m_days) + ", "
+                + locale.toString(when.time(), timeFormat(locale, DateFormat::Short));
+    row["duration"] = q.value(8).toInt();
+    row["width"] = q.value(9).toInt();
+    row["height"] = q.value(10).toInt();
+    row["pic"] = kind == 0 ? QString() : viewFile(id, kind, path, db, poster);
+    row["video"] = kind == 2 && here ? path : QString();
+    row["ready"] = kind == 0 || here;
+    return row;
+}
+
+QVariantList StoriesModel::storiesOf(const QString &poster)
+{
+    QVariantList list;
+    QSqlDatabase db = QSqlDatabase::database(kDb, false);
+    if (!db.isOpen() && !db.open())
+        return list;
+    QSqlQuery q(db);
+    q.prepare(QString("SELECT %1 FROM stories WHERE poster = ? AND ts > ? ORDER BY ts").arg(kStoryCols));
+    q.addBindValue(poster);
+    q.addBindValue(QDateTime::currentDateTime().toTime_t() - kLife);
+    if (!q.exec()) {
+        qWarning() << "stories:" << q.lastError().text();
+        return list;
+    }
+    while (q.next())
+        list.append(storyMap(q, db));
+    return list;
+}
+
+QVariantMap StoriesModel::storyOf(const QString &poster, const QString &id)
+{
+    QSqlDatabase db = QSqlDatabase::database(kDb, false);
+    if (!db.isOpen() && !db.open())
+        return QVariantMap();
+    QSqlQuery q(db);
+    q.prepare(QString("SELECT %1 FROM stories WHERE poster = ? AND id = ?").arg(kStoryCols));
+    q.addBindValue(poster);
+    q.addBindValue(id);
+    return q.exec() && q.next() ? storyMap(q, db) : QVariantMap();
+}
+
+void StoriesModel::fetch(const QString &poster, const QString &id)
+{
+    QVariantMap args;
+    args["poster"] = poster;
+    args["id"] = id;
+    const QString req = m_engine->request("story.get", args);
+    if (!req.isEmpty())
+        m_pending.insert(req, qMakePair(poster, id));
+}
+
+void StoriesModel::markSeen(const QString &poster, const QString &id)
+{
+    QVariantMap args;
+    args["poster"] = poster;
+    args["id"] = id;
+    m_engine->request("story.seen", args);
+}
+
+void StoriesModel::onReplied(const QString &id, const QString &cmd, const QVariant &)
+{
+    if (cmd != "story.get" || !m_pending.contains(id))
+        return;
+    const QPair<QString, QString> story = m_pending.take(id);
+    emit storyReady(story.first, story.second);
+}
+
+// ponytail: a failure names no request, so one of several fetches in flight failing ends them all.
+void StoriesModel::onFailure()
+{
+    if (m_pending.isEmpty() || m_engine->failure().value("cmd").toString() != "story.get")
+        return;
+    const QList<QPair<QString, QString> > failed = m_pending.values();
+    m_pending.clear();
+    for (int i = 0; i < failed.size(); ++i)
+        emit storyFailed(failed[i].first, failed[i].second);
 }

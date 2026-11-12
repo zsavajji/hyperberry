@@ -12,6 +12,7 @@ import (
 
 	"github.com/polymorfa/hypermeow"
 	"github.com/polymorfa/hypermeow/proto/waE2E"
+	"github.com/polymorfa/hypermeow/types"
 	"github.com/polymorfa/hypermeow/types/events"
 )
 
@@ -222,10 +223,10 @@ func (st *Store) liveStory(cli *whatsmeow.Client, row msgRow) {
 
 type storyReq struct{ Poster, ID string }
 
-func parseStoryGet(req json.RawMessage) (storyReq, error) {
+func parseStoryReq(req json.RawMessage, cmd string) (storyReq, error) {
 	var r storyReq
 	if err := json.Unmarshal(req, &r); err != nil || r.Poster == "" || r.ID == "" {
-		return r, &Error{"bad_request", "story.get needs poster and id"}
+		return r, &Error{"bad_request", cmd + " needs poster and id"}
 	}
 	return r, nil
 }
@@ -251,7 +252,7 @@ func (st *Store) storyGet(dir string, r storyReq, fetch func(msgRow) (string, er
 }
 
 func (s *Session) handleStoryGet(req json.RawMessage) (any, error) {
-	r, err := parseStoryGet(req)
+	r, err := parseStoryReq(req, "story.get")
 	if err != nil {
 		return nil, err
 	}
@@ -265,4 +266,44 @@ func (s *Session) handleStoryGet(req json.RawMessage) (any, error) {
 		return s.store.downloadStory(ctx, cli, s.srv.dir, row)
 	}
 	return s.store.storyGet(s.srv.dir, r, fetch)
+}
+
+// setStorySeen marks a story seen. It reports whether that was news: only the first time is.
+func (t *storeTx) setStorySeen(poster, id string) bool {
+	if t.exec("UPDATE stories SET seen = 1 WHERE poster = ? AND id = ? AND seen = 0", poster, id) > 0 {
+		t.stories = true
+		return true
+	}
+	return false
+}
+
+// markStorySeen is story.seen's side of the store: it reports whether the story was news.
+func (st *Store) markStorySeen(poster, id string) bool {
+	fresh := false
+	st.runOp(func(t *storeTx) { fresh = t.setStorySeen(poster, id) })
+	return fresh
+}
+
+// handleStorySeen is story.seen: the viewer showed a story. It is marked seen, and the first time the
+// poster gets the read receipt, as WhatsApp's own apps send one: hypermeow sends it as "read-self", to
+// our own devices only, when our read receipts are off.
+func (s *Session) handleStorySeen(req json.RawMessage) (any, error) {
+	r, err := parseStoryReq(req, "story.seen")
+	if err != nil {
+		return nil, err
+	}
+	cli, poster, err := s.linked(r.Poster)
+	if err != nil {
+		return nil, err
+	}
+	if s.store.markStorySeen(r.Poster, r.ID) {
+		go func() { // a network call, and the viewer needn't wait for it
+			ctx, cancel := context.WithTimeout(context.Background(), netTimeout)
+			defer cancel()
+			if err := cli.MarkRead(ctx, []types.MessageID{r.ID}, time.Now(), types.StatusBroadcastJID, poster); err != nil {
+				s.store.log.Warnf("story %s: read receipt: %v", r.ID, err)
+			}
+		}()
+	}
+	return nil, nil
 }

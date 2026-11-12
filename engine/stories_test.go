@@ -61,6 +61,11 @@ func TestStories(t *testing.T) {
 		t.Errorf("the text story's extra is %q", extra)
 	}
 
+	// Seen: news the first time only, and nothing for a story that isn't there.
+	if !st.markStorySeen(k, "S3") || st.markStorySeen(k, "S3") || st.markStorySeen(k, "nope") || n("id = 'S3' AND seen = 1") != 1 {
+		t.Error("marking a story seen: not once, or not stored")
+	}
+
 	// Not kept: our own posts, one a day old, and what is no text, photo or video.
 	own := status(pia, "S4", 0, text)
 	own.Info.IsFromMe = true

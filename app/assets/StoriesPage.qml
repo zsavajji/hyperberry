@@ -5,6 +5,11 @@ import bb.cascades 1.4
 // 40 px each side and a 20 px gap leaves 310. The list reloads only while this tab is shown (main.qml sets it).
 Page {
     id: page
+    // The viewer, a Sheet made for each poster opened (it destroys itself on close).
+    attachedObjects: ComponentDefinition {
+        id: viewerDef
+        source: "StoryViewer.qml"
+    }
     titleBar: TitleBar {
         title: qsTr("Stories")
         scrollBehavior: TitleBarScrollBehavior.Sticky
@@ -31,6 +36,11 @@ Page {
                     cellAspectRatio: 310 / 211
                     horizontalCellSpacing: ui.px(20)
                     verticalCellSpacing: ui.px(20)
+                }
+                onTriggered: {
+                    if (indexPath.length == 1) {
+                        viewerDef.createObject().start(dataModel.data(indexPath))
+                    }
                 }
                 listItemComponents: [
                     ListItemComponent {
