@@ -86,6 +86,13 @@ void MessageCard::makeActions()
 
 void MessageCard::onReply() { Card::call(m_list, "reply", m_msg); }
 
+// A tap on a quote that is a story (a reply to one, or a like on one of ours): the page plays it.
+void MessageCard::onQuote()
+{
+    if (flag("quoteStory"))
+        Card::call(m_list, "openStory", m_msg);
+}
+
 // Swipe left to reply (the user, 2026-11-08): the card follows the finger up to 56 px left; let go
 // there and it replies, as the menu's Reply does. Either way it slides back. A touch that moves
 // up or down first is the list's scroll, and the card stays put.

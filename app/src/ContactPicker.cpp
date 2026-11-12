@@ -28,6 +28,29 @@ void ContactPicker::setLink(QObject *link)
     connect(m_engine, SIGNAL(replied(QString, QString, QVariant)), this,
             SLOT(onReplied(QString, QString, QVariant)));
     connect(m_engine, SIGNAL(connectedChanged()), this, SLOT(onConnected()));
+    connect(m_engine, SIGNAL(photo(QString, QString)), this, SLOT(onPhoto(QString, QString)));
+}
+
+// A picture the engine fetched for a contact: in the list, and in the row on show, which is replaced in place so the
+// list doesn't jump.
+void ContactPicker::onPhoto(const QString &jid, const QString &path)
+{
+    for (int i = 0; i < m_all.size(); ++i) {
+        QVariantMap c = m_all[i].toMap();
+        if (c["jid"].toString() == jid) {
+            c["photo"] = path;
+            m_all[i] = c;
+            break;
+        }
+    }
+    for (int i = 0; i < m_model->size(); ++i) {
+        QVariantMap row = m_model->value(i).toMap();
+        if (row["jid"].toString() == jid) {
+            row["photo"] = path;
+            m_model->replace(i, row);
+            break;
+        }
+    }
 }
 
 bb::cascades::DataModel *ContactPicker::model() const

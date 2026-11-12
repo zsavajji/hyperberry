@@ -48,8 +48,8 @@ Sheet {
     property bool picking: false
     property bool own: sheet.poster.poster == "me"
 
-    // The first story not seen, else the first.
-    function start(row) {
+    // The story startId when it is given (a tap on a quote of it) and there, else the first one not seen, else the first.
+    function start(row, startId) {
         bar.removeAll()
         sheet.marked = ","
         sheet.poster = row
@@ -58,6 +58,11 @@ Sheet {
         for (var i = sheet.items.length - 1; i >= 0; i--) {
             if (!sheet.items[i].seen) {
                 first = i
+            }
+        }
+        for (var k = 0; startId && k < sheet.items.length; k++) {
+            if (sheet.items[k].id == startId) {
+                first = k
             }
         }
         var made = []

@@ -76,6 +76,7 @@ signals:
 private slots:
     void onReplied(const QString &id, const QString &cmd, const QVariant &result);
     void onConnected();
+    void onPhoto(const QString &jid, const QString &path);
 
 private:
     void ask();

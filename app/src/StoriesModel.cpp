@@ -209,6 +209,10 @@ void StoriesModel::reload()
                 row["initials"] = initials(own ? m_engine->link().value("name").toString() : name);
                 row["color"] = pickColor(p, kColors, kColorCount);
                 row["photo"] = q.value(10).toString();
+                if (own) { // our own picture, as the profile page shows it
+                    const QString me = QDir::homePath() + "/profile/me.jpg";
+                    row["photo"] = QFile::exists(me) ? me : QString();
+                }
                 row["count"] = 0;
                 row["unseen"] = 0;
             }
@@ -333,6 +337,39 @@ void StoriesModel::ask(const QString &cmd, const QString &poster, const QString 
     const QString req = m_engine->request(cmd, args);
     if (!req.isEmpty())
         m_pending.insert(req, QStringList() << cmd << poster << id);
+}
+
+QVariantMap StoriesModel::posterOf(const QString &poster)
+{
+    QVariantMap row;
+    QSqlDatabase db = QSqlDatabase::database(kDb, false);
+    if (!db.isOpen() && !db.open())
+        return row;
+    QSqlQuery q(db);
+    q.prepare("SELECT s.name, c.name, c.photo FROM stories s LEFT JOIN chats c ON c.jid = s.poster "
+              "WHERE s.poster = ? AND s.ts > ? LIMIT 1");
+    q.addBindValue(poster);
+    q.addBindValue(QDateTime::currentDateTime().toTime_t() - kLife);
+    if (!q.exec() || !q.next())
+        return row;
+    const bool own = poster == kOwn;
+    QString name = q.value(1).toString();
+    if (name.isEmpty())
+        name = q.value(0).toString();
+    if (name.isEmpty())
+        name = poster.endsWith("@s.whatsapp.net") ? "+" + poster.section('@', 0, 0) : tr("Unknown");
+    QString photo = q.value(2).toString();
+    if (own) {
+        const QString me = QDir::homePath() + "/profile/me.jpg";
+        photo = QFile::exists(me) ? me : QString();
+    }
+    row["poster"] = poster;
+    row["own"] = own;
+    row["name"] = own ? tr("My story") : name;
+    row["initials"] = initials(own ? m_engine->link().value("name").toString() : name);
+    row["color"] = pickColor(poster, kColors, kColorCount);
+    row["photo"] = photo;
+    return row;
 }
 
 void StoriesModel::fetch(const QString &poster, const QString &id)

@@ -68,6 +68,7 @@ private slots:
     void onDeleteMe();
     void onWho();
     void onJoin();
+    void onQuote();
 
 private:
     QString str(const char *key) const { return m_msg.value(key).toString(); }
@@ -128,6 +129,7 @@ private:
     bb::cascades::Container *m_bar;
     bb::cascades::Label *m_quoteName;
     bb::cascades::Label *m_quoteText;
+    bb::cascades::ImageView *m_quoteThumb;
     bb::cascades::Label *m_label;
     bb::cascades::Label *m_text;
     bb::cascades::Button *m_join;

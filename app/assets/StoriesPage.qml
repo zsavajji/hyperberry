@@ -15,6 +15,15 @@ Page {
         var ext = path.substring(path.lastIndexOf(".") + 1).toLowerCase()
         return ext == "jpg" || ext == "jpeg" || ext == "png" ? "photo" : ext == "mp4" || ext == "3gp" || ext == "mov" ? "video" : ""
     }
+    // The viewer on a story quoted in a chat; a story older than a day is gone, and says so.
+    function openStory(poster, id) {
+        var row = storyList.posterOf(poster)
+        if (!row.poster || storyList.storiesOf(poster).length == 0) {
+            storyGone.show()
+            return
+        }
+        viewer.start(row, id)
+    }
     onCreationCompleted: {
         storyList.postFailed.connect(postFailed.show)
         storyList.deleteFailed.connect(deleteFailed.show)
@@ -60,6 +69,10 @@ Page {
         SystemToast {
             id: deleteFailed
             body: qsTr("Couldn't delete the story")
+        },
+        SystemToast {
+            id: storyGone
+            body: qsTr("This story is no longer available")
         },
         SystemToast {
             id: wrongFile

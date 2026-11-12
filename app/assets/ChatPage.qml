@@ -334,6 +334,10 @@ Page {
                 function copy(text) {
                     ctl.copy(text)
                 }
+                // A tap on the quote of a reply to a story, or of a like on one of ours: the Stories tab plays it.
+                function openStory(msg) {
+                    nav.showStory(msg.storyPoster, msg.quote)
+                }
                 // A mention's link in a card: the person's page.
                 function openPerson(jid, name) {
                     infoAction.showPerson(jid, name)

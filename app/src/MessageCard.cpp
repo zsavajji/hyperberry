@@ -54,6 +54,7 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
     , m_bar(0)
     , m_quoteName(0)
     , m_quoteText(0)
+    , m_quoteThumb(0)
     , m_label(0)
     , m_join(0)
     , m_voice(0)
@@ -357,6 +358,18 @@ void MessageCard::makeQuote()
     words->add(m_quoteText);
     m_quote->add(m_bar);
     m_quote->add(words);
+    // A story's picture, when the quote is one (docs/protocol.md, Story quotes): a tap on the quote plays the story.
+    m_quoteThumb = new ImageView();
+    m_quoteThumb->setVerticalAlignment(VerticalAlignment::Center);
+    m_quoteThumb->setPreferredWidth(m_ui->du(8));
+    m_quoteThumb->setPreferredHeight(m_ui->du(8));
+    m_quoteThumb->setScalingMethod(ScalingMethod::AspectFill);
+    m_quoteThumb->setLoadEffect(ImageViewLoadEffect::None);
+    m_quoteThumb->setVisible(false);
+    m_quote->add(m_quoteThumb);
+    TapHandler *tap = new TapHandler(m_quote);
+    m_quote->addGestureHandler(tap);
+    connect(tap, SIGNAL(tapped(bb::cascades::TapEvent *)), this, SLOT(onQuote()));
     (m_head ? m_head : m_col)->insert(m_sender ? 1 : 0, m_quote);
     m_styled = false;
 }
@@ -439,10 +452,16 @@ void MessageCard::fillColumn()
             const QString name = str("quoteName");
             const QString tint = str("quoteColor");
             m_quote->setBackground(Card::color(Card::quoteTint(m_list)));
-            m_quoteName->setVisible(!name.isEmpty());
-            m_quoteName->setText(name);
-            m_quoteName->textStyle()->setColor(tint.isEmpty() ? m_ui->palette()->primary() : Card::color(tint));
+            // A story's quote is labelled so, and shows the story's picture when it came with one.
+            const bool story = flag("quoteStory");
+            m_quoteName->setVisible(story || !name.isEmpty());
+            m_quoteName->setText(story ? Card::tr(kContext, "Story") : name);
+            m_quoteName->textStyle()->setColor(tint.isEmpty() || story ? m_ui->palette()->primary() : Card::color(tint));
             m_quoteText->setText(Card::noKeycaps(quote));
+            const bool thumb = story && flag("hasQuoteThumb");
+            m_quoteThumb->setVisible(thumb);
+            if (thumb)
+                m_quoteThumb->setImage(m_msg.value("quoteThumb").value<Image>());
         }
     }
 

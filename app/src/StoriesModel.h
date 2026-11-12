@@ -48,6 +48,9 @@ public:
     // to show: a photo sized for the screen, else the inline thumbnail, "" for a text story), video (the
     // file's path, "" until it is here) and ready (everything it shows is here). {} for none.
     Q_INVOKABLE QVariantMap storyOf(const QString &poster, const QString &id);
+    // A poster as the tile row has them (poster, own, name, initials, color, photo), for opening their stories from a chat; {} when
+    // none of their stories is left.
+    Q_INVOKABLE QVariantMap posterOf(const QString &poster);
     // Asks the engine for the story's file (story.get); storyReady or storyFailed answers.
     Q_INVOKABLE void fetch(const QString &poster, const QString &id);
     // The viewer showed it: the engine marks it seen and sends the read receipt (story.seen).

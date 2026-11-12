@@ -1,5 +1,8 @@
 #include "MessageModel.h"
 
+#include <bb/cascades/Image>
+#include <bb/data/JsonDataAccess>
+
 #include "EngineLink.h"
 #include "MediaData.h"
 #include "MessageKinds.h"
@@ -147,6 +150,24 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
     }
     m.data["quoteName"] = quoteName;
     m.data["quoteColor"] = quoteColor;
+    // A reply to a story, or a like on one of ours (docs/protocol.md, Story quotes): the quote shows the story's picture
+    // and a tap on it plays the story. An Image even when empty, so a recycled card never keeps another row's.
+    bool storyQuote = false;
+    QString storyPoster;
+    QByteArray storyThumb;
+    if (!q.value(9).toString().isEmpty() && !q.value(26).toString().isEmpty()) {
+        bb::data::JsonDataAccess json;
+        const QVariant x = json.loadFromBuffer(q.value(26).toByteArray());
+        if (!json.hasError() && x.type() == QVariant::Map && x.toMap().value("story").toBool()) {
+            storyQuote = true;
+            storyPoster = x.toMap().value("sposter").toString();
+            storyThumb = QByteArray::fromBase64(x.toMap().value("qthumb").toString().toLatin1());
+        }
+    }
+    m.data["quoteStory"] = storyQuote;
+    m.data["storyPoster"] = storyPoster;
+    m.data["hasQuoteThumb"] = !storyThumb.isEmpty();
+    m.data["quoteThumb"] = QVariant::fromValue(storyThumb.isEmpty() ? bb::cascades::Image() : bb::cascades::Image(storyThumb));
     return m;
 }
 

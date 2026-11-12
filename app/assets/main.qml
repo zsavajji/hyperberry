@@ -261,6 +261,12 @@ TabbedPane {
                 push(album)
             }
 
+            // A story quoted in a chat (a reply, or a like on ours): the Stories tab, playing it from that story on.
+            function showStory(poster, id) {
+                root.activeTab = storiesTab
+                storiesPage.openStory(poster, id)
+            }
+
             // Every page above the list goes out. Deleting a chat (step 5.8b) uses it too.
             function backToList() {
                 while (count() > 1) {
@@ -297,6 +303,7 @@ TabbedPane {
             id: storiesNav
             onPopTransitionEnded: page.destroy()
             StoriesPage {
+                id: storiesPage
             }
         }
     }
