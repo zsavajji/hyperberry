@@ -22,10 +22,21 @@ func runEngine(container *sqlstore.Container, dataDir string, log waLog.Logger, 
 	// Hub's actions wait in invokes for hubActions; the callback runs on the BPS thread, so it
 	// drops what doesn't fit.
 	invokes := make(chan invocation, 16)
+	// The same way for the network: a change wakes one call to NetworkChanged; nw is only touched
+	// on the BPS thread.
+	netEvents := make(chan struct{}, 1)
+	var nw netWatch
 	connectNavigator(stop, func(inv invocation) {
 		select {
 		case invokes <- inv:
 		default:
+		}
+	}, func(key string) {
+		if nw.moved(key) {
+			select {
+			case netEvents <- struct{}{}:
+			default:
+			}
 		}
 	}, log.Sub("nav"))
 	if sim {
@@ -60,6 +71,11 @@ func runEngine(container *sqlstore.Container, dataDir string, log waLog.Logger, 
 			fatal("session:", err)
 		}
 		hello, closeSession = sess.hello, sess.close
+		go func() {
+			for range netEvents {
+				sess.networkChanged()
+			}
+		}()
 	}
 	go hubActions(srv, invokes, st.nt.removeItem, log.Sub("hub"))
 	go func() {

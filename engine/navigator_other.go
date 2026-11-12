@@ -9,4 +9,4 @@ import (
 )
 
 // connectNavigator has no navigator to connect to off BB10, where the engine runs for tests.
-func connectNavigator(chan<- os.Signal, func(invocation), waLog.Logger) {}
+func connectNavigator(chan<- os.Signal, func(invocation), func(string), waLog.Logger) {}
