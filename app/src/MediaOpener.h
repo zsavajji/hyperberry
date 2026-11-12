@@ -46,6 +46,10 @@ public:
     // is read by Qt, put on white where it is transparent, its long side held to 2048 px, and saved in
     // data/cache/convert/ at quality 90: that path. "" for anything else or on failure.
     Q_INVOKABLE QString asJpeg(const QString &path);
+    // A picture to look at on the new-story screen: the file scaled down to fit 720 x 720 (Qt reads a JPEG straight
+    // to the smaller size), saved in data/cache/previews/ as compose-<hash>.jpg at quality 90: that path. "" when Qt
+    // can't read it. photoInfo's 96 px thumbnail is for the message, not for looking at.
+    Q_INVOKABLE QString composePreview(const QString &path);
     // The thumbnail a video goes out with, as base64 of a small JPEG: a play mark on grey, so the phones that get
     // a video see one and not a grey box. "" on failure.
     Q_INVOKABLE QString videoPoster();

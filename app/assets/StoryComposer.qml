@@ -12,8 +12,10 @@ Sheet {
     id: sheet
     property string mode: "text"
     property string path: ""
-    // MediaOpener.fileInfo of the file: its name and size, and a photo's picture.
+    // MediaOpener.fileInfo of the file: its name and size.
     property variant info: ({})
+    // A photo's picture to look at, as a file: the real one scaled to the screen (fileInfo's is a 96 px thumbnail).
+    property string preview: ""
     property int colour: 0
     // WhatsApp's own text-status colours, near enough.
     property variant colours: ["#075E54", "#128C7E", "#6A1B9A", "#C62828", "#1565C0", "#37474F"]
@@ -31,6 +33,7 @@ Sheet {
         sheet.audience = []
         audienceSheet.reset()
         sheet.info = path ? media.fileInfo(path) : ({})
+        sheet.preview = mode == "photo" ? media.composePreview(path) : ""
         caption.text = ""
         story.text = ""
         sheet.open()
@@ -152,7 +155,7 @@ Sheet {
                 visible: sheet.mode == "photo"
                 horizontalAlignment: HorizontalAlignment.Fill
                 verticalAlignment: VerticalAlignment.Fill
-                image: sheet.info.image
+                imageSource: sheet.preview ? "file://" + sheet.preview : ""
                 scalingMethod: ScalingMethod.AspectFit
                 loadEffect: ImageViewLoadEffect.None
             }

@@ -220,6 +220,28 @@ QString MediaOpener::asJpeg(const QString &path)
     return out;
 }
 
+QString MediaOpener::composePreview(const QString &path)
+{
+    QImageReader reader(path);
+    QSize to = reader.size(); // from the header
+    if (!to.isValid())
+        return QString();
+    if (to.width() > 720 || to.height() > 720) {
+        to.scale(720, 720, Qt::KeepAspectRatio);
+        reader.setScaledSize(to);
+    }
+    const QImage image = reader.read();
+    if (image.isNull())
+        return QString();
+    const QString dir = QDir::homePath() + "/cache/previews/";
+    const QString out = dir + "compose-" + QString::number(qHash(path), 16) + ".jpg";
+    if (!QDir().mkpath(dir) || !image.save(out, "JPEG", 90)) {
+        QFile::remove(out);
+        return QString();
+    }
+    return out;
+}
+
 QString MediaOpener::videoPoster()
 {
     // The mark of the call and chat play discs (images/play.png): a white disc, a dark triangle, on grey.
