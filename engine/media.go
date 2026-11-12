@@ -188,6 +188,8 @@ func registerMedia(srv *Server, s *Session) {
 	srv.Handle("story.seen", s.handleStorySeen)
 	srv.Handle("story.reply", s.handleStoryReply)
 	srv.Handle("story.react", s.handleStoryReact)
+	srv.Handle("story.post", s.handleStoryPost)
+	srv.Handle("story.delete", s.handleStoryDelete)
 }
 
 func (s *Session) handleVoicePlay(req json.RawMessage) (any, error) {

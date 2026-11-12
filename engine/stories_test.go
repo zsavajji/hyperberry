@@ -11,6 +11,7 @@ import (
 	"github.com/polymorfa/hypermeow/proto/waE2E"
 	"github.com/polymorfa/hypermeow/types"
 	"github.com/polymorfa/hypermeow/types/events"
+	waLog "github.com/polymorfa/hypermeow/util/log"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -67,14 +68,14 @@ func TestStories(t *testing.T) {
 		t.Error("marking a story seen: not once, or not stored")
 	}
 
-	// Not kept: our own posts, one a day old, and what is no text, photo or video.
+	// Ours, from our phone, are kept as "me" and born seen; one a day old and what is no text, photo or video are not.
 	own := status(pia, "S4", 0, text)
 	own.Info.IsFromMe = true
 	feed(own)
 	feed(status(pia, "S5", storyLife*time.Second+time.Minute, photo))
 	feed(status(pia, "S6", 0, &waE2E.Message{StickerMessage: &waE2E.StickerMessage{}}))
-	if n("1") != 3 {
-		t.Errorf("%d stories after the ones to drop, want 3", n("1"))
+	if n("poster = ? AND id = 'S4' AND seen = 1 AND name IS NULL", ownStory) != 1 || n("1") != 4 {
+		t.Errorf("%d stories after the ones to drop, want 4 with ours as %q, seen", n("1"), ownStory)
 	}
 
 	// A video story is fetched into data/stories, once, and the file goes with its row.
@@ -97,7 +98,7 @@ func TestStories(t *testing.T) {
 	// The poster deletes one.
 	feed(status(pia, "R1", 0, &waE2E.Message{ProtocolMessage: &waE2E.ProtocolMessage{
 		Type: waE2E.ProtocolMessage_REVOKE.Enum(), Key: &waCommon.MessageKey{ID: proto.String("S2")}}}))
-	if _, err := os.Stat(p); n("id = 'S2'") != 0 || n("1") != 2 || !os.IsNotExist(err) {
+	if _, err := os.Stat(p); n("id = 'S2'") != 0 || n("1") != 3 || !os.IsNotExist(err) {
 		t.Error("the revoked story is still there, or its file")
 	}
 
@@ -162,5 +163,86 @@ func TestStoryReply(t *testing.T) {
 	}
 	if quotedStory(msgText, "hello", nil).GetConversation() != "hello" || quotedStory(msgVideo, "", nil).GetVideoMessage() == nil {
 		t.Error("the quoted text or video is wrong")
+	}
+}
+
+// Posting: what the request refuses, and that a post which can't be sent (no connection here) leaves nothing: the
+// row and the copy of the file go again, and a storyop event is the way the UI hears of it.
+func TestStoryPost(t *testing.T) {
+	st, cli := historyFixture(t)
+	s := &Session{cli: cli, store: st, srv: st.srv, log: waLog.Noop}
+	n := func(where string, args ...any) int {
+		return rows(st, "SELECT count(*) FROM stories WHERE "+where, args...)
+	}
+	dir := t.TempDir()
+	jpg := filepath.Join(dir, "a.jpg")
+	os.WriteFile(jpg, []byte("not really a jpeg"), 0o644)
+	pdf := filepath.Join(dir, "a.pdf")
+	os.WriteFile(pdf, []byte("x"), 0o644)
+
+	for body, want := range map[string]string{
+		`{}`:                                   "bad_request", // neither
+		`{"path":"` + jpg + `","text":"both"}`: "bad_request",
+		`{"text":"  "}`:                        "bad_request",
+		`{"path":"a.jpg"}`:                     "bad_request", // not absolute
+		`{"path":"` + pdf + `"}`:               "bad_request", // not a photo or a video
+		`{"path":"` + dir + `/none.jpg"}`:      "bad_request",
+	} {
+		if _, err := s.handleStoryPost(json.RawMessage(body)); code(err) != want {
+			t.Errorf("%s: %v, want %s", body, err, want)
+		}
+	}
+
+	// A photo: it is in at once with its own copy of the file, seen, as ours...
+	res, err := s.handleStoryPost(json.RawMessage(`{"path":"` + jpg + `","caption":" hi ","width":4,"height":3}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := res.(map[string]string)["id"]
+	copyPath := filepath.Join(st.srv.dir, "stories", id+".jpg")
+	// ...and out again once the send has failed, copy and all.
+	eventually(t, st, 0, "SELECT count(*) FROM stories WHERE id = ?", id)
+	if _, err := os.Stat(copyPath); !os.IsNotExist(err) {
+		t.Errorf("the copy of a story that wasn't posted is still there: %v", err)
+	}
+
+	// A text story the same way.
+	res, err = s.handleStoryPost(json.RawMessage(`{"text":"hello","bg":4279312947,"fg":4294967295}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	eventually(t, st, 0, "SELECT count(*) FROM stories WHERE id = ?", res.(map[string]string)["id"])
+
+	// Delete: not ours, or not there, is refused; with no connection the revoke fails and the row stays.
+	if _, err := s.handleStoryDelete(json.RawMessage(`{"id":"nope"}`)); code(err) != "not_found" {
+		t.Errorf("deleting a story that isn't there: %v", err)
+	}
+	st.runOp(func(tx *storeTx) {
+		tx.insertStory(msgRow{Chat: ownStory, ID: "O1", TS: time.Now().Unix(), Kind: msgText, Text: "mine"}, true)
+	})
+	if _, err := s.handleStoryDelete(json.RawMessage(`{"id":"O1"}`)); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(300 * time.Millisecond) // the revoke is tried in the background and fails
+	if n("id = 'O1'") != 1 {
+		t.Error("a delete that was never sent took the row")
+	}
+}
+
+func TestCopyFile(t *testing.T) {
+	dir := t.TempDir()
+	src, dst := filepath.Join(dir, "a.bin"), filepath.Join(dir, "sub", "b.bin")
+	os.WriteFile(src, []byte("bytes"), 0o644)
+	if err := copyFile(src, dst); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(dst); string(b) != "bytes" {
+		t.Errorf("the copy holds %q", b)
+	}
+	if _, err := os.Stat(dst + ".tmp"); !os.IsNotExist(err) {
+		t.Error("the temporary name is left behind")
+	}
+	if err := copyFile(filepath.Join(dir, "none"), dst+"2"); err == nil {
+		t.Error("copying a file that isn't there worked")
 	}
 }

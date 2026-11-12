@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,16 +25,21 @@ import (
 // storyLife is how long a story lives: WhatsApp's 24 hours, in seconds.
 const storyLife = 24 * 60 * 60
 
-// story handles a message of status@broadcast. It keeps other people's text, photo and video
-// posts, and drops a story its poster deletes; our own posts (from our phone) have no tile, the
-// tab is for viewing.
+// ownStory is the poster of our own stories, posted here or on another of our devices: a fixed key
+// since we have no chat with ourselves to name. Our own are born seen, and never get a read receipt.
+const ownStory = "me"
+
+// story handles a message of status@broadcast. It keeps text, photo and video posts, other people's and
+// our own (the ones our phone or another device posts; the ones posted here are in before they are
+// sent), and drops a story its poster deletes.
 // ponytail: the status conversation of a history sync is skipped (history.go), so a fresh link shows
 // only what arrives after it; ingest it there if that is missed.
 func (st *Store) story(ctx context.Context, t *storeTx, cli *whatsmeow.Client, e *events.Message) {
-	if e.Info.IsFromMe {
-		return
+	own := e.Info.IsFromMe
+	poster := ownStory
+	if !own {
+		poster = chatKey(ctx, t, cli.Store.LIDs, e.Info.Sender, e.Info.SenderAlt)
 	}
-	poster := chatKey(ctx, t, cli.Store.LIDs, e.Info.Sender, e.Info.SenderAlt)
 	m := flatten(e.Message)
 	if pm := m.GetProtocolMessage(); pm != nil {
 		if pm.GetType() == waE2E.ProtocolMessage_REVOKE {
@@ -49,7 +55,9 @@ func (st *Store) story(ctx context.Context, t *storeTx, cli *whatsmeow.Client, e
 	if now-row.TS >= storyLife { // one that came late, from a backlog
 		return
 	}
-	row.SenderName = resolveName(ctx, cli, e.Info.Sender, e.Info.SenderAlt, e.Info.PushName)
+	if !own {
+		row.SenderName = resolveName(ctx, cli, e.Info.Sender, e.Info.SenderAlt, e.Info.PushName)
+	}
 	if row.Kind == msgText { // the post is its colours: a link preview's thumbnail is not a picture of it
 		x := map[string]any{}
 		tx := m.GetExtendedTextMessage()
@@ -61,7 +69,7 @@ func (st *Store) story(ctx context.Context, t *storeTx, cli *whatsmeow.Client, e
 			row.Extra = string(b)
 		}
 	}
-	if t.insertStory(row) {
+	if t.insertStory(row, own) {
 		t.expireStories(now)
 		// A photo comes at once, for its tile; a video waits for story.get. Never in the writer: it is a network call.
 		if row.Kind == msgPhoto && row.MediaState == 1 && !st.holdLive(row) {
@@ -71,14 +79,15 @@ func (st *Store) story(ctx context.Context, t *storeTx, cli *whatsmeow.Client, e
 }
 
 // insertStory is INSERT OR IGNORE: the same post can arrive twice. s is a msgRow with Chat the
-// poster's key and SenderName their name. It reports whether the story was new.
-func (t *storeTx) insertStory(s msgRow) bool {
+// poster's key, SenderName their name and Path the file when it is here (our own post); seen is
+// whether it is born seen. It reports whether the story was new.
+func (t *storeTx) insertStory(s msgRow, seen bool) bool {
 	if t.exec(`INSERT OR IGNORE INTO stories(poster, id, ts, name, kind, text, duration, width, height, size,
-thumb, media, media_state, extra)
+thumb, media, media_state, path, extra, seen)
 VALUES(?, ?, ?, NULLIF(?, ''), ?, NULLIF(?, ''), NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0),
-?, NULLIF(?, ''), ?, NULLIF(?, ''))`,
+?, NULLIF(?, ''), ?, NULLIF(?, ''), NULLIF(?, ''), ?)`,
 		s.Chat, s.ID, s.TS, s.SenderName, s.Kind, s.Text, s.Duration, s.Width, s.Height, s.Size,
-		blob(s.Thumb), s.Media, s.MediaState, s.Extra) == 0 {
+		blob(s.Thumb), s.Media, s.MediaState, s.Path, s.Extra, seen) == 0 {
 		return false
 	}
 	t.stories = true
@@ -225,6 +234,15 @@ func (st *Store) liveStory(cli *whatsmeow.Client, row msgRow) {
 
 type storyReq struct{ Poster, ID string }
 
+// linkedClient is the client once the device is linked: what a request that names no chat needs.
+func (s *Session) linkedClient() (*whatsmeow.Client, error) {
+	cli := s.client()
+	if cli.Store.ID == nil {
+		return nil, &Error{"unlinked", "link this device first"}
+	}
+	return cli, nil
+}
+
 func parseStoryReq(req json.RawMessage, cmd string) (storyReq, error) {
 	var r storyReq
 	if err := json.Unmarshal(req, &r); err != nil || r.Poster == "" || r.ID == "" {
@@ -258,7 +276,7 @@ func (s *Session) handleStoryGet(req json.RawMessage) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	cli, _, err := s.linked(r.Poster)
+	cli, err := s.linkedClient() // the download needs no JID: our own stories have none
 	if err != nil {
 		return nil, err
 	}
@@ -293,6 +311,10 @@ func (s *Session) handleStorySeen(req json.RawMessage) (any, error) {
 	r, err := parseStoryReq(req, "story.seen")
 	if err != nil {
 		return nil, err
+	}
+	if r.Poster == ownStory { // ours are born seen; this only keeps a viewer's call harmless
+		s.store.markStorySeen(r.Poster, r.ID)
+		return nil, nil
 	}
 	cli, poster, err := s.linked(r.Poster)
 	if err != nil {
@@ -387,5 +409,157 @@ func (s *Session) handleStoryReact(req json.RawMessage) (any, error) {
 	if _, err := cli.SendMessage(ctx, jid, cli.BuildReaction(types.StatusBroadcastJID, jid, r.ID, r.Emoji)); err != nil {
 		return nil, err
 	}
+	return nil, nil
+}
+
+// storyPostReq is story.post: a photo or a video by its path (with the photo's thumbnail and size, which the
+// engine can't make, and a caption), or a text story with its look.
+type storyPostReq struct {
+	Path, Caption, Text string
+	Thumb               []byte
+	Width, Height       int
+	Bg, Fg              uint32 // ARGB, as WhatsApp's text statuses carry them
+	Font                int
+}
+
+// copyFile copies src to dst through a temporary name, so a crash leaves no half file that looks done.
+func copyFile(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+		return err
+	}
+	tmp := dst + ".tmp"
+	out, err := os.Create(tmp)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(out, in)
+	if err == nil {
+		err = out.Sync()
+	}
+	if cerr := out.Close(); err == nil {
+		err = cerr
+	}
+	if err == nil {
+		err = os.Rename(tmp, dst)
+	}
+	if err != nil {
+		os.Remove(tmp)
+	}
+	return err
+}
+
+// handleStoryPost is story.post. Like media.send it answers at once, with the id: our story is in the table
+// (born seen, with its own copy of the file) before the upload starts, and the upload and the send run after
+// the reply, since requests are handled one at a time and a video takes minutes. The outcome comes as a
+// storyop event; a failure takes the story out again.
+// (verify on the real link): that the contacts' phones show it. hypermeow picks the recipients from the
+// contact list and the status privacy settings.
+func (s *Session) handleStoryPost(req json.RawMessage) (any, error) {
+	var r storyPostReq
+	if err := json.Unmarshal(req, &r); err != nil || len(r.Thumb) > maxThumb || r.Width < 0 || r.Height < 0 ||
+		(r.Path == "") == (strings.TrimSpace(r.Text) == "") {
+		return nil, &Error{"bad_request", "story.post needs an absolute path (thumb is base64) or text, not both"}
+	}
+	cli, err := s.linkedClient()
+	if err != nil {
+		return nil, err
+	}
+	id := cli.GenerateMessageID()
+	row := msgRow{Chat: ownStory, ID: id, TS: time.Now().Unix(), MediaState: 2}
+	var o *mediaOut
+	if r.Path != "" {
+		fi, err := os.Stat(r.Path)
+		switch {
+		case !filepath.IsAbs(r.Path) || err != nil || !fi.Mode().IsRegular():
+			return nil, &Error{"bad_request", "not a file: " + r.Path}
+		case fi.Size() > maxSendSize:
+			return nil, &Error{"bad_request", "over 100 MB: " + r.Path}
+		}
+		kind, mimeType := sendKind(r.Path)
+		if kind != msgPhoto && kind != msgVideo {
+			return nil, &Error{"bad_request", "a story is a photo, a video or text"}
+		}
+		row.Kind, row.Text, row.Size = kind, strings.TrimSpace(r.Caption), fi.Size()
+		row.Path = storyTarget(s.srv.dir, row, mimeType)
+		if err := copyFile(r.Path, row.Path); err != nil {
+			return nil, err
+		}
+		if kind == msgPhoto {
+			row.Thumb, row.Width, row.Height = r.Thumb, r.Width, r.Height
+		}
+		o = &mediaOut{row: row, mime: mimeType}
+	} else {
+		row.Kind, row.Text, row.MediaState = msgText, strings.TrimSpace(r.Text), 0
+		x := map[string]any{}
+		keep(x, "bg", r.Bg)
+		keep(x, "fg", r.Fg)
+		keep(x, "font", r.Font)
+		if b, err := json.Marshal(x); err == nil && len(x) > 0 {
+			row.Extra = string(b)
+		}
+	}
+	s.store.runOp(func(t *storeTx) { t.insertStory(row, true) })
+	go s.sendStory(cli, o, row, r)
+	return map[string]string{"id": id}, nil
+}
+
+// sendStory uploads a photo or video story and sends the story to status@broadcast, then says how it went.
+func (s *Session) sendStory(cli *whatsmeow.Client, o *mediaOut, row msgRow, r storyPostReq) {
+	ctx, cancel := context.WithTimeout(context.Background(), mediaTimeout)
+	defer cancel()
+	var msg *waE2E.Message
+	var err error
+	if o != nil {
+		var up whatsmeow.UploadResponse
+		t0 := time.Now()
+		if up, err = s.uploadFile(ctx, cli, row.Path, uploadTypes[row.Kind]); err == nil {
+			logTransfer(s.log, "story "+row.ID+" sent", int64(up.FileLength), t0)
+			msg = mediaMessage(o, up, nil)
+		}
+	} else {
+		msg = &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: &row.Text, BackgroundArgb: proto.Uint32(r.Bg),
+			TextArgb: proto.Uint32(r.Fg), Font: waE2E.ExtendedTextMessage_FontType(r.Font).Enum()}}
+	}
+	if err == nil {
+		_, err = cli.SendMessage(ctx, types.StatusBroadcastJID, msg, whatsmeow.SendRequestExtra{ID: row.ID})
+	}
+	if err != nil {
+		s.log.Warnf("story %s: post: %v", row.ID, err)
+		s.store.ops <- func(t *storeTx) { t.deleteStory(ownStory, row.ID) }
+	}
+	s.srv.Emit("storyop", map[string]any{"cmd": "post", "id": row.ID, "ok": err == nil})
+}
+
+// handleStoryDelete is story.delete: one of our own stories, taken back from everyone who got it. It answers at
+// once, and the row goes when the revoke has been sent; a storyop event says how it went.
+// (verify on the real link): that the revoke takes the story down.
+func (s *Session) handleStoryDelete(req json.RawMessage) (any, error) {
+	var r struct{ ID string }
+	if err := json.Unmarshal(req, &r); err != nil || r.ID == "" {
+		return nil, &Error{"bad_request", "story.delete needs id"}
+	}
+	cli, err := s.linkedClient()
+	if err != nil {
+		return nil, err
+	}
+	if _, _, _, ok := s.store.storyQuote(ownStory, r.ID); !ok {
+		return nil, &Error{"not_found", "no such story of ours"}
+	}
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
+		defer cancel()
+		_, err := cli.SendMessage(ctx, types.StatusBroadcastJID, cli.BuildRevoke(types.StatusBroadcastJID, types.EmptyJID, r.ID))
+		if err == nil {
+			s.store.ops <- func(t *storeTx) { t.deleteStory(ownStory, r.ID) }
+		} else {
+			s.log.Warnf("story %s: delete: %v", r.ID, err)
+		}
+		s.srv.Emit("storyop", map[string]any{"cmd": "delete", "id": r.ID, "ok": err == nil})
+	}()
 	return nil, nil
 }
