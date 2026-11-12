@@ -14,3 +14,32 @@
  	info, err := cli.parseMessageInfo(node)
  	if err != nil {
  		cli.Log.Warnf("Failed to parse message: %v", err)
+--- a/send.go
++++ b/send.go
+@@ -167,6 +167,10 @@
+ 	Meta *types.MsgMetaInfo
+ 	// use this only if you know what you are doing
+ 	AdditionalNodes *[]waBinary.Node
++	// HyperBerry: for a status (sent to status@broadcast), the users to send it to, and ourselves, instead of
++	// the recipients the account's status privacy settings give: a story for chosen people, or a reaction to a
++	// story, which goes to its poster alone. Empty means the privacy settings.
++	StatusRecipients []types.JID
+ }
+ 
+ // SendMessage sends the given message.
+@@ -333,6 +337,15 @@
+ 				// Why is this set to PN?
+ 				extraParams.addressingMode = types.AddressingModePN
+ 			}
++		} else if len(req.StatusRecipients) > 0 && to == types.StatusBroadcastJID {
++			groupParticipants = append([]types.JID(nil), req.StatusRecipients...)
++			self := false
++			for _, p := range groupParticipants {
++				self = self || p.User == ownID.User
++			}
++			if !self {
++				groupParticipants = append(groupParticipants, ownID.ToNonAD())
++			}
+ 		} else {
+ 			groupParticipants, err = cli.getBroadcastListParticipants(ctx, to)
+ 			if err != nil {

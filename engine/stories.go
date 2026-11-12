@@ -399,9 +399,10 @@ func (s *Session) handleStoryReply(req json.RawMessage) (any, error) {
 	return map[string]string{"id": id}, nil
 }
 
-// handleStoryReact is story.react: an emoji (the heart) on a story, sent to the poster as a reaction to their
-// status. Nothing is stored: the reaction belongs to no chat of ours.
-// (verify on the real link): that WhatsApp takes it as a reaction to the status.
+// handleStoryReact is story.react: an emoji on a story, sent to the poster as a reaction to their status, through
+// the status channel to them alone (the way WhatsApp's own apps send it, as far as is known). Nothing is stored:
+// the reaction belongs to no chat of ours.
+// (verify on the real link): that the poster's phone shows it as a reaction to the status.
 func (s *Session) handleStoryReact(req json.RawMessage) (any, error) {
 	var r struct{ Poster, ID, Emoji string }
 	if err := json.Unmarshal(req, &r); err != nil || r.Poster == "" || r.ID == "" || r.Emoji == "" {
@@ -416,10 +417,41 @@ func (s *Session) handleStoryReact(req json.RawMessage) (any, error) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
 	defer cancel()
-	if _, err := cli.SendMessage(ctx, jid, cli.BuildReaction(types.StatusBroadcastJID, jid, r.ID, r.Emoji)); err != nil {
+	// Through the status channel, to the poster alone: a reaction sent to them as a direct message was delivered
+	// (Q10, 0.1.0.281) but their Android did not show it as a reaction to the status.
+	recips, err := statusRecipients(ctx, cli, []string{r.Poster})
+	if err != nil {
+		return nil, err
+	}
+	msg := cli.BuildReaction(types.StatusBroadcastJID, jid, r.ID, r.Emoji)
+	if _, err := cli.SendMessage(ctx, types.StatusBroadcastJID, msg, whatsmeow.SendRequestExtra{StatusRecipients: recips}); err != nil {
 		return nil, err
 	}
 	return nil, nil
+}
+
+// statusRecipients turns chat keys into the users a status goes to. A LID key becomes the person's phone number when
+// we know it, since the contacts the library sends a story to are phone numbers; anything that isn't a person is refused.
+func statusRecipients(ctx context.Context, cli *whatsmeow.Client, keys []string) ([]types.JID, error) {
+	var out []types.JID
+	seen := map[string]bool{}
+	for _, k := range keys {
+		j, err := types.ParseJID(k)
+		if err != nil || j.IsEmpty() || j.Server != types.DefaultUserServer && j.Server != types.HiddenUserServer {
+			return nil, &Error{"bad_request", "not a person: " + k}
+		}
+		j = j.ToNonAD()
+		if j.Server == types.HiddenUserServer {
+			if pn, err := cli.Store.LIDs.GetPNForLID(ctx, j); err == nil && !pn.IsEmpty() {
+				j = pn
+			}
+		}
+		if !seen[j.String()] {
+			seen[j.String()] = true
+			out = append(out, j)
+		}
+	}
+	return out, nil
 }
 
 // storyPostReq is story.post: a photo or a video by its path (with the photo's thumbnail and size, which the
@@ -430,6 +462,8 @@ type storyPostReq struct {
 	Width, Height       int
 	Bg, Fg              string // "#RRGGBB": the UI's JSON turns big numbers into 4.27867e+09, so no ARGB numbers here
 	Font                int
+	// Audience is the chat keys of the people who get it; none means everyone the account's status privacy settings name.
+	Audience []string
 }
 
 // storyColour reads a "#RRGGBB" into the opaque ARGB number WhatsApp's text statuses carry; "" is def.
@@ -493,6 +527,12 @@ func (s *Session) handleStoryPost(req json.RawMessage) (any, error) {
 	if err != nil {
 		return nil, err
 	}
+	var recips []types.JID
+	if len(r.Audience) > 0 {
+		if recips, err = statusRecipients(context.Background(), cli, r.Audience); err != nil {
+			return nil, err
+		}
+	}
 	id := cli.GenerateMessageID()
 	row := msgRow{Chat: ownStory, ID: id, TS: time.Now().Unix(), MediaState: 2}
 	var o *mediaOut
@@ -531,12 +571,12 @@ func (s *Session) handleStoryPost(req json.RawMessage) (any, error) {
 		}
 	}
 	s.store.runOp(func(t *storeTx) { t.insertStory(row, true) })
-	go s.sendStory(cli, o, row, r, bg, fg)
+	go s.sendStory(cli, o, row, r, bg, fg, recips)
 	return map[string]string{"id": id}, nil
 }
 
 // sendStory uploads a photo or video story and sends the story to status@broadcast, then says how it went.
-func (s *Session) sendStory(cli *whatsmeow.Client, o *mediaOut, row msgRow, r storyPostReq, bg, fg uint32) {
+func (s *Session) sendStory(cli *whatsmeow.Client, o *mediaOut, row msgRow, r storyPostReq, bg, fg uint32, recips []types.JID) {
 	ctx, cancel := context.WithTimeout(context.Background(), mediaTimeout)
 	defer cancel()
 	var msg *waE2E.Message
@@ -553,7 +593,7 @@ func (s *Session) sendStory(cli *whatsmeow.Client, o *mediaOut, row msgRow, r st
 			TextArgb: proto.Uint32(fg), Font: waE2E.ExtendedTextMessage_FontType(r.Font).Enum()}}
 	}
 	if err == nil {
-		_, err = cli.SendMessage(ctx, types.StatusBroadcastJID, msg, whatsmeow.SendRequestExtra{ID: row.ID})
+		_, err = cli.SendMessage(ctx, types.StatusBroadcastJID, msg, whatsmeow.SendRequestExtra{ID: row.ID, StatusRecipients: recips})
 	}
 	if err != nil {
 		s.log.Warnf("story %s: post: %v", row.ID, err)

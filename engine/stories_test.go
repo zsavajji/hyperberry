@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -287,5 +288,30 @@ func TestVideoPoster(t *testing.T) {
 	st.db.QueryRow("SELECT thumb FROM messages WHERE chat = ? AND id = 'V1'", jid.String()).Scan(&thumb)
 	if string(o.poster) != string(poster) || len(thumb) != 0 {
 		t.Errorf("poster %v, our row's thumbnail %v: want the poster on the message and none on the row", o.poster, thumb)
+	}
+}
+
+// The people a status goes to: LID keys as phone numbers when we know them, each once, only persons.
+func TestStatusRecipients(t *testing.T) {
+	_, cli := historyFixture(t)
+	ctx := context.Background()
+	lid := types.NewJID("266396202233898", types.HiddenUserServer)
+	pn := types.NewJID("4915700000007", types.DefaultUserServer)
+	other := types.NewJID("4915700000008", types.DefaultUserServer)
+	if err := cli.Store.LIDs.PutLIDMapping(ctx, lid, pn); err != nil {
+		t.Fatal(err)
+	}
+	got, err := statusRecipients(ctx, cli, []string{lid.String(), pn.String(), other.String(), "4915700000009:12@s.whatsapp.net"})
+	if err != nil || len(got) != 3 || got[0] != pn || got[1] != other || got[2] != types.NewJID("4915700000009", types.DefaultUserServer) {
+		t.Errorf("got %v, %v, want the number once, the other and the third without its device", got, err)
+	}
+	unknown := types.NewJID("111", types.HiddenUserServer)
+	if got, _ := statusRecipients(ctx, cli, []string{unknown.String()}); len(got) != 1 || got[0] != unknown {
+		t.Errorf("a LID with no number: %v, want it as it is", got)
+	}
+	for _, bad := range []string{"", "nonsense", "120363431046871673@g.us", "status@broadcast"} {
+		if _, err := statusRecipients(ctx, cli, []string{bad}); code(err) != "bad_request" {
+			t.Errorf("%q: %v, want bad_request", bad, err)
+		}
 	}
 }
