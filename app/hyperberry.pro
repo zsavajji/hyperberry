@@ -55,7 +55,16 @@ INCLUDEPATH += $$WEBP_DIR $$WEBP_DIR/src
 # lupdate reads the QML too; scripts/build-app.sh turns the .ts into the .qm the bar ships.
 CODECFORTR = UTF-8
 CODECFORSRC = UTF-8
-TRANSLATIONS = translations/hyperberry_it.ts
+TRANSLATIONS = translations/hyperberry_it.ts \
+    translations/hyperberry_fr.ts \
+    translations/hyperberry_de.ts \
+    translations/hyperberry_es.ts \
+    translations/hyperberry_ru.ts \
+    translations/hyperberry_uk.ts \
+    translations/hyperberry_pl.ts \
+    translations/hyperberry_hi.ts \
+    translations/hyperberry_id.ts \
+    translations/hyperberry_vi.ts
 lupdate_only {
     SOURCES += assets/*.qml assets/errors.js
 }

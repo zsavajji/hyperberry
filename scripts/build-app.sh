@@ -21,7 +21,9 @@ docker run --rm -v "$ROOT:/src" -w /src "$IMAGE" bash -c '
 		echo "build-app.sh: QML that Qt 4.8 cannot parse" >&2
 		exit 1
 	fi
-	lrelease app/translations/hyperberry_it.ts -qm app/assets/translations/hyperberry_it.qm >/dev/null
+	for ts in app/translations/hyperberry_*.ts; do
+		lrelease "$ts" -qm "app/assets/translations/$(basename "$ts" .ts).qm" >/dev/null
+	done
 	(cd build/ui && qmake -spec blackberry-armv7le-qcc CONFIG+=device ../../app/hyperberry.pro >/dev/null &&
 		make -j"$(nproc)" >/dev/null)
 	cd app && blackberry-nativepackager -package ../build/hyperberry.bar -buildIdFile ../build/buildid.txt \
