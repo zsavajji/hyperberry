@@ -91,7 +91,8 @@ func TestStories(t *testing.T) {
 	if again, err := st.fetchStory(dir, row, get); err != nil || again != p || writes != 1 {
 		t.Errorf("a second fetch: %q, %v after %d downloads, want the file again and 1 download", again, err, writes)
 	}
-	st.runOp(func(*storeTx) {})
+	// No barrier here: fetchStory has to return with the row already saying where the file is, since its reply is
+	// what the UI reads the row on.
 	if b, _ := os.ReadFile(p); string(b) != "mp4!" || n("id = 'S2' AND media_state = 2 AND path = ?", p) != 1 {
 		t.Errorf("the file holds %q, or its row doesn't say where", b)
 	}

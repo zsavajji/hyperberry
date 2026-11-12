@@ -41,6 +41,9 @@ Sheet {
     // Seconds a photo or text story is shown.
     property real seconds: 5
     property bool videoShown: sheet.cur.kind == 2 && !!sheet.cur.video
+    // The video is on screen (playing, or paused by us): until then its thumbnail stays and the spinner turns, since the
+    // player takes a second or so to prepare after the file is here.
+    property bool playing: false
     property bool own: sheet.poster.poster == "me"
 
     // The first story not seen, else the first.
@@ -72,6 +75,7 @@ Sheet {
         }
         i = Math.max(i, 0)
         player.stop()
+        sheet.playing = false
         reply.text = ""
         sheet.index = i
         sheet.progress = 0
@@ -214,6 +218,7 @@ Sheet {
             videoOutput: VideoOutput.PrimaryDisplay
             windowId: surface.windowId
             windowGroupId: surface.windowGroup
+            onMediaStateChanged: sheet.playing = (mediaState == MediaState.Started || mediaState == MediaState.Paused)
             onPositionChanged: {
                 if (sheet.cur.kind == 2 && player.duration > 0 && !sheet.paused) {
                     sheet.setProgress(player.position / player.duration)
@@ -290,7 +295,7 @@ Sheet {
             // A photo, or a video's thumbnail until its file is here. Hidden while the video plays: the video's
             // window is under the Cascades layer, and a picture over its hole would cover it.
             ImageView {
-                visible: sheet.cur.kind == 1 || (sheet.cur.kind == 2 && !sheet.videoShown)
+                visible: sheet.cur.kind == 1 || (sheet.cur.kind == 2 && !sheet.playing)
                 horizontalAlignment: HorizontalAlignment.Fill
                 verticalAlignment: VerticalAlignment.Fill
                 imageSource: sheet.cur.pic ? "file://" + sheet.cur.pic : ""
@@ -332,11 +337,13 @@ Sheet {
                 visible: boundToWindow && sheet.videoShown
                 updatedProperties: WindowProperty.Size | WindowProperty.Position | WindowProperty.Visible
             }
-            // Waiting for the file.
+            // Waiting: for a photo's file, for a video's file and then for the player to show its first frame.
             ActivityIndicator {
                 horizontalAlignment: HorizontalAlignment.Center
                 verticalAlignment: VerticalAlignment.Center
-                running: sheet.cur.kind != 0 && !sheet.cur.ready
+                preferredWidth: ui.du(9)
+                preferredHeight: ui.du(9)
+                running: (sheet.cur.kind == 1 && !sheet.cur.ready) || (sheet.cur.kind == 2 && !sheet.playing)
                 visible: running
             }
             // Taps: the left third is back, the rest forward. Under the header, which takes its own.

@@ -210,6 +210,11 @@ func (st *Store) fetchStory(dir string, row msgRow, get func(f *os.File) (string
 			os.Remove(path) // it expired or was deleted while it downloaded
 		}
 	}
+	// The reply is what tells the UI to read the row, which has to say where the file is by then: wait for the
+	// commit (the first story video showed nothing until it was opened a second time, Q10, 0.1.0.280).
+	committed := make(chan struct{})
+	st.afterCommit(func() { close(committed) })
+	<-committed
 	return path, err
 }
 
