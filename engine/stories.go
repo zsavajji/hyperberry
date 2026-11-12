@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -418,8 +419,17 @@ type storyPostReq struct {
 	Path, Caption, Text string
 	Thumb               []byte
 	Width, Height       int
-	Bg, Fg              uint32 // ARGB, as WhatsApp's text statuses carry them
+	Bg, Fg              string // "#RRGGBB": the UI's JSON turns big numbers into 4.27867e+09, so no ARGB numbers here
 	Font                int
+}
+
+// storyColour reads a "#RRGGBB" into the opaque ARGB number WhatsApp's text statuses carry; "" is def.
+func storyColour(s string, def uint32) (uint32, bool) {
+	if s == "" {
+		return def, true
+	}
+	v, err := strconv.ParseUint(strings.TrimPrefix(s, "#"), 16, 32)
+	return 0xFF000000 | uint32(v), err == nil && len(strings.TrimPrefix(s, "#")) == 6
 }
 
 // copyFile copies src to dst through a temporary name, so a crash leaves no half file that looks done.
@@ -465,6 +475,11 @@ func (s *Session) handleStoryPost(req json.RawMessage) (any, error) {
 		(r.Path == "") == (strings.TrimSpace(r.Text) == "") {
 		return nil, &Error{"bad_request", "story.post needs an absolute path (thumb is base64) or text, not both"}
 	}
+	bg, okBg := storyColour(r.Bg, 0xFF075E54)
+	fg, okFg := storyColour(r.Fg, 0xFFFFFFFF)
+	if !okBg || !okFg {
+		return nil, &Error{"bad_request", "story.post: bg and fg are #RRGGBB"}
+	}
 	cli, err := s.linkedClient()
 	if err != nil {
 		return nil, err
@@ -496,20 +511,20 @@ func (s *Session) handleStoryPost(req json.RawMessage) (any, error) {
 	} else {
 		row.Kind, row.Text, row.MediaState = msgText, strings.TrimSpace(r.Text), 0
 		x := map[string]any{}
-		keep(x, "bg", r.Bg)
-		keep(x, "fg", r.Fg)
+		keep(x, "bg", bg)
+		keep(x, "fg", fg)
 		keep(x, "font", r.Font)
 		if b, err := json.Marshal(x); err == nil && len(x) > 0 {
 			row.Extra = string(b)
 		}
 	}
 	s.store.runOp(func(t *storeTx) { t.insertStory(row, true) })
-	go s.sendStory(cli, o, row, r)
+	go s.sendStory(cli, o, row, r, bg, fg)
 	return map[string]string{"id": id}, nil
 }
 
 // sendStory uploads a photo or video story and sends the story to status@broadcast, then says how it went.
-func (s *Session) sendStory(cli *whatsmeow.Client, o *mediaOut, row msgRow, r storyPostReq) {
+func (s *Session) sendStory(cli *whatsmeow.Client, o *mediaOut, row msgRow, r storyPostReq, bg, fg uint32) {
 	ctx, cancel := context.WithTimeout(context.Background(), mediaTimeout)
 	defer cancel()
 	var msg *waE2E.Message
@@ -522,8 +537,8 @@ func (s *Session) sendStory(cli *whatsmeow.Client, o *mediaOut, row msgRow, r st
 			msg = mediaMessage(o, up, nil)
 		}
 	} else {
-		msg = &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: &row.Text, BackgroundArgb: proto.Uint32(r.Bg),
-			TextArgb: proto.Uint32(r.Fg), Font: waE2E.ExtendedTextMessage_FontType(r.Font).Enum()}}
+		msg = &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: &row.Text, BackgroundArgb: proto.Uint32(bg),
+			TextArgb: proto.Uint32(fg), Font: waE2E.ExtendedTextMessage_FontType(r.Font).Enum()}}
 	}
 	if err == nil {
 		_, err = cli.SendMessage(ctx, types.StatusBroadcastJID, msg, whatsmeow.SendRequestExtra{ID: row.ID})

@@ -207,7 +207,7 @@ func TestStoryPost(t *testing.T) {
 	}
 
 	// A text story the same way.
-	res, err = s.handleStoryPost(json.RawMessage(`{"text":"hello","bg":4279312947,"fg":4294967295}`))
+	res, err = s.handleStoryPost(json.RawMessage(`{"text":"hello","bg":"#112233","fg":"#FFFFFF"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -244,5 +244,18 @@ func TestCopyFile(t *testing.T) {
 	}
 	if err := copyFile(filepath.Join(dir, "none"), dst+"2"); err == nil {
 		t.Error("copying a file that isn't there worked")
+	}
+}
+
+func TestStoryColour(t *testing.T) {
+	for in, want := range map[string]uint32{"": 7, "#112233": 0xFF112233, "FFFFFF": 0xFFFFFFFF} {
+		if got, ok := storyColour(in, 7); !ok || got != want {
+			t.Errorf("%q: %x, %v, want %x", in, got, ok, want)
+		}
+	}
+	for _, in := range []string{"blue", "#12345", "#1234567", "#GGGGGG"} {
+		if _, ok := storyColour(in, 0); ok {
+			t.Errorf("%q was taken as a colour", in)
+		}
 	}
 }
