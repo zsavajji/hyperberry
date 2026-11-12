@@ -46,7 +46,7 @@ Sheet {
     property bool controlsShown: true
     property string clock: "0:00"
     // What wording reads is passed in, so a change in any of it (people, say) redraws the line.
-    property string line: wording(phase, call.reason, call.video, !!call.group, call.by || "", call.people)
+    property string line: wording(phase, call.reason, call.video, !!call.group, call.by || "", call.people, !!call.reconnecting)
     // A group call: it rings as the group's, and its video is a grid of tiles, not one picture.
     property bool group: !!call.group
     // The clock shows from the answer to the hang-up, and stays at the end.
@@ -69,7 +69,10 @@ Sheet {
         return ui.px(n * screenWidth / 720)
     }
 
-    function wording(phase, reason, video, group, by, people) {
+    function wording(phase, reason, video, group, by, people, reconnecting) {
+        if (reconnecting && (phase == "connecting" || phase == "active")) {
+            return qsTr("Reconnecting…")
+        }
         switch (phase) {
         case "calling":
             return qsTr("Calling…")

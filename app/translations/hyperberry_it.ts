@@ -1742,6 +1742,11 @@
     </message>
     <message>
         <location filename="../assets/CallSheet.qml" line="1"/>
+        <source>Reconnecting…</source>
+        <translation>Riconnessione…</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallSheet.qml" line="1"/>
         <source>Call ended</source>
         <translation>Chiamata terminata</translation>
     </message>
