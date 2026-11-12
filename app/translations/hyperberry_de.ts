@@ -2259,5 +2259,58 @@
         <source>Add a caption</source>
         <translation>Beschriftung hinzufügen</translation>
     </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>Share with</source>
+        <translation>Teilen mit</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>Everyone</source>
+        <translation>Alle</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>%1 chosen</source>
+        <translation>%1 ausgewählt</translation>
+    </message>
+</context>
+<context>
+    <name>StoryAudienceSheet</name>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>Share with</source>
+        <translation>Teilen mit</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>Cancel</source>
+        <translation>Abbrechen</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>Done</source>
+        <translation>Fertig</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>Search contacts</source>
+        <translation>Kontakte suchen</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>%1 chosen</source>
+        <translation>%1 ausgewählt</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>Everyone</source>
+        <translation>Alle</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>Loading…</source>
+        <translation>Wird geladen…</translation>
+    </message>
 </context>
 </TS>

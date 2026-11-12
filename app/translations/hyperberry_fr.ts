@@ -2259,5 +2259,58 @@
         <source>Add a caption</source>
         <translation>Ajoutez une légende</translation>
     </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>Share with</source>
+        <translation>Partager avec</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>Everyone</source>
+        <translation>Tout le monde</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>%1 chosen</source>
+        <translation>%1 sélectionnés</translation>
+    </message>
+</context>
+<context>
+    <name>StoryAudienceSheet</name>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>Share with</source>
+        <translation>Partager avec</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>Cancel</source>
+        <translation>Annuler</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>Done</source>
+        <translation>Terminé</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>Search contacts</source>
+        <translation>Rechercher des contacts</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>%1 chosen</source>
+        <translation>%1 sélectionnés</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>Everyone</source>
+        <translation>Tout le monde</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>Loading…</source>
+        <translation>Chargement…</translation>
+    </message>
 </context>
 </TS>

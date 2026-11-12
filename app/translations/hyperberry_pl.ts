@@ -2262,5 +2262,58 @@
         <source>Add a caption</source>
         <translation>Dodaj podpis</translation>
     </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>Share with</source>
+        <translation>Udostępnij dla</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>Everyone</source>
+        <translation>Wszyscy</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>%1 chosen</source>
+        <translation>Wybrano: %1</translation>
+    </message>
+</context>
+<context>
+    <name>StoryAudienceSheet</name>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>Share with</source>
+        <translation>Udostępnij dla</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>Cancel</source>
+        <translation>Anuluj</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>Done</source>
+        <translation>Gotowe</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>Search contacts</source>
+        <translation>Szukaj kontaktów</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>%1 chosen</source>
+        <translation>Wybrano: %1</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>Everyone</source>
+        <translation>Wszyscy</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>Loading…</source>
+        <translation>Ładowanie…</translation>
+    </message>
 </context>
 </TS>

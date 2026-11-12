@@ -2259,5 +2259,58 @@
         <source>Add a caption</source>
         <translation>Aggiungi una didascalia</translation>
     </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1"/>
+        <source>Share with</source>
+        <translation>Condividi con</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1"/>
+        <source>Everyone</source>
+        <translation>Tutti</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1"/>
+        <source>%1 chosen</source>
+        <translation>%1 scelti</translation>
+    </message>
+</context>
+<context>
+    <name>StoryAudienceSheet</name>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1"/>
+        <source>Share with</source>
+        <translation>Condividi con</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1"/>
+        <source>Cancel</source>
+        <translation>Annulla</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1"/>
+        <source>Done</source>
+        <translation>Fine</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1"/>
+        <source>Search contacts</source>
+        <translation>Cerca contatti</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1"/>
+        <source>%1 chosen</source>
+        <translation>%1 scelti</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1"/>
+        <source>Everyone</source>
+        <translation>Tutti</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1"/>
+        <source>Loading…</source>
+        <translation>Caricamento…</translation>
+    </message>
 </context>
 </TS>

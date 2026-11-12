@@ -2259,5 +2259,58 @@
         <source>Add a caption</source>
         <translation>Añade un pie de foto</translation>
     </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>Share with</source>
+        <translation>Compartir con</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>Everyone</source>
+        <translation>Todos</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>%1 chosen</source>
+        <translation>%1 seleccionados</translation>
+    </message>
+</context>
+<context>
+    <name>StoryAudienceSheet</name>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>Share with</source>
+        <translation>Compartir con</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>Cancel</source>
+        <translation>Cancelar</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>Done</source>
+        <translation>Listo</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>Search contacts</source>
+        <translation>Buscar contactos</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>%1 chosen</source>
+        <translation>%1 seleccionados</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>Everyone</source>
+        <translation>Todos</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryAudienceSheet.qml" line="1" />
+        <source>Loading…</source>
+        <translation>Cargando…</translation>
+    </message>
 </context>
 </TS>
