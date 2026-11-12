@@ -238,6 +238,8 @@ void EngineLink::readLines()
                 emit chatsChanged(map["jids"].toStringList());
             else if (ev == "msgs")
                 emit msgsChanged(map["chat"].toString(), map["ids"].toStringList());
+            else if (ev == "stories")
+                emit storiesChanged();
             else if (ev == "typing")
                 emit typing(map["chat"].toString(), map["who"].toString(), map["on"].toBool(),
                             map["voice"].toBool());

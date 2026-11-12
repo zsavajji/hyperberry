@@ -24,6 +24,7 @@
 #include <QDeclarativeContext>
 #include "CallVideo.h"
 #include "CallsModel.h"
+#include "StoriesModel.h"
 #include "ChatListModel.h"
 #include "ContactBook.h"
 #include "ContactInfo.h"
@@ -125,6 +126,7 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     ChatListModel archivedChats(&engine, ChatListModel::Archived, &app);
     ChatListModel channelChats(&engine, ChatListModel::Channels, &app);
     CallsModel callList(&engine, &app);
+    StoriesModel storyList(&engine, &app);
     CallAudio callAudio(&engine, &app);
     CallVideo callVideo(&engine, &app);
     Proximity proximity(&app);
@@ -161,6 +163,7 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     document->setContextProperty("archivedChats", &archivedChats);
     document->setContextProperty("channelChats", &channelChats);
     document->setContextProperty("callList", &callList);
+    document->setContextProperty("storyList", &storyList);
     document->setContextProperty("callAudio", &callAudio);
     // About shows it where a profile shows the number: versionNumber.buildId, from the .bar.
     document->documentContext()->setContextProperty("appVersion", bb::ApplicationInfo().version());

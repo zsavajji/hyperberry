@@ -67,6 +67,16 @@ def main(out):
     d.ellipse(pts((0.44, 0.71), (0.56, 0.83)), white)
     action(img, out, "help")
 
+    # The Stories tab's mark (2026-11-12): WhatsApp's status ring, three arcs with gaps round a dot. A tab icon,
+    # 80 px like message.png.
+    n = 80 * S
+    img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    for a in (-78, 42, 162):
+        d.arc((0.1 * n, 0.1 * n, 0.9 * n, 0.9 * n), a, a + 96, white, round(0.085 * n))
+    d.ellipse((0.36 * n, 0.36 * n, 0.64 * n, 0.64 * n), white)
+    img.resize((80, 80), Image.LANCZOS).save(f"{out}/stories.png")
+
     # The second tick's short stroke starts past the first tick's long one, as WhatsApp draws it.
     img, d = canvas(round(H * 1.3))
     d.line(pts((0.10, 0.52), (0.34, 0.76), (0.82, 0.26)), white, w, joint="curve")

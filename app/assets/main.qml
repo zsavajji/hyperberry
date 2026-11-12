@@ -2,7 +2,7 @@ import bb.cascades 1.4
 import bb.system 1.2
 import "errors.js" as Errors
 
-// The app's root (PLAN.md §7, step 7.4): a TabbedPane, Chats and Calls, with the tab menu and not
+// The app's root (PLAN.md §7, step 7.4): a TabbedPane, Chats, Calls and Stories, with the tab menu and not
 // tabs on the action bar, so the chat list keeps New chat as its Signature action. Chats holds the
 // NavigationPane `nav` of every earlier step (pages reach it by that id, and everything that pushes
 // onto it), which shows the chat list when linked, else the linking page: not linked, the root is
@@ -11,7 +11,10 @@ TabbedPane {
     id: root
     showTabsOnActionBar: false
     peekEnabled: nav.linked
-    onActiveTabChanged: callList.active = activeTab == callsTab
+    onActiveTabChanged: {
+        callList.active = activeTab == callsTab
+        storyList.active = activeTab == storiesTab
+    }
     Menu.definition: MenuDefinition {
         settingsAction: SettingsActionItem {
             onTriggered: root.showOnChats(settingsDef.createObject())
@@ -279,6 +282,21 @@ TabbedPane {
             id: callsNav
             onPopTransitionEnded: page.destroy()
             CallsPage {
+            }
+        }
+    }
+    // The stories of the people we know (docs/plan/stories.md): a grid of tiles, one per poster. The badge on
+    // the tab is the unseen count, which the model keeps even while the tab is not shown.
+    Tab {
+        id: storiesTab
+        title: qsTr("Stories")
+        imageSource: "asset:///images/stories.png"
+        enabled: nav.linked
+        unreadContentCount: storyList.unseen
+        content: NavigationPane {
+            id: storiesNav
+            onPopTransitionEnded: page.destroy()
+            StoriesPage {
             }
         }
     }

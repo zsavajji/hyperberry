@@ -80,6 +80,8 @@ signals:
     void chatsChanged(const QStringList &jids);
     // A msgs event: these rows of the chat's messages changed or disappeared.
     void msgsChanged(const QString &chat, const QStringList &ids);
+    // A stories event: a row of the stories table was added, changed or dropped.
+    void storiesChanged();
     // A typing event: who ("" in 1:1) started or stopped typing in the chat; voice while recording.
     void typing(const QString &chat, const QString &who, bool on, bool voice);
     // A presence event; lastSeen in unix seconds, 0 when hidden.
