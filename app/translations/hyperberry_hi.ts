@@ -1034,6 +1034,11 @@
         <source>Edited</source>
         <translation>एडिट किया गया</translation>
     </message>
+    <message>
+        <location filename="../src/MessageCard.cpp" line="1" />
+        <source>Story</source>
+        <translation>स्टेटस</translation>
+    </message>
 </context>
 <context>
     <name>MessageKinds</name>
@@ -2182,6 +2187,11 @@
         <location filename="../assets/StoriesPage.qml" line="1" />
         <source>Pick a JPEG photo or an MP4 video</source>
         <translation>कोई JPEG फ़ोटो या MP4 वीडियो चुनें</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>This story is no longer available</source>
+        <translation>यह स्टेटस अब उपलब्ध नहीं है</translation>
     </message>
 </context>
 <context>

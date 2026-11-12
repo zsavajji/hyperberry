@@ -1032,6 +1032,11 @@
         <source>Edited</source>
         <translation>Đã chỉnh sửa</translation>
     </message>
+    <message>
+        <location filename="../src/MessageCard.cpp" line="1" />
+        <source>Story</source>
+        <translation>Trạng thái</translation>
+    </message>
 </context>
 <context>
     <name>MessageKinds</name>
@@ -2179,6 +2184,11 @@
         <location filename="../assets/StoriesPage.qml" line="1" />
         <source>Pick a JPEG photo or an MP4 video</source>
         <translation>Chọn ảnh JPEG hoặc video MP4</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>This story is no longer available</source>
+        <translation>Trạng thái này không còn khả dụng</translation>
     </message>
 </context>
 <context>

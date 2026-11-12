@@ -1036,6 +1036,11 @@
         <source>Edited</source>
         <translation>Изменено</translation>
     </message>
+    <message>
+        <location filename="../src/MessageCard.cpp" line="1" />
+        <source>Story</source>
+        <translation>Статус</translation>
+    </message>
 </context>
 <context>
     <name>MessageKinds</name>
@@ -2185,6 +2190,11 @@
         <location filename="../assets/StoriesPage.qml" line="1" />
         <source>Pick a JPEG photo or an MP4 video</source>
         <translation>Выберите фото JPEG или видео MP4</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>This story is no longer available</source>
+        <translation>Этот статус больше недоступен</translation>
     </message>
 </context>
 <context>
