@@ -89,8 +89,13 @@ static QString argb(const QVariantMap &extra, const char *key)
     return v ? QString("#%1").arg(v & 0xFFFFFF, 6, 16, QChar('0')) : QString();
 }
 
+// The poster of our own stories (docs/protocol.md).
+static const char *const kOwn = "me";
+
 static bool before(const QVariantMap &a, const QVariantMap &b)
 {
+    if (a["own"].toBool() != b["own"].toBool())
+        return a["own"].toBool();
     const bool au = a["unseen"].toInt() > 0, bu = b["unseen"].toInt() > 0;
     if (au != bu)
         return au;
@@ -116,6 +121,7 @@ StoriesModel::StoriesModel(EngineLink *engine, QObject *parent)
     connect(engine, SIGNAL(connectedChanged()), this, SLOT(reloadSoon()));
     connect(engine, SIGNAL(replied(QString, QString, QVariant)), this, SLOT(onReplied(QString, QString, QVariant)));
     connect(engine, SIGNAL(failureChanged()), this, SLOT(onFailure()));
+    connect(engine, SIGNAL(storyOp(QString, QString, bool)), this, SLOT(onStoryOp(QString, QString, bool)));
     reloadSoon();
 }
 
@@ -195,9 +201,12 @@ void StoriesModel::reload()
                     name = q.value(8).toString();
                 if (name.isEmpty())
                     name = p.endsWith("@s.whatsapp.net") ? "+" + p.section('@', 0, 0) : tr("Unknown");
+                const bool own = p == kOwn;
                 row["poster"] = p;
-                row["name"] = name;
-                row["initials"] = initials(name);
+                row["own"] = own;
+                // Ours: "My story", on a tile with our own name's initials ("#" until the link says one).
+                row["name"] = own ? tr("My story") : name;
+                row["initials"] = initials(own ? m_engine->link().value("name").toString() : name);
                 row["color"] = pickColor(p, kColors, kColorCount);
                 row["photo"] = q.value(10).toString();
                 row["count"] = 0;
@@ -333,6 +342,8 @@ void StoriesModel::fetch(const QString &poster, const QString &id)
 
 void StoriesModel::markSeen(const QString &poster, const QString &id)
 {
+    if (poster == kOwn) // born seen
+        return;
     ask("story.seen", poster, id, QVariantMap());
 }
 
@@ -380,4 +391,14 @@ void StoriesModel::onFailure()
         else if (cmd == "story.react")
             emit reactFailed(was[1], was[2]);
     }
+}
+
+void StoriesModel::onStoryOp(const QString &cmd, const QString &, bool ok)
+{
+    if (ok)
+        return;
+    if (cmd == "post")
+        emit postFailed();
+    else if (cmd == "delete")
+        emit deleteFailed();
 }

@@ -20,7 +20,8 @@ class EngineLink;
 // (0 text, 1 photo, 2 video), tile (a small JPEG's path, "" when none), bg and fg (a text story's colours)
 // and text. The tile is the first story not yet seen, else the newest. Read-only on chats.db, like
 // CallsModel; the list reloads only while `active` (the tab is shown), but `unseen`, all posters'
-// unseen stories (the tab's badge), is kept up to date always. The viewer (StoryViewer.qml) reads one
+// unseen stories (the tab's badge), is kept up to date always. Our own stories (poster "me") are one row,
+// "My story", always first, with `own` true and nothing unseen. The viewer (StoryViewer.qml) reads one
 // poster's stories through storiesOf and asks the engine for a file through fetch.
 class StoriesModel : public bb::cascades::DataModel
 {
@@ -62,6 +63,9 @@ signals:
     void replySent(const QString &poster, const QString &id);
     void replyFailed(const QString &poster, const QString &id);
     void reactFailed(const QString &poster, const QString &id);
+    // Our own story could not be posted, or taken back (the engine's storyop event with ok false).
+    void postFailed();
+    void deleteFailed();
     void activeChanged();
     void emptyChanged();
     void unseenChanged();
@@ -71,6 +75,7 @@ private slots:
     void reload();
     void onReplied(const QString &id, const QString &cmd, const QVariant &result);
     void onFailure();
+    void onStoryOp(const QString &cmd, const QString &id, bool ok);
 
 private:
     QVariantMap storyMap(QSqlQuery &q, QSqlDatabase &db);

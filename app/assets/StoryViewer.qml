@@ -15,6 +15,7 @@ import hyperberry 1.0
 // and opens it, and closing empties it.
 // At the bottom, a reply field and a heart: a reply goes to the poster's chat quoting the story (story.reply),
 // the heart is a reaction to it (story.react). The story waits while the field has focus.
+// Our own stories (poster "me") have no reply bar or heart, and a trash can in the header takes one back (story.delete).
 Sheet {
     id: sheet
     // The tile's row: poster (the key), name, initials, color, photo.
@@ -40,6 +41,7 @@ Sheet {
     // Seconds a photo or text story is shown.
     property real seconds: 5
     property bool videoShown: sheet.cur.kind == 2 && !!sheet.cur.video
+    property bool own: sheet.poster.poster == "me"
 
     // The first story not seen, else the first.
     function start(row) {
@@ -227,6 +229,22 @@ Sheet {
         SystemToast {
             id: sendFailed
         },
+        // Taking one of our own stories back: it goes from everyone, so it asks.
+        SystemDialog {
+            id: confirmDelete
+            property string storyId: ""
+            title: qsTr("Delete this story?")
+            body: qsTr("It is taken back from everyone who saw it.")
+            confirmButton.label: qsTr("Delete")
+            cancelButton.label: qsTr("Cancel")
+            onFinished: {
+                sheet.paused = false
+                if (result == SystemUiResult.ConfirmButtonSelection) {
+                    engine.request("story.delete", {"id": confirmDelete.storyId})
+                    sheet.close()
+                }
+            }
+        },
         // One progress segment: a track with a lighter part as long as the story has played, laid out by
         // quotas so no width is ever worked out.
         ComponentDefinition {
@@ -338,8 +356,9 @@ Sheet {
                     }
                 }
             }
-            // The reply field and the heart, over a band at the bottom.
+            // The reply field and the heart, over a band at the bottom. Not on our own stories.
             Container {
+                visible: !sheet.own
                 horizontalAlignment: HorizontalAlignment.Fill
                 verticalAlignment: VerticalAlignment.Bottom
                 background: Color.create(0.0, 0.0, 0.0, 0.55)
@@ -452,6 +471,9 @@ Sheet {
                     Container {
                         verticalAlignment: VerticalAlignment.Center
                         leftMargin: ui.du(1.2)
+                        layoutProperties: StackLayoutProperties {
+                            spaceQuota: 1
+                        }
                         Label {
                             text: sheet.poster.name
                             textFormat: TextFormat.Plain
@@ -468,6 +490,29 @@ Sheet {
                             textStyle.fontSizeValue: nav.smallSize
                             textStyle.color: Color.create("#CCCCCC")
                             topMargin: 0
+                        }
+                    }
+                    // Delete, ours only: a box 10 du square, the touch target.
+                    Container {
+                        visible: sheet.own
+                        verticalAlignment: VerticalAlignment.Center
+                        preferredWidth: ui.du(10)
+                        preferredHeight: ui.du(10)
+                        layout: DockLayout {}
+                        ImageView {
+                            horizontalAlignment: HorizontalAlignment.Center
+                            verticalAlignment: VerticalAlignment.Center
+                            preferredWidth: ui.du(5)
+                            preferredHeight: ui.du(5)
+                            imageSource: "asset:///images/delete_action.png"
+                            filterColor: Color.White
+                        }
+                        gestureHandlers: TapHandler {
+                            onTapped: {
+                                sheet.paused = true
+                                confirmDelete.storyId = sheet.cur.id
+                                confirmDelete.show()
+                            }
                         }
                     }
                 }
