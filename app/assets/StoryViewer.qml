@@ -11,7 +11,8 @@ import hyperberry 1.0
 // here is fetched (storyList.fetch) while its thumbnail shows; the next video is fetched ahead.
 // The video plays through MediaPlayer into a ForeignWindowControl, which sits under Cascades' hole, so the
 // segments and the header draw over it (the Q10 video gate, 2026-11-12; sound and taps on controls over it
-// worked). Start it with createObject() and start(row), row being a StoriesModel row; it destroys itself on close.
+// worked). One of these lives in StoriesPage; start(row), row being a StoriesModel row, sets it up for a poster
+// and opens it, and closing empties it.
 // At the bottom, a reply field and a heart: a reply goes to the poster's chat quoting the story (story.reply),
 // the heart is a reaction to it (story.react). The story waits while the field has focus.
 Sheet {
@@ -42,6 +43,8 @@ Sheet {
 
     // The first story not seen, else the first.
     function start(row) {
+        bar.removeAll()
+        sheet.marked = ","
         sheet.poster = row
         sheet.items = storyList.storiesOf(row.poster)
         var first = 0
@@ -192,7 +195,11 @@ Sheet {
     onClosed: {
         ticker.stop()
         player.stop()
-        sheet.destroy()
+        reply.text = ""
+        sheet.index = -1
+        sheet.items = []
+        sheet.segs = []
+        bar.removeAll()
     }
     attachedObjects: [
         Timer {

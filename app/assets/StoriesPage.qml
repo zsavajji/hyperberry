@@ -5,10 +5,9 @@ import bb.cascades 1.4
 // 40 px each side and a 20 px gap leaves 310. The list reloads only while this tab is shown (main.qml sets it).
 Page {
     id: page
-    // The viewer, a Sheet made for each poster opened (it destroys itself on close).
-    attachedObjects: ComponentDefinition {
-        id: viewerDef
-        source: "StoryViewer.qml"
+    // The viewer, one Sheet for every poster opened: it is set up by start() and emptied when it closes.
+    attachedObjects: StoryViewer {
+        id: viewer
     }
     titleBar: TitleBar {
         title: qsTr("Stories")
@@ -39,7 +38,7 @@ Page {
                 }
                 onTriggered: {
                     if (indexPath.length == 1) {
-                        viewerDef.createObject().start(dataModel.data(indexPath))
+                        viewer.start(dataModel.data(indexPath))
                     }
                 }
                 listItemComponents: [
