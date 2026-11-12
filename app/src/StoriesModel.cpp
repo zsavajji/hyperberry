@@ -316,39 +316,68 @@ QVariantMap StoriesModel::storyOf(const QString &poster, const QString &id)
     return q.exec() && q.next() ? storyMap(q, db) : QVariantMap();
 }
 
-void StoriesModel::fetch(const QString &poster, const QString &id)
+// Sends cmd with args plus the poster and the story, and remembers it until it is answered.
+void StoriesModel::ask(const QString &cmd, const QString &poster, const QString &id, QVariantMap args)
 {
-    QVariantMap args;
     args["poster"] = poster;
     args["id"] = id;
-    const QString req = m_engine->request("story.get", args);
+    const QString req = m_engine->request(cmd, args);
     if (!req.isEmpty())
-        m_pending.insert(req, qMakePair(poster, id));
+        m_pending.insert(req, QStringList() << cmd << poster << id);
+}
+
+void StoriesModel::fetch(const QString &poster, const QString &id)
+{
+    ask("story.get", poster, id, QVariantMap());
 }
 
 void StoriesModel::markSeen(const QString &poster, const QString &id)
 {
-    QVariantMap args;
-    args["poster"] = poster;
-    args["id"] = id;
-    m_engine->request("story.seen", args);
+    ask("story.seen", poster, id, QVariantMap());
 }
 
-void StoriesModel::onReplied(const QString &id, const QString &cmd, const QVariant &)
+void StoriesModel::reply(const QString &poster, const QString &id, const QString &text)
 {
-    if (cmd != "story.get" || !m_pending.contains(id))
-        return;
-    const QPair<QString, QString> story = m_pending.take(id);
-    emit storyReady(story.first, story.second);
+    QVariantMap args;
+    args["text"] = text;
+    ask("story.reply", poster, id, args);
 }
 
-// ponytail: a failure names no request, so one of several fetches in flight failing ends them all.
+void StoriesModel::react(const QString &poster, const QString &id, const QString &emoji)
+{
+    QVariantMap args;
+    args["emoji"] = emoji;
+    ask("story.react", poster, id, args);
+}
+
+void StoriesModel::onReplied(const QString &id, const QString &, const QVariant &)
+{
+    if (!m_pending.contains(id))
+        return;
+    const QStringList was = m_pending.take(id);
+    if (was[0] == "story.get")
+        emit storyReady(was[1], was[2]);
+    else if (was[0] == "story.reply")
+        emit replySent(was[1], was[2]);
+}
+
+// ponytail: a failure names no request, so one of several in flight failing ends them all of that cmd.
 void StoriesModel::onFailure()
 {
-    if (m_pending.isEmpty() || m_engine->failure().value("cmd").toString() != "story.get")
+    if (m_pending.isEmpty())
         return;
-    const QList<QPair<QString, QString> > failed = m_pending.values();
-    m_pending.clear();
-    for (int i = 0; i < failed.size(); ++i)
-        emit storyFailed(failed[i].first, failed[i].second);
+    const QString cmd = m_engine->failure().value("cmd").toString();
+    const QList<QString> ids = m_pending.keys();
+    for (int i = 0; i < ids.size(); ++i) {
+        const QStringList was = m_pending.value(ids[i]);
+        if (was[0] != cmd)
+            continue;
+        m_pending.remove(ids[i]);
+        if (cmd == "story.get")
+            emit storyFailed(was[1], was[2]);
+        else if (cmd == "story.reply")
+            emit replyFailed(was[1], was[2]);
+        else if (cmd == "story.react")
+            emit reactFailed(was[1], was[2]);
+    }
 }

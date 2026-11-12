@@ -77,6 +77,15 @@ def main(out):
     d.ellipse((0.36 * n, 0.36 * n, 0.64 * n, 0.64 * n), white)
     img.resize((80, 80), Image.LANCZOS).save(f"{out}/stories.png")
 
+    # The story viewer's heart (a reaction to a story): the classic heart curve, filled, 72 px.
+    n = 72 * S
+    img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
+    heart = [(16 * math.sin(a) ** 3,
+              -(13 * math.cos(a) - 5 * math.cos(2 * a) - 2 * math.cos(3 * a) - math.cos(4 * a)))
+             for a in (2 * math.pi * i / 360 for i in range(360))]
+    ImageDraw.Draw(img).polygon([(n * (0.5 + x / 36), n * (0.47 + y / 36)) for x, y in heart], white)
+    img.resize((72, 72), Image.LANCZOS).save(f"{out}/heart.png")
+
     # The second tick's short stroke starts past the first tick's long one, as WhatsApp draws it.
     img, d = canvas(round(H * 1.3))
     d.line(pts((0.10, 0.52), (0.34, 0.76), (0.82, 0.26)), white, w, joint="curve")

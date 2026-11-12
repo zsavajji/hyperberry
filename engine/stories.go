@@ -7,6 +7,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/polymorfa/hypermeow/proto/waE2E"
 	"github.com/polymorfa/hypermeow/types"
 	"github.com/polymorfa/hypermeow/types/events"
+	"google.golang.org/protobuf/proto"
 )
 
 // Stories (the Stories tab, docs/plan/stories.md): WhatsApp's status posts, kept in their own table
@@ -304,6 +306,86 @@ func (s *Session) handleStorySeen(req json.RawMessage) (any, error) {
 				s.store.log.Warnf("story %s: read receipt: %v", r.ID, err)
 			}
 		}()
+	}
+	return nil, nil
+}
+
+// storyQuote reads what a reply or a reaction needs of a story: its kind, caption and inline thumbnail.
+func (st *Store) storyQuote(poster, id string) (kind int, text string, thumb []byte, ok bool) {
+	st.runOp(func(t *storeTx) {
+		var txt sql.NullString
+		ok = t.tx.QueryRow("SELECT kind, text, thumb FROM stories WHERE poster = ? AND id = ?", poster, id).Scan(&kind, &txt, &thumb) == nil
+		text = txt.String
+	})
+	return
+}
+
+// quotedStory is the post as a reply quotes it: its content and thumbnail, which is what WhatsApp's own apps
+// quote, so the poster sees "replied to your status" with the picture.
+func quotedStory(kind int, text string, thumb []byte) *waE2E.Message {
+	switch kind {
+	case msgPhoto:
+		return &waE2E.Message{ImageMessage: &waE2E.ImageMessage{Caption: proto.String(text), JPEGThumbnail: thumb}}
+	case msgVideo:
+		return &waE2E.Message{VideoMessage: &waE2E.VideoMessage{Caption: proto.String(text), JPEGThumbnail: thumb}}
+	}
+	return &waE2E.Message{Conversation: proto.String(text)}
+}
+
+// handleStoryReply is story.reply: our text to the poster's 1:1 chat, quoting the story (the quote names
+// status@broadcast and the poster, as a reply to a status does). Our row goes in the chat at once, as any
+// message of ours, with the story's one-line preview as its quote.
+// (verify on the real link): that the poster's phone shows it as a reply to their status.
+func (s *Session) handleStoryReply(req json.RawMessage) (any, error) {
+	var r struct{ Poster, ID, Text string }
+	if err := json.Unmarshal(req, &r); err != nil || r.Poster == "" || r.ID == "" || strings.TrimSpace(r.Text) == "" {
+		return nil, &Error{"bad_request", "story.reply needs poster, id and non-empty text"}
+	}
+	cli, jid, err := s.linked(r.Poster)
+	if err != nil {
+		return nil, err
+	}
+	kind, text, thumb, ok := s.store.storyQuote(r.Poster, r.ID)
+	if !ok {
+		return nil, &Error{"not_found", "no such story"}
+	}
+	id, now := cli.GenerateMessageID(), time.Now().Unix()
+	_, created := s.store.queueRow(jid, r.Poster, "", msgRow{Chat: r.Poster, ID: id, TS: now, Out: true, State: stateSending,
+		Kind: msgText, Text: r.Text, QuoteID: r.ID, QuotePreview: clip(preview(kind, text, 0), 80)})
+	s.nameNew(cli, jid, r.Poster, created)
+	msg := &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: &r.Text, ContextInfo: &waE2E.ContextInfo{
+		StanzaID: &r.ID, Participant: &r.Poster, RemoteJID: proto.String(types.StatusBroadcastJID.String()),
+		QuotedMessage: quotedStory(kind, text, thumb)}}}
+	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
+	defer cancel()
+	resp, err := cli.SendMessage(ctx, jid, msg, whatsmeow.SendRequestExtra{ID: id})
+	if err != nil {
+		s.store.ops <- func(t *storeTx) { t.sentAs(r.Poster, id, 0, stateFailed) }
+		return nil, err
+	}
+	s.store.ops <- func(t *storeTx) { t.sentAs(r.Poster, id, resp.Timestamp.Unix(), stateSent) }
+	return map[string]string{"id": id}, nil
+}
+
+// handleStoryReact is story.react: an emoji (the heart) on a story, sent to the poster as a reaction to their
+// status. Nothing is stored: the reaction belongs to no chat of ours.
+// (verify on the real link): that WhatsApp takes it as a reaction to the status.
+func (s *Session) handleStoryReact(req json.RawMessage) (any, error) {
+	var r struct{ Poster, ID, Emoji string }
+	if err := json.Unmarshal(req, &r); err != nil || r.Poster == "" || r.ID == "" || r.Emoji == "" {
+		return nil, &Error{"bad_request", "story.react needs poster, id and emoji"}
+	}
+	cli, jid, err := s.linked(r.Poster)
+	if err != nil {
+		return nil, err
+	}
+	if _, _, _, ok := s.store.storyQuote(r.Poster, r.ID); !ok {
+		return nil, &Error{"not_found", "no such story"}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
+	defer cancel()
+	if _, err := cli.SendMessage(ctx, jid, cli.BuildReaction(types.StatusBroadcastJID, jid, r.ID, r.Emoji)); err != nil {
+		return nil, err
 	}
 	return nil, nil
 }

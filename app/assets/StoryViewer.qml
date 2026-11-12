@@ -12,6 +12,8 @@ import hyperberry 1.0
 // The video plays through MediaPlayer into a ForeignWindowControl, which sits under Cascades' hole, so the
 // segments and the header draw over it (the Q10 video gate, 2026-11-12; sound and taps on controls over it
 // worked). Start it with createObject() and start(row), row being a StoriesModel row; it destroys itself on close.
+// At the bottom, a reply field and a heart: a reply goes to the poster's chat quoting the story (story.reply),
+// the heart is a reaction to it (story.react). The story waits while the field has focus.
 Sheet {
     id: sheet
     // The tile's row: poster (the key), name, initials, color, photo.
@@ -25,8 +27,15 @@ Sheet {
     // The segments' Containers, one per story. A JS array held in a property: only whole-array writes stick.
     property variant segs: []
     property string marked: ","
-    // Held while the user types a reply (step 5): the ticker and a video wait.
+    // Held while the user types a reply: the ticker and a video wait.
     property bool paused: false
+    // When the field last lost focus: a touch elsewhere takes it at touch-down, so the tap that follows is only
+    // the finger leaving the keyboard, not a move to the next story.
+    property real lostAt: 0
+    property string lastReply: ""
+    // The stories whose heart we sent, this time open only.
+    property string reacted: ","
+    property bool hearted: sheet.reacted.indexOf("," + sheet.cur.id + ",") >= 0
     // Seconds a photo or text story is shown.
     property real seconds: 5
     property bool videoShown: sheet.cur.kind == 2 && !!sheet.cur.video
@@ -58,6 +67,7 @@ Sheet {
         }
         i = Math.max(i, 0)
         player.stop()
+        reply.text = ""
         sheet.index = i
         sheet.progress = 0
         for (var j = 0; j < sheet.segs.length; j++) {
@@ -83,6 +93,37 @@ Sheet {
     }
     function next() {
         sheet.show(sheet.index + 1)
+    }
+    function sendReply() {
+        var text = reply.text.replace(/^\s+|\s+$/g, "")
+        if (text == "" || sheet.index < 0) {
+            return
+        }
+        sheet.lastReply = text
+        storyList.reply(sheet.poster.poster, sheet.cur.id, text)
+        reply.text = ""
+        reply.loseFocus()
+    }
+    function heart() {
+        if (sheet.hearted || sheet.index < 0) {
+            return
+        }
+        sheet.reacted += sheet.cur.id + ","
+        storyList.react(sheet.poster.poster, sheet.cur.id, "\u2764\uFE0F")
+    }
+    function replyFailed(p, id) {
+        if (p == sheet.poster.poster) {
+            reply.text = sheet.lastReply
+            sendFailed.body = qsTr("Couldn't send the reply")
+            sendFailed.show()
+        }
+    }
+    function reactFailed(p, id) {
+        if (p == sheet.poster.poster) {
+            sheet.reacted = sheet.reacted.split("," + id + ",").join(",")
+            sendFailed.body = qsTr("Couldn't send the heart")
+            sendFailed.show()
+        }
     }
     function prev() {
         sheet.show(sheet.index - 1)
@@ -136,6 +177,17 @@ Sheet {
         // Not a Connections: Cascades' QML has none. Both live and die with the sheet.
         storyList.storyReady.connect(sheet.ready)
         storyList.storyFailed.connect(sheet.failed)
+        storyList.replyFailed.connect(sheet.replyFailed)
+        storyList.reactFailed.connect(sheet.reactFailed)
+    }
+    onPausedChanged: {
+        if (sheet.videoShown) {
+            if (sheet.paused) {
+                player.pause()
+            } else {
+                player.play()
+            }
+        }
     }
     onClosed: {
         ticker.stop()
@@ -164,6 +216,9 @@ Sheet {
         SystemToast {
             id: loadFailed
             body: qsTr("Couldn't load the story")
+        },
+        SystemToast {
+            id: sendFailed
         },
         // One progress segment: a track with a lighter part as long as the story has played, laid out by
         // quotas so no width is ever worked out.
@@ -265,11 +320,62 @@ Sheet {
                 verticalAlignment: VerticalAlignment.Fill
                 gestureHandlers: TapHandler {
                     onTapped: {
+                        if (new Date().getTime() - sheet.lostAt < 500) {
+                            return
+                        }
                         if (event.x < area.layoutFrame.width / 3) {
                             sheet.prev()
                         } else {
                             sheet.next()
                         }
+                    }
+                }
+            }
+            // The reply field and the heart, over a band at the bottom.
+            Container {
+                horizontalAlignment: HorizontalAlignment.Fill
+                verticalAlignment: VerticalAlignment.Bottom
+                background: Color.create(0.0, 0.0, 0.0, 0.55)
+                leftPadding: ui.du(1)
+                rightPadding: ui.du(0.5)
+                topPadding: ui.du(1)
+                bottomPadding: ui.du(1)
+                layout: StackLayout {
+                    orientation: LayoutOrientation.LeftToRight
+                }
+                TextField {
+                    id: reply
+                    verticalAlignment: VerticalAlignment.Center
+                    layoutProperties: StackLayoutProperties {
+                        spaceQuota: 1
+                    }
+                    hintText: qsTr("Reply")
+                    input.submitKey: SubmitKey.Send
+                    input.onSubmitted: sheet.sendReply()
+                    onFocusedChanged: {
+                        sheet.paused = reply.focused
+                        if (!reply.focused) {
+                            sheet.lostAt = new Date().getTime()
+                        }
+                    }
+                }
+                // A box 10 du square, the touch target.
+                Container {
+                    verticalAlignment: VerticalAlignment.Center
+                    preferredWidth: ui.du(10)
+                    preferredHeight: ui.du(10)
+                    layout: DockLayout {}
+                    ImageView {
+                        horizontalAlignment: HorizontalAlignment.Center
+                        verticalAlignment: VerticalAlignment.Center
+                        preferredWidth: ui.du(5.5)
+                        preferredHeight: ui.du(5.5)
+                        imageSource: "asset:///images/heart.png"
+                        filterColor: sheet.hearted ? Color.create("#E53935") : Color.White
+                        opacity: sheet.hearted ? 1.0 : 0.75
+                    }
+                    gestureHandlers: TapHandler {
+                        onTapped: sheet.heart()
                     }
                 }
             }

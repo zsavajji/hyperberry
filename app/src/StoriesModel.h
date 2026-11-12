@@ -6,7 +6,7 @@
 #include <bb/utility/i18n/RelativeDateFormatter>
 #include <QHash>
 #include <QList>
-#include <QPair>
+#include <QStringList>
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QTimer>
@@ -51,10 +51,17 @@ public:
     Q_INVOKABLE void fetch(const QString &poster, const QString &id);
     // The viewer showed it: the engine marks it seen and sends the read receipt (story.seen).
     Q_INVOKABLE void markSeen(const QString &poster, const QString &id);
+    // A text to the poster's chat quoting the story (story.reply), and an emoji on the story (story.react);
+    // replySent, replyFailed and reactFailed answer.
+    Q_INVOKABLE void reply(const QString &poster, const QString &id, const QString &text);
+    Q_INVOKABLE void react(const QString &poster, const QString &id, const QString &emoji);
 
 signals:
     void storyReady(const QString &poster, const QString &id);
     void storyFailed(const QString &poster, const QString &id);
+    void replySent(const QString &poster, const QString &id);
+    void replyFailed(const QString &poster, const QString &id);
+    void reactFailed(const QString &poster, const QString &id);
     void activeChanged();
     void emptyChanged();
     void unseenChanged();
@@ -68,7 +75,9 @@ private slots:
 private:
     QVariantMap storyMap(QSqlQuery &q, QSqlDatabase &db);
     EngineLink *m_engine;
-    QHash<QString, QPair<QString, QString> > m_pending; // story.get's request id -> poster and story
+    void ask(const QString &cmd, const QString &poster, const QString &id, QVariantMap args);
+    // The requests in flight: their id -> the cmd, the poster and the story.
+    QHash<QString, QStringList> m_pending;
     QList<QVariantMap> m_rows;
     bool m_active;
     int m_unseen;

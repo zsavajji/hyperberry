@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -120,5 +121,46 @@ func TestStories(t *testing.T) {
 	st.runOp(func(*storeTx) {})
 	if n("1") != 0 {
 		t.Errorf("%d stories after clear, want 0", n("1"))
+	}
+}
+
+// A reply to a story: no session with the phone here, so the send fails, but our row is in the poster's chat
+// first, quoting the story, and the quote that goes out names the status and carries its thumbnail.
+func TestStoryReply(t *testing.T) {
+	st, cli := historyFixture(t)
+	s := &Session{cli: cli, store: st}
+	pia := types.NewJID("4915700000007", types.DefaultUserServer)
+	k := pia.String()
+	st.handle(cli, status(pia, "S1", time.Minute, &waE2E.Message{ImageMessage: &waE2E.ImageMessage{Caption: proto.String("sunset"),
+		JPEGThumbnail: []byte{1, 2, 3}, DirectPath: proto.String("/v/t/x"), MediaKey: []byte{4}}}))
+	st.runOp(func(*storeTx) {})
+
+	bad := func(cmd func(json.RawMessage) (any, error), body, want string) {
+		t.Helper()
+		if _, err := cmd(json.RawMessage(body)); code(err) != want {
+			t.Errorf("%s: %v, want %s", body, err, want)
+		}
+	}
+	bad(s.handleStoryReply, `{"poster":"`+k+`","id":"S1","text":"  "}`, "bad_request")
+	bad(s.handleStoryReply, `{"poster":"`+k+`","id":"nope","text":"hi"}`, "not_found")
+	bad(s.handleStoryReact, `{"poster":"`+k+`","id":"S1"}`, "bad_request")
+	bad(s.handleStoryReact, `{"poster":"`+k+`","id":"nope","emoji":"❤️"}`, "not_found")
+
+	if _, err := s.handleStoryReply(json.RawMessage(`{"poster":"` + k + `","id":"S1","text":"nice one"}`)); err == nil {
+		t.Fatal("a send with no connection went through")
+	}
+	var text, quote, preview string
+	var state int
+	st.db.QueryRow("SELECT text, quote_id, quote_preview, state FROM messages WHERE chat = ? AND out = 1", k).Scan(&text, &quote, &preview, &state)
+	if text != "nice one" || quote != "S1" || preview != "Photo sunset" || state != stateFailed {
+		t.Errorf("our row: %q quoting %q (%q), state %d", text, quote, preview, state)
+	}
+
+	m := quotedStory(msgPhoto, "sunset", []byte{1, 2, 3})
+	if m.GetImageMessage().GetCaption() != "sunset" || len(m.GetImageMessage().GetJPEGThumbnail()) != 3 {
+		t.Error("the quoted photo lacks its caption or thumbnail")
+	}
+	if quotedStory(msgText, "hello", nil).GetConversation() != "hello" || quotedStory(msgVideo, "", nil).GetVideoMessage() == nil {
+		t.Error("the quoted text or video is wrong")
 	}
 }
