@@ -404,6 +404,30 @@ func TestCallReconnecting(t *testing.T) {
 	}
 }
 
+// A group call meowcaller can't reconnect ends as failed (it leaves group calls open).
+func TestGroupReconnectGivesUp(t *testing.T) {
+	defer func(d time.Duration) { groupReconnectLimit = d }(groupReconnectLimit)
+	groupReconnectLimit = 50 * time.Millisecond
+	r := newCallRig(t)
+	f := r.groupFake("GR1")
+	r.c.offer(f)
+	r.want(t, "ringing", "")
+	if err := r.req("call.answer", f.id); err != nil {
+		t.Fatal(err)
+	}
+	f.setPhase(meowcaller.CallPhaseActive)
+	f.setPhase(meowcaller.CallPhaseReconnecting)
+	for i := 0; i < 20; i++ {
+		if m := r.ev(t); m["state"] == "ended" {
+			if m["reason"] != "failed" {
+				t.Errorf("ended as %v", m["reason"])
+			}
+			return
+		}
+	}
+	t.Fatal("the call did not end")
+}
+
 func TestCallEventSequenceAndHello(t *testing.T) {
 	r := newCallRig(t)
 	f := r.fake("S1")

@@ -64,6 +64,7 @@ type callState struct {
 	state        string        // the last state sent
 	since        int64         // unix ms of "active"
 	reconnecting bool          // meowcaller is restoring the media link (phase7b.md 7b.5)
+	lostAt       time.Time     // when the link was last lost
 	answering    bool          // we pressed Answer
 	forced       string        // the reason to end with, whatever meowcaller says (offline)
 	ring         chan struct{} // the ringtone, nil once silenced
@@ -541,7 +542,35 @@ func (c *Calls) phase(cs *callState, p meowcaller.CallPhase) {
 		}
 	}
 	cs.reconnecting = re
+	if re && cs.group {
+		at := time.Now()
+		cs.lostAt = at
+		time.AfterFunc(groupReconnectLimit, func() { c.giveUp(cs, at) })
+	}
 	c.srv.Emit("call", cs.body(""))
+}
+
+// groupReconnectLimit is how long a group call may be reconnecting before we end it: meowcaller
+// hangs up a 1:1 call whose media isn't back within 30 s (its last try may run 4 s past) but
+// leaves a group call open and silent.
+var groupReconnectLimit = 35 * time.Second
+
+// giveUp ends a group call still reconnecting from the loss at at.
+func (c *Calls) giveUp(cs *callState, at time.Time) {
+	c.mu.Lock()
+	still := !cs.ended && c.cur == cs && cs.reconnecting && cs.lostAt.Equal(at)
+	if still {
+		cs.forced = "failed"
+	}
+	c.mu.Unlock()
+	if !still {
+		return
+	}
+	c.log.Warnf("call %s: group media not back in %s, ending it", cs.id, groupReconnectLimit)
+	if cs.call != nil {
+		cs.call.Hangup()
+	}
+	c.finish(cs, "hangup")
 }
 
 // finish ends the call for good: the event, the audio link, the ring and the row. It is
