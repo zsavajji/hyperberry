@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -31,7 +33,7 @@ func TestStories(t *testing.T) {
 		JPEGThumbnail: []byte{1, 2, 3}, DirectPath: proto.String("/v/t/x"), MediaKey: []byte{4}, FileLength: proto.Uint64(900),
 		Width: proto.Uint32(720), Height: proto.Uint32(1280), Mimetype: proto.String("image/jpeg")}}
 	feed(status(pia, "S1", time.Hour, photo))
-	if n("poster = ? AND id = 'S1' AND kind = ? AND text = 'sunset' AND name = 'Pia' AND media_state = 1 AND width = 720 AND seen = 0 AND thumb IS NOT NULL",
+	if n("poster = ? AND id = 'S1' AND kind = ? AND text = 'sunset' AND name = 'Pia' AND media_state IN (1, 3) AND width = 720 AND seen = 0 AND thumb IS NOT NULL",
 		k, msgPhoto) != 1 {
 		t.Error("the photo story's row is wrong or missing")
 	}
@@ -69,17 +71,43 @@ func TestStories(t *testing.T) {
 		t.Errorf("%d stories after the ones to drop, want 3", n("1"))
 	}
 
+	// A video story is fetched into data/stories, once, and the file goes with its row.
+	dir := t.TempDir()
+	writes := 0
+	get := func(f *os.File) (string, error) { writes++; _, err := f.WriteString("mp4!"); return "video/mp4", err }
+	row, _ := st.storyRow(k, "S2")
+	p, err := st.fetchStory(dir, row, get)
+	if want := filepath.Join(dir, "stories", "S2.mp4"); err != nil || p != want {
+		t.Fatalf("fetchStory: %q, %v, want %q", p, err, want)
+	}
+	if again, err := st.fetchStory(dir, row, get); err != nil || again != p || writes != 1 {
+		t.Errorf("a second fetch: %q, %v after %d downloads, want the file again and 1 download", again, err, writes)
+	}
+	st.runOp(func(*storeTx) {})
+	if b, _ := os.ReadFile(p); string(b) != "mp4!" || n("id = 'S2' AND media_state = 2 AND path = ?", p) != 1 {
+		t.Errorf("the file holds %q, or its row doesn't say where", b)
+	}
+
 	// The poster deletes one.
 	feed(status(pia, "R1", 0, &waE2E.Message{ProtocolMessage: &waE2E.ProtocolMessage{
 		Type: waE2E.ProtocolMessage_REVOKE.Enum(), Key: &waCommon.MessageKey{ID: proto.String("S2")}}}))
-	if n("id = 'S2'") != 0 || n("1") != 2 {
-		t.Error("the revoked story is still there")
+	if _, err := os.Stat(p); n("id = 'S2'") != 0 || n("1") != 2 || !os.IsNotExist(err) {
+		t.Error("the revoked story is still there, or its file")
 	}
+
+	// One more video, posted 2 h ago, whose file the sweep takes too.
+	feed(status(pia, "S7", 2*time.Hour, video))
+	row7, _ := st.storyRow(k, "S7")
+	p7, err := st.fetchStory(dir, row7, get)
+	if err != nil {
+		t.Fatal(err)
+	}
+	st.runOp(func(*storeTx) {})
 
 	// A sweep an hour on drops the one posted an hour ago, 23 hours into its day, and keeps the others.
 	st.runOp(func(tx *storeTx) { tx.expireStories(time.Now().Unix() + 23*3600 + 60) })
-	if n("id = 'S1'") != 0 || n("id = 'S3'") != 1 {
-		t.Errorf("after the sweep: S1 %d, S3 %d, want 0 and 1", n("id = 'S1'"), n("id = 'S3'"))
+	if _, err := os.Stat(p7); n("id = 'S1'") != 0 || n("id = 'S7'") != 0 || n("id = 'S3'") != 1 || !os.IsNotExist(err) {
+		t.Errorf("after the sweep: S1 %d, S7 %d, S3 %d, want 0, 0 and 1, and S7's file gone", n("id = 'S1'"), n("id = 'S7'"), n("id = 'S3'"))
 	}
 
 	// Unlinking drops them with the rest.

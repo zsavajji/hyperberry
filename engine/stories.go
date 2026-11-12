@@ -2,7 +2,12 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
+	"os"
+	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/polymorfa/hypermeow"
@@ -55,6 +60,10 @@ func (st *Store) story(ctx context.Context, t *storeTx, cli *whatsmeow.Client, e
 	}
 	if t.insertStory(row) {
 		t.expireStories(now)
+		// A photo comes at once, for its tile; a video waits for story.get. Never in the writer: it is a network call.
+		if row.Kind == msgPhoto && row.MediaState == 1 && !st.holdLive(row) {
+			go st.liveStory(cli, row)
+		}
 	}
 }
 
@@ -74,15 +83,186 @@ VALUES(?, ?, ?, NULLIF(?, ''), ?, NULLIF(?, ''), NULLIF(?, 0), NULLIF(?, 0), NUL
 }
 
 func (t *storeTx) deleteStory(poster, id string) {
+	t.dropStoryFiles("poster = ? AND id = ?", poster, id)
 	if t.exec("DELETE FROM stories WHERE poster = ? AND id = ?", poster, id) > 0 {
 		t.stories = true
 	}
 }
 
-// expireStories drops the stories 24 hours old. The UI hides them by their time as well, so a long
-// run between two sweeps shows none.
+// expireStories drops the stories 24 hours old, with their files. The UI hides them by their time as
+// well, so a long run between two sweeps shows none.
 func (t *storeTx) expireStories(now int64) {
+	t.dropStoryFiles("ts <= ?", now-storyLife)
 	if t.exec("DELETE FROM stories WHERE ts <= ?", now-storyLife) > 0 {
 		t.stories = true
 	}
+}
+
+// dropStoryFiles deletes the downloaded files of the stories the condition picks, before their rows go.
+func (t *storeTx) dropStoryFiles(where string, args ...any) {
+	rows, err := t.tx.Query("SELECT path FROM stories WHERE path IS NOT NULL AND "+where, args...)
+	if err != nil {
+		t.log.Warnf("story files: %v", err)
+		return
+	}
+	var paths []string
+	for rows.Next() {
+		var p string
+		if rows.Scan(&p) == nil {
+			paths = append(paths, p)
+		}
+	}
+	rows.Close()
+	for _, p := range paths {
+		os.Remove(p)
+	}
+}
+
+// storyByID reads what a download needs of one story.
+func (t *storeTx) storyByID(poster, id string) (msgRow, bool) {
+	r := msgRow{Chat: poster, ID: id}
+	var media, path sql.NullString
+	if t.tx.QueryRow("SELECT kind, media, media_state, path FROM stories WHERE poster = ? AND id = ?",
+		poster, id).Scan(&r.Kind, &media, &r.MediaState, &path) != nil {
+		return msgRow{}, false
+	}
+	r.Media, r.Path = media.String, path.String
+	return r, true
+}
+
+// setStoryFile records a download's end: media_state 2 and the path, or 3. It reports whether the
+// story was still there (it may have expired meanwhile).
+func (t *storeTx) setStoryFile(poster, id string, state int, path string) bool {
+	if t.exec("UPDATE stories SET media_state = ?, path = COALESCE(NULLIF(?, ''), path) WHERE poster = ? AND id = ?",
+		state, path, poster, id) > 0 {
+		t.stories = true
+		return true
+	}
+	return false
+}
+
+// storyRow reads one story through the writer.
+func (st *Store) storyRow(poster, id string) (msgRow, bool) {
+	type got struct {
+		r  msgRow
+		ok bool
+	}
+	c := make(chan got, 1)
+	st.ops <- func(t *storeTx) {
+		r, ok := t.storyByID(poster, id)
+		c <- got{r, ok}
+	}
+	g := <-c
+	return g.r, g.ok
+}
+
+// storyTarget is where a story's file goes: data/stories/<id>.jpg for a photo, <id>.<ext> for a
+// video (the extension from its mimetype). Not Downloads: a story isn't the user's to keep.
+func storyTarget(dir string, row msgRow, mimeType string) string {
+	ext := ".jpg"
+	if row.Kind == msgVideo {
+		ext = mediaExt(mimeType, msgVideo)
+	}
+	return filepath.Join(dir, "stories", row.ID+ext)
+}
+
+// fetchStory is fetchMedia for a story: get writes the file into f and says what it is; one
+// download of a story at a time, so a tap during the live photo's download waits and finds the file.
+func (st *Store) fetchStory(dir string, row msgRow, get func(f *os.File) (string, error)) (string, error) {
+	mu, _ := st.dl.LoadOrStore("story/"+row.Chat+"/"+row.ID, new(sync.Mutex))
+	mu.(*sync.Mutex).Lock()
+	defer mu.(*sync.Mutex).Unlock()
+	cur, ok := st.storyRow(row.Chat, row.ID)
+	if !ok {
+		return "", errors.New("the story is gone")
+	}
+	if p := mediaHere(dir, cur); p != "" {
+		return p, nil
+	}
+	t0 := time.Now()
+	tmp := filepath.Join(dir, "stories", row.ID+".tmp")
+	path, err := downloadTo(tmp, get, func(mimeType string) string { return storyTarget(dir, row, mimeType) })
+	state := 2
+	if err != nil {
+		state, path = 3, ""
+	} else if fi, serr := os.Stat(path); serr == nil {
+		logTransfer(st.log, "story "+row.ID, fi.Size(), t0)
+	}
+	st.ops <- func(t *storeTx) {
+		if !t.setStoryFile(row.Chat, row.ID, state, path) && path != "" {
+			os.Remove(path) // it expired or was deleted while it downloaded
+		}
+	}
+	return path, err
+}
+
+// downloadStory fetches a story's file from WhatsApp, streamed to disk as media is.
+func (st *Store) downloadStory(ctx context.Context, cli *whatsmeow.Client, dir string, row msgRow) (string, error) {
+	dir, err := filepath.Abs(dir)
+	if err != nil {
+		return "", err
+	}
+	return st.fetchStory(dir, row, func(f *os.File) (string, error) {
+		var info mediaInfo
+		if err := json.Unmarshal([]byte(row.Media), &info); err != nil {
+			return "", err
+		}
+		return info.Mimetype, cli.DownloadToFile(ctx, info.message(row.Kind), f)
+	})
+}
+
+// liveStory downloads a photo story that just arrived.
+func (st *Store) liveStory(cli *whatsmeow.Client, row msgRow) {
+	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
+	defer cancel()
+	if _, err := st.downloadStory(ctx, cli, st.srv.dir, row); err != nil {
+		st.log.Warnf("story %s: %v", row.ID, err)
+	}
+}
+
+type storyReq struct{ Poster, ID string }
+
+func parseStoryGet(req json.RawMessage) (storyReq, error) {
+	var r storyReq
+	if err := json.Unmarshal(req, &r); err != nil || r.Poster == "" || r.ID == "" {
+		return r, &Error{"bad_request", "story.get needs poster and id"}
+	}
+	return r, nil
+}
+
+// storyGet is story.get for both accounts: the path at once when the file is here, else fetch
+// downloads it first.
+func (st *Store) storyGet(dir string, r storyReq, fetch func(msgRow) (string, error)) (any, error) {
+	row, ok := st.storyRow(r.Poster, r.ID)
+	if !ok || row.MediaState == 0 {
+		return nil, &Error{"not_found", "no such story media"}
+	}
+	dir, err := filepath.Abs(dir)
+	if err != nil {
+		return nil, err
+	}
+	p := mediaHere(dir, row)
+	if p == "" {
+		if p, err = fetch(row); err != nil {
+			return nil, &Error{"download_failed", err.Error()}
+		}
+	}
+	return map[string]string{"path": p}, nil
+}
+
+func (s *Session) handleStoryGet(req json.RawMessage) (any, error) {
+	r, err := parseStoryGet(req)
+	if err != nil {
+		return nil, err
+	}
+	cli, _, err := s.linked(r.Poster)
+	if err != nil {
+		return nil, err
+	}
+	fetch := func(row msgRow) (string, error) {
+		ctx, cancel := context.WithTimeout(context.Background(), mediaTimeout)
+		defer cancel()
+		return s.store.downloadStory(ctx, cli, s.srv.dir, row)
+	}
+	return s.store.storyGet(s.srv.dir, r, fetch)
 }

@@ -184,6 +184,7 @@ func (st *Store) playVoice(dir string, r voiceReq, fetch, notify func(msgRow) er
 func registerMedia(srv *Server, s *Session) {
 	srv.Handle("voice.play", s.handleVoicePlay)
 	srv.Handle("media.get", s.handleMediaGet)
+	srv.Handle("story.get", s.handleStoryGet)
 }
 
 func (s *Session) handleVoicePlay(req json.RawMessage) (any, error) {

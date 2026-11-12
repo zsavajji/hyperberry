@@ -114,8 +114,8 @@ CREATE TABLE poll_votes(
 	// reply opens their 1:1 chat; name is theirs at receive time. kind is a messages.kind (text, photo
 	// or video), text the caption or a text story's text, extra a text story's colours and font as JSON
 	// (docs/protocol.md). thumb is the inline JPEG, media and media_state are messages' own, path is
-	// the downloaded file and preview the tile's small JPEG, both under data/stories (step 2). seen is
-	// ours, set when the viewer shows the story. A story lives 24 h: ts is the post's time, unix seconds.
+	// the downloaded file in data/stories. seen is ours, set when the viewer shows the story. A story
+	// lives 24 h: ts is the post's time, unix seconds.
 	`CREATE TABLE stories(
   poster TEXT NOT NULL, id TEXT NOT NULL,
   ts INTEGER NOT NULL,
@@ -123,7 +123,7 @@ CREATE TABLE poll_votes(
   kind INTEGER NOT NULL, text TEXT,
   duration INTEGER, width INTEGER, height INTEGER, size INTEGER,
   thumb BLOB, media TEXT, media_state INTEGER NOT NULL DEFAULT 0,
-  path TEXT, preview TEXT,
+  path TEXT,
   extra TEXT,
   seen INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY(poster, id));

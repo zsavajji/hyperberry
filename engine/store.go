@@ -119,7 +119,7 @@ func (st *Store) afterCommit(f func()) {
 // Downloads' files, as a browser's. The folders come back on the next write.
 func (st *Store) wipe() {
 	st.nt.unlink() // the Hub's account and items belong to the link too
-	for _, d := range []string{"voice", "cache", "media", "profile", "history", "photos"} {
+	for _, d := range []string{"voice", "cache", "media", "profile", "history", "photos", "stories"} {
 		if err := os.RemoveAll(filepath.Join(st.srv.dir, d)); err != nil {
 			st.log.Warnf("wipe %s: %v", d, err)
 		}
