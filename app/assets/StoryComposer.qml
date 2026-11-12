@@ -104,6 +104,8 @@ Sheet {
                 rightMargin: ui.du(0.7)
                 preferredWidth: ui.du(8)
                 preferredHeight: ui.du(8)
+                // A DockLayout, so the colour inside fills the frame: in a StackLayout it got no height and only the frame showed.
+                layout: DockLayout {}
                 background: cell.marked ? Color.White : Color.create(1.0, 1.0, 1.0, 0.45)
                 leftPadding: cell.marked ? ui.px(5) : ui.px(2)
                 topPadding: cell.marked ? ui.px(5) : ui.px(2)
