@@ -2074,6 +2074,11 @@
         <source>Calls</source>
         <translation>Дзвінки</translation>
     </message>
+    <message>
+        <location filename="../assets/main.qml" line="1" />
+        <source>Stories</source>
+        <translation>Статуси</translation>
+    </message>
 </context>
 <context>
     <name>TextCard</name>
@@ -2129,6 +2134,50 @@
         <location filename="../assets/RevokeDialog.qml" line="1" />
         <source>Cancel</source>
         <translation>Скасувати</translation>
+    </message>
+</context>
+<context>
+    <name>StoriesModel</name>
+    <message>
+        <location filename="../src/StoriesModel.cpp" line="1" />
+        <source>Unknown</source>
+        <translation>Невідомий</translation>
+    </message>
+</context>
+<context>
+    <name>StoriesPage</name>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>Stories</source>
+        <translation>Статуси</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>No stories yet</source>
+        <translation>Статусів ще немає</translation>
+    </message>
+</context>
+<context>
+    <name>StoryViewer</name>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Couldn't load the story</source>
+        <translation>Не вдалося завантажити статус</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Couldn't send the reply</source>
+        <translation>Не вдалося надіслати відповідь</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Couldn't send the heart</source>
+        <translation>Не вдалося надіслати серце</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Reply</source>
+        <translation>Відповісти</translation>
     </message>
 </context>
 </TS>

@@ -2068,6 +2068,11 @@
         <source>Calls</source>
         <translation>Panggilan</translation>
     </message>
+    <message>
+        <location filename="../assets/main.qml" line="1" />
+        <source>Stories</source>
+        <translation>Status</translation>
+    </message>
 </context>
 <context>
     <name>TextCard</name>
@@ -2123,6 +2128,50 @@
         <location filename="../assets/RevokeDialog.qml" line="1" />
         <source>Cancel</source>
         <translation>Batal</translation>
+    </message>
+</context>
+<context>
+    <name>StoriesModel</name>
+    <message>
+        <location filename="../src/StoriesModel.cpp" line="1" />
+        <source>Unknown</source>
+        <translation>Tidak dikenal</translation>
+    </message>
+</context>
+<context>
+    <name>StoriesPage</name>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>Stories</source>
+        <translation>Status</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>No stories yet</source>
+        <translation>Belum ada status</translation>
+    </message>
+</context>
+<context>
+    <name>StoryViewer</name>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Couldn't load the story</source>
+        <translation>Tidak dapat memuat status</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Couldn't send the reply</source>
+        <translation>Tidak dapat mengirim balasan</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Couldn't send the heart</source>
+        <translation>Tidak dapat mengirim hati</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Reply</source>
+        <translation>Balas</translation>
     </message>
 </context>
 </TS>

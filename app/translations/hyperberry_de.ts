@@ -2071,6 +2071,11 @@
         <source>Calls</source>
         <translation>Anrufe</translation>
     </message>
+    <message>
+        <location filename="../assets/main.qml" line="1" />
+        <source>Stories</source>
+        <translation>Status</translation>
+    </message>
 </context>
 <context>
     <name>TextCard</name>
@@ -2126,6 +2131,50 @@
         <location filename="../assets/RevokeDialog.qml" line="1" />
         <source>Cancel</source>
         <translation>Abbrechen</translation>
+    </message>
+</context>
+<context>
+    <name>StoriesModel</name>
+    <message>
+        <location filename="../src/StoriesModel.cpp" line="1" />
+        <source>Unknown</source>
+        <translation>Unbekannt</translation>
+    </message>
+</context>
+<context>
+    <name>StoriesPage</name>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>Stories</source>
+        <translation>Status</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>No stories yet</source>
+        <translation>Noch keine Status-Updates</translation>
+    </message>
+</context>
+<context>
+    <name>StoryViewer</name>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Couldn't load the story</source>
+        <translation>Der Status konnte nicht geladen werden</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Couldn't send the reply</source>
+        <translation>Die Antwort konnte nicht gesendet werden</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Couldn't send the heart</source>
+        <translation>Das Herz konnte nicht gesendet werden</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Reply</source>
+        <translation>Antworten</translation>
     </message>
 </context>
 </TS>

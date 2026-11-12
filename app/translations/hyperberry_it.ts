@@ -2071,6 +2071,11 @@
         <source>Calls</source>
         <translation>Chiamate</translation>
     </message>
+    <message>
+        <location filename="../assets/main.qml" line="1"/>
+        <source>Stories</source>
+        <translation>Stato</translation>
+    </message>
 </context>
 <context>
     <name>TextCard</name>
@@ -2126,6 +2131,50 @@
         <location filename="../assets/RevokeDialog.qml" line="1"/>
         <source>Cancel</source>
         <translation>Annulla</translation>
+    </message>
+</context>
+<context>
+    <name>StoriesModel</name>
+    <message>
+        <location filename="../src/StoriesModel.cpp" line="1"/>
+        <source>Unknown</source>
+        <translation>Sconosciuto</translation>
+    </message>
+</context>
+<context>
+    <name>StoriesPage</name>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1"/>
+        <source>Stories</source>
+        <translation>Stato</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1"/>
+        <source>No stories yet</source>
+        <translation>Nessuno stato per ora</translation>
+    </message>
+</context>
+<context>
+    <name>StoryViewer</name>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1"/>
+        <source>Couldn't load the story</source>
+        <translation>Impossibile caricare lo stato</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1"/>
+        <source>Couldn't send the reply</source>
+        <translation>Impossibile inviare la risposta</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1"/>
+        <source>Couldn't send the heart</source>
+        <translation>Impossibile inviare il cuore</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1"/>
+        <source>Reply</source>
+        <translation>Rispondi</translation>
     </message>
 </context>
 </TS>

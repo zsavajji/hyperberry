@@ -2074,6 +2074,11 @@
         <source>Calls</source>
         <translation>Połączenia</translation>
     </message>
+    <message>
+        <location filename="../assets/main.qml" line="1" />
+        <source>Stories</source>
+        <translation>Status</translation>
+    </message>
 </context>
 <context>
     <name>TextCard</name>
@@ -2129,6 +2134,50 @@
         <location filename="../assets/RevokeDialog.qml" line="1" />
         <source>Cancel</source>
         <translation>Anuluj</translation>
+    </message>
+</context>
+<context>
+    <name>StoriesModel</name>
+    <message>
+        <location filename="../src/StoriesModel.cpp" line="1" />
+        <source>Unknown</source>
+        <translation>Nieznany</translation>
+    </message>
+</context>
+<context>
+    <name>StoriesPage</name>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>Stories</source>
+        <translation>Status</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>No stories yet</source>
+        <translation>Brak statusów</translation>
+    </message>
+</context>
+<context>
+    <name>StoryViewer</name>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Couldn't load the story</source>
+        <translation>Nie udało się wczytać statusu</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Couldn't send the reply</source>
+        <translation>Nie udało się wysłać odpowiedzi</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Couldn't send the heart</source>
+        <translation>Nie udało się wysłać serduszka</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Reply</source>
+        <translation>Odpowiedz</translation>
     </message>
 </context>
 </TS>
