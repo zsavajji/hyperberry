@@ -35,14 +35,16 @@ func main() {
 	}
 	data := flag.String("data", home, "data directory: session.db, chats.db, engine.json, logs/")
 	logTo := flag.String("log", "", `log file (default <data>/logs/hyperberryd.log; "-" for stderr)`)
-	debug := flag.Bool("debug", false, "log the protocol")
+	debug := flag.Bool("debug", false, "log the protocol (as does a file <data>/debug)")
 	osName := flag.String("os", "Windows", "OS name the phone shows for this device (fixed at linking)")
 	days := flag.Uint("days", 90, "ask the phone for this many days of history at linking (0: all)")
 	sim := flag.Bool("sim", false, "serve the simulated account of step 1.12 (as does a file <data>/sim)")
 	flag.Parse()
 
 	level := "INFO"
-	if *debug {
+	// -debug, or a file <data>/debug: the phone starts the engine with no arguments, so a marker file is how it
+	// is turned on there (delete the file and restart to turn it off).
+	if _, err := os.Stat(filepath.Join(*data, "debug")); *debug || err == nil {
 		level = "DEBUG"
 	}
 	var log waLog.Logger
