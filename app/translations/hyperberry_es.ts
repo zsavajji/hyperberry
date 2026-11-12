@@ -2140,6 +2140,11 @@
         <source>Unknown</source>
         <translation>Desconocido</translation>
     </message>
+    <message>
+        <location filename="../src/StoriesModel.cpp" line="1" />
+        <source>My story</source>
+        <translation>Mi estado</translation>
+    </message>
 </context>
 <context>
     <name>StoriesPage</name>
@@ -2152,6 +2157,31 @@
         <location filename="../assets/StoriesPage.qml" line="1" />
         <source>No stories yet</source>
         <translation>Aún no hay estados</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>New story</source>
+        <translation>Nuevo estado</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>Text story</source>
+        <translation>Estado de texto</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>Couldn't post the story</source>
+        <translation>No se pudo publicar el estado</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>Couldn't delete the story</source>
+        <translation>No se pudo eliminar el estado</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>Pick a JPEG photo or an MP4 video</source>
+        <translation>Elige una foto JPEG o un video MP4</translation>
     </message>
 </context>
 <context>
@@ -2175,6 +2205,59 @@
         <location filename="../assets/StoryViewer.qml" line="1" />
         <source>Reply</source>
         <translation>Responder</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Delete this story?</source>
+        <translation>¿Eliminar este estado?</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>It is taken back from everyone who saw it.</source>
+        <translation>Se retirará para todos los que lo vieron.</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Delete</source>
+        <translation>Eliminar</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Cancel</source>
+        <translation>Cancelar</translation>
+    </message>
+</context>
+<context>
+    <name>StoryComposer</name>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>Couldn't post the story</source>
+        <translation>No se pudo publicar el estado</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>New story</source>
+        <translation>Nuevo estado</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>Cancel</source>
+        <translation>Cancelar</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>Post</source>
+        <translation>Publicar</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>Write something</source>
+        <translation>Escribe algo</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>Add a caption</source>
+        <translation>Añade un pie de foto</translation>
     </message>
 </context>
 </TS>

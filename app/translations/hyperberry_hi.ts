@@ -2140,6 +2140,11 @@
         <source>Unknown</source>
         <translation>अज्ञात</translation>
     </message>
+    <message>
+        <location filename="../src/StoriesModel.cpp" line="1" />
+        <source>My story</source>
+        <translation>मेरा स्टेटस</translation>
+    </message>
 </context>
 <context>
     <name>StoriesPage</name>
@@ -2152,6 +2157,31 @@
         <location filename="../assets/StoriesPage.qml" line="1" />
         <source>No stories yet</source>
         <translation>अभी कोई स्टेटस नहीं</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>New story</source>
+        <translation>नया स्टेटस</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>Text story</source>
+        <translation>टेक्स्ट स्टेटस</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>Couldn't post the story</source>
+        <translation>स्टेटस पोस्ट नहीं हो सका</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>Couldn't delete the story</source>
+        <translation>स्टेटस डिलीट नहीं हो सका</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>Pick a JPEG photo or an MP4 video</source>
+        <translation>कोई JPEG फ़ोटो या MP4 वीडियो चुनें</translation>
     </message>
 </context>
 <context>
@@ -2175,6 +2205,59 @@
         <location filename="../assets/StoryViewer.qml" line="1" />
         <source>Reply</source>
         <translation>जवाब दें</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Delete this story?</source>
+        <translation>इस स्टेटस को डिलीट करें?</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>It is taken back from everyone who saw it.</source>
+        <translation>इसे उन सभी के लिए वापस ले लिया जाएगा जिन्होंने इसे देखा है।</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Delete</source>
+        <translation>डिलीट करें</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Cancel</source>
+        <translation>रद्द करें</translation>
+    </message>
+</context>
+<context>
+    <name>StoryComposer</name>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>Couldn't post the story</source>
+        <translation>स्टेटस पोस्ट नहीं हो सका</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>New story</source>
+        <translation>नया स्टेटस</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>Cancel</source>
+        <translation>रद्द करें</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>Post</source>
+        <translation>पोस्ट करें</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>Write something</source>
+        <translation>कुछ लिखें</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>Add a caption</source>
+        <translation>कैप्शन जोड़ें</translation>
     </message>
 </context>
 </TS>

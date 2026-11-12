@@ -2137,6 +2137,11 @@
         <source>Unknown</source>
         <translation>Tidak dikenal</translation>
     </message>
+    <message>
+        <location filename="../src/StoriesModel.cpp" line="1" />
+        <source>My story</source>
+        <translation>Status saya</translation>
+    </message>
 </context>
 <context>
     <name>StoriesPage</name>
@@ -2149,6 +2154,31 @@
         <location filename="../assets/StoriesPage.qml" line="1" />
         <source>No stories yet</source>
         <translation>Belum ada status</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>New story</source>
+        <translation>Status baru</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>Text story</source>
+        <translation>Status teks</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>Couldn't post the story</source>
+        <translation>Tidak dapat memposting status</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>Couldn't delete the story</source>
+        <translation>Tidak dapat menghapus status</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoriesPage.qml" line="1" />
+        <source>Pick a JPEG photo or an MP4 video</source>
+        <translation>Pilih foto JPEG atau video MP4</translation>
     </message>
 </context>
 <context>
@@ -2172,6 +2202,59 @@
         <location filename="../assets/StoryViewer.qml" line="1" />
         <source>Reply</source>
         <translation>Balas</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Delete this story?</source>
+        <translation>Hapus status ini?</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>It is taken back from everyone who saw it.</source>
+        <translation>Status akan ditarik kembali dari semua orang yang telah melihatnya.</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Delete</source>
+        <translation>Hapus</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewer.qml" line="1" />
+        <source>Cancel</source>
+        <translation>Batal</translation>
+    </message>
+</context>
+<context>
+    <name>StoryComposer</name>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>Couldn't post the story</source>
+        <translation>Tidak dapat memposting status</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>New story</source>
+        <translation>Status baru</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>Cancel</source>
+        <translation>Batal</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>Post</source>
+        <translation>Posting</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>Write something</source>
+        <translation>Tulis sesuatu</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryComposer.qml" line="1" />
+        <source>Add a caption</source>
+        <translation>Tambahkan keterangan</translation>
     </message>
 </context>
 </TS>
