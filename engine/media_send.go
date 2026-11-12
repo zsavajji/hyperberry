@@ -100,6 +100,9 @@ type mediaOut struct {
 	mime    string
 	quote   msgRow
 	created bool // the chat was new
+	// poster is a video's thumbnail as the message carries it: the UI draws one with a play mark, so the
+	// phones that get it show a video and not a grey box. Our own row keeps none (the UI marks a video by itself).
+	poster []byte
 }
 
 // queueMedia puts our row in as sending, and is the one place both accounts build it. A
@@ -113,7 +116,7 @@ func (st *Store) queueMedia(jid types.JID, r mediaSendReq, id string) *mediaOut 
 	case msgPhoto:
 		o.row.Thumb, o.row.Width, o.row.Height, o.row.Text = r.Thumb, r.Width, r.Height, r.Caption
 	case msgVideo:
-		o.row.Text = r.Caption
+		o.row.Text, o.poster = r.Caption, r.Thumb
 	case msgDoc:
 		o.row.Text = filepath.Base(r.Path)
 	}
@@ -127,8 +130,8 @@ var uploadTypes = map[int]whatsmeow.MediaType{msgPhoto: whatsmeow.MediaImage, ms
 // mediaMessage is the message of an uploaded file; ci quotes, or is nil. A photo carries the
 // thumbnail and size the UI gave, if it gave them; a photo and a video carry the row's text as
 // their caption.
-// ponytail: a video has no thumbnail and no length, so the phone shows a grey box until it
-// downloads; the UI could make them as it does for photos.
+// ponytail: a video has no length, and its thumbnail is the UI's poster (a play mark on grey), not a frame of
+// it: nothing here can decode one.
 func mediaMessage(o *mediaOut, up whatsmeow.UploadResponse, ci *waE2E.ContextInfo) *waE2E.Message {
 	r := o.row
 	switch r.Kind {
@@ -145,7 +148,8 @@ func mediaMessage(o *mediaOut, up whatsmeow.UploadResponse, ci *waE2E.ContextInf
 		return &waE2E.Message{ImageMessage: img}
 	case msgVideo:
 		vid := &waE2E.VideoMessage{URL: &up.URL, DirectPath: &up.DirectPath, MediaKey: up.MediaKey,
-			FileEncSHA256: up.FileEncSHA256, FileSHA256: up.FileSHA256, FileLength: &up.FileLength, Mimetype: &o.mime, ContextInfo: ci}
+			FileEncSHA256: up.FileEncSHA256, FileSHA256: up.FileSHA256, FileLength: &up.FileLength, Mimetype: &o.mime,
+			JPEGThumbnail: o.poster, ContextInfo: ci}
 		if r.Text != "" {
 			vid.Caption = &r.Text
 		}

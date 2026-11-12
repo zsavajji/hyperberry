@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	whatsmeow "github.com/polymorfa/hypermeow"
 	"github.com/polymorfa/hypermeow/proto/waCommon"
 	"github.com/polymorfa/hypermeow/proto/waE2E"
 	"github.com/polymorfa/hypermeow/types"
@@ -257,5 +258,33 @@ func TestStoryColour(t *testing.T) {
 		if _, ok := storyColour(in, 0); ok {
 			t.Errorf("%q was taken as a colour", in)
 		}
+	}
+}
+
+// A video goes out with the UI's poster as its thumbnail (so the phones that get it show a video, not a grey box), a photo
+// with its own thumbnail; our own row never keeps a video's poster.
+func TestVideoPoster(t *testing.T) {
+	up := whatsmeow.UploadResponse{}
+	poster := []byte{9, 9, 9}
+	v := mediaMessage(&mediaOut{row: msgRow{Kind: msgVideo, Text: "clip"}, mime: "video/mp4", poster: poster}, up, nil)
+	if string(v.GetVideoMessage().GetJPEGThumbnail()) != string(poster) || v.GetVideoMessage().GetCaption() != "clip" {
+		t.Error("the video message lacks the poster or its caption")
+	}
+	if p := mediaMessage(&mediaOut{row: msgRow{Kind: msgVideo}, mime: "video/mp4"}, up, nil); len(p.GetVideoMessage().GetJPEGThumbnail()) != 0 {
+		t.Error("a video with no poster got a thumbnail")
+	}
+	img := mediaMessage(&mediaOut{row: msgRow{Kind: msgPhoto, Thumb: []byte{1}}, mime: "image/jpeg", poster: poster}, up, nil)
+	if string(img.GetImageMessage().GetJPEGThumbnail()) != "\x01" {
+		t.Error("a photo took the poster")
+	}
+
+	// media.send: the poster rides the message, our row has no thumbnail.
+	st, _ := historyFixture(t)
+	jid := types.NewJID("4915700000007", types.DefaultUserServer)
+	o := st.queueMedia(jid, mediaSendReq{Chat: jid.String(), Path: "/x/clip.mp4", Thumb: poster}, "V1")
+	var thumb []byte
+	st.db.QueryRow("SELECT thumb FROM messages WHERE chat = ? AND id = 'V1'", jid.String()).Scan(&thumb)
+	if string(o.poster) != string(poster) || len(thumb) != 0 {
+		t.Errorf("poster %v, our row's thumbnail %v: want the poster on the message and none on the row", o.poster, thumb)
 	}
 }

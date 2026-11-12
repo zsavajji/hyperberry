@@ -1,17 +1,19 @@
 import bb.cascades 1.4
 import bb.cascades.pickers 1.0
 import bb.system 1.2
+import hyperberry 1.0
 
 // The Stories tab: a grid of two tiles across, one per poster with a story under 24 h old, from storyList
 // (StoriesModel), unseen first, our own stories ("My story") before them. The cell is the stock Active Frame's size on the Q10, 310 x 211 px: 720 px less
 // 40 px each side and a 20 px gap leaves 310. The list reloads only while this tab is shown (main.qml sets it).
-// New story (the Signature action) picks a photo or a video and Text story writes one; StoryComposer posts it.
+// New story (the Signature action) picks a photo (a JPEG, or a PNG made into one) or a video and Text story writes
+// one; StoryComposer posts it.
 Page {
     id: page
     // A file the engine can send as a story: its extension, as the engine tells a photo from a video.
     function modeOf(path) {
         var ext = path.substring(path.lastIndexOf(".") + 1).toLowerCase()
-        return ext == "jpg" || ext == "jpeg" ? "photo" : ext == "mp4" || ext == "3gp" || ext == "mov" ? "video" : ""
+        return ext == "jpg" || ext == "jpeg" || ext == "png" ? "photo" : ext == "mp4" || ext == "3gp" || ext == "mov" ? "video" : ""
     }
     onCreationCompleted: {
         storyList.postFailed.connect(postFailed.show)
@@ -31,13 +33,25 @@ Page {
             mode: FilePickerMode.Picker
             title: qsTr("New story")
             onFileSelected: {
-                var m = page.modeOf(selectedFiles[0])
+                var file = selectedFiles[0]
+                var m = page.modeOf(file)
+                if (m == "photo") {
+                    // A PNG becomes a JPEG here, since the engine sends JPEGs and decodes no picture.
+                    file = media.asJpeg(file)
+                    if (file == "") {
+                        m = ""
+                    }
+                }
                 if (m == "") {
                     wrongFile.show()
                 } else {
-                    composer.compose(m, selectedFiles[0])
+                    composer.compose(m, file)
                 }
             }
+        },
+        MediaOpener {
+            id: media
+            link: engine
         },
         SystemToast {
             id: postFailed

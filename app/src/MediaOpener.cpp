@@ -14,6 +14,8 @@
 #include <QFileInfo>
 #include <QImage>
 #include <QImageReader>
+#include <QPainter>
+#include <QPolygonF>
 #include <QUrl>
 
 using namespace bb::system;
@@ -180,6 +182,65 @@ QVariantMap MediaOpener::photoInfo(const QString &path)
         }
     }
     return info;
+}
+
+QString MediaOpener::asJpeg(const QString &path)
+{
+    const QFileInfo file(path);
+    const QString ext = file.suffix().toLower();
+    if (ext == "jpg" || ext == "jpeg")
+        return path;
+    if (ext != "png")
+        return QString();
+    QImageReader reader(path);
+    QSize to = reader.size(); // from the header
+    if (!to.isValid())
+        return QString();
+    // WhatsApp shrinks a picture to about 1600 px anyway, and a big PNG decoded whole is tens of MB.
+    if (qMax(to.width(), to.height()) > 2048) {
+        to.scale(2048, 2048, Qt::KeepAspectRatio);
+        reader.setScaledSize(to);
+    }
+    const QImage image = reader.read();
+    if (image.isNull())
+        return QString();
+    // A PNG can be transparent, a JPEG can't be: it goes on white.
+    QImage flat(image.size(), QImage::Format_RGB32);
+    flat.fill(0xFFFFFFFF);
+    QPainter painter(&flat);
+    painter.drawImage(0, 0, image);
+    painter.end();
+    const QString dir = QDir::homePath() + "/cache/convert/";
+    const QString out = dir + file.completeBaseName() + ".jpg";
+    if (!QDir().mkpath(dir) || !flat.save(out, "JPEG", 90)) {
+        QFile::remove(out);
+        qWarning() << "media: could not convert" << path;
+        return QString();
+    }
+    return out;
+}
+
+QString MediaOpener::videoPoster()
+{
+    // The mark of the call and chat play discs (images/play.png): a white disc, a dark triangle, on grey.
+    QImage poster(96, 96, QImage::Format_RGB32);
+    poster.fill(0xFF2B2B2B);
+    QPainter painter(&poster);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QColor(255, 255, 255));
+    painter.drawEllipse(QRectF(24, 24, 48, 48));
+    painter.setBrush(QColor(0x2B, 0x2B, 0x2B));
+    QPolygonF triangle;
+    triangle << QPointF(41, 35) << QPointF(41, 61) << QPointF(63, 48);
+    painter.drawPolygon(triangle);
+    painter.end();
+    QByteArray jpeg;
+    QBuffer buffer(&jpeg);
+    buffer.open(QIODevice::WriteOnly);
+    if (!poster.save(&buffer, "JPEG", 70) || jpeg.size() > 16 * 1024)
+        return QString();
+    return QString::fromLatin1(jpeg.toBase64().constData());
 }
 
 // The thumbnail is photoInfo's, decoded back from its base64: one place makes it.

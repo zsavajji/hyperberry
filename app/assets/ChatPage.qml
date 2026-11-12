@@ -187,6 +187,14 @@ Page {
         if (info.thumb) {
             args.thumb = info.thumb
         }
+        // A video goes with a play mark on grey for a thumbnail, so the phone that gets it shows a video, not a grey box.
+        var ext = staged.substring(staged.lastIndexOf(".") + 1).toLowerCase()
+        if (ext == "mp4" || ext == "3gp" || ext == "mov") {
+            var poster = media.videoPoster()
+            if (poster) {
+                args.thumb = poster
+            }
+        }
         if (stagedInfo.picture && text) {
             args.caption = text
         }

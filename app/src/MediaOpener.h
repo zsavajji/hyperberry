@@ -42,6 +42,13 @@ public:
     // height} (the original's size); thumb is missing when no quality made it small enough. Empty
     // for any other file or on failure.
     Q_INVOKABLE QVariantMap photoInfo(const QString &path);
+    // A picture as a JPEG the engine can send as a photo (it decodes nothing): a .jpg or .jpeg is itself; a .png
+    // is read by Qt, put on white where it is transparent, its long side held to 2048 px, and saved in
+    // data/cache/convert/ at quality 90: that path. "" for anything else or on failure.
+    Q_INVOKABLE QString asJpeg(const QString &path);
+    // The thumbnail a video goes out with, as base64 of a small JPEG: a play mark on grey, so the phones that get
+    // a video see one and not a grey box. "" on failure.
+    Q_INVOKABLE QString videoPoster();
     // What the staged bar shows for a file picked to send (step 6.4): {name, sizeText, picture (a
     // photo or a video: its caption rides in the message), image (a .jpg's thumbnail, as an Image;
     // missing for the rest)}. Empty when the file can't be read.

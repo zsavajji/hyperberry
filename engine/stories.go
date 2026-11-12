@@ -504,10 +504,13 @@ func (s *Session) handleStoryPost(req json.RawMessage) (any, error) {
 		if err := copyFile(r.Path, row.Path); err != nil {
 			return nil, err
 		}
+		o = &mediaOut{row: row, mime: mimeType}
 		if kind == msgPhoto {
 			row.Thumb, row.Width, row.Height = r.Thumb, r.Width, r.Height
+			o.row = row
+		} else {
+			o.poster = r.Thumb // goes in the message only: our own tile marks a video itself
 		}
-		o = &mediaOut{row: row, mime: mimeType}
 	} else {
 		row.Kind, row.Text, row.MediaState = msgText, strings.TrimSpace(r.Text), 0
 		x := map[string]any{}

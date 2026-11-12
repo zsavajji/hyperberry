@@ -38,6 +38,13 @@ Sheet {
             if (caption.text.replace(/\s/g, "") != "") {
                 args.caption = caption.text
             }
+            if (sheet.mode == "video") {
+                // Its thumbnail: a play mark on grey, so the phones that get it show a video and not a grey box.
+                var poster = media.videoPoster()
+                if (poster) {
+                    args.thumb = poster
+                }
+            }
             if (sheet.mode == "photo") {
                 // The engine decodes no picture: the thumbnail and the size come from here, as for a photo in a chat.
                 var photo = media.photoInfo(sheet.path)
