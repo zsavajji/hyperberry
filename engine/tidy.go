@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/polymorfa/hypermeow"
 	"github.com/polymorfa/hypermeow/types"
 )
@@ -18,6 +20,7 @@ func (t *storeTx) tidy(cli *whatsmeow.Client) {
 	t.dropEmptyGroups()
 	t.setName(types.PSAJID.String(), "WhatsApp")
 	t.dropArchivedItems()
+	t.expireStories(time.Now().Unix())
 }
 
 // dropEmptyGroups deletes the groups with no message and no time: the ones syncGroups added before

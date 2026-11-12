@@ -109,6 +109,25 @@ CREATE TABLE poll_votes(
   PRIMARY KEY(chat, msg, sender));`,
 	// Calls (step 7.2): the Calls tab lists the call rows (kind 13, id call-<call id>) of every chat.
 	`CREATE INDEX messages_by_kind ON messages(kind, ts);`,
+	// Stories, WhatsApp's status posts (stories.go): the Stories tab's rows, apart from messages so that
+	// status@broadcast is no chat in the list. poster is the poster's chat key (identity.go), so a
+	// reply opens their 1:1 chat; name is theirs at receive time. kind is a messages.kind (text, photo
+	// or video), text the caption or a text story's text, extra a text story's colours and font as JSON
+	// (docs/protocol.md). thumb is the inline JPEG, media and media_state are messages' own, path is
+	// the downloaded file and preview the tile's small JPEG, both under data/stories (step 2). seen is
+	// ours, set when the viewer shows the story. A story lives 24 h: ts is the post's time, unix seconds.
+	`CREATE TABLE stories(
+  poster TEXT NOT NULL, id TEXT NOT NULL,
+  ts INTEGER NOT NULL,
+  name TEXT,
+  kind INTEGER NOT NULL, text TEXT,
+  duration INTEGER, width INTEGER, height INTEGER, size INTEGER,
+  thumb BLOB, media TEXT, media_state INTEGER NOT NULL DEFAULT 0,
+  path TEXT, preview TEXT,
+  extra TEXT,
+  seen INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY(poster, id));
+CREATE INDEX stories_by_time ON stories(ts);`,
 }
 
 // openChats opens chats.db in WAL mode and migrates it to the newest schema.

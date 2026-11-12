@@ -303,6 +303,8 @@ func (st *Store) clear() {
 		t.exec("DELETE FROM messages")
 		t.exec("DELETE FROM reactions")
 		t.exec("DELETE FROM poll_votes")
+		t.exec("DELETE FROM stories")
+		t.stories = true
 		t.exec("DELETE FROM chats")
 	}
 }
@@ -324,6 +326,8 @@ type storeTx struct {
 	msgs  map[string]map[string]bool // chat -> ids
 	wipe  bool                       // clear ran: wipe after the commit
 	after []func()                   // afterCommit's
+	// A story was added, changed or dropped (stories.go): emit "stories" after the commit.
+	stories bool
 }
 
 // run runs one op; a failing or panicking op doesn't stop the batch.
@@ -489,6 +493,9 @@ func (t *storeTx) emit(srv *Server) {
 	sort.Strings(chats)
 	for _, c := range chats {
 		srv.Emit("msgs", map[string]any{"chat": c, "ids": keys(t.msgs[c])})
+	}
+	if t.stories {
+		srv.Emit("stories", map[string]any{})
 	}
 }
 

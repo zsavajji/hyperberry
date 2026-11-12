@@ -85,7 +85,8 @@ func (st *Store) history(ctx context.Context, t *storeTx, cli *whatsmeow.Client,
 // message handles a live message.
 func (st *Store) message(ctx context.Context, t *storeTx, cli *whatsmeow.Client, e *events.Message) {
 	chat := e.Info.Chat
-	if chat == types.StatusBroadcastJID {
+	if chat == types.StatusBroadcastJID { // a story: its own table, no chat (stories.go)
+		st.story(ctx, t, cli, e)
 		return
 	}
 	// Device-to-device protocol messages (key shares, history notices) are never chat content;
