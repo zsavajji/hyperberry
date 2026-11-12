@@ -42,6 +42,8 @@ func (st *Store) story(ctx context.Context, t *storeTx, cli *whatsmeow.Client, e
 		poster = chatKey(ctx, t, cli.Store.LIDs, e.Info.Sender, e.Info.SenderAlt)
 	}
 	m := flatten(e.Message)
+	// One line per status message: whether posts reach the engine at all is otherwise invisible in the log.
+	st.log.Infof("status message %s from %s: %s", e.Info.ID, poster, fieldNames(m))
 	if pm := m.GetProtocolMessage(); pm != nil {
 		if pm.GetType() == waE2E.ProtocolMessage_REVOKE {
 			t.deleteStory(poster, pm.GetKey().GetID())
@@ -50,10 +52,12 @@ func (st *Store) story(ctx context.Context, t *storeTx, cli *whatsmeow.Client, e
 	}
 	row, ok := rowFromMessage(poster, e, "")
 	if !ok || row.Kind != msgText && row.Kind != msgPhoto && row.Kind != msgVideo {
+		st.log.Infof("status message %s: not kept, nothing to show or a kind that is no story", e.Info.ID)
 		return
 	}
 	now := time.Now().Unix()
 	if now-row.TS >= storyLife { // one that came late, from a backlog
+		st.log.Infof("status message %s: not kept, %d h old", e.Info.ID, (now-row.TS)/3600)
 		return
 	}
 	if !own {

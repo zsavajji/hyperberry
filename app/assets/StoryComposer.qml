@@ -3,8 +3,9 @@ import bb.system 1.2
 import hyperberry 1.0
 
 // The story composer (docs/plan/stories.md): a Sheet for posting a story of our own, from StoriesPage. A photo
-// or a video picked from the phone gets a caption; a text story is words on a colour, the colour changed by a
-// tap on the swatch. Post sends story.post and closes: the story shows up in "My story" at once, and a failure
+// or a video picked from the phone gets a caption; a text story is words on a colour, chosen in a bar along the
+// bottom as the chat's emoji picker is: an icon (a mosaic of the colours) opens a strip of them, and typing again
+// closes it. Post sends story.post and closes: the story shows up in "My story" at once, and a failure
 // comes back as a toast (storyList.postFailed). compose(mode, path) sets it up: mode is "photo", "video" or
 // "text", path the file for the first two.
 Sheet {
@@ -16,12 +17,15 @@ Sheet {
     property int colour: 0
     // WhatsApp's own text-status colours, near enough.
     property variant colours: ["#075E54", "#128C7E", "#6A1B9A", "#C62828", "#1565C0", "#37474F"]
+    // The colour strip is open.
+    property bool picking: false
     property bool valid: sheet.mode == "text" ? story.text.replace(/\s/g, "") != "" : sheet.path != ""
 
     function compose(mode, path) {
         sheet.mode = mode
         sheet.path = path
         sheet.colour = 0
+        sheet.picking = false
         sheet.info = path ? media.fileInfo(path) : ({})
         caption.text = ""
         story.text = ""
@@ -63,7 +67,48 @@ Sheet {
         }
         sheet.close()
     }
+    // The strip's cells, made once from the palette.
+    onCreationCompleted: {
+        for (var i = 0; i < sheet.colours.length; i++) {
+            var cell = swatchDef.createObject()
+            cell.index = i
+            cell.tint = sheet.colours[i]
+            cell.tapped.connect(sheet.pick)
+            strip.add(cell)
+        }
+    }
+    function pick(i) {
+        sheet.colour = i
+    }
     attachedObjects: [
+        // One colour of the strip: the colour in a frame that is white and thick for the one in use.
+        ComponentDefinition {
+            id: swatchDef
+            Container {
+                id: cell
+                property int index
+                property string tint
+                property bool marked: sheet.colour == cell.index
+                signal tapped(int index)
+                leftMargin: ui.du(0.7)
+                rightMargin: ui.du(0.7)
+                preferredWidth: ui.du(8)
+                preferredHeight: ui.du(8)
+                background: cell.marked ? Color.White : Color.create(1.0, 1.0, 1.0, 0.45)
+                leftPadding: cell.marked ? ui.px(5) : ui.px(2)
+                topPadding: cell.marked ? ui.px(5) : ui.px(2)
+                rightPadding: cell.marked ? ui.px(5) : ui.px(2)
+                bottomPadding: cell.marked ? ui.px(5) : ui.px(2)
+                gestureHandlers: TapHandler {
+                    onTapped: cell.tapped(cell.index)
+                }
+                Container {
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    verticalAlignment: VerticalAlignment.Fill
+                    background: Color.create(cell.tint)
+                }
+            }
+        },
         MediaOpener {
             id: media
             link: engine
@@ -140,19 +185,88 @@ Sheet {
                     textStyle.color: Color.White
                     textStyle.textAlign: TextAlign.Center
                     textStyle.fontSize: FontSize.XLarge
+                    onFocusedChanged: {
+                        if (story.focused) {
+                            sheet.picking = false
+                        }
+                    }
                 }
             }
+            // The colour bar of a text story: the strip over the icon, as the emoji picker is over the composer.
             Container {
                 visible: sheet.mode == "text"
-                horizontalAlignment: HorizontalAlignment.Right
+                horizontalAlignment: HorizontalAlignment.Fill
                 verticalAlignment: VerticalAlignment.Bottom
-                rightMargin: ui.du(2)
-                bottomMargin: ui.du(2)
-                preferredWidth: ui.du(7)
-                preferredHeight: ui.du(7)
-                background: Color.create(sheet.colours[(sheet.colour + 1) % sheet.colours.length])
-                gestureHandlers: TapHandler {
-                    onTapped: sheet.colour = (sheet.colour + 1) % sheet.colours.length
+                background: Color.create(0.0, 0.0, 0.0, 0.55)
+                Container {
+                    id: strip
+                    visible: sheet.picking
+                    horizontalAlignment: HorizontalAlignment.Center
+                    topPadding: ui.du(1.2)
+                    layout: StackLayout {
+                        orientation: LayoutOrientation.LeftToRight
+                    }
+                }
+                // The icon, in a box 10 du high that is the touch target: a mosaic of the palette in a frame that
+                // takes the primary colour while the strip is open.
+                Container {
+                    leftPadding: ui.du(1)
+                    layout: DockLayout {}
+                    preferredHeight: ui.du(10)
+                    Container {
+                        verticalAlignment: VerticalAlignment.Center
+                        background: sheet.picking ? ui.palette.primary : Color.White
+                        leftPadding: ui.px(3)
+                        topPadding: ui.px(3)
+                        rightPadding: ui.px(3)
+                        bottomPadding: ui.px(3)
+                        Container {
+                            layout: StackLayout {
+                                orientation: LayoutOrientation.LeftToRight
+                            }
+                            Container {
+                                preferredWidth: ui.du(2.2)
+                                preferredHeight: ui.du(2.2)
+                                background: Color.create(sheet.colours[0])
+                            }
+                            Container {
+                                preferredWidth: ui.du(2.2)
+                                preferredHeight: ui.du(2.2)
+                                background: Color.create(sheet.colours[1])
+                            }
+                            Container {
+                                preferredWidth: ui.du(2.2)
+                                preferredHeight: ui.du(2.2)
+                                background: Color.create(sheet.colours[2])
+                            }
+                        }
+                        Container {
+                            layout: StackLayout {
+                                orientation: LayoutOrientation.LeftToRight
+                            }
+                            Container {
+                                preferredWidth: ui.du(2.2)
+                                preferredHeight: ui.du(2.2)
+                                background: Color.create(sheet.colours[3])
+                            }
+                            Container {
+                                preferredWidth: ui.du(2.2)
+                                preferredHeight: ui.du(2.2)
+                                background: Color.create(sheet.colours[4])
+                            }
+                            Container {
+                                preferredWidth: ui.du(2.2)
+                                preferredHeight: ui.du(2.2)
+                                background: Color.create(sheet.colours[5])
+                            }
+                        }
+                    }
+                    gestureHandlers: TapHandler {
+                        onTapped: {
+                            sheet.picking = !sheet.picking
+                            story.loseFocus()
+                        }
+                    }
                 }
             }
             // The caption of a photo or a video, along the bottom.
