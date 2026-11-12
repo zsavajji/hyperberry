@@ -36,6 +36,14 @@ func meowcallerLog(log waLog.Logger) zerolog.Logger {
 	return zerolog.New(cw).Level(zerolog.InfoLevel)
 }
 
+// networkChanged moves live calls' media to the new network at once (phase7b.md 7b.5).
+func (s *Session) networkChanged() {
+	if mc := s.mc.Load(); mc != nil {
+		s.log.Infof("network changed")
+		mc.NetworkChanged()
+	}
+}
+
 // initCalls makes the Calls of this session.
 func (s *Session) initCalls() {
 	c := newCalls(s.store, s.srv, s.log.Sub("calls"))

@@ -394,12 +394,21 @@ func (s *Session) onEvent(cli *whatsmeow.Client, evt any) {
 		s.photos.changed(cli, e.JID)
 	case *events.Disconnected:
 		// A call's media runs on its own relay and may outlive a short drop, which hypermeow mends
-		// by itself; only a connection still down after callDropGrace ends the call.
-		time.AfterFunc(callDropGrace, func() {
-			if !cli.IsConnected() {
-				s.calls.drop()
+		// by itself; only a connection still down after callDropGrace ends the call. One whose
+		// media meowcaller is reconnecting isn't ended here: meowcaller ends it itself if the
+		// link can't come back within 30 s.
+		var grace func()
+		grace = func() {
+			if cli.IsConnected() {
+				return
 			}
-		})
+			if s.calls.reconnecting() {
+				time.AfterFunc(callDropGrace, grace)
+				return
+			}
+			s.calls.drop()
+		}
+		time.AfterFunc(callDropGrace, grace)
 		s.conn = "connecting" // hypermeow reconnects by itself
 		s.srv.Emit("conn", map[string]any{"state": s.conn})
 	case *events.StreamReplaced:

@@ -375,6 +375,59 @@ func TestCallRows(t *testing.T) {
 	}
 }
 
+// A lost media link is a flag on the event, not a state: the state and since stay.
+func TestCallReconnecting(t *testing.T) {
+	r := newCallRig(t)
+	f := r.fake("R1")
+	r.answered(t, f)
+	r.c.mu.Lock()
+	since := float64(r.c.cur.since)
+	r.c.mu.Unlock()
+	if r.c.reconnecting() {
+		t.Error("reconnecting before the link was lost")
+	}
+
+	f.setPhase(meowcaller.CallPhaseReconnecting)
+	if m := r.want(t, "active", ""); m["reconnecting"] != true || m["since"] != since {
+		t.Errorf("link lost: %v", m)
+	}
+	if !r.c.reconnecting() {
+		t.Error("not reconnecting after the link was lost")
+	}
+
+	f.setPhase(meowcaller.CallPhaseActive)
+	if m := r.want(t, "active", ""); m["reconnecting"] != false || m["since"] != since {
+		t.Errorf("link back: %v", m)
+	}
+	if r.c.reconnecting() {
+		t.Error("still reconnecting after the link came back")
+	}
+}
+
+// A group call meowcaller can't reconnect ends as failed (it leaves group calls open).
+func TestGroupReconnectGivesUp(t *testing.T) {
+	defer func(d time.Duration) { groupReconnectLimit = d }(groupReconnectLimit)
+	groupReconnectLimit = 50 * time.Millisecond
+	r := newCallRig(t)
+	f := r.groupFake("GR1")
+	r.c.offer(f)
+	r.want(t, "ringing", "")
+	if err := r.req("call.answer", f.id); err != nil {
+		t.Fatal(err)
+	}
+	f.setPhase(meowcaller.CallPhaseActive)
+	f.setPhase(meowcaller.CallPhaseReconnecting)
+	for i := 0; i < 20; i++ {
+		if m := r.ev(t); m["state"] == "ended" {
+			if m["reason"] != "failed" {
+				t.Errorf("ended as %v", m["reason"])
+			}
+			return
+		}
+	}
+	t.Fatal("the call did not end")
+}
+
 func TestCallEventSequenceAndHello(t *testing.T) {
 	r := newCallRig(t)
 	f := r.fake("S1")

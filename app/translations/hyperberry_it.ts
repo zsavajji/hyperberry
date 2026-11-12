@@ -1742,6 +1742,11 @@
     </message>
     <message>
         <location filename="../assets/CallSheet.qml" line="1"/>
+        <source>Reconnecting…</source>
+        <translation>Riconnessione…</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallSheet.qml" line="1"/>
         <source>Call ended</source>
         <translation>Chiamata terminata</translation>
     </message>
@@ -1790,6 +1795,24 @@
         <source>%1, %2 and %3 more</source>
         <translation>%1, %2 e altri %3</translation>
     </message>
+    <message>
+        <location filename="../assets/CallSheet.qml" line="1"/>
+        <source>Incoming group video call</source>
+        <translation>Videochiamata di gruppo in arrivo</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallSheet.qml" line="1"/>
+        <source>Incoming group video call · %1</source>
+        <translation>Videochiamata di gruppo in arrivo · %1</translation>
+    </message>
+</context>
+<context>
+    <name>CallDrawer</name>
+    <message>
+        <location filename="../assets/CallDrawer.qml" line="1"/>
+        <source>Swipe from the left edge to see who is in the call</source>
+        <translation>Scorri dal bordo sinistro per vedere chi è nella chiamata</translation>
+    </message>
 </context>
 <context>
     <name>CallPanel</name>
@@ -1827,6 +1850,16 @@
         <location filename="../assets/CallPanel.qml" line="1"/>
         <source>Switch camera</source>
         <translation>Cambia fotocamera</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallPanel.qml" line="1"/>
+        <source>Hide preview</source>
+        <translation>Nascondi anteprima</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallPanel.qml" line="1"/>
+        <source>Show preview</source>
+        <translation>Mostra anteprima</translation>
     </message>
 </context>
 <context>
@@ -1870,6 +1903,16 @@
         <location filename="../assets/CallPickPage.qml" line="1"/>
         <source>Loading…</source>
         <translation>Caricamento…</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallPickPage.qml" line="1"/>
+        <source>Voice call</source>
+        <translation>Chiamata vocale</translation>
+    </message>
+    <message>
+        <location filename="../assets/CallPickPage.qml" line="1"/>
+        <source>Video call</source>
+        <translation>Videochiamata</translation>
     </message>
 </context>
 <context>
