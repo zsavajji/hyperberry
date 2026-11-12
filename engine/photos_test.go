@@ -413,3 +413,25 @@ func TestUnlinkWipesPhotos(t *testing.T) {
 	st.clear()
 	waitGone(t, q.dir)
 }
+
+// The address book's rows carry the picture a member would have: the chat's, else the fetched one, and a missing one is
+// fetched and announced.
+func TestContactPhotos(t *testing.T) {
+	q, st, f, c := newPhotoTest(t)
+	addChat(st, "1@lid", chatUser, 1)
+	q.set("1@lid", newPic(func(id string) string { return q.path("", "1@lid", id) }, "3"))
+	chatPic := photoOf(st, "1@lid")
+	f.reply = func(_ int, _ types.JID, _ string, dst func(string) string) (string, error) {
+		return newPic(dst, "9"), nil
+	}
+	out := []contact{{JID: "1@lid", Name: "A"}, {JID: "2@lid", Name: "B"}}
+	withPhotos(q, out)
+	waitIdle(t, q)
+	if out[0].Photo != chatPic || chatPic == "" || out[1].Photo != "" {
+		t.Errorf("rows %+v, want the chat's picture for the first and none yet for the second", out)
+	}
+	if m := next(t, c, "photo"); m["jid"] != "2@lid" {
+		t.Errorf("photo event %v, want one for the contact with no chat", m)
+	}
+	withPhotos(nil, out) // a bare Session has no queue
+}

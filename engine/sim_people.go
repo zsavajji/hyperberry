@@ -106,11 +106,11 @@ func simBook() []contact {
 	book := []contact{}
 	for _, c := range simChats {
 		if c.name != "" && !strings.HasSuffix(c.jid, "@g.us") {
-			book = append(book, contact{c.jid, c.name})
+			book = append(book, contact{JID: c.jid, Name: c.name})
 		}
 	}
 	for i, n := range simStrangers {
-		book = append(book, contact{fmt.Sprintf("39333200000%d@s.whatsapp.net", i+1), n})
+		book = append(book, contact{JID: fmt.Sprintf("39333200000%d@s.whatsapp.net", i+1), Name: n})
 	}
 	return book
 }

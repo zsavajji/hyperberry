@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"io"
@@ -48,6 +49,10 @@ func (st *Store) story(ctx context.Context, t *storeTx, cli *whatsmeow.Client, e
 		if pm.GetType() == waE2E.ProtocolMessage_REVOKE {
 			t.deleteStory(poster, pm.GetKey().GetID())
 		}
+		return
+	}
+	if rm := m.GetReactionMessage(); rm != nil {
+		st.storyReaction(ctx, t, cli, e, rm)
 		return
 	}
 	row, ok := rowFromMessage(poster, e, "")
@@ -383,7 +388,8 @@ func (s *Session) handleStoryReply(req json.RawMessage) (any, error) {
 	}
 	id, now := cli.GenerateMessageID(), time.Now().Unix()
 	_, created := s.store.queueRow(jid, r.Poster, "", msgRow{Chat: r.Poster, ID: id, TS: now, Out: true, State: stateSending,
-		Kind: msgText, Text: r.Text, QuoteID: r.ID, QuotePreview: clip(preview(kind, text, 0), 80)})
+		Kind: msgText, Text: r.Text, QuoteID: r.ID, QuotePreview: clip(preview(kind, text, 0), 80),
+		Extra: withStoryQuote("", r.Poster, thumb)})
 	s.nameNew(cli, jid, r.Poster, created)
 	msg := &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: &r.Text, ContextInfo: &waE2E.ContextInfo{
 		StanzaID: &r.ID, Participant: &r.Poster, RemoteJID: proto.String(types.StatusBroadcastJID.String()),
@@ -629,4 +635,63 @@ func (s *Session) handleStoryDelete(req json.RawMessage) (any, error) {
 		s.srv.Emit("storyop", map[string]any{"cmd": "delete", "id": r.ID, "ok": err == nil})
 	}()
 	return nil, nil
+}
+
+// withStoryQuote marks a message's extra as a reply to a story: story true, sposter whose story it is (ownStory for ours, else the
+// chat's key), and qthumb the story's thumbnail as base64 when it has one. The UI draws the quote with the picture and opens the story
+// from it (docs/protocol.md).
+func withStoryQuote(extra, poster string, thumb []byte) string {
+	x := map[string]json.RawMessage{}
+	if extra != "" && json.Unmarshal([]byte(extra), &x) != nil {
+		return extra
+	}
+	x["story"] = json.RawMessage("true")
+	if b, err := json.Marshal(poster); err == nil {
+		x["sposter"] = b
+	}
+	if len(thumb) > 0 && len(thumb) <= 24<<10 {
+		if b, err := json.Marshal(base64.StdEncoding.EncodeToString(thumb)); err == nil {
+			x["qthumb"] = b
+		}
+	}
+	b, err := json.Marshal(x)
+	if err != nil {
+		return extra
+	}
+	return string(b)
+}
+
+// quotedThumb is the inline thumbnail of the picture or video a reply quotes.
+func quotedThumb(m *waE2E.Message) []byte {
+	if t := m.GetImageMessage().GetJPEGThumbnail(); len(t) > 0 {
+		return t
+	}
+	return m.GetVideoMessage().GetJPEGThumbnail()
+}
+
+// storyReaction handles someone's reaction to a story of ours, which reaches us as a status message: it becomes a message from them in
+// their chat, the emoji quoting the story, so it is unread and alerts as any message does and a tap on the quote plays the story.
+// Reactions to anything else, and ours, are dropped.
+func (st *Store) storyReaction(ctx context.Context, t *storeTx, cli *whatsmeow.Client, e *events.Message, r *waE2E.ReactionMessage) {
+	emoji := strings.TrimSpace(r.GetText())
+	if emoji == "" || e.Info.IsFromMe { // an empty one takes a reaction back
+		return
+	}
+	var kind int
+	var text sql.NullString
+	var thumb []byte
+	if t.tx.QueryRow("SELECT kind, text, thumb FROM stories WHERE poster = ? AND id = ?", ownStory, r.GetKey().GetID()).Scan(&kind, &text, &thumb) != nil {
+		st.log.Infof("status reaction %s: not to a story of ours", e.Info.ID)
+		return
+	}
+	key := chatKey(ctx, t, cli.Store.LIDs, e.Info.Sender, e.Info.SenderAlt)
+	t.ensureChat(key, chatUser)
+	t.setName(key, resolveName(ctx, cli, e.Info.Sender, e.Info.SenderAlt, e.Info.PushName))
+	row := msgRow{Chat: key, ID: e.Info.ID, TS: e.Info.Timestamp.Unix(), State: stateRead, Kind: msgText, Text: emoji,
+		QuoteID: r.GetKey().GetID(), QuotePreview: clip(preview(kind, text.String, 0), 80), Extra: withStoryQuote("", ownStory, thumb)}
+	if t.insertMessage(row) {
+		t.setLast(key, row.TS, chatPreview(row), false, stateRead)
+		t.addUnread(key, 1)
+		t.notifyIncoming(key)
+	}
 }

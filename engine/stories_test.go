@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -313,5 +314,51 @@ func TestStatusRecipients(t *testing.T) {
 		if _, err := statusRecipients(ctx, cli, []string{bad}); code(err) != "bad_request" {
 			t.Errorf("%q: %v, want bad_request", bad, err)
 		}
+	}
+}
+
+// A reaction to a story of ours becomes a message from them quoting it; a reply to a story carries the story as its quote.
+func TestStoryQuotes(t *testing.T) {
+	st, cli := historyFixture(t)
+	pia := types.NewJID("4915700000007", types.DefaultUserServer)
+	k := pia.String()
+	feed := func(e any) { st.handle(cli, e); st.runOp(func(*storeTx) {}) }
+	st.runOp(func(tx *storeTx) {
+		tx.insertStory(msgRow{Chat: ownStory, ID: "O1", TS: time.Now().Unix(), Kind: msgPhoto, Text: "sunset", Thumb: []byte{1, 2, 3}}, true)
+	})
+	react := func(id, storyID, emoji string) *events.Message {
+		return status(pia, id, 0, &waE2E.Message{ReactionMessage: &waE2E.ReactionMessage{
+			Key: &waCommon.MessageKey{ID: proto.String(storyID)}, Text: proto.String(emoji)}})
+	}
+	feed(react("RX1", "O1", "❤️"))
+	var text, quote, qprev, extra string
+	st.db.QueryRow("SELECT text, quote_id, quote_preview, extra FROM messages WHERE chat = ? AND id = 'RX1' AND out = 0", k).Scan(&text, &quote, &qprev, &extra)
+	if text != "❤️" || quote != "O1" || qprev != "Photo sunset" || !strings.Contains(extra, `"sposter":"me"`) || !strings.Contains(extra, `"story":true`) ||
+		!strings.Contains(extra, `"qthumb":"AQID"`) || rows(st, "SELECT unread FROM chats WHERE jid = ?", k) != 1 {
+		t.Errorf("reaction row: %q quoting %q (%q) extra %s", text, quote, qprev, extra)
+	}
+	feed(react("RX2", "nope", "❤️")) // not one of ours
+	feed(react("RX3", "O1", ""))     // a reaction taken back
+	if n := rows(st, "SELECT count(*) FROM messages WHERE chat = ?", k); n != 1 {
+		t.Errorf("%d messages after reactions that make none, want 1", n)
+	}
+
+	// A reply from them to our story, and ours to theirs.
+	ci := &waE2E.ContextInfo{StanzaID: proto.String("O1"), RemoteJID: proto.String(types.StatusBroadcastJID.String()),
+		QuotedMessage: &waE2E.Message{ImageMessage: &waE2E.ImageMessage{JPEGThumbnail: []byte{4, 5}}}}
+	feed(inbound(pia, "RP1", &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: proto.String("nice"), ContextInfo: ci}}, ""))
+	st.db.QueryRow("SELECT extra FROM messages WHERE chat = ? AND id = 'RP1'", k).Scan(&extra)
+	if !strings.Contains(extra, `"sposter":"me"`) || !strings.Contains(extra, `"qthumb":"BAU="`) {
+		t.Errorf("a reply to our story: extra %s", extra)
+	}
+	mine := inbound(pia, "RP2", &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: proto.String("thanks"), ContextInfo: ci}}, "")
+	mine.Info.IsFromMe = true
+	feed(mine)
+	st.db.QueryRow("SELECT extra FROM messages WHERE chat = ? AND id = 'RP2'", k).Scan(&extra)
+	if !strings.Contains(extra, `"sposter":"`+k+`"`) {
+		t.Errorf("our reply to their story: extra %s", extra)
+	}
+	if got := withStoryQuote("", "x", make([]byte, 30<<10)); strings.Contains(got, "qthumb") {
+		t.Error("a thumbnail over 24 KB was kept")
 	}
 }

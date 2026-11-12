@@ -172,6 +172,14 @@ func (st *Store) apply(ctx context.Context, t *storeTx, cli *whatsmeow.Client, k
 	if spoiler && (row.Kind == msgPhoto || row.Kind == msgVideo) {
 		row.Extra = withSpoiler(row.Extra)
 	}
+	// A reply to a story (ours, or one we are answering): the quote is the story, drawn with its picture, and opens it.
+	if ci := contextInfo(m); ci.GetRemoteJID() == types.StatusBroadcastJID.String() && ci.GetStanzaID() != "" {
+		poster := ownStory
+		if row.Out {
+			poster = key
+		}
+		row.Extra = withStoryQuote(row.Extra, poster, quotedThumb(ci.GetQuotedMessage()))
+	}
 	if ci := contextInfo(m); len(ci.GetMentionedJID()) > 0 {
 		var ms []mention
 		if row.Text, ms = mentionNames(ctx, t, cli, ci, row.Text); len(ms) > 0 {

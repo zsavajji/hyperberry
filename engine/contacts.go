@@ -12,8 +12,23 @@ import (
 )
 
 type contact struct {
-	JID  string `json:"jid"`
-	Name string `json:"name"`
+	JID   string `json:"jid"`
+	Name  string `json:"name"`
+	Photo string `json:"photo,omitempty"` // the small picture's path when we have one (photos.go); the others arrive as photo events
+}
+
+// withPhotos fills the contacts' pictures the way a group's members get theirs: the chat's, else the one fetched and
+// kept for group pages; the ones we have none of yet are fetched in the background and announced as photo events.
+// A nil queue (a bare Session) leaves them without.
+func withPhotos(q *photoQueue, out []contact) {
+	ps := make([]participant, len(out))
+	for i, c := range out {
+		ps[i] = participant{JID: c.JID}
+	}
+	q.members(ps)
+	for i := range out {
+		out[i].Photo = ps[i].Photo
+	}
 }
 
 func registerContacts(srv *Server, s *Session) {
@@ -201,5 +216,6 @@ func (s *Session) handleContacts(json.RawMessage) (any, error) {
 		}
 	}
 	sortContacts(out)
+	withPhotos(s.photos, out)
 	return out, nil
 }
