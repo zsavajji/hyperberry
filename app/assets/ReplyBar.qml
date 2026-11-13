@@ -1,11 +1,12 @@
 import bb.cascades 1.4
 
-// The message being replied to, above the action bar (moved out of ChatPage.qml for step 6.4).
-// A tap cancels. Drawn as the quote in a card is: a primary-colour bar, the name, one line of
-// the text.
+// The message being replied to, or being edited, above the action bar (moved out of
+// ChatPage.qml for step 6.4). A tap cancels. Drawn as the quote in a card is: a primary-colour
+// bar, the name, one line of the text.
 Container {
     property string name
     property string quote
+    property bool editing
     signal cancelled()
     visible: name != ""
     horizontalAlignment: HorizontalAlignment.Fill
@@ -32,7 +33,7 @@ Container {
         }
         Label {
             bottomMargin: 0
-            text: qsTr("Replying to %1").arg(name)
+            text: editing ? qsTr("Edit message") : qsTr("Replying to %1").arg(name)
             textFormat: TextFormat.Plain
             textStyle.base: nav.emojiStyle
             textStyle.fontSize: FontSize.PercentageValue

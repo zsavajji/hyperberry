@@ -70,6 +70,7 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
     , m_react(0)
     , m_votes(0)
     , m_copy(0)
+    , m_edit(0)
     , m_revoke(0)
     , m_deleteMe(0)
 {

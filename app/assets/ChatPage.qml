@@ -28,6 +28,8 @@ Page {
             player.fail(engine.failure.code)
         } else if (failedCmd == "media.get") {
             mediaFailed.show()
+        } else if (failedCmd == "msg.edit") {
+            editFailed.show()
         }
     }
     onChatChanged: {
@@ -101,6 +103,10 @@ Page {
             id: deleteFailed
             body: qsTr("Not deleted: HyperBerry is reconnecting. Try again in a moment.")
         },
+        SystemToast {
+            id: editFailed
+            body: qsTr("Couldn't edit this message")
+        },
         // Delete for me: the card is already hidden, the request goes when the toast closes. Several
         // deletes while it shows join one batch (show() on a showing toast keeps it up), and Undo
         // takes them all back.
@@ -162,6 +168,7 @@ Page {
         if (staged == "" && text == "") {
             return
         }
+        var editing = ctl.editing
         // Cleared only once the engine has it: it writes the row before it replies, so nothing typed is lost.
         if (!(staged == "" ? ctl.send(composer.text, mentionBar.take(composer.text)) : page.sendStaged(text))) {
             notSent.show()
@@ -170,7 +177,7 @@ Page {
         composer.text = ""
         page.unstage()
         ctl.cancelReply()
-        page.followOwn = true
+        page.followOwn = !editing // an edit adds no row to follow
     }
     // A photo's or a video's caption rides in the message; the other kinds' text follows as a message.
     function sendStaged(text) {
@@ -340,6 +347,14 @@ Page {
                 function copy(text) {
                     ctl.copy(text)
                 }
+                // Edit (ours, a text): the composer takes its text, the bar above says so, Send replaces it.
+                function edit(msg) {
+                    page.unstage()
+                    ctl.edit(msg)
+                    composer.text = msg.text
+                    composer.requestFocus()
+                    composer.editor.cursorPosition = msg.text.length
+                }
                 // A tap on the quote of a reply to a story, or of a like on one of ours: the Stories tab plays it.
                 function openStory(msg) {
                     nav.showStory(msg.storyPoster, msg.quote)
@@ -453,7 +468,14 @@ Page {
         ReplyBar {
             name: ctl.replyName
             quote: ctl.replyText
-            onCancelled: ctl.cancelReply()
+            editing: ctl.editing
+            // A cancelled edit takes its text out of the composer, as WhatsApp does.
+            onCancelled: {
+                if (ctl.editing) {
+                    composer.text = ""
+                }
+                ctl.cancelReply()
+            }
         }
         StagedBar {
             info: page.stagedInfo

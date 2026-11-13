@@ -51,6 +51,7 @@ void MessageCard::onPopulating()
     if (m_votes)
         m_votes->setEnabled(flag("poll") && !deleted);
     m_copy->setEnabled(!deleted && !str("text").isEmpty());
+    m_edit->setEnabled(flag("editable"));
     m_revoke->setEnabled(flag("revocable"));
     m_deleteMe->setEnabled(!readOnly);
 }
@@ -75,6 +76,7 @@ void MessageCard::makeActions()
         m_votes = action("View votes", "file:///usr/share/icons/ic_accept.png", SLOT(onVotes()));
     // /usr/share/icons has no copy icon: this one is the stock Text Messages app's.
     m_copy = action("Copy", "asset:///images/copy.png", SLOT(onCopy()));
+    m_edit = action("Edit", "file:///usr/share/icons/ic_edit.png", SLOT(onEdit()));
     m_revoke = action("Delete for everyone", "file:///usr/share/icons/bb_action_delete.png",
                       SLOT(onRevoke()));
     // "Delete for me" is a DeleteActionItem, which the system puts last.
@@ -129,6 +131,7 @@ void MessageCard::onTouch(TouchEvent *event)
 void MessageCard::onReact() { Card::call(m_list, "react", m_msg); }
 void MessageCard::onVotes() { Card::call(m_list, "showVoters", str("votesText")); }
 void MessageCard::onCopy() { Card::call(m_list, "copy", str("text")); }
+void MessageCard::onEdit() { Card::call(m_list, "edit", m_msg); }
 void MessageCard::onRevoke() { Card::call(m_list, "deleteForEveryone", str("id")); }
 void MessageCard::onDeleteMe() { Card::call(m_list, "deleteForMe", str("id")); }
 void MessageCard::onWho() { Card::call(m_list, "whoReacted", str("id")); }

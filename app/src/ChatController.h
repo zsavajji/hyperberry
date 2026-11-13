@@ -33,6 +33,8 @@ class ChatController : public QObject
     // not replying.
     Q_PROPERTY(QString replyName READ replyName NOTIFY replyChanged)
     Q_PROPERTY(QString replyText READ replyText NOTIFY replyChanged)
+    // The composer edits one of our messages (replyText is its text): the next send replaces it.
+    Q_PROPERTY(bool editing READ editing NOTIFY replyChanged)
     // The last group.info result {subject, description, participants}, each participant with
     // initials and color added (and photo, when it has one); empty until it comes (groups only).
     Q_PROPERTY(QVariantMap groupInfo READ groupInfo NOTIFY groupInfoChanged)
@@ -46,6 +48,7 @@ public:
     QString status() const;
     QString replyName() const;
     QString replyText() const;
+    bool editing() const { return !m_editId.isEmpty(); }
     QVariantMap groupInfo() const;
 
     // chat is a ChatListModel row (jid, kind). Once; later calls do nothing.
@@ -69,6 +72,9 @@ public:
 
     // msg is a MessageModel "msg" map; the next send quotes it.
     Q_INVOKABLE void reply(const QVariantMap &msg);
+    // msg is a MessageModel "msg" map of ours; the next send is its new text (msg.edit).
+    Q_INVOKABLE void edit(const QVariantMap &msg);
+    // Ends a reply or an edit.
     Q_INVOKABLE void cancelReply();
     // The reply's message id, "" when not replying: a file sent as the reply carries it (step 6.4).
     Q_INVOKABLE QString quoteId() const { return m_quoteId; }
@@ -120,6 +126,7 @@ private:
     QString m_jid;
     QString m_name;
     QString m_quoteId;
+    QString m_editId;
     QString m_voicePath; // the WAV being recorded
     QString m_replyName;
     QString m_replyText;

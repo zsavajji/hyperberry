@@ -228,9 +228,11 @@ bool ChatController::send(const QString &text, const QVariantList &mentions)
     args["text"] = text;
     if (!m_quoteId.isEmpty())
         args["quote"] = m_quoteId;
+    if (!m_editId.isEmpty())
+        args["id"] = m_editId;
     if (!mentions.isEmpty())
         args["mentions"] = mentions;
-    m_engine->request("msg.send", args);
+    m_engine->request(m_editId.isEmpty() ? "msg.send" : "msg.edit", args);
     cancelReply();
     return true;
 }
@@ -305,11 +307,21 @@ void ChatController::reply(const QVariantMap &msg)
     emit replyChanged();
 }
 
+void ChatController::edit(const QVariantMap &msg)
+{
+    m_quoteId.clear();
+    m_editId = msg["id"].toString();
+    m_replyName = tr("You");
+    m_replyText = msg["text"].toString();
+    emit replyChanged();
+}
+
 void ChatController::cancelReply()
 {
-    if (m_quoteId.isEmpty())
+    if (m_quoteId.isEmpty() && m_editId.isEmpty())
         return;
     m_quoteId.clear();
+    m_editId.clear();
     m_replyName.clear();
     m_replyText.clear();
     emit replyChanged();
