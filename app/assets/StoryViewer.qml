@@ -88,7 +88,6 @@ Page {
         sheet.finished()
     }
     function show(i) {
-        console.log("story: show " + i + " of " + sheet.items.length)
         if (i >= sheet.items.length) {
             sheet.close()
             return
@@ -247,20 +246,13 @@ Page {
             videoOutput: VideoOutput.PrimaryDisplay
             windowId: surface.windowId
             windowGroupId: surface.windowGroup
-            onMediaStateChanged: {
-                // ponytail: logged to catch why a poster's last story didn't close (the user, 2026-11-13); drop once found.
-                console.log("story video: state " + mediaState + " at " + position + " of " + duration)
-                sheet.playing = (mediaState == MediaState.Started || mediaState == MediaState.Paused)
-            }
+            onMediaStateChanged: sheet.playing = (mediaState == MediaState.Started || mediaState == MediaState.Paused)
             onPositionChanged: {
                 if (sheet.cur.kind == 2 && player.duration > 0 && !sheet.paused) {
                     sheet.setProgress(player.position / player.duration)
                 }
             }
-            onPlaybackCompleted: {
-                console.log("story video: completed")
-                sheet.next()
-            }
+            onPlaybackCompleted: sheet.next()
             onError: console.log("story video: error " + mediaError + " at " + position)
         },
         SystemToast {
