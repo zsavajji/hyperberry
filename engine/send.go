@@ -32,6 +32,7 @@ func (s *Session) linked(chat string) (*whatsmeow.Client, types.JID, error) {
 func registerSend(srv *Server, s *Session) {
 	srv.Handle("msg.send", s.handleSend)
 	srv.Handle("msg.delete", s.handleDelete)
+	srv.Handle("msg.edit", s.handleEdit)
 	srv.Handle("msg.resend", s.handleResend)
 	srv.Handle("msg.react", s.handleReact)
 	srv.Handle("poll.vote", s.handlePollVote)
@@ -190,6 +191,62 @@ func (st *Store) deletable(chat string, ids []string, everyone bool) ([]msgRow, 
 		}
 	}
 	return rows, nil
+}
+
+type editReq struct {
+	Chat, ID, Text string
+	Mentions       []mention
+}
+
+func parseEdit(req json.RawMessage) (editReq, error) {
+	var r editReq
+	if err := json.Unmarshal(req, &r); err != nil || r.ID == "" || strings.TrimSpace(r.Text) == "" {
+		return r, &Error{"bad_request", "msg.edit needs chat, id and non-empty text"}
+	}
+	return r, nil
+}
+
+// editable checks the message an edit names: our own sent text. WhatsApp's 20 minutes are the UI's
+// to offer and the server's to refuse.
+func (st *Store) editable(chat, id string) error {
+	rows, _ := st.deletable(chat, []string{id}, false)
+	if len(rows) == 0 {
+		return &Error{"not_found", "no such message"}
+	}
+	m := rows[0]
+	if !m.Out || m.Deleted || m.State < stateSent || m.State > stateRead || m.Kind != msgText {
+		return &Error{"not_ours", "only our own sent texts can be edited"}
+	}
+	return nil
+}
+
+// handleEdit is msg.edit: the new text goes as an edit of ours, and the row changes once it went.
+// (verify on the real link): a reply's edit carries no quote; WhatsApp's clients keep the original's.
+func (s *Session) handleEdit(req json.RawMessage) (any, error) {
+	r, err := parseEdit(req)
+	if err != nil {
+		return nil, err
+	}
+	cli, jid, err := s.linked(r.Chat)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.store.editable(r.Chat, r.ID); err != nil {
+		return nil, err
+	}
+	wire, jids := mentionWire(r.Text, r.Mentions)
+	msg := &waE2E.Message{Conversation: &wire}
+	if len(jids) > 0 {
+		msg = &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: &wire,
+			ContextInfo: &waE2E.ContextInfo{MentionedJID: jids}}}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
+	defer cancel()
+	if _, err := cli.SendMessage(ctx, jid, cli.BuildEdit(jid, r.ID, msg)); err != nil {
+		return nil, err
+	}
+	s.store.ops <- func(t *storeTx) { t.editMessage(r.Chat, r.ID, r.Text) }
+	return nil, nil
 }
 
 // deleteForMePatch tells our other devices to drop the messages. hypermeow names the index but

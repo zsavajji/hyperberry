@@ -248,6 +248,35 @@ func TestSimDelete(t *testing.T) {
 	eventually(t, st, 1, "SELECT count(*) FROM messages WHERE chat = ? AND id = ? AND deleted = 1 AND text IS NULL", mine, id)
 }
 
+func TestSimEdit(t *testing.T) {
+	s, st, _ := linkedSim(t)
+	edit := func(chat, id, text string) error {
+		_, err := s.handleEdit([]byte(fmt.Sprintf(`{"chat":%q,"id":%q,"text":%q}`, chat, id, text)))
+		return err
+	}
+	if c := code(edit(simChats[2].jid, "SIMSEED2", "x")); c != "not_ours" {
+		t.Errorf("theirs: %s, want not_ours", c)
+	}
+	mine := simChats[5].jid
+	if c := code(edit(mine, "NOPE", "x")); c != "not_found" {
+		t.Errorf("missing: %s, want not_found", c)
+	}
+	r, err := s.handleSend([]byte(`{"chat":"` + mine + `","text":"befor"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := r.(map[string]string)["id"]
+	if c := code(edit(mine, id, "  ")); c != "bad_request" {
+		t.Errorf("blank: %s, want bad_request", c)
+	}
+	eventually(t, st, 1, "SELECT count(*) FROM messages WHERE chat = ? AND id = ? AND state >= ?", mine, id, stateSent)
+	if err := edit(mine, id, "before"); err != nil {
+		t.Fatal(err)
+	}
+	eventually(t, st, 1, "SELECT count(*) FROM messages WHERE chat = ? AND id = ? AND edited = 1 AND text = 'before'", mine, id)
+	eventually(t, st, 1, "SELECT count(*) FROM chats WHERE jid = ? AND last_preview LIKE '%before'", mine)
+}
+
 func TestSimContacts(t *testing.T) {
 	s, st, _ := linkedSim(t)
 	res, err := s.handleContacts(nil)

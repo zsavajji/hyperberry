@@ -72,6 +72,7 @@ func newSim(srv *Server, st *Store, log waLog.Logger) *Sim {
 	srv.Handle("media.send", s.handleMediaSend)
 	srv.Handle("msg.send", s.handleSend)
 	srv.Handle("msg.delete", s.handleDelete)
+	srv.Handle("msg.edit", s.handleEdit)
 	srv.Handle("chat.read", s.handleRead)
 	srv.Handle("chat.set", s.handleChatSet)
 	srv.Handle("contact.block", s.handleContactBlock)
@@ -430,6 +431,22 @@ func (s *Sim) handleDelete(req json.RawMessage) (any, error) {
 			}
 		}
 	}
+	return nil, nil
+}
+
+// handleEdit is msg.edit: the row changes as with the real one, nothing is sent.
+func (s *Sim) handleEdit(req json.RawMessage) (any, error) {
+	r, err := parseEdit(req)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := s.chat(r.Chat); err != nil {
+		return nil, err
+	}
+	if err := s.store.editable(r.Chat, r.ID); err != nil {
+		return nil, err
+	}
+	s.store.ops <- func(t *storeTx) { t.editMessage(r.Chat, r.ID, r.Text) }
 	return nil, nil
 }
 
