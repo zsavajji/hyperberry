@@ -359,6 +359,11 @@
         <source>Search</source>
         <translation>Tìm kiếm</translation>
     </message>
+    <message>
+        <location filename="../assets/ChatPage.qml" line="108"/>
+        <source>Couldn&apos;t edit this message</source>
+        <translation>Không thể chỉnh sửa tin nhắn này</translation>
+    </message>
 </context>
 <context>
     <name>ChatRow</name>
@@ -1037,6 +1042,11 @@
         <source>Story</source>
         <translation>Trạng thái</translation>
     </message>
+    <message>
+        <location filename="../assets/MessageItem.qml" line="44"/>
+        <source>Edit</source>
+        <translation>Chỉnh sửa</translation>
+    </message>
 </context>
 <context>
     <name>MessageKinds</name>
@@ -1498,6 +1508,11 @@
         <location filename="../assets/ReplyBar.qml" line="35" />
         <source>Replying to %1</source>
         <translation>Đang trả lời %1</translation>
+    </message>
+    <message>
+        <location filename="../assets/ReplyBar.qml" line="36"/>
+        <source>Edit message</source>
+        <translation>Chỉnh sửa tin nhắn</translation>
     </message>
 </context>
 <context>

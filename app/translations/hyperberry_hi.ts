@@ -360,6 +360,11 @@
         <source>Search</source>
         <translation>खोजें</translation>
     </message>
+    <message>
+        <location filename="../assets/ChatPage.qml" line="108"/>
+        <source>Couldn&apos;t edit this message</source>
+        <translation>यह संदेश संपादित नहीं हो सका</translation>
+    </message>
 </context>
 <context>
     <name>ChatRow</name>
@@ -1039,6 +1044,11 @@
         <source>Story</source>
         <translation>स्टेटस</translation>
     </message>
+    <message>
+        <location filename="../assets/MessageItem.qml" line="44"/>
+        <source>Edit</source>
+        <translation>संपादित करें</translation>
+    </message>
 </context>
 <context>
     <name>MessageKinds</name>
@@ -1501,6 +1511,11 @@
         <location filename="../assets/ReplyBar.qml" line="35" />
         <source>Replying to %1</source>
         <translation>%1 को जवाब दे रहे हैं</translation>
+    </message>
+    <message>
+        <location filename="../assets/ReplyBar.qml" line="36"/>
+        <source>Edit message</source>
+        <translation>संदेश संपादित करें</translation>
     </message>
 </context>
 <context>

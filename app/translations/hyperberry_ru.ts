@@ -361,6 +361,11 @@
         <source>Search</source>
         <translation>Поиск</translation>
     </message>
+    <message>
+        <location filename="../assets/ChatPage.qml" line="108"/>
+        <source>Couldn&apos;t edit this message</source>
+        <translation>Не удалось изменить сообщение</translation>
+    </message>
 </context>
 <context>
     <name>ChatRow</name>
@@ -1041,6 +1046,11 @@
         <source>Story</source>
         <translation>Статус</translation>
     </message>
+    <message>
+        <location filename="../assets/MessageItem.qml" line="44"/>
+        <source>Edit</source>
+        <translation>Изменить</translation>
+    </message>
 </context>
 <context>
     <name>MessageKinds</name>
@@ -1504,6 +1514,11 @@
         <location filename="../assets/ReplyBar.qml" line="35" />
         <source>Replying to %1</source>
         <translation>Ответ для %1</translation>
+    </message>
+    <message>
+        <location filename="../assets/ReplyBar.qml" line="36"/>
+        <source>Edit message</source>
+        <translation>Изменить сообщение</translation>
     </message>
 </context>
 <context>
