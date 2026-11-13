@@ -27,11 +27,13 @@ Page {
         if (failedCmd == "msg.delete") {
             deleteFailed.show()
         } else if (failedCmd == "voice.play") {
-            player.fail(engine.failure.code)
+            if (playerObj) playerObj.fail(engine.failure.code)
         } else if (failedCmd == "media.get") {
             mediaFailed.show()
         } else if (failedCmd == "msg.edit") {
             editFailed.show()
+        } else if (failedCmd == "poll.vote" || failedCmd == "poll.create") {
+            page.reactBar() // its own failedCmd words these (ReactBar.qml)
         }
     }
     onChatChanged: {
@@ -39,10 +41,8 @@ Page {
         if (chat.kind != 2) addAction(infoAction, ActionBarPlacement.InOverflow)
         if (chat.kind <= 1) addAction(pollAction, ActionBarPlacement.InOverflow)
         ctl.messages.itemAdded.connect(page.added)
-        ctl.voiceReady.connect(player.ready)
         media.ready.connect(page.mediaReady)
         media.openFailed.connect(mediaFailed.show)
-        ctl.voiceCancelled.connect(recorder.dropped)
     }
     attachedObjects: [
         // Attach (step 6.2): the system's picker, every file type; the engine sends by the extension.
@@ -83,15 +83,57 @@ Page {
             id: notSent
             body: qsTr("Not sent: HyperBerry is reconnecting. Try again in a moment.")
         },
-        VoicePlayer {
-            id: player
-            jid: page.chat ? page.chat.jid : ""
-            onFailed: voiceFailed.show()
-            onOffline: notSent.show()
+        // The player, the recorder and the search, reaction and staged bars are made at their first use, by
+        // the functions of their names: together they were 135 of the 215 ms a chat's page took to build
+        // before it could slide in, at every open (Q10, 0.1.1.313).
+        // Each in a Container that is never shown: a definition makes only Cascades' own objects ("root object
+        // must inherit from bb::cascades::BaseObject"), which a MediaPlayer and an AudioRecorder aren't, so made
+        // bare they came back null and a voice note's tap did nothing (Q10, 0.1.1.314 and 315).
+        ComponentDefinition {
+            id: playerDef
+            Container {
+                property alias part: voicePlayer
+                visible: false
+                attachedObjects: VoicePlayer {
+                    id: voicePlayer
+                    jid: page.chat ? page.chat.jid : ""
+                    onFailed: voiceFailed.show()
+                    onOffline: notSent.show()
+                }
+            }
         },
-        Recorder {
-            id: recorder
-            onFailed: notSent.show()
+        ComponentDefinition {
+            id: recorderDef
+            Container {
+                property alias part: voiceRecorder
+                visible: false
+                attachedObjects: Recorder {
+                    id: voiceRecorder
+                    onFailed: notSent.show()
+                }
+            }
+        },
+        ComponentDefinition {
+            id: searchDef
+            SearchBar {
+                jid: page.chat ? page.chat.jid : ""
+                onJump: page.jump(id)
+                onClosed: list.foundId = ""
+            }
+        },
+        ComponentDefinition {
+            id: reactDef
+            ReactBar {
+                jid: page.chat ? page.chat.jid : ""
+            }
+        },
+        ComponentDefinition {
+            id: stagedDef
+            StagedBar {
+                info: page.stagedInfo
+                canFile: page.stagedPng != ""
+                onCancelled: page.unstage()
+            }
         },
         SystemToast {
             id: mediaFailed
@@ -136,7 +178,7 @@ Page {
             title: qsTr("Search")
             imageSource: "asset:///images/search.png"
             ActionBar.placement: ActionBarPlacement.InOverflow
-            onTriggered: searchBar.open()
+            onTriggered: page.searchBar().open()
         },
         PinnedAction {
             chatCtl: ctl
@@ -162,8 +204,58 @@ Page {
         emojis.use(emoji)
         composer.requestFocus()
     }
+    property variant playerObj
+    property variant recorderObj
+    property variant searchObj
+    property variant reactObj
+    property variant stagedObj
+    function player() {
+        if (!playerObj) {
+            var holder = playerDef.createObject()
+            partSlot.add(holder) // the page's, so it goes with the page
+            var p = holder.part
+            ctl.voiceReady.connect(p.ready)
+            playerObj = p
+        }
+        return playerObj
+    }
+    function recorder() {
+        if (!recorderObj) {
+            var holder = recorderDef.createObject()
+            partSlot.add(holder)
+            var r = holder.part
+            ctl.voiceCancelled.connect(r.dropped)
+            recorderObj = r
+        }
+        return recorderObj
+    }
+    function searchBar() {
+        if (!searchObj) {
+            var b = searchDef.createObject()
+            searchSlot.add(b)
+            searchObj = b
+        }
+        return searchObj
+    }
+    function reactBar() {
+        if (!reactObj) {
+            var b = reactDef.createObject()
+            reactSlot.add(b)
+            reactObj = b
+        }
+        return reactObj
+    }
+    function stagedBar() {
+        if (!stagedObj) {
+            var b = stagedDef.createObject()
+            stagedSlot.add(b)
+            stagedObj = b
+        }
+        return stagedObj
+    }
     property bool typed: false
-    property bool mic: !recorder.recording && staged == "" && !typed
+    property bool recording: !!recorderObj && recorderObj.recording
+    property bool mic: !recording && staged == "" && !typed
     // A staged file goes instead of a text (step 6.4).
     function send() {
         var text = composer.text.trim()
@@ -184,7 +276,7 @@ Page {
     // A photo's or a video's caption rides in the message; the other kinds' text follows as a message.
     function sendStaged(text) {
         // Send as file: the PNG itself, which the engine sends as a document; the text follows it.
-        var asFile = stagedBar.asFile && stagedPng != ""
+        var asFile = page.stagedBar().asFile && stagedPng != ""
         var picture = stagedInfo.picture && !asFile
         var args = {"chat": chat.jid, "path": asFile ? stagedPng : staged}
         if (ctl.quoteId()) {
@@ -238,7 +330,7 @@ Page {
         }
         staged = path
         stagedPng = png
-        stagedBar.asFile = false
+        page.stagedBar().asFile = false
         stagedInfo = info
         composer.requestFocus()
     }
@@ -301,7 +393,7 @@ Page {
     function typeKey(event) {
         // The search field and the composer (Composer.qml) are inside the page, so their keys come here too
         // (Q10, 0.0.1.122; the composer typed letters twice, 0.0.1.231); and a channel has no composer.
-        if (searchBar.typing || composer.focused || page.chat.kind == 3) {
+        if ((searchObj && searchObj.typing) || composer.focused || page.chat.kind == 3) {
             return
         }
         var c = event.unicode
@@ -337,11 +429,14 @@ Page {
         layout: StackLayout {
             orientation: LayoutOrientation.TopToBottom
         }
-        SearchBar {
-            id: searchBar
-            jid: page.chat ? page.chat.jid : ""
-            onJump: page.jump(id)
-            onClosed: list.foundId = ""
+        Container {
+            id: searchSlot
+            horizontalAlignment: HorizontalAlignment.Fill
+        }
+        // Holds the player's and the recorder's containers; nothing in it shows.
+        Container {
+            id: partSlot
+            visible: false
         }
         // The list, and over it the note of an empty chat.
         Container {
@@ -383,28 +478,28 @@ Page {
                 }
                 // Reactions (step 5.11): the bar over the composer, and the chip's who-reacted toast.
                 function react(msg) {
-                    reactBar.open(msg)
+                    page.reactBar().open(msg)
                 }
                 function whoReacted(id) {
-                    reactBar.who(id)
+                    page.reactBar().who(id)
                 }
                 // Polls (step 6.5e): a vote, and the toast of who chose an option, ReactBar's.
                 function vote(id, options) {
                     engine.request("poll.vote", {"chat": page.chat.jid, "id": id, "options": options})
                 }
                 function showVoters(text) {
-                    reactBar.say(text)
+                    page.reactBar().say(text)
                 }
                 // Voice notes: the player's state, for the bubbles (VoicePlayer.qml).
-                property string playingId: player.playingId
+                property string playingId: page.playerObj ? page.playerObj.playingId : ""
                 // The search match, tinted (SearchBar.qml).
                 property string foundId
-                property string loadingId: player.loadingId
-                property bool paused: player.paused
-                property int posMs: player.posMs
-                property int durMs: player.durMs
+                property string loadingId: page.playerObj ? page.playerObj.loadingId : ""
+                property bool paused: page.playerObj ? page.playerObj.paused : false
+                property int posMs: page.playerObj ? page.playerObj.posMs : 0
+                property int durMs: page.playerObj ? page.playerObj.durMs : 0
                 function playVoice(msg) {
-                    player.toggle(msg.id)
+                    page.player().toggle(msg.id)
                 }
                 function playedWave(data, bars) {
                     return ctl.playedWave(data, bars)
@@ -474,9 +569,9 @@ Page {
                 model: ctl.messages
             }
         }
-        ReactBar {
-            id: reactBar
-            jid: page.chat ? page.chat.jid : ""
+        Container {
+            id: reactSlot
+            horizontalAlignment: HorizontalAlignment.Fill
         }
         MentionBar {
             id: mentionBar
@@ -495,17 +590,15 @@ Page {
                 ctl.cancelReply()
             }
         }
-        StagedBar {
-            id: stagedBar
-            info: page.stagedInfo
-            canFile: page.stagedPng != ""
-            onCancelled: page.unstage()
+        Container {
+            id: stagedSlot
+            horizontalAlignment: HorizontalAlignment.Fill
         }
         // Typing while recording leaves the recording alone: the text stays for later, and Send
         // finishes the recording first.
         RecordingBar {
-            visible: recorder.recording
-            clock: recorder.clock
+            visible: page.recording
+            clock: page.recorderObj ? page.recorderObj.clock : ""
         }
         // Created at the first open and kept (delegateActive stays true).
         ControlDelegate {
@@ -524,12 +617,12 @@ Page {
         Composer {
             id: composerBar
             mic: page.mic
-            recording: recorder.recording
+            recording: page.recording
             readOnly: page.chat ? page.chat.kind == 3 : false
             onEmoji: page.picking = !page.picking
-            onDiscard: recorder.discard()
+            onDiscard: page.recorder().discard()
             onAttach: attachPicker.open()
-            onSend: page.mic ? recorder.start() : recorder.recording ? recorder.finish() : page.send()
+            onSend: page.mic ? page.recorder().start() : page.recording ? page.recorder().finish() : page.send()
             // Off, Enter is a new line: the key still submits, so the field keeps its focus.
             onSubmitted: settings.enterSends ? page.send() : composer.editor.insertPlainText("\n")
             // The field's text notifies only when committed, so mic follows this.

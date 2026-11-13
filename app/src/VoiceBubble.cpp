@@ -58,6 +58,11 @@ VoiceBubble::VoiceBubble(ListView *list)
     disc->setLayout(new DockLayout());
     disc->setPreferredWidth(72);
     disc->setPreferredHeight(72);
+    // Its least size too: the disc and the 381 px waveform need 467 px, and beside a 12-hour time
+    // ("10:49 PM" and the ticks) the column is 427, which squeezed the disc to 52 px wide (Q10, 0.1.1.316).
+    // The waveform gives way instead, and loses its last bars.
+    disc->setMinWidth(72);
+    disc->setMinHeight(72);
     disc->setVerticalAlignment(VerticalAlignment::Center);
     m_icon = new ImageView();
     m_icon->setHorizontalAlignment(HorizontalAlignment::Fill);
@@ -83,8 +88,13 @@ VoiceBubble::VoiceBubble(ListView *list)
     waves->add(m_wave);
     waves->add(m_played);
 
+    // Under it the length at the left and the time's corner at the right, the waveform's width apart.
+    Container *under = new Container();
+    under->setTopMargin(m_ui->du(0.5));
+    under->setHorizontalAlignment(HorizontalAlignment::Fill);
+    under->setLayout(new DockLayout());
     Container *length = new Container();
-    length->setTopMargin(m_ui->du(0.5));
+    length->setVerticalAlignment(VerticalAlignment::Center);
     length->setLayout(Card::across());
     m_mic = new ImageView();
     m_mic->setVerticalAlignment(VerticalAlignment::Center);
@@ -97,8 +107,14 @@ VoiceBubble::VoiceBubble(ListView *list)
     length->add(m_mic);
     length->add(m_clock);
 
+    m_stamp = new Container();
+    m_stamp->setHorizontalAlignment(HorizontalAlignment::Right);
+    m_stamp->setVerticalAlignment(VerticalAlignment::Bottom);
+    under->add(length);
+    under->add(m_stamp);
+
     right->add(waves);
-    right->add(length);
+    right->add(under);
     root->add(disc);
     root->add(right);
     setRoot(root);

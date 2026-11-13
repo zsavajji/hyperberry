@@ -328,6 +328,7 @@ type storeTx struct {
 	after []func()                   // afterCommit's
 	// A story was added, changed or dropped (stories.go): emit "stories" after the commit.
 	stories bool
+	stmts   map[string]*sql.Stmt // exec's, by their SQL
 }
 
 // run runs one op; a failing or panicking op doesn't stop the batch.
@@ -340,9 +341,24 @@ func (t *storeTx) run(op func(*storeTx)) {
 	op(t)
 }
 
-// exec runs a statement and logs a failure. It reports how many rows changed.
+// exec runs a statement and logs a failure. It reports how many rows changed. A statement is
+// prepared once per transaction, which closes it when it ends: a history sync runs the same insert
+// thousands of times in one, and preparing it each time was two thirds of the write (on the PC,
+// 2026-11-13: an insert and its setLast went from 9.4 to 2.8 µs).
 func (t *storeTx) exec(q string, args ...any) int64 {
-	res, err := t.tx.Exec(q, args...)
+	s := t.stmts[q]
+	if s == nil {
+		var err error
+		if s, err = t.tx.Prepare(q); err != nil {
+			t.log.Warnf("store: %v", err)
+			return 0
+		}
+		if t.stmts == nil {
+			t.stmts = map[string]*sql.Stmt{}
+		}
+		t.stmts[q] = s
+	}
+	res, err := s.Exec(args...)
 	if err != nil {
 		t.log.Warnf("store: %v", err)
 		return 0

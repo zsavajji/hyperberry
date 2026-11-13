@@ -71,10 +71,8 @@ ChatListModel::ChatListModel(EngineLink *engine, Mode mode, QObject *parent)
     , m_dbName(mode == Archived ? "chats-archived" : mode == Channels ? "chats-channels" : kDb)
     , m_unreadTotal(0)
     , m_revision(0)
-    , m_days(RelativeDateFormat::NonTimeCritical)
     , m_region(bb::system::LocaleType::Region)
 {
-    m_days.applyUserRegionLocale();
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", m_dbName);
     db.setDatabaseName(QDir::homePath() + "/chats.db");
     db.setConnectOptions("QSQLITE_OPEN_READONLY");
@@ -246,7 +244,7 @@ void ChatListModel::reload()
         return;
     }
 
-    m_days.applyCurrentTimeAsAnchor();
+    dayFormatter().applyCurrentTimeAsAnchor();
     const QLocale locale = m_region.locale();
     const QString clock = timeFormat(locale, DateFormat::Short);
     const QDate today = QDate::currentDate();
@@ -268,9 +266,13 @@ void ChatListModel::reload()
         if (hasTime) {
             const QDate date = when.date();
             age = date.daysTo(today);
-            if (!days.contains(date.toJulianDay()))
-                days.insert(date.toJulianDay(), dayLabel(when, today, locale, m_days));
-            day = days.value(date.toJulianDay());
+            // Only the last week's days are named. The formatter was asked for every older day too, a label
+            // nothing showed, and it is dear: most of a reload's 65 to 165 ms for 40 chats (Q10, 0.1.1.306).
+            if (age < 7) {
+                if (!days.contains(date.toJulianDay()))
+                    days.insert(date.toJulianDay(), dayLabel(when, today, locale, dayFormatter()));
+                day = days.value(date.toJulianDay());
+            }
             header = age < 7 ? day : capitalized(locale.standaloneMonthName(date.month()));
             if (age >= 7 && date.year() != today.year())
                 header += " " + QString::number(date.year());

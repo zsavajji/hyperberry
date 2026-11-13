@@ -75,7 +75,6 @@ private:
     int m_revision;
     QString m_filter;
     QTimer m_soon;
-    bb::utility::i18n::RelativeDateFormatter m_days;
     bb::system::LocaleHandler m_region;
 };
 

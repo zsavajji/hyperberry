@@ -111,13 +111,17 @@ inline bb::cascades::StackLayout *across()
     return layout;
 }
 
-// A card's width: the screen's less the card's insets (MessageCard: 7 and 1.5 du).
-// ponytail: the screen's width at start; a phone that rotates would want the list's.
-inline float width(bb::cascades::UIConfig *ui)
+// The screen's width at start.
+// ponytail: a phone that rotates would want the list's.
+inline int screen()
 {
-    static const int screen = bb::device::DisplayInfo().pixelSize().width();
-    return screen - ui->du(8.5);
+    static const int width = bb::device::DisplayInfo().pixelSize().width();
+    return width;
 }
+
+// A card's width at most, and a picture's: 80 % of the screen. A card is as wide as what it holds,
+// up to this (the user, 2026-11-14: on the Passport a one-letter message spanned the screen).
+inline float width(bb::cascades::UIConfig *) { return 0.8f * screen(); }
 
 // The card's padding at each side, growing with the text size: 2 px over 1.5 du at 100 %.
 inline float side(bb::cascades::UIConfig *ui, float scale) { return ui->du(1.5 * scale) + ui->px(2); }

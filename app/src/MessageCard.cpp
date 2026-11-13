@@ -1,5 +1,7 @@
 #include "MessageCard.h"
 
+#include <QtCore/qmath.h>
+
 #include <bb/cascades/ActionSet>
 #include <bb/cascades/ActiveTextHandler>
 #include <bb/cascades/ActiveTextTriggeredEvent>
@@ -28,6 +30,7 @@
 #include "CardStyle.h"
 #include "MediaBubble.h"
 #include "PollBubble.h"
+#include "VoiceBubble.h"
 
 using namespace bb::cascades;
 
@@ -41,7 +44,10 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
     , m_ui(list->ui())
     , m_rich(rich)
     , m_pressed(false)
-    , m_timeOnPicture(false)
+    , m_timePlace(-1)
+    , m_timeTop(-1)
+    , m_colMax(-1)
+    , m_tick(-1)
     , m_downX(0)
     , m_downY(0)
     , m_swipe(0)
@@ -75,33 +81,47 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
     , m_deleteMe(0)
 {
     // The card's own node and its root: a list item is as wide as its content unless it fills.
+    // Theirs 1.5 du from the left edge and ours from the right.
     setHorizontalAlignment(HorizontalAlignment::Fill);
     m_root = new Container();
     m_root->setHorizontalAlignment(HorizontalAlignment::Fill);
+    m_root->setLeftPadding(m_ui->du(1.5));
+    m_root->setRightPadding(m_ui->du(1.5));
 
-    // The card: the text column, and the time and ticks beside its first line, not on a row of their
-    // own, so a one-line message is one line tall (Q10, 2026-10-31: a row of its own made the cards
-    // too tall). The labels in the card set their margins: unset, Cascades puts about 20 px between them.
+    // The card: the text column, and the time and ticks where placeTime() puts them, never on a row
+    // of their own, so a one-line message is one line tall (Q10, 2026-10-31: a row of its own made
+    // the cards too tall). The labels in the card set their margins: unset, Cascades puts about 20 px
+    // between them.
     m_card = new Container();
     m_card->setHorizontalAlignment(HorizontalAlignment::Fill);
     m_card->setLayout(Card::across());
 
+    // As wide as what it holds, up to the width fillFoot() allows it: with a quota it took the
+    // whole row, so a one-letter message was as wide as the screen. The picture card is the
+    // picture's width, so there the column takes what the time leaves.
     m_col = new Container();
-    Card::quota(m_col, 1);
+    if (picture)
+        Card::quota(m_col, 1);
 
+    // The text, and over its last line's end the time: fillColumn() ends the text with blanks as
+    // wide as the time, so the line stops short of it, or the blanks wrap and the time has a line
+    // to itself, as in Telegram (the user, 2026-11-14: beside the first line, the time kept a
+    // column that was empty below it). Filled, so the time is at the column's right edge.
+    m_words = new Container();
+    m_words->setHorizontalAlignment(HorizontalAlignment::Fill);
+    m_words->setTopMargin(0);
+    m_words->setLayout(new DockLayout());
     m_text = new Label();
-    m_text->setTopMargin(0);
     m_text->setMultiline(true);
     // A mention's link is ours: the system can't open it, so the page does.
     ActiveTextHandler *links = new ActiveTextHandler(m_text);
     m_text->setActiveTextHandler(links);
     connect(links, SIGNAL(triggered(bb::cascades::ActiveTextTriggeredEvent *)), this,
             SLOT(onLink(bb::cascades::ActiveTextTriggeredEvent *)));
-    m_col->add(m_text);
+    m_words->add(m_text);
+    m_col->add(m_words);
 
     m_timeBox = new Container();
-    m_timeBox->setVerticalAlignment(VerticalAlignment::Top);
-    m_timeBox->setLeftMargin(m_ui->du(1));
     m_timeBox->setLayout(Card::across());
 
     // One label for "edited" and the time: a separate one never showed on the Q10 (2026-10-31). A
@@ -113,11 +133,13 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
     m_time->textStyle()->setFontSize(FontSize::PercentageValue);
     m_ticks = new ImageView();
     m_ticks->setVerticalAlignment(VerticalAlignment::Center);
+    // Sized by fillFoot() with the time's text; 1 du from it, not the 20 px Cascades puts there.
+    m_ticks->setScalingMethod(ScalingMethod::AspectFit);
+    m_ticks->setLeftMargin(m_ui->du(1));
     m_timeBox->add(m_time);
     m_timeBox->add(m_ticks);
 
     m_card->add(m_col);
-    m_card->add(m_timeBox);
 
     // The foot, BBM's (Z30 screenshots, user 2026-11-08): the accent bar, 1 du, and over its outer
     // end the tail, a triangle in the card's colour under the card's corner, theirs left, ours right.
@@ -126,15 +148,22 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
     m_foot = new Container();
     m_foot->setHorizontalAlignment(HorizontalAlignment::Fill);
     m_foot->setLayout(new DockLayout());
-    m_underline = new ImageView();
-    m_underline->setHorizontalAlignment(HorizontalAlignment::Fill);
-    m_underline->setVerticalAlignment(VerticalAlignment::Top);
-    m_underline->setPreferredHeight(m_ui->du(1));
+    m_barL = new ImageView();
+    m_barL->setHorizontalAlignment(HorizontalAlignment::Fill);
+    m_barL->setVerticalAlignment(VerticalAlignment::Top);
+    m_barL->setPreferredHeight(m_ui->du(1));
+    m_barL->setImageSource(Card::url("asset:///images/bar_l.amd"));
+    m_barR = new ImageView();
+    m_barR->setHorizontalAlignment(HorizontalAlignment::Fill);
+    m_barR->setVerticalAlignment(VerticalAlignment::Top);
+    m_barR->setPreferredHeight(m_ui->du(1));
+    m_barR->setImageSource(Card::url("asset:///images/bar_r.amd"));
     m_tailL = makeTail("asset:///images/tail_l.png");
     m_tailL->setHorizontalAlignment(HorizontalAlignment::Left);
     m_tailR = makeTail("asset:///images/tail_r.png");
     m_tailR->setHorizontalAlignment(HorizontalAlignment::Right);
-    m_foot->add(m_underline);
+    m_foot->add(m_barL);
+    m_foot->add(m_barR);
     m_foot->add(m_tailL);
     m_foot->add(m_tailR);
 
@@ -165,8 +194,25 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
         m_head = 0;
     }
     body->add(m_frame);
-    m_root->add(body);
-    m_root->add(m_foot);
+
+    // The card and its foot, as wide as the card's content, and a spacer at the other side: its
+    // quota stretches the row across the list, which the text column's did, and pushes ours right.
+    Container *row = new Container();
+    row->setHorizontalAlignment(HorizontalAlignment::Fill);
+    row->setLayout(Card::across());
+    m_gapL = new Container();
+    Card::quota(m_gapL, 1);
+    m_gapR = new Container();
+    Card::quota(m_gapR, 1);
+    Container *box = new Container();
+    if (picture)
+        box->setMaxWidth(Card::width(m_ui));
+    box->add(body);
+    box->add(m_foot);
+    row->add(m_gapL);
+    row->add(box);
+    row->add(m_gapR);
+    m_root->add(row);
     setRoot(m_root);
 
     // The long-press menu (step 3.3): the actions are made at the first populating, which comes just
@@ -219,9 +265,9 @@ void MessageCard::show(const QVariantMap &msg)
         makeChip();
     restyle();
 
-    // Theirs inset on the right and ours on the left: about 2 % and 9 % of the width, BBM's proportions.
-    m_root->setLeftPadding(out ? m_ui->du(7) : m_ui->du(1.5));
-    m_root->setRightPadding(out ? m_ui->du(1.5) : m_ui->du(7));
+    // Theirs at the left and ours at the right. A hidden spacer takes no part in the layout.
+    m_gapL->setVisible(out);
+    m_gapR->setVisible(!out);
     fillColumn();
     if (m_rich)
         fillBubbles();
@@ -281,6 +327,8 @@ void MessageCard::restyle()
     m_plain = plain;
 
     const Color quiet = m_ui->palette()->secondaryTextOnPlain();
+    m_barL->setFilterColor(quiet);
+    m_barR->setFilterColor(m_ui->palette()->primary());
     const float side = Card::side(m_ui, scale);
     m_root->setTopPadding(m_ui->du(1.5 * scale));
     m_card->setLeftPadding(side);
@@ -294,8 +342,10 @@ void MessageCard::restyle()
         m_head->setBottomPadding(m_ui->du(1 * scale) + m_ui->px(2));
     }
     Card::style(m_text, m_list, body);
-    // A little under SmallText (the user, 2026-11-08: the time a bit smaller).
-    m_time->textStyle()->setFontSizeValue(qRound(85 * scale));
+    // 72 % of SmallText, about two thirds of the body text (the user, 2026-11-14: the time and ticks
+    // smaller; it was 85 % since 2026-11-08). The ticks follow it, so they are sized again.
+    m_time->textStyle()->setFontSizeValue(qRound(72 * scale));
+    m_tick = -1;
     if (m_sender)
         Card::style(m_sender, m_list, small);
     if (m_quote) {
@@ -338,13 +388,14 @@ void MessageCard::makeQuote()
     m_bar->setMinWidth(m_ui->du(0.5));
     m_bar->setMaxWidth(m_ui->du(0.5));
 
-    // The quota leaves the bar its width: a two-line quote squeezed it to nothing (0.0.1.136, Q10).
+    // No quota: it stretched the card to its widest, and the quote is as wide as its words or the
+    // card (the user, 2026-11-14). The bar's least width keeps it: a two-line quote squeezed it to
+    // nothing while it had only a preferred one (0.0.1.136, Q10).
     Container *words = new Container();
     words->setLeftMargin(m_ui->du(1));
     words->setRightPadding(m_ui->du(1));
     words->setTopPadding(m_ui->du(0.5));
     words->setBottomPadding(m_ui->du(0.5));
-    Card::quota(words, 1);
 
     // Whose message it was, in groups.
     m_quoteName = new Label();
@@ -364,6 +415,7 @@ void MessageCard::makeQuote()
     m_quoteThumb->setVerticalAlignment(VerticalAlignment::Center);
     m_quoteThumb->setPreferredWidth(m_ui->du(8));
     m_quoteThumb->setPreferredHeight(m_ui->du(8));
+    m_quoteThumb->setMinWidth(m_ui->du(8));
     m_quoteThumb->setScalingMethod(ScalingMethod::AspectFill);
     m_quoteThumb->setLoadEffect(ImageViewLoadEffect::None);
     m_quoteThumb->setVisible(false);
@@ -382,7 +434,7 @@ void MessageCard::makeLabel()
     m_label->setTopMargin(0);
     m_label->setBottomMargin(0);
     m_label->textStyle()->setFontStyle(FontStyle::Italic);
-    m_col->insert(m_col->indexOf(m_text), m_label);
+    m_col->insert(m_col->indexOf(m_words), m_label);
     m_styled = false;
 }
 
@@ -409,8 +461,8 @@ void MessageCard::makeBang()
     m_timeBox->add(m_bang);
 }
 
-// The reactions (step 5.11), under the card at its left edge, theirs and ours alike, with the
-// card's own left padding so the emoji line up with its text. A tap says who reacted.
+// The reactions (step 5.11), under the card at its outer edge (fillFoot), with the card's own
+// left padding so theirs line up with its text. A tap says who reacted.
 void MessageCard::makeChip()
 {
     m_chip = new Container();
@@ -479,9 +531,15 @@ void MessageCard::fillColumn()
     const QString html = str("html");
     const QString text = str("text");
     if (m_rich)
-        m_text->setVisible(!text.isEmpty());
+        m_words->setVisible(!text.isEmpty());
+    // Room for the time at the last line's end: U+2800, the blank Braille cell, which only the
+    // phone's fallback font has (DejaVu Sans, 0.73 em: 3.2 du at 100 % on the Q10). It isn't a
+    // space, so the line keeps it, and the run wraps as a word does. Right-to-left text ends at
+    // the left, so there the blanks take a line of their own.
+    QString room = text.section('\n', -1).isRightToLeft() ? QString(html.isEmpty() ? "\n" : "<br/>") : QString(" ");
+    room += QString(qCeil((timeWidth() + m_ui->du(0.5)) / m_ui->du(3.1 * m_scale)), QChar(0x2800));
     m_text->setTextFormat(html.isEmpty() ? TextFormat::Plain : TextFormat::Html);
-    m_text->setText(html.isEmpty() ? Card::noKeycaps(text) : html);
+    m_text->setText((html.isEmpty() ? Card::noKeycaps(text) : html) + room);
     m_text->content()->setFlags(deleted ? TextContentFlag::Default : TextContentFlag::ActiveText);
     m_text->textStyle()->setFontStyle(deleted ? FontStyle::Italic : FontStyle::Default);
     m_text->textStyle()->setColor(deleted ? m_ui->palette()->secondaryTextOnPlain()
@@ -505,17 +563,24 @@ void MessageCard::fillFoot()
     const bool out = flag("out");
     const int state = m_msg.value("state").toInt();
     m_time->setText((flag("edited") ? m_edited : QString()) + str("time"));
+    // Where the time goes: on a picture with no caption, at the text's end, under a voice note's
+    // waveform, or else (a sticker, a file) beside the column's first line.
     // Top-aligned boxes put the time's baseline above the first line's: 7 px under a name or quote
     // (small), 12 px under body text, measured at 85 % and 105 % on the Q10, then scaled with the
-    // text size setting.
+    // text size setting; 4 px more since the time is at 72 %, reckoned, not measured.
     // ponytail: linear in the scale, not measured at 90-140 %.
     // In the picture card the head holds them, so the caption is the card's first line. +2 px for
     // the time at 85 %, whose baseline sits higher (Q10, 0.0.1.212: +3 was 1 px low; 0.0.1.216: 2 more).
     const bool small = !m_head && (!str("sender").isEmpty() || !str("quote").isEmpty());
     const bool onPicture = m_head && !m_card->isVisible();
-    placeTime(onPicture);
-    if (!onPicture)
-        m_timeBox->setTopPadding(m_ui->px((small ? 7 : 12) * m_scale));
+    const int place = onPicture ? 2 : m_words->isVisible() ? 1 : m_voice && flag("voice") ? 3 : 0;
+    placeTime(place);
+    // The top padding is this one's, on a picture too; set only when it changed.
+    const float top = onPicture ? m_ui->du(0.5) : place == 0 ? m_ui->px((small ? 11 : 16) * m_scale) : 0;
+    if (top != m_timeTop) {
+        m_timeTop = top;
+        m_timeBox->setTopPadding(top);
+    }
     // White on the picture's dark chip.
     const Color quiet = onPicture ? Color::White : m_ui->palette()->secondaryTextOnPlain();
     m_time->textStyle()->setColor(quiet);
@@ -523,15 +588,33 @@ void MessageCard::fillFoot()
     const bool ticked = out && state < 4;
     m_ticks->setVisible(ticked);
     if (ticked) {
-        m_ticks->setImageSource(Card::url(state == 0 ? "asset:///images/clock.png"
-                                    : state == 1 ? "asset:///images/tick.png" : "asset:///images/ticks.png"));
+        const int tick = state == 0 ? 0 : state == 1 ? 1 : 2;
+        if (tick != m_tick) {
+            m_tick = tick;
+            // 2.4 du tall at 100 %, 22 px on the Q10, where the images' 27 px were; the two ticks are wider.
+            m_ticks->setPreferredSize(m_ui->du((tick == 2 ? 3.1 : 2.4) * m_scale), m_ui->du(2.4 * m_scale));
+            m_ticks->setImageSource(Card::url(tick == 0 ? "asset:///images/clock.png"
+                                        : tick == 1 ? "asset:///images/tick.png" : "asset:///images/ticks.png"));
+        }
         m_ticks->setFilterColor(state == 3 ? m_ui->palette()->primary() : quiet);
     }
     if (m_bang)
         m_bang->setVisible(out && state == 4);
 
-    m_underline->setImageSource(Card::url(out ? "asset:///images/bar_r.amd" : "asset:///images/bar_l.amd"));
-    m_underline->setFilterColor(out ? m_ui->palette()->primary() : m_ui->palette()->secondaryTextOnPlain());
+    // The column's width at most: the card's less its paddings, and less the time when that is
+    // beside it. Without it a long text asks for the whole row and the stack takes the excess from
+    // both, so the time is cut.
+    if (!m_head) {
+        const float most = Card::width(m_ui) - 2 * Card::side(m_ui, m_scale)
+                           - (place == 0 ? m_ui->du(1) + timeWidth() : 0);
+        if (most != m_colMax) {
+            m_colMax = most;
+            m_col->setMaxWidth(most);
+        }
+    }
+
+    m_barL->setVisible(!out);
+    m_barR->setVisible(out);
     m_foot->setVisible(str("media") != "sticker");
     m_tailL->setVisible(!out);
     m_tailR->setVisible(out);
@@ -539,36 +622,51 @@ void MessageCard::fillFoot()
     const int count = m_msg.value("reactionCount").toInt();
     if (m_chip) {
         m_chip->setVisible(count > 0);
+        // Under the card's outer corner: ours is at the right now.
+        m_chip->setHorizontalAlignment(out ? HorizontalAlignment::Right : HorizontalAlignment::Left);
         if (count > 0)
             m_reactions->setText(str("reactions") + (count > 1 ? QString(" %1").arg(count) : QString()));
     }
 }
 
 
-// The time and ticks: beside the card's first line, or on a photo with no caption at its bottom
-// right, on a dark chip so they read on any picture, as Android shows them. Moved only when the
-// place changes, since rows are recycled.
-void MessageCard::placeTime(bool onPicture)
+// The time and ticks' width, which can't be asked, reckoned a little over: 1.55 du a character at
+// 100 % ("11:16 PM" was 117 px on the Q10 at 85 %, so 1.37 du each at 72 %), the ticks' 3.1 du and
+// their 1 du margin, and the "!" with the 2.5 du before it.
+// ponytail: a reckoning; a time wider than it (a script with wide digits) touches the text's end.
+float MessageCard::timeWidth() const
 {
-    if (onPicture != m_timeOnPicture) {
-        m_timeOnPicture = onPicture;
-        if (onPicture) {
-            m_card->remove(m_timeBox);
-            m_media->stamp()->add(m_timeBox);
-        } else {
-            m_media->stamp()->remove(m_timeBox);
-            m_card->add(m_timeBox);
-        }
-    }
+    const bool out = flag("out");
+    const int state = m_msg.value("state").toInt();
+    const int chars = str("time").size() + (flag("edited") ? m_edited.size() : 0);
+    return chars * m_ui->du(1.55 * m_scale) + (out && state < 4 ? m_ui->du(1 + 3.1 * m_scale) : 0)
+           + (out && state == 4 ? m_ui->du(4) : 0);
+}
+
+// The time and ticks: at the bottom right of the text, over the blanks that end it; under a voice
+// note's waveform, at the right of its length; else beside the column's first line; on a photo with
+// no caption at its bottom right, on a dark chip so they read on any picture, as Android shows them. Moved only when the place changes, since
+// rows are recycled.
+void MessageCard::placeTime(int place)
+{
+    if (place == m_timePlace)
+        return;
+    Container *const homes[] = { m_card, m_words, m_media ? m_media->stamp() : 0, m_voice ? m_voice->stamp() : 0 };
+    if (m_timePlace >= 0)
+        homes[m_timePlace]->remove(m_timeBox);
+    homes[place]->add(m_timeBox);
+    m_timePlace = place;
+
+    const bool onPicture = place == 2;
     const float chip = onPicture ? m_ui->du(1) : 0;
-    m_timeBox->setLeftMargin(onPicture ? 0 : m_ui->du(1));
+    m_timeBox->setHorizontalAlignment(place == 1 ? HorizontalAlignment::Right : HorizontalAlignment::Left);
+    m_timeBox->setVerticalAlignment(place == 1 ? VerticalAlignment::Bottom : VerticalAlignment::Top);
+    m_timeBox->setLeftMargin(place == 0 ? m_ui->du(1) : 0);
     m_timeBox->setLeftPadding(chip);
     m_timeBox->setRightPadding(chip);
     m_timeBox->setBottomPadding(onPicture ? m_ui->du(0.5) : 0);
-    if (onPicture) {
-        m_timeBox->setTopPadding(m_ui->du(0.5));
+    if (onPicture)
         m_timeBox->setBackground(Card::color("#80000000"));
-    } else {
+    else
         m_timeBox->resetBackground();
-    }
 }

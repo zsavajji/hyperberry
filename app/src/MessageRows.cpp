@@ -1,7 +1,6 @@
 #include "MessageModel.h"
 
 #include <bb/cascades/Image>
-#include <bb/data/JsonDataAccess>
 
 #include "EngineLink.h"
 #include "MediaData.h"
@@ -45,6 +44,8 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
     m.rowid = q.value(0).toLongLong();
     m.id = q.value(1).toString();
     m.ts = q.value(2).toLongLong();
+    const QDateTime when = QDateTime::fromTime_t(m.ts);
+    m.day = when.date().toJulianDay();
     const bool out = q.value(3).toInt() != 0;
     const int kind = q.value(7).toInt();
     m.kind = kind;
@@ -53,12 +54,12 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
     m.data["album"] = QVariantList(); // MessageModel::albumData fills it for an album; never undefined in QML
     const QString text = q.value(8).toString();
     const bool deleted = q.value(11).toInt() != 0;
-    const QLocale locale = m_region.locale();
-    const QString time = locale.toString(QDateTime::fromTime_t(m.ts).time(),
-                                         timeFormat(locale, DateFormat::Short));
+    const QLocale &locale = m_locale;
+    const QString time = locale.toString(when.time(), m_clock);
     // The wording of kinds 6, 7 and 9 to 14 (kind 6 and 13 are service lines).
     QString label, shown = text;
-    m.service = MessageKinds::fill(kind, m_chat, m.id, text, q.value(26).toString(), out,
+    const QVariantMap extra = MessageKinds::parse(q.value(26).toString());
+    m.service = MessageKinds::fill(kind, m_chat, m.id, text, extra, out,
                                    q.value(6).toString(), time, locale, m.data, label, shown);
     if (m.service) {
         m.data["text"] = shown;
@@ -105,14 +106,13 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
     // ponytail: read when the row is read, so a page left open for days can offer it a little late.
     const int state = q.value(4).toInt();
     m.data["revocable"] = out && !deleted && state >= 1 && state <= 3
-                          && QDateTime::currentDateTime().toTime_t() - m.ts < 60 * 3600;
+                          && m_now - m.ts < 60 * 3600;
     // Edit: our own sent text or caption (a photo's or video's), inside WhatsApp's 15 minutes (the server allows 20).
     m.data["editable"] = out && !deleted && (kind == 0 || ((kind == 1 || kind == 2) && !text.isEmpty())) && state >= 1 && state <= 3
-                         && QDateTime::currentDateTime().toTime_t() - m.ts < 15 * 60;
+                         && m_now - m.ts < 15 * 60;
     m.data["time"] = time;
     // The long-press menu's title: the day in full and the time.
-    m.data["stamp"] = capitalized(locale.toString(QDateTime::fromTime_t(m.ts).date(), QLocale::LongFormat))
-                      + ", " + time;
+    m.data["stamp"] = longDay(when.date(), locale) + ", " + time;
     m.data["label"] = label;
     const bool voice = kind == 3 && !deleted;
     m.data["voice"] = voice;
@@ -129,7 +129,7 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
     }
     m.data["text"] = shown;
     // The same text with its mentions linked, "" for none (MessageKinds::html).
-    m.data["html"] = MessageKinds::html(shown, q.value(26).toString());
+    m.data["html"] = MessageKinds::html(shown, extra);
     m.data["quote"] = q.value(9).toString();
     m.data["sender"] = sender;
     QString color;
@@ -158,20 +158,28 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
     bool storyQuote = false;
     QString storyPoster;
     QByteArray storyThumb;
-    if (!q.value(9).toString().isEmpty() && !q.value(26).toString().isEmpty()) {
-        bb::data::JsonDataAccess json;
-        const QVariant x = json.loadFromBuffer(q.value(26).toByteArray());
-        if (!json.hasError() && x.type() == QVariant::Map && x.toMap().value("story").toBool()) {
-            storyQuote = true;
-            storyPoster = x.toMap().value("sposter").toString();
-            storyThumb = QByteArray::fromBase64(x.toMap().value("qthumb").toString().toLatin1());
-        }
+    if (!q.value(9).toString().isEmpty() && extra.value("story").toBool()) {
+        storyQuote = true;
+        storyPoster = extra.value("sposter").toString();
+        storyThumb = QByteArray::fromBase64(extra.value("qthumb").toString().toLatin1());
     }
     m.data["quoteStory"] = storyQuote;
     m.data["storyPoster"] = storyPoster;
     m.data["hasQuoteThumb"] = !storyThumb.isEmpty();
     m.data["quoteThumb"] = QVariant::fromValue(storyThumb.isEmpty() ? bb::cascades::Image() : bb::cascades::Image(storyThumb));
     return m;
+}
+
+// A day's long name is asked once, not once per message of that day.
+QString MessageModel::longDay(const QDate &date, const QLocale &locale)
+{
+    const int day = date.toJulianDay();
+    QHash<int, QString>::const_iterator it = m_longDays.constFind(day);
+    if (it != m_longDays.constEnd())
+        return it.value();
+    const QString label = capitalized(locale.toString(date, QLocale::LongFormat));
+    m_longDays.insert(day, label);
+    return label;
 }
 
 // The read-only connection, opened on first use. Not open before the first link: the engine
@@ -230,6 +238,9 @@ QList<MessageModel::Msg> MessageModel::select(const QString &where, const QVaria
     QSqlDatabase db = database();
     if (!db.isOpen())
         return rows;
+    m_locale = m_region.locale();
+    m_clock = timeFormat(m_locale, DateFormat::Short);
+    m_now = QDateTime::currentDateTime().toTime_t();
     QSqlQuery q(db);
     q.prepare(QString("SELECT %1 FROM messages WHERE chat = ? %2 ORDER BY ts DESC, rowid DESC "
                       "LIMIT %3").arg(kColumns, where).arg(limit));

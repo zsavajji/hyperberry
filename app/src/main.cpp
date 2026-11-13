@@ -11,6 +11,9 @@
 #include <QTranslator>
 #include <QtDeclarative>
 #include <cstdio>
+#include <devctl.h>
+#include <fcntl.h>
+#include <sys/procfs.h>
 #include <sys/slog2.h>
 #include <sys/time.h>
 #include <time.h>
@@ -88,6 +91,25 @@ static void startLog()
     qDebug("UI started, pid %d", int(getpid()));
 }
 
+// Milliseconds since the system started this process, -1 when it won't say. With "ui: main" and "ui: scene
+// set" it times a cold start: on the Q10 main comes 1.2 s in and the application is made by 1.6 s, the
+// system's share (103 libraries, 97 of them Cascades' own), and the scene is set at 2.2 s (0.1.1.310; 3.2 s
+// before the speed work of 2026-11-13).
+static int sinceLaunch()
+{
+    procfs_info info;
+    const int fd = open("/proc/self/as", O_RDONLY);
+    if (fd < 0)
+        return -1;
+    const int rc = devctl(fd, DCMD_PROC_INFO, &info, sizeof info, 0);
+    close(fd);
+    if (rc != EOK)
+        return -1;
+    timespec now;
+    clock_gettime(CLOCK_REALTIME, &now);
+    return int((qint64(now.tv_sec) * 1000000000LL + now.tv_nsec - qint64(info.start_time)) / 1000000);
+}
+
 // A QML error otherwise quits the app at start with nothing to show: write it where the user
 // can find it (File Manager > misc, or the app's data folder).
 static bool loaded(QmlDocument *document, const char *name)
@@ -106,9 +128,10 @@ static bool loaded(QmlDocument *document, const char *name)
 
 Q_DECL_EXPORT int main(int argc, char **argv)
 {
+    const int atMain = sinceLaunch();
     Application app(argc, argv);
     startLog();
-    qDebug() << "ui: main";
+    qDebug("ui: main %d ms after launch, the application made at %d ms", atMain, sinceLaunch());
     // The sources are UTF-8; Qt 4 reads tr() and C-string literals as Latin-1 unless told, and
     // "typing…" showed as "typingà|" (Q10, 2026-10-31).
     QTextCodec::setCodecForTr(QTextCodec::codecForName("UTF-8"));
@@ -120,7 +143,11 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     if (translator.load("hyperberry_" + language, QCoreApplication::applicationDirPath() + "/assets/translations"))
         app.installTranslator(&translator);
     EngineLink engine(&app);
-    engine.setLanguage(language); // before engine.start() below: the hello sends it
+    engine.setLanguage(language); // before engine.start(): the hello sends it
+    // Nothing else starts the engine (no boot start, user 2026-10-29), so the UI starts it on open, and
+    // again whenever the link drops. First of all, before the models and the QML: the engine comes up
+    // while they load (it went last, and connected 1.2 s after the scene was set; Q10, 0.1.1.307).
+    engine.start();
     ContactBook book(&engine, &app);
     ChatListModel chats(&engine, ChatListModel::Chats, &app);
     ChatListModel archivedChats(&engine, ChatListModel::Archived, &app);
@@ -188,8 +215,6 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     if (!root)
         return 1;
     app.setScene(root);
-    // Nothing else starts the engine (no boot start, user 2026-10-29), so the UI starts it on
-    // open, and again whenever the link drops.
-    engine.start();
+    qDebug("ui: scene set at %d ms", sinceLaunch());
     return Application::exec();
 }

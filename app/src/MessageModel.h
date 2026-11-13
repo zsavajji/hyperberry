@@ -4,7 +4,10 @@
 #include <bb/cascades/DataModel>
 #include <bb/system/LocaleHandler>
 #include <bb/utility/i18n/RelativeDateFormatter>
+#include <QDate>
+#include <QHash>
 #include <QList>
+#include <QLocale>
 #include <QPointer>
 #include <QSet>
 #include <QSqlQuery>
@@ -82,6 +85,7 @@ private:
     {
         qint64 ts;
         qint64 rowid;
+        int day;       // ts's day in local time, a julian day: read once, when the row is
         QString id;
         int kind;      // messages.kind
         QString who;   // messages.sender (else its name): the sender Albums compares
@@ -108,6 +112,8 @@ private:
     int entryOf(const QString &id) const;
     QVariantMap albumData(const Entry &e) const;
     void refresh(const QStringList &old, const QSet<QString> &updated);
+    QString longDay(const QDate &date, const QLocale &locale);
+    QString dayTitle(const Msg &m);
 
     QPointer<EngineLink> m_engine;
     QString m_chat;
@@ -119,8 +125,13 @@ private:
     QSet<QString> m_revealed; // the spoilers tapped open (unspoil)
     QSet<QString> m_asked; // the sticker ids asked for from the engine (Sticker::fetch)
     QList<Entry> m_entries;
-    bb::utility::i18n::RelativeDateFormatter m_days;
     bb::system::LocaleHandler m_region;
+    QLocale m_locale; // the region's locale, read once per select()
+    QString m_clock; // its short time format
+    uint m_now; // the time select() started, unix seconds
+    QHash<int, QString> m_longDays; // longDay()'s labels by julian day
+    QHash<int, QString> m_dayTitles; // dayTitle()'s header titles by julian day, for the day m_titlesDay
+    int m_titlesDay; // today's julian day when m_dayTitles was filled: "Today" moves at midnight
 };
 
 #endif
