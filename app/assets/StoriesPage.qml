@@ -22,16 +22,26 @@ Page {
             storyGone.show()
             return
         }
-        viewer.start(row, id)
+        page.view(row, id)
+    }
+    // The viewer, a page of its own on the tab's pane (StoryViewer.qml): the system's Back pops it, and so does its end.
+    function view(row, id) {
+        var v = viewerDef.createObject()
+        v.finished.connect(page.viewed)
+        storiesNav.push(v)
+        v.start(row, id)
+    }
+    function viewed() {
+        storiesNav.pop()
     }
     onCreationCompleted: {
         storyList.postFailed.connect(postFailed.show)
         storyList.deleteFailed.connect(deleteFailed.show)
     }
     attachedObjects: [
-        // The viewer, one Sheet for every poster opened: it is set up by start() and emptied when it closes.
-        StoryViewer {
-            id: viewer
+        ComponentDefinition {
+            id: viewerDef
+            source: "StoryViewer.qml"
         },
         StoryComposer {
             id: composer
@@ -125,7 +135,7 @@ Page {
                 }
                 onTriggered: {
                     if (indexPath.length == 1) {
-                        viewer.start(dataModel.data(indexPath))
+                        page.view(dataModel.data(indexPath))
                     }
                 }
                 listItemComponents: [

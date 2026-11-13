@@ -3,21 +3,24 @@ import bb.multimedia 1.4
 import bb.system 1.2
 import hyperberry 1.0
 
-// The story viewer (docs/plan/stories.md): a Sheet, full screen on black, that slides in from the right over
-// the tab, as Android's does. Top to bottom: one progress segment per story of the poster, then Back, their
+// The story viewer (docs/plan/stories.md): a Page pushed on the Stories tab's pane, full screen on black, so it
+// slides in from the right as Android's does and the system's Back (the Classic's key, the swipe) pops it. Top to bottom: one progress segment per story of the poster, then Back, their
 // picture, name and the story's time; the story fills the rest. A tap on the left third goes back one story, a
 // tap anywhere else forward; after the last the sheet closes. A photo or text story lasts 5 s, a video its own
 // length. Showing a story marks it seen and sends the read receipt (storyList.markSeen). A story whose file isn't
 // here is fetched (storyList.fetch) while its thumbnail shows; the next video is fetched ahead.
 // The video plays through MediaPlayer into a ForeignWindowControl, which sits under Cascades' hole, so the
 // segments and the header draw over it (the Q10 video gate, 2026-11-12; sound and taps on controls over it
-// worked). One of these lives in StoriesPage; start(row), row being a StoriesModel row, sets it up for a poster
-// and opens it, and closing empties it.
+// worked). StoriesPage makes one per open (start(row), row being a StoriesModel row) and pops it on finished().
 // At the bottom, a reply field and a heart: a reply goes to the poster's chat quoting the story (story.reply),
 // the heart is a reaction to it (story.react). The story waits while the field has focus.
 // Our own stories (poster "me") have no reply bar or heart, and a trash can in the header takes one back (story.delete).
-Sheet {
+Page {
     id: sheet
+    actionBarVisibility: ChromeVisibility.Hidden
+    // Asks StoriesPage to pop this page: after the last story, Back, a deleted story.
+    signal finished()
+    property bool closing: false
     // The tile's row: poster (the key), name, initials, color, photo.
     property variant poster: ({})
     // The poster's stories (StoriesModel.storyOf's maps); replaced whole when one changes.
@@ -73,9 +76,19 @@ Sheet {
         }
         sheet.segs = made
         sheet.show(first)
-        sheet.open()
+    }
+    // Once: the ticker could ask again during the pop's slide.
+    function close() {
+        if (sheet.closing) {
+            return
+        }
+        sheet.closing = true
+        ticker.stop()
+        player.stop()
+        sheet.finished()
     }
     function show(i) {
+        console.log("story: show " + i + " of " + sheet.items.length)
         if (i >= sheet.items.length) {
             sheet.close()
             return
@@ -223,17 +236,6 @@ Sheet {
             }
         }
     }
-    onClosed: {
-        ticker.stop()
-        player.stop()
-        reply.text = ""
-        sheet.index = -1
-        sheet.items = []
-        sheet.segs = []
-        sheet.picking = false
-        sheet.paused = false
-        bar.removeAll()
-    }
     attachedObjects: [
         Timer {
             id: ticker
@@ -245,13 +247,20 @@ Sheet {
             videoOutput: VideoOutput.PrimaryDisplay
             windowId: surface.windowId
             windowGroupId: surface.windowGroup
-            onMediaStateChanged: sheet.playing = (mediaState == MediaState.Started || mediaState == MediaState.Paused)
+            onMediaStateChanged: {
+                // ponytail: logged to catch why a poster's last story didn't close (the user, 2026-11-13); drop once found.
+                console.log("story video: state " + mediaState + " at " + position + " of " + duration)
+                sheet.playing = (mediaState == MediaState.Started || mediaState == MediaState.Paused)
+            }
             onPositionChanged: {
                 if (sheet.cur.kind == 2 && player.duration > 0 && !sheet.paused) {
                     sheet.setProgress(player.position / player.duration)
                 }
             }
-            onPlaybackCompleted: sheet.next()
+            onPlaybackCompleted: {
+                console.log("story video: completed")
+                sheet.next()
+            }
             onError: console.log("story video: error " + mediaError + " at " + position)
         },
         SystemToast {
@@ -309,293 +318,291 @@ Sheet {
             }
         }
     ]
-    content: Page {
-        Container {
-            id: stage
-            layout: DockLayout {}
-            background: Color.Black
+    Container {
+        id: stage
+        layout: DockLayout {}
+        background: Color.Black
+        horizontalAlignment: HorizontalAlignment.Fill
+        verticalAlignment: VerticalAlignment.Fill
+        attachedObjects: LayoutUpdateHandler {
+            id: area
+        }
+        // A photo, or a video's thumbnail until its file is here. Hidden while the video plays: the video's
+        // window is under the Cascades layer, and a picture over its hole would cover it.
+        ImageView {
+            visible: sheet.cur.kind == 1 || (sheet.cur.kind == 2 && !sheet.playing)
             horizontalAlignment: HorizontalAlignment.Fill
             verticalAlignment: VerticalAlignment.Fill
-            attachedObjects: LayoutUpdateHandler {
-                id: area
+            imageSource: sheet.cur.pic ? "file://" + sheet.cur.pic : ""
+            scalingMethod: ScalingMethod.AspectFit
+            loadEffect: ImageViewLoadEffect.None
+        }
+        // A text story: its colours, its words.
+        Container {
+            visible: sheet.cur.kind == 0
+            horizontalAlignment: HorizontalAlignment.Fill
+            verticalAlignment: VerticalAlignment.Fill
+            background: Color.create(sheet.cur.bg ? sheet.cur.bg : "#000000")
+            layout: DockLayout {}
+            leftPadding: ui.du(3)
+            rightPadding: ui.du(3)
+            Label {
+                horizontalAlignment: HorizontalAlignment.Center
+                verticalAlignment: VerticalAlignment.Center
+                multiline: true
+                text: sheet.cur.text
+                textFormat: TextFormat.Plain
+                textStyle.base: nav.emojiStyle
+                textStyle.textAlign: TextAlign.Center
+                textStyle.color: Color.create(sheet.cur.fg ? sheet.cur.fg : "#FFFFFF")
+                textStyle.fontSize: FontSize.XLarge
             }
-            // A photo, or a video's thumbnail until its file is here. Hidden while the video plays: the video's
-            // window is under the Cascades layer, and a picture over its hole would cover it.
-            ImageView {
-                visible: sheet.cur.kind == 1 || (sheet.cur.kind == 2 && !sheet.playing)
-                horizontalAlignment: HorizontalAlignment.Fill
-                verticalAlignment: VerticalAlignment.Fill
-                imageSource: sheet.cur.pic ? "file://" + sheet.cur.pic : ""
-                scalingMethod: ScalingMethod.AspectFit
-                loadEffect: ImageViewLoadEffect.None
+        }
+        // The video, fitted to the screen at its own shape (9:16 when the row doesn't say).
+        ForeignWindowControl {
+            id: surface
+            windowId: "storyVideo"
+            horizontalAlignment: HorizontalAlignment.Center
+            verticalAlignment: VerticalAlignment.Center
+            property real vw: sheet.cur.width > 0 && sheet.cur.height > 0 ? sheet.cur.width : 9
+            property real vh: sheet.cur.width > 0 && sheet.cur.height > 0 ? sheet.cur.height : 16
+            property real fit: Math.min(area.layoutFrame.width / vw, area.layoutFrame.height / vh)
+            preferredWidth: vw * fit
+            preferredHeight: vh * fit
+            visible: boundToWindow && sheet.videoShown
+            updatedProperties: WindowProperty.Size | WindowProperty.Position | WindowProperty.Visible
+        }
+        // Waiting: for a photo's file, for a video's file and then for the player to show its first frame.
+        ActivityIndicator {
+            horizontalAlignment: HorizontalAlignment.Center
+            verticalAlignment: VerticalAlignment.Center
+            preferredWidth: ui.du(9)
+            preferredHeight: ui.du(9)
+            running: (sheet.cur.kind == 1 && !sheet.cur.ready) || (sheet.cur.kind == 2 && !sheet.playing)
+            visible: running
+        }
+        // Taps: the left third is back, the rest forward. Under the header, which takes its own.
+        Container {
+            horizontalAlignment: HorizontalAlignment.Fill
+            verticalAlignment: VerticalAlignment.Fill
+            gestureHandlers: TapHandler {
+                onTapped: {
+                    if (new Date().getTime() - sheet.lostAt < 500) {
+                        return
+                    }
+                    if (event.x < area.layoutFrame.width / 3) {
+                        sheet.prev()
+                    } else {
+                        sheet.next()
+                    }
+                }
             }
-            // A text story: its colours, its words.
+        }
+        // The bottom of the story, not on our own: the emoji picker when it is open, over the reply bar. The picker
+        // is made at the first open and kept, as the chat's is.
+        Container {
+            visible: !sheet.own
+            horizontalAlignment: HorizontalAlignment.Fill
+            verticalAlignment: VerticalAlignment.Bottom
+            // On a ground of its own, with a line above: over a story the picker would otherwise be emoji on a picture.
             Container {
-                visible: sheet.cur.kind == 0
+                visible: sheet.picking
                 horizontalAlignment: HorizontalAlignment.Fill
-                verticalAlignment: VerticalAlignment.Fill
-                background: Color.create(sheet.cur.bg ? sheet.cur.bg : "#000000")
-                layout: DockLayout {}
-                leftPadding: ui.du(3)
-                rightPadding: ui.du(3)
-                Label {
-                    horizontalAlignment: HorizontalAlignment.Center
+                background: Color.create("#161616")
+                Container {
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    preferredHeight: ui.px(1)
+                    background: Color.create("#3A3A3A")
+                }
+                ControlDelegate {
+                    id: pickerSlot
+                    source: "EmojiPicker.qml"
+                    delegateActive: false
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    onControlChanged: {
+                        if (control) {
+                            control.picked.connect(sheet.react)
+                        }
+                    }
+                }
+            }
+            // The reply field, the emoji button and the heart, over a band.
+            Container {
+                horizontalAlignment: HorizontalAlignment.Fill
+                background: Color.create(0.0, 0.0, 0.0, 0.55)
+                leftPadding: ui.du(1)
+                rightPadding: ui.du(0.5)
+                topPadding: ui.du(1)
+                bottomPadding: ui.du(1)
+                layout: StackLayout {
+                    orientation: LayoutOrientation.LeftToRight
+                }
+                TextField {
+                    id: reply
                     verticalAlignment: VerticalAlignment.Center
-                    multiline: true
-                    text: sheet.cur.text
-                    textFormat: TextFormat.Plain
-                    textStyle.base: nav.emojiStyle
-                    textStyle.textAlign: TextAlign.Center
-                    textStyle.color: Color.create(sheet.cur.fg ? sheet.cur.fg : "#FFFFFF")
-                    textStyle.fontSize: FontSize.XLarge
-                }
-            }
-            // The video, fitted to the screen at its own shape (9:16 when the row doesn't say).
-            ForeignWindowControl {
-                id: surface
-                windowId: "storyVideo"
-                horizontalAlignment: HorizontalAlignment.Center
-                verticalAlignment: VerticalAlignment.Center
-                property real vw: sheet.cur.width > 0 && sheet.cur.height > 0 ? sheet.cur.width : 9
-                property real vh: sheet.cur.width > 0 && sheet.cur.height > 0 ? sheet.cur.height : 16
-                property real fit: Math.min(area.layoutFrame.width / vw, area.layoutFrame.height / vh)
-                preferredWidth: vw * fit
-                preferredHeight: vh * fit
-                visible: boundToWindow && sheet.videoShown
-                updatedProperties: WindowProperty.Size | WindowProperty.Position | WindowProperty.Visible
-            }
-            // Waiting: for a photo's file, for a video's file and then for the player to show its first frame.
-            ActivityIndicator {
-                horizontalAlignment: HorizontalAlignment.Center
-                verticalAlignment: VerticalAlignment.Center
-                preferredWidth: ui.du(9)
-                preferredHeight: ui.du(9)
-                running: (sheet.cur.kind == 1 && !sheet.cur.ready) || (sheet.cur.kind == 2 && !sheet.playing)
-                visible: running
-            }
-            // Taps: the left third is back, the rest forward. Under the header, which takes its own.
-            Container {
-                horizontalAlignment: HorizontalAlignment.Fill
-                verticalAlignment: VerticalAlignment.Fill
-                gestureHandlers: TapHandler {
-                    onTapped: {
-                        if (new Date().getTime() - sheet.lostAt < 500) {
-                            return
+                    layoutProperties: StackLayoutProperties {
+                        spaceQuota: 1
+                    }
+                    hintText: qsTr("Reply")
+                    input.submitKey: SubmitKey.Send
+                    input.onSubmitted: sheet.sendReply()
+                    onFocusedChanged: {
+                        if (reply.focused) {
+                            sheet.picking = false
                         }
-                        if (event.x < area.layoutFrame.width / 3) {
-                            sheet.prev()
-                        } else {
-                            sheet.next()
+                        sheet.paused = reply.focused || sheet.picking
+                        if (!reply.focused) {
+                            sheet.lostAt = new Date().getTime()
                         }
                     }
                 }
-            }
-            // The bottom of the story, not on our own: the emoji picker when it is open, over the reply bar. The picker
-            // is made at the first open and kept, as the chat's is.
-            Container {
-                visible: !sheet.own
-                horizontalAlignment: HorizontalAlignment.Fill
-                verticalAlignment: VerticalAlignment.Bottom
-                // On a ground of its own, with a line above: over a story the picker would otherwise be emoji on a picture.
+                // The emoji button: opens the picker to react with any emoji. A box 10 du square, the touch target.
                 Container {
-                    visible: sheet.picking
-                    horizontalAlignment: HorizontalAlignment.Fill
-                    background: Color.create("#161616")
-                    Container {
+                    verticalAlignment: VerticalAlignment.Center
+                    preferredWidth: ui.du(10)
+                    preferredHeight: ui.du(10)
+                    layout: DockLayout {}
+                    ImageView {
+                        horizontalAlignment: HorizontalAlignment.Center
+                        verticalAlignment: VerticalAlignment.Center
+                        preferredWidth: ui.du(5.5)
+                        preferredHeight: ui.du(5.5)
+                        imageSource: "asset:///images/emoji.png"
+                        filterColor: sheet.picking ? ui.palette.primary : Color.White
+                        opacity: sheet.picking ? 1.0 : 0.75
+                    }
+                    gestureHandlers: TapHandler {
+                        onTapped: sheet.togglePicker()
+                    }
+                }
+                // The heart: the quick reaction. A box 10 du square, the touch target.
+                Container {
+                    verticalAlignment: VerticalAlignment.Center
+                    preferredWidth: ui.du(10)
+                    preferredHeight: ui.du(10)
+                    layout: DockLayout {}
+                    ImageView {
+                        horizontalAlignment: HorizontalAlignment.Center
+                        verticalAlignment: VerticalAlignment.Center
+                        preferredWidth: ui.du(5.5)
+                        preferredHeight: ui.du(5.5)
+                        imageSource: "asset:///images/heart.png"
+                        filterColor: sheet.hearted ? Color.create("#E53935") : Color.White
+                        opacity: sheet.hearted ? 1.0 : 0.75
+                    }
+                    gestureHandlers: TapHandler {
+                        onTapped: sheet.heart()
+                    }
+                }
+            }
+        }
+        // The segments, and under them Back, the poster and the time, over a band so white reads on any picture.
+        Container {
+            horizontalAlignment: HorizontalAlignment.Fill
+            verticalAlignment: VerticalAlignment.Top
+            background: Color.create(0.0, 0.0, 0.0, 0.45)
+            topPadding: ui.du(0.6)
+            Container {
+                id: bar
+                horizontalAlignment: HorizontalAlignment.Fill
+                leftPadding: ui.du(0.5)
+                rightPadding: ui.du(0.5)
+                layout: StackLayout {
+                    orientation: LayoutOrientation.LeftToRight
+                }
+            }
+            Container {
+                horizontalAlignment: HorizontalAlignment.Fill
+                layout: StackLayout {
+                    orientation: LayoutOrientation.LeftToRight
+                }
+                // Back: a box 10 du square, the touch target, with the stock arrow in it.
+                Container {
+                    verticalAlignment: VerticalAlignment.Center
+                    preferredWidth: ui.du(10)
+                    preferredHeight: ui.du(10)
+                    layout: DockLayout {}
+                    ImageView {
+                        horizontalAlignment: HorizontalAlignment.Center
+                        verticalAlignment: VerticalAlignment.Center
+                        preferredWidth: ui.du(5)
+                        preferredHeight: ui.du(5)
+                        imageSource: "asset:///images/back_action.png"
+                        filterColor: Color.White
+                    }
+                    gestureHandlers: TapHandler {
+                        onTapped: sheet.close()
+                    }
+                }
+                Container {
+                    verticalAlignment: VerticalAlignment.Center
+                    preferredWidth: ui.du(6)
+                    preferredHeight: ui.du(6)
+                    background: Color.create(sheet.poster.color ? sheet.poster.color : "#087099")
+                    layout: DockLayout {}
+                    Label {
+                        horizontalAlignment: HorizontalAlignment.Center
+                        verticalAlignment: VerticalAlignment.Center
+                        text: sheet.poster.initials
+                        textFormat: TextFormat.Plain
+                        textStyle.base: nav.emojiStyle
+                        textStyle.fontSize: FontSize.PercentageValue
+                        textStyle.fontSizeValue: 100
+                        textStyle.color: Color.White
+                    }
+                    ImageView {
+                        visible: !!sheet.poster.photo
                         horizontalAlignment: HorizontalAlignment.Fill
-                        preferredHeight: ui.px(1)
-                        background: Color.create("#3A3A3A")
-                    }
-                    ControlDelegate {
-                        id: pickerSlot
-                        source: "EmojiPicker.qml"
-                        delegateActive: false
-                        horizontalAlignment: HorizontalAlignment.Fill
-                        onControlChanged: {
-                            if (control) {
-                                control.picked.connect(sheet.react)
-                            }
-                        }
-                    }
-                }
-                // The reply field, the emoji button and the heart, over a band.
-                Container {
-                    horizontalAlignment: HorizontalAlignment.Fill
-                    background: Color.create(0.0, 0.0, 0.0, 0.55)
-                    leftPadding: ui.du(1)
-                    rightPadding: ui.du(0.5)
-                    topPadding: ui.du(1)
-                    bottomPadding: ui.du(1)
-                    layout: StackLayout {
-                        orientation: LayoutOrientation.LeftToRight
-                    }
-                    TextField {
-                        id: reply
-                        verticalAlignment: VerticalAlignment.Center
-                        layoutProperties: StackLayoutProperties {
-                            spaceQuota: 1
-                        }
-                        hintText: qsTr("Reply")
-                        input.submitKey: SubmitKey.Send
-                        input.onSubmitted: sheet.sendReply()
-                        onFocusedChanged: {
-                            if (reply.focused) {
-                                sheet.picking = false
-                            }
-                            sheet.paused = reply.focused || sheet.picking
-                            if (!reply.focused) {
-                                sheet.lostAt = new Date().getTime()
-                            }
-                        }
-                    }
-                    // The emoji button: opens the picker to react with any emoji. A box 10 du square, the touch target.
-                    Container {
-                        verticalAlignment: VerticalAlignment.Center
-                        preferredWidth: ui.du(10)
-                        preferredHeight: ui.du(10)
-                        layout: DockLayout {}
-                        ImageView {
-                            horizontalAlignment: HorizontalAlignment.Center
-                            verticalAlignment: VerticalAlignment.Center
-                            preferredWidth: ui.du(5.5)
-                            preferredHeight: ui.du(5.5)
-                            imageSource: "asset:///images/emoji.png"
-                            filterColor: sheet.picking ? ui.palette.primary : Color.White
-                            opacity: sheet.picking ? 1.0 : 0.75
-                        }
-                        gestureHandlers: TapHandler {
-                            onTapped: sheet.togglePicker()
-                        }
-                    }
-                    // The heart: the quick reaction. A box 10 du square, the touch target.
-                    Container {
-                        verticalAlignment: VerticalAlignment.Center
-                        preferredWidth: ui.du(10)
-                        preferredHeight: ui.du(10)
-                        layout: DockLayout {}
-                        ImageView {
-                            horizontalAlignment: HorizontalAlignment.Center
-                            verticalAlignment: VerticalAlignment.Center
-                            preferredWidth: ui.du(5.5)
-                            preferredHeight: ui.du(5.5)
-                            imageSource: "asset:///images/heart.png"
-                            filterColor: sheet.hearted ? Color.create("#E53935") : Color.White
-                            opacity: sheet.hearted ? 1.0 : 0.75
-                        }
-                        gestureHandlers: TapHandler {
-                            onTapped: sheet.heart()
-                        }
-                    }
-                }
-            }
-            // The segments, and under them Back, the poster and the time, over a band so white reads on any picture.
-            Container {
-                horizontalAlignment: HorizontalAlignment.Fill
-                verticalAlignment: VerticalAlignment.Top
-                background: Color.create(0.0, 0.0, 0.0, 0.45)
-                topPadding: ui.du(0.6)
-                Container {
-                    id: bar
-                    horizontalAlignment: HorizontalAlignment.Fill
-                    leftPadding: ui.du(0.5)
-                    rightPadding: ui.du(0.5)
-                    layout: StackLayout {
-                        orientation: LayoutOrientation.LeftToRight
+                        verticalAlignment: VerticalAlignment.Fill
+                        imageSource: sheet.poster.photo ? "file://" + sheet.poster.photo : ""
+                        scalingMethod: ScalingMethod.AspectFill
+                        loadEffect: ImageViewLoadEffect.None
                     }
                 }
                 Container {
-                    horizontalAlignment: HorizontalAlignment.Fill
-                    layout: StackLayout {
-                        orientation: LayoutOrientation.LeftToRight
+                    verticalAlignment: VerticalAlignment.Center
+                    leftMargin: ui.du(1.2)
+                    layoutProperties: StackLayoutProperties {
+                        spaceQuota: 1
                     }
-                    // Back: a box 10 du square, the touch target, with the stock arrow in it.
-                    Container {
-                        verticalAlignment: VerticalAlignment.Center
-                        preferredWidth: ui.du(10)
-                        preferredHeight: ui.du(10)
-                        layout: DockLayout {}
-                        ImageView {
-                            horizontalAlignment: HorizontalAlignment.Center
-                            verticalAlignment: VerticalAlignment.Center
-                            preferredWidth: ui.du(5)
-                            preferredHeight: ui.du(5)
-                            imageSource: "asset:///images/back_action.png"
-                            filterColor: Color.White
-                        }
-                        gestureHandlers: TapHandler {
-                            onTapped: sheet.close()
-                        }
+                    Label {
+                        text: sheet.poster.name
+                        textFormat: TextFormat.Plain
+                        textStyle.base: nav.emojiStyle
+                        textStyle.fontSize: FontSize.PercentageValue
+                        textStyle.fontSizeValue: nav.bodySize
+                        textStyle.color: Color.White
+                        bottomMargin: 0
                     }
-                    Container {
-                        verticalAlignment: VerticalAlignment.Center
-                        preferredWidth: ui.du(6)
-                        preferredHeight: ui.du(6)
-                        background: Color.create(sheet.poster.color ? sheet.poster.color : "#087099")
-                        layout: DockLayout {}
-                        Label {
-                            horizontalAlignment: HorizontalAlignment.Center
-                            verticalAlignment: VerticalAlignment.Center
-                            text: sheet.poster.initials
-                            textFormat: TextFormat.Plain
-                            textStyle.base: nav.emojiStyle
-                            textStyle.fontSize: FontSize.PercentageValue
-                            textStyle.fontSizeValue: 100
-                            textStyle.color: Color.White
-                        }
-                        ImageView {
-                            visible: !!sheet.poster.photo
-                            horizontalAlignment: HorizontalAlignment.Fill
-                            verticalAlignment: VerticalAlignment.Fill
-                            imageSource: sheet.poster.photo ? "file://" + sheet.poster.photo : ""
-                            scalingMethod: ScalingMethod.AspectFill
-                            loadEffect: ImageViewLoadEffect.None
-                        }
+                    Label {
+                        text: sheet.cur.time ? sheet.cur.time : ""
+                        textFormat: TextFormat.Plain
+                        textStyle.fontSize: FontSize.PercentageValue
+                        textStyle.fontSizeValue: nav.smallSize
+                        textStyle.color: Color.create("#CCCCCC")
+                        topMargin: 0
                     }
-                    Container {
+                }
+                // Delete, ours only: a box 10 du square, the touch target.
+                Container {
+                    visible: sheet.own
+                    verticalAlignment: VerticalAlignment.Center
+                    preferredWidth: ui.du(10)
+                    preferredHeight: ui.du(10)
+                    layout: DockLayout {}
+                    ImageView {
+                        horizontalAlignment: HorizontalAlignment.Center
                         verticalAlignment: VerticalAlignment.Center
-                        leftMargin: ui.du(1.2)
-                        layoutProperties: StackLayoutProperties {
-                            spaceQuota: 1
-                        }
-                        Label {
-                            text: sheet.poster.name
-                            textFormat: TextFormat.Plain
-                            textStyle.base: nav.emojiStyle
-                            textStyle.fontSize: FontSize.PercentageValue
-                            textStyle.fontSizeValue: nav.bodySize
-                            textStyle.color: Color.White
-                            bottomMargin: 0
-                        }
-                        Label {
-                            text: sheet.cur.time ? sheet.cur.time : ""
-                            textFormat: TextFormat.Plain
-                            textStyle.fontSize: FontSize.PercentageValue
-                            textStyle.fontSizeValue: nav.smallSize
-                            textStyle.color: Color.create("#CCCCCC")
-                            topMargin: 0
-                        }
+                        preferredWidth: ui.du(5)
+                        preferredHeight: ui.du(5)
+                        imageSource: "asset:///images/delete_action.png"
+                        filterColor: Color.White
                     }
-                    // Delete, ours only: a box 10 du square, the touch target.
-                    Container {
-                        visible: sheet.own
-                        verticalAlignment: VerticalAlignment.Center
-                        preferredWidth: ui.du(10)
-                        preferredHeight: ui.du(10)
-                        layout: DockLayout {}
-                        ImageView {
-                            horizontalAlignment: HorizontalAlignment.Center
-                            verticalAlignment: VerticalAlignment.Center
-                            preferredWidth: ui.du(5)
-                            preferredHeight: ui.du(5)
-                            imageSource: "asset:///images/delete_action.png"
-                            filterColor: Color.White
-                        }
-                        gestureHandlers: TapHandler {
-                            onTapped: {
-                                sheet.paused = true
-                                confirmDelete.storyId = sheet.cur.id
-                                confirmDelete.show()
-                            }
+                    gestureHandlers: TapHandler {
+                        onTapped: {
+                            sheet.paused = true
+                            confirmDelete.storyId = sheet.cur.id
+                            confirmDelete.show()
                         }
                     }
                 }
