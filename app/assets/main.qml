@@ -12,6 +12,7 @@ TabbedPane {
     showTabsOnActionBar: false
     peekEnabled: nav.linked && !nav.noPeek
     onActiveTabChanged: {
+        root.fillTab()
         callList.active = activeTab == callsTab
         storyList.active = activeTab == storiesTab
     }
@@ -36,14 +37,41 @@ TabbedPane {
         ]
     }
     attachedObjects: [
-        // The call screen, over everything (step 7.4); it opens itself on a `call` event.
-        CallSheet {
-            id: callSheet
+        // The call screen, over everything (step 7.4); it opens itself on a `call` event. Made at the first
+        // call event that has a state, not at the start: it and the two pages below are most of the app's
+        // QML, read and built before the first frame for screens nobody had asked for (Q10, 0.1.1.308).
+        ComponentDefinition {
+            id: callSheetDef
+            source: "CallSheet.qml"
+        },
+        // The Calls and Stories tabs' pages, made when their tab is first shown (fillTab).
+        ComponentDefinition {
+            id: callsPageDef
+            source: "CallsPage.qml"
+        },
+        ComponentDefinition {
+            id: storiesPageDef
+            source: "StoriesPage.qml"
         },
         SystemToast {
             id: callFailed
         }
     ]
+    // The sheet's own `call` reads the event that made it, so it opens for it as it did for the others.
+    property variant callSheet
+    property variant liveCall: engine.call
+    onLiveCallChanged: {
+        if (!callSheet && engine.call.state) {
+            callSheet = callSheetDef.createObject(root)
+        }
+    }
+    function fillTab() {
+        if (activeTab == callsTab && callsNav.count() == 0) {
+            callsNav.push(callsPageDef.createObject())
+        } else if (activeTab == storiesTab && storiesNav.count() == 0) {
+            storiesNav.push(storiesPageDef.createObject())
+        }
+    }
     // A page for the Chats tab, from wherever the user is: Settings and Profile from the application menu.
     function showOnChats(page) {
         activeTab = chatsTab
@@ -195,7 +223,15 @@ TabbedPane {
 
             // A page swap, so there's no Back to the other root: the new page goes in at the bottom
             // and every page above it (link number page, a chat) goes out.
+            // Asked for twice at a start, by linked's first value and by onCreationCompleted, which made the
+            // chat list twice (Q10, 0.1.1.307): the second one finds its page there.
+            property bool shownLinked: false
             function show() {
+                if (count() > 0 && shownLinked == linked) {
+                    openPending()
+                    return
+                }
+                shownLinked = linked
                 var page = (linked ? chatsDef : linkDef).createObject()
                 if (count() == 0) {
                     push(page)
@@ -290,7 +326,8 @@ TabbedPane {
             // A story quoted in a chat (a reply, or a like on ours): the Stories tab, playing it from that story on.
             function showStory(poster, id) {
                 root.activeTab = storiesTab
-                storiesPage.openStory(poster, id)
+                root.fillTab()
+                storiesNav.at(0).openStory(poster, id)
             }
 
             // Every page above the list goes out. Deleting a chat (step 5.8b) uses it too.
@@ -313,8 +350,6 @@ TabbedPane {
         content: NavigationPane {
             id: callsNav
             onPopTransitionEnded: page.destroy()
-            CallsPage {
-            }
         }
     }
     // The stories of the people we know (docs/plan/stories.md): a grid of tiles, one per poster. The badge on
@@ -328,9 +363,6 @@ TabbedPane {
         content: NavigationPane {
             id: storiesNav
             onPopTransitionEnded: page.destroy()
-            StoriesPage {
-                id: storiesPage
-            }
         }
     }
 }
