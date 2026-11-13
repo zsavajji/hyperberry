@@ -5,6 +5,9 @@ import bb.cascades 1.4
 // MediaOpener.fileInfo's; what is typed in the composer is the file's caption.
 Container {
     property variant info
+    // The picture is a PNG made a JPEG: the bar offers to send the PNG as a file instead.
+    property bool canFile
+    property alias asFile: fileBox.checked
     signal cancelled()
     visible: !!info && !!info.name
     horizontalAlignment: HorizontalAlignment.Fill
@@ -69,6 +72,12 @@ Container {
             textStyle.fontSize: FontSize.PercentageValue
             textStyle.fontSizeValue: nav.smallSize
             textStyle.color: ui.palette.secondaryTextOnPlain
+        }
+        // A PNG goes as a photo unless this is ticked (the page clears it for each file).
+        CheckBox {
+            id: fileBox
+            visible: canFile
+            text: qsTr("Send as file")
         }
     }
     // The cross has its own padding so the tap has a finger's size.

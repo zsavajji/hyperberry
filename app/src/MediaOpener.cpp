@@ -204,9 +204,9 @@ QString MediaOpener::asJpeg(const QString &path)
     const QImage image = reader.read();
     if (image.isNull())
         return QString();
-    // A PNG can be transparent, a JPEG can't be: it goes on white.
+    // A PNG can be transparent, a JPEG can't be: it goes on black (the user's choice, 2026-11-13).
     QImage flat(image.size(), QImage::Format_RGB32);
-    flat.fill(0xFFFFFFFF);
+    flat.fill(0xFF000000);
     QPainter painter(&flat);
     painter.drawImage(0, 0, image);
     painter.end();

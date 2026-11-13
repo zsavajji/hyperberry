@@ -2157,6 +2157,14 @@
     </message>
 </context>
 <context>
+    <name>StagedBar</name>
+    <message>
+        <location filename="../assets/StagedBar.qml" line="78"/>
+        <source>Send as file</source>
+        <translation>Отправить как файл</translation>
+    </message>
+</context>
+<context>
     <name>StoriesModel</name>
     <message>
         <location filename="../src/StoriesModel.cpp" line="1" />

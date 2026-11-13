@@ -20,6 +20,8 @@ Page {
     // The file picked to send, waiting for Send (step 6.4), and MediaOpener.fileInfo's of it.
     property string staged: ""
     property variant stagedInfo: ({})
+    // The PNG a staged JPEG was made from ("" for none): Send as file sends it instead.
+    property string stagedPng: ""
     property string failedCmd: engine.failure.cmd || ""
     onFailedCmdChanged: {
         if (failedCmd == "msg.delete") {
@@ -181,7 +183,10 @@ Page {
     }
     // A photo's or a video's caption rides in the message; the other kinds' text follows as a message.
     function sendStaged(text) {
-        var args = {"chat": chat.jid, "path": staged}
+        // Send as file: the PNG itself, which the engine sends as a document; the text follows it.
+        var asFile = stagedBar.asFile && stagedPng != ""
+        var picture = stagedInfo.picture && !asFile
+        var args = {"chat": chat.jid, "path": asFile ? stagedPng : staged}
         if (ctl.quoteId()) {
             args.quote = ctl.quoteId()
         }
@@ -202,13 +207,13 @@ Page {
                 args.thumb = poster
             }
         }
-        if (stagedInfo.picture && text) {
+        if (picture && text) {
             args.caption = text
         }
         if (!engine.request("media.send", args)) {
             return false
         }
-        if (!stagedInfo.picture && text) {
+        if (!picture && text) {
             // The file carries the reply; the text after it is plain.
             ctl.cancelReply()
             ctl.send(text)
@@ -219,14 +224,21 @@ Page {
     function stage(path) {
         // A PNG goes as a photo, made a JPEG as the story picker does: the engine sends a .png as a file.
         // The picker can't say which of its tabs the file came from, so every PNG does (and a failed one stays a file).
+        var png = ""
         if (/\.png$/i.test(path)) {
-            path = media.asJpeg(path) || path
+            var jpg = media.asJpeg(path)
+            if (jpg) {
+                png = path
+                path = jpg
+            }
         }
         var info = media.fileInfo(path)
         if (!info.name) {
             return
         }
         staged = path
+        stagedPng = png
+        stagedBar.asFile = false
         stagedInfo = info
         composer.requestFocus()
     }
@@ -243,6 +255,7 @@ Page {
     // Drops the file; the composer keeps its text.
     function unstage() {
         staged = ""
+        stagedPng = ""
         stagedInfo = {}
     }
     // Our own message is followed even when the list was scrolled up. Scrolling once the row is in:
@@ -483,7 +496,9 @@ Page {
             }
         }
         StagedBar {
+            id: stagedBar
             info: page.stagedInfo
+            canFile: page.stagedPng != ""
             onCancelled: page.unstage()
         }
         // Typing while recording leaves the recording alone: the text stays for later, and Send
