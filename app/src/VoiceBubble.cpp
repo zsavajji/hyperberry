@@ -58,6 +58,11 @@ VoiceBubble::VoiceBubble(ListView *list)
     disc->setLayout(new DockLayout());
     disc->setPreferredWidth(72);
     disc->setPreferredHeight(72);
+    // Its least size too: the disc and the 381 px waveform need 467 px, and beside a 12-hour time
+    // ("10:49 PM" and the ticks) the column is 427, which squeezed the disc to 52 px wide (Q10, 0.1.1.316).
+    // The waveform gives way instead, and loses its last bars.
+    disc->setMinWidth(72);
+    disc->setMinHeight(72);
     disc->setVerticalAlignment(VerticalAlignment::Center);
     m_icon = new ImageView();
     m_icon->setHorizontalAlignment(HorizontalAlignment::Fill);
