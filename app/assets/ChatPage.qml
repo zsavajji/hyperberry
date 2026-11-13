@@ -217,6 +217,11 @@ Page {
     }
     // The picker's file waits in the staged bar; what is typed is its caption.
     function stage(path) {
+        // A PNG goes as a photo, made a JPEG as the story picker does: the engine sends a .png as a file.
+        // The picker can't say which of its tabs the file came from, so every PNG does (and a failed one stays a file).
+        if (/\.png$/i.test(path)) {
+            path = media.asJpeg(path) || path
+        }
         var info = media.fileInfo(path)
         if (!info.name) {
             return
