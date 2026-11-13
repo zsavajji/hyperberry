@@ -443,7 +443,7 @@ func (s *Sim) handleEdit(req json.RawMessage) (any, error) {
 	if _, err := s.chat(r.Chat); err != nil {
 		return nil, err
 	}
-	if err := s.store.editable(r.Chat, r.ID); err != nil {
+	if _, err := s.store.editable(r.Chat, r.ID); err != nil {
 		return nil, err
 	}
 	s.store.ops <- func(t *storeTx) { t.editMessage(r.Chat, r.ID, r.Text) }

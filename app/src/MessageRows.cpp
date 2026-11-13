@@ -106,8 +106,8 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
     const int state = q.value(4).toInt();
     m.data["revocable"] = out && !deleted && state >= 1 && state <= 3
                           && QDateTime::currentDateTime().toTime_t() - m.ts < 60 * 3600;
-    // Edit: our own sent text, inside WhatsApp's 15 minutes (the server allows 20).
-    m.data["editable"] = out && !deleted && kind == 0 && state >= 1 && state <= 3
+    // Edit: our own sent text or caption (a photo's or video's), inside WhatsApp's 15 minutes (the server allows 20).
+    m.data["editable"] = out && !deleted && (kind == 0 || ((kind == 1 || kind == 2) && !text.isEmpty())) && state >= 1 && state <= 3
                          && QDateTime::currentDateTime().toTime_t() - m.ts < 15 * 60;
     m.data["time"] = time;
     // The long-press menu's title: the day in full and the time.

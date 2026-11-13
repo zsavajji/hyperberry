@@ -226,7 +226,12 @@ func (s *Session) uploadMedia(cli *whatsmeow.Client, jid types.JID, path string,
 		}
 		var resp whatsmeow.SendResponse
 		if resp, err = cli.SendMessage(ctx, jid, mediaMessage(o, up, ci), whatsmeow.SendRequestExtra{ID: id}); err == nil {
-			s.store.ops <- func(t *storeTx) { t.sentAs(chat, id, resp.Timestamp.Unix(), stateSent) }
+			// The upload, as a received file's: a caption edit sends the message again (editContent).
+			info, _ := json.Marshal(mediaInfo{up.DirectPath, up.MediaKey, up.FileEncSHA256, up.FileSHA256, up.FileLength, o.mime})
+			s.store.ops <- func(t *storeTx) {
+				t.sentAs(chat, id, resp.Timestamp.Unix(), stateSent)
+				t.exec("UPDATE messages SET media = ? WHERE chat = ? AND id = ?", string(info), chat, id)
+			}
 			return
 		}
 	}

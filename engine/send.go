@@ -12,6 +12,7 @@ import (
 	"github.com/polymorfa/hypermeow/proto/waSyncAction"
 	"github.com/polymorfa/hypermeow/types"
 	"github.com/polymorfa/hypermeow/types/events"
+	"google.golang.org/protobuf/proto"
 )
 
 const sendTimeout = 60 * time.Second
@@ -206,18 +207,48 @@ func parseEdit(req json.RawMessage) (editReq, error) {
 	return r, nil
 }
 
-// editable checks the message an edit names: our own sent text. WhatsApp's 20 minutes are the UI's
-// to offer and the server's to refuse.
-func (st *Store) editable(chat, id string) error {
+// editable reads the message an edit names: our own sent text, or photo or video with a caption
+// whose upload we know (editContent sends it again). WhatsApp's 20 minutes are the UI's to offer
+// and the server's to refuse.
+func (st *Store) editable(chat, id string) (msgRow, error) {
 	rows, _ := st.deletable(chat, []string{id}, false)
 	if len(rows) == 0 {
-		return &Error{"not_found", "no such message"}
+		return msgRow{}, &Error{"not_found", "no such message"}
 	}
 	m := rows[0]
-	if !m.Out || m.Deleted || m.State < stateSent || m.State > stateRead || m.Kind != msgText {
-		return &Error{"not_ours", "only our own sent texts can be edited"}
+	captioned := (m.Kind == msgPhoto || m.Kind == msgVideo) && m.Text != "" && m.Media != ""
+	if !m.Out || m.Deleted || m.State < stateSent || m.State > stateRead || (m.Kind != msgText && !captioned) {
+		return m, &Error{"not_ours", "only our own sent texts and captions can be edited"}
 	}
-	return nil
+	return m, nil
+}
+
+// editContent is an edit's new content: a text, or the photo or video again with its new caption.
+// (verify on the real link): a video's edit carries no thumbnail, our rows keep none.
+func editContent(m msgRow, text string, jids []string) *waE2E.Message {
+	var ci *waE2E.ContextInfo
+	if len(jids) > 0 {
+		ci = &waE2E.ContextInfo{MentionedJID: jids}
+	}
+	var info mediaInfo
+	if m.Kind != msgText && json.Unmarshal([]byte(m.Media), &info) == nil {
+		var w, h *uint32
+		if m.Width > 0 && m.Height > 0 {
+			w, h = proto.Uint32(uint32(m.Width)), proto.Uint32(uint32(m.Height))
+		}
+		switch d := info.message(m.Kind).(type) {
+		case *waE2E.ImageMessage:
+			d.Caption, d.JPEGThumbnail, d.Width, d.Height, d.ContextInfo = &text, m.Thumb, w, h, ci
+			return &waE2E.Message{ImageMessage: d}
+		case *waE2E.VideoMessage:
+			d.Caption, d.JPEGThumbnail, d.Width, d.Height, d.ContextInfo = &text, m.Thumb, w, h, ci
+			return &waE2E.Message{VideoMessage: d}
+		}
+	}
+	if ci != nil {
+		return &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: &text, ContextInfo: ci}}
+	}
+	return &waE2E.Message{Conversation: &text}
 }
 
 // handleEdit is msg.edit: the new text goes as an edit of ours, and the row changes once it went.
@@ -231,18 +262,14 @@ func (s *Session) handleEdit(req json.RawMessage) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := s.store.editable(r.Chat, r.ID); err != nil {
+	m, err := s.store.editable(r.Chat, r.ID)
+	if err != nil {
 		return nil, err
 	}
 	wire, jids := mentionWire(r.Text, r.Mentions)
-	msg := &waE2E.Message{Conversation: &wire}
-	if len(jids) > 0 {
-		msg = &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: &wire,
-			ContextInfo: &waE2E.ContextInfo{MentionedJID: jids}}}
-	}
 	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
 	defer cancel()
-	if _, err := cli.SendMessage(ctx, jid, cli.BuildEdit(jid, r.ID, msg)); err != nil {
+	if _, err := cli.SendMessage(ctx, jid, cli.BuildEdit(jid, r.ID, editContent(m, wire, jids))); err != nil {
 		return nil, err
 	}
 	s.store.ops <- func(t *storeTx) { t.editMessage(r.Chat, r.ID, r.Text) }

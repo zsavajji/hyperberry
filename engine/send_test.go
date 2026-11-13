@@ -104,3 +104,19 @@ func TestChatSetRejects(t *testing.T) {
 		t.Errorf("bad chat: %v", err)
 	}
 }
+
+// A caption's edit is the photo again with the new caption; a text's is a text.
+func TestEditContent(t *testing.T) {
+	info, _ := json.Marshal(mediaInfo{DirectPath: "/d", MediaKey: []byte{1}, Mimetype: "image/jpeg"})
+	m := editContent(msgRow{Kind: msgPhoto, Media: string(info), Width: 4, Height: 3, Thumb: []byte{9}}, "new", nil)
+	img := m.GetImageMessage()
+	if img.GetCaption() != "new" || img.GetDirectPath() != "/d" || len(img.GetMediaKey()) != 1 || img.GetWidth() != 4 || len(img.GetJPEGThumbnail()) != 1 {
+		t.Errorf("photo: %v", m)
+	}
+	if m := editContent(msgRow{Kind: msgText}, "hi", nil); m.GetConversation() != "hi" {
+		t.Errorf("text: %v", m)
+	}
+	if m := editContent(msgRow{Kind: msgText}, "@1", []string{"1@s.whatsapp.net"}); m.GetExtendedTextMessage().GetContextInfo().GetMentionedJID()[0] != "1@s.whatsapp.net" {
+		t.Errorf("mention: %v", m)
+	}
+}
