@@ -88,8 +88,13 @@ VoiceBubble::VoiceBubble(ListView *list)
     waves->add(m_wave);
     waves->add(m_played);
 
+    // Under it the length at the left and the time's corner at the right, the waveform's width apart.
+    Container *under = new Container();
+    under->setTopMargin(m_ui->du(0.5));
+    under->setHorizontalAlignment(HorizontalAlignment::Fill);
+    under->setLayout(new DockLayout());
     Container *length = new Container();
-    length->setTopMargin(m_ui->du(0.5));
+    length->setVerticalAlignment(VerticalAlignment::Center);
     length->setLayout(Card::across());
     m_mic = new ImageView();
     m_mic->setVerticalAlignment(VerticalAlignment::Center);
@@ -102,8 +107,14 @@ VoiceBubble::VoiceBubble(ListView *list)
     length->add(m_mic);
     length->add(m_clock);
 
+    m_stamp = new Container();
+    m_stamp->setHorizontalAlignment(HorizontalAlignment::Right);
+    m_stamp->setVerticalAlignment(VerticalAlignment::Bottom);
+    under->add(length);
+    under->add(m_stamp);
+
     right->add(waves);
-    right->add(length);
+    right->add(under);
     root->add(disc);
     root->add(right);
     setRoot(root);

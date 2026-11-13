@@ -37,7 +37,7 @@ void MessageCard::makeBubbles()
     const bool deleted = flag("deleted");
     if (flag("voice") && !m_voice) {
         m_voice = new VoiceBubble(m_list);
-        place(m_voice, m_media, m_album, m_label, m_text);
+        place(m_voice, m_media, m_album, m_label, m_words);
     }
     if (!str("media").isEmpty() && !m_media) {
         // In the picture card it spans the card, between the head and the caption.
@@ -45,11 +45,11 @@ void MessageCard::makeBubbles()
         if (m_head)
             m_frame->insert(1, m_media);
         else
-            place(m_media, m_album, m_label, m_text);
+            place(m_media, m_album, m_label, m_words);
     }
     if (!m_msg.value("album").toList().isEmpty() && !m_album) {
         m_album = new AlbumBubble(m_list);
-        place(m_album, m_label, m_text);
+        place(m_album, m_label, m_words);
     }
     if (!str("linkTitle").isEmpty() && !deleted && !m_link) {
         m_link = new LinkPreview(m_list);

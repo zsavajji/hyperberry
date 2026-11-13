@@ -33,14 +33,15 @@ class PollBubble;
 class VoiceBubble;
 
 // One message as a BBM-style card (PLAN.md §7), mirroring MessageItem.qml (rich) and TextCard.qml
-// (plain, what a chat is mostly made of), both gone since step 8.6: flat, on the black page, theirs inset on the right and
-// ours on the left, with BBM's accent bar and tail under them. Built once, with the body text and the time and
+// (plain, what a chat is mostly made of), both gone since step 8.6: flat, on the black page, theirs at the left and
+// ours at the right, as wide as what they hold, with BBM's accent bar and tail under them. Built once, with the body text and the time and
 // ticks, and filled by show() on each recycle. Every other part is made the first time a message
 // needs it, then kept and hidden when the next one doesn't, since rows are recycled; each goes into
 // the card's column at its QML place. The column holds, in order: sender, quote, [the voice, media
 // and album bubbles], label, text, [link preview], invite button, [poll]. The picture card (a photo
 // or video) is a frame instead: a head with the sender and quote, the picture across the card's
-// width, and the card with the caption; with no caption the time sits on the picture.
+// width, and the card with the caption; with no caption the time sits on the picture. Elsewhere the time is
+// at the end of the text's last line, under a voice note's waveform, or else beside the column.
 class MessageCard : public bb::cascades::CustomControl, public bb::cascades::ListItemListener
 {
     Q_OBJECT
@@ -94,16 +95,17 @@ private:
     bb::cascades::ImageView *makeTail(const char *source);
     void fillMenu();
     void fillBubbles();
-    void placeTime(bool onPicture);
+    void placeTime(int place);
+    float timeWidth() const;
 
     bb::cascades::ListView *m_list;
     bb::cascades::UIConfig *m_ui;
     bool m_rich;
     QVariantMap m_msg;
     bool m_pressed;
-    bool m_timeOnPicture;
-    bool m_timePlaced; // placeTime's paddings are set for m_timeOnPicture
+    int m_timePlace; // where m_timeBox is: -1 nowhere yet, 0 beside the column, 1 at the text's end, 2 on the picture, 3 under the voice note
     float m_timeTop; // m_timeBox's top padding as last set, -1 for none
+    float m_colMax; // m_col's maxWidth as last set, -1 for none
     int m_tick; // the picture m_ticks has: -1 none yet, 0 the clock, 1 one tick, 2 two
 
     // Swipe to reply: where the finger went down, and whether this touch is a swipe (1), not one (-1)
@@ -121,6 +123,9 @@ private:
     bb::cascades::Color m_plain;
 
     bb::cascades::Container *m_root;
+    // The spacers beside the card: the left one shows for ours, the right one for theirs.
+    bb::cascades::Container *m_gapL;
+    bb::cascades::Container *m_gapR;
     // What carries the background: the card, or in the picture card the frame around the head, the
     // picture and the card. m_head is there only in the picture card.
     bb::cascades::Container *m_frame;
@@ -135,6 +140,7 @@ private:
     bb::cascades::Label *m_quoteText;
     bb::cascades::ImageView *m_quoteThumb;
     bb::cascades::Label *m_label;
+    bb::cascades::Container *m_words; // the text, and the time over its last line's end
     bb::cascades::Label *m_text;
     bb::cascades::Button *m_join;
     // The rich card's bubbles, made as m_sender is (VoiceBubble.cpp and the others).
