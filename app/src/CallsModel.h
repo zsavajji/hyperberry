@@ -41,7 +41,6 @@ private:
     QList<QVariantMap> m_rows;
     bool m_active;
     QTimer m_soon;
-    bb::utility::i18n::RelativeDateFormatter m_days;
     bb::system::LocaleHandler m_region;
 };
 

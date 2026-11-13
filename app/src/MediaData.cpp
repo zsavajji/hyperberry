@@ -10,6 +10,7 @@
 #include <QFileInfo>
 #include <QImage>
 #include <QImageReader>
+#include <QUrl>
 
 // "m:ss"
 QString MediaData::clock(int seconds)
@@ -21,10 +22,12 @@ QString MediaData::clock(int seconds)
 // (long side 1280), made the first time from the file and kept in data/cache/previews/ as
 // <id>-640.jpg (the engine wipes data/cache/ on unlink). The
 // engine decodes no picture, and Qt's reader decodes straight to the smaller size. Fills width and
-// height from the file when the row has none. Empty when the photo can't be read.
+// height from the file when the row has none. Returns the preview's path, "" when the photo can't be
+// read: the bubble's Image is made from the path, so Cascades reads and decodes the file off the UI
+// thread and the model holds no bytes of it (they were read here for every row, and kept).
 // ponytail: made on the UI thread, tens of ms on the Q10; a worker thread if scrolling stutters.
 static const int PreviewSide = 640; // the knob: the preview's short side, in px
-static QByteArray preview(const QString &id, const QString &path, int &width, int &height)
+static QString preview(const QString &id, const QString &path, int &width, int &height)
 {
     const QString file = QDir::homePath() + "/cache/previews/" + id + "-640.jpg";
     const bool have = QFile::exists(file);
@@ -37,7 +40,7 @@ static QByteArray preview(const QString &id, const QString &path, int &width, in
         }
         if (!have) {
             if (!size.isValid())
-                return QByteArray();
+                return QString();
             QSize to = size;
             // The card is ~640 px wide and crops to a square: the short side sets the sharpness.
             // A panorama's long side is capped so its decoded image stays a few MB.
@@ -48,15 +51,14 @@ static QByteArray preview(const QString &id, const QString &path, int &width, in
             reader.setScaledSize(to);
             const QImage image = reader.read();
             if (image.isNull() || !QDir().mkpath(QFileInfo(file).path()))
-                return QByteArray();
+                return QString();
             if (!image.save(file, "JPEG", 80)) {
                 QFile::remove(file); // no half-written preview left to be taken for a good one
-                return QByteArray();
+                return QString();
             }
         }
     }
-    QFile f(file);
-    return f.open(QIODevice::ReadOnly) ? f.readAll() : QByteArray();
+    return file;
 }
 
 // A spoiler's picture under its cover (step 6.6d): down to 12 px and up again, Qt's smooth scaling
@@ -113,15 +115,24 @@ bool MediaData::fill(QVariantMap &data, const QString &id, int kind, const QStri
     }
     if (media.isEmpty())
         return false;
-    // The inline thumbnail stands in when there is no readable photo or sticker.
+    // The inline thumbnail stands in when there is no readable photo or sticker. A photo's preview is
+    // shown from its file; only a spoiler's is read here, to blur it.
     QByteArray shown = thumb;
-    if ((kind == 1 || kind == 5) && mediaState == 2 && !path.isEmpty()) {
-        const QByteArray p = kind == 1 ? preview(id, path, width, height) : Sticker::picture(id, path);
+    QString file;
+    if (kind == 1 && mediaState == 2 && !path.isEmpty()) {
+        file = preview(id, path, width, height);
+    } else if (kind == 5 && mediaState == 2 && !path.isEmpty()) {
+        const QByteArray p = Sticker::picture(id, path);
         if (!p.isEmpty())
             shown = p;
     }
-    if (blur)
+    if (blur) {
+        QFile f(file);
+        if (!file.isEmpty() && f.open(QIODevice::ReadOnly))
+            shown = f.readAll();
+        file.clear();
         shown = blurred(shown);
+    }
     // A location has no width or height columns: its map picture is a JPEG, sized by its own header.
     if (kind == 9 && !thumb.isEmpty()) {
         QBuffer buffer;
@@ -133,9 +144,10 @@ bool MediaData::fill(QVariantMap &data, const QString &id, int kind, const QStri
     }
     // Always an Image, an empty one without a thumbnail: a recycled card assigned undefined would
     // keep the picture of the row it showed before.
-    data["thumb"] = QVariant::fromValue(shown.isEmpty() ? bb::cascades::Image()
-                                                        : bb::cascades::Image(shown));
-    data["hasThumb"] = !shown.isEmpty();
+    data["thumb"] = QVariant::fromValue(!file.isEmpty() ? bb::cascades::Image(QUrl::fromLocalFile(file))
+                                        : shown.isEmpty() ? bb::cascades::Image()
+                                                          : bb::cascades::Image(shown));
+    data["hasThumb"] = !file.isEmpty() || !shown.isEmpty();
     data["ratio"] = width > 0 && height > 0 ? double(height) / width : 0.75;
     data["mediaState"] = mediaState;
     data["path"] = path;

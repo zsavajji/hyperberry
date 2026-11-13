@@ -90,7 +90,6 @@ private:
     bool m_active;
     int m_unseen;
     QTimer m_soon;
-    bb::utility::i18n::RelativeDateFormatter m_days;
     bb::system::LocaleHandler m_region;
 };
 

@@ -42,6 +42,9 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
     , m_rich(rich)
     , m_pressed(false)
     , m_timeOnPicture(false)
+    , m_timePlaced(false)
+    , m_timeTop(-1)
+    , m_tick(-1)
     , m_downX(0)
     , m_downY(0)
     , m_swipe(0)
@@ -126,15 +129,22 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
     m_foot = new Container();
     m_foot->setHorizontalAlignment(HorizontalAlignment::Fill);
     m_foot->setLayout(new DockLayout());
-    m_underline = new ImageView();
-    m_underline->setHorizontalAlignment(HorizontalAlignment::Fill);
-    m_underline->setVerticalAlignment(VerticalAlignment::Top);
-    m_underline->setPreferredHeight(m_ui->du(1));
+    m_barL = new ImageView();
+    m_barL->setHorizontalAlignment(HorizontalAlignment::Fill);
+    m_barL->setVerticalAlignment(VerticalAlignment::Top);
+    m_barL->setPreferredHeight(m_ui->du(1));
+    m_barL->setImageSource(Card::url("asset:///images/bar_l.amd"));
+    m_barR = new ImageView();
+    m_barR->setHorizontalAlignment(HorizontalAlignment::Fill);
+    m_barR->setVerticalAlignment(VerticalAlignment::Top);
+    m_barR->setPreferredHeight(m_ui->du(1));
+    m_barR->setImageSource(Card::url("asset:///images/bar_r.amd"));
     m_tailL = makeTail("asset:///images/tail_l.png");
     m_tailL->setHorizontalAlignment(HorizontalAlignment::Left);
     m_tailR = makeTail("asset:///images/tail_r.png");
     m_tailR->setHorizontalAlignment(HorizontalAlignment::Right);
-    m_foot->add(m_underline);
+    m_foot->add(m_barL);
+    m_foot->add(m_barR);
     m_foot->add(m_tailL);
     m_foot->add(m_tailR);
 
@@ -281,6 +291,8 @@ void MessageCard::restyle()
     m_plain = plain;
 
     const Color quiet = m_ui->palette()->secondaryTextOnPlain();
+    m_barL->setFilterColor(quiet);
+    m_barR->setFilterColor(m_ui->palette()->primary());
     const float side = Card::side(m_ui, scale);
     m_root->setTopPadding(m_ui->du(1.5 * scale));
     m_card->setLeftPadding(side);
@@ -514,8 +526,12 @@ void MessageCard::fillFoot()
     const bool small = !m_head && (!str("sender").isEmpty() || !str("quote").isEmpty());
     const bool onPicture = m_head && !m_card->isVisible();
     placeTime(onPicture);
-    if (!onPicture)
-        m_timeBox->setTopPadding(m_ui->px((small ? 7 : 12) * m_scale));
+    // The top padding is this one's, on a picture too; set only when it changed.
+    const float top = onPicture ? m_ui->du(0.5) : m_ui->px((small ? 7 : 12) * m_scale);
+    if (top != m_timeTop) {
+        m_timeTop = top;
+        m_timeBox->setTopPadding(top);
+    }
     // White on the picture's dark chip.
     const Color quiet = onPicture ? Color::White : m_ui->palette()->secondaryTextOnPlain();
     m_time->textStyle()->setColor(quiet);
@@ -523,15 +539,19 @@ void MessageCard::fillFoot()
     const bool ticked = out && state < 4;
     m_ticks->setVisible(ticked);
     if (ticked) {
-        m_ticks->setImageSource(Card::url(state == 0 ? "asset:///images/clock.png"
-                                    : state == 1 ? "asset:///images/tick.png" : "asset:///images/ticks.png"));
+        const int tick = state == 0 ? 0 : state == 1 ? 1 : 2;
+        if (tick != m_tick) {
+            m_tick = tick;
+            m_ticks->setImageSource(Card::url(tick == 0 ? "asset:///images/clock.png"
+                                        : tick == 1 ? "asset:///images/tick.png" : "asset:///images/ticks.png"));
+        }
         m_ticks->setFilterColor(state == 3 ? m_ui->palette()->primary() : quiet);
     }
     if (m_bang)
         m_bang->setVisible(out && state == 4);
 
-    m_underline->setImageSource(Card::url(out ? "asset:///images/bar_r.amd" : "asset:///images/bar_l.amd"));
-    m_underline->setFilterColor(out ? m_ui->palette()->primary() : m_ui->palette()->secondaryTextOnPlain());
+    m_barL->setVisible(!out);
+    m_barR->setVisible(out);
     m_foot->setVisible(str("media") != "sticker");
     m_tailL->setVisible(!out);
     m_tailR->setVisible(out);
@@ -550,6 +570,8 @@ void MessageCard::fillFoot()
 // place changes, since rows are recycled.
 void MessageCard::placeTime(bool onPicture)
 {
+    if (m_timePlaced && onPicture == m_timeOnPicture)
+        return;
     if (onPicture != m_timeOnPicture) {
         m_timeOnPicture = onPicture;
         if (onPicture) {
@@ -565,10 +587,9 @@ void MessageCard::placeTime(bool onPicture)
     m_timeBox->setLeftPadding(chip);
     m_timeBox->setRightPadding(chip);
     m_timeBox->setBottomPadding(onPicture ? m_ui->du(0.5) : 0);
-    if (onPicture) {
-        m_timeBox->setTopPadding(m_ui->du(0.5));
+    if (onPicture)
         m_timeBox->setBackground(Card::color("#80000000"));
-    } else {
+    else
         m_timeBox->resetBackground();
-    }
+    m_timePlaced = true;
 }

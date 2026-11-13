@@ -107,10 +107,8 @@ StoriesModel::StoriesModel(EngineLink *engine, QObject *parent)
     , m_engine(engine)
     , m_active(false)
     , m_unseen(0)
-    , m_days(RelativeDateFormat::NonTimeCritical)
     , m_region(bb::system::LocaleType::Region)
 {
-    m_days.applyUserRegionLocale();
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", kDb);
     db.setDatabaseName(QDir::homePath() + "/chats.db");
     db.setConnectOptions("QSQLITE_OPEN_READONLY");
@@ -178,7 +176,7 @@ void StoriesModel::reload()
     int unseenAll = 0;
     QList<QVariantMap> rows;
     if (m_active) {
-        m_days.applyCurrentTimeAsAnchor();
+        dayFormatter().applyCurrentTimeAsAnchor();
         const QLocale locale = m_region.locale();
         const QString clock = timeFormat(locale, DateFormat::Short);
         const QDate today = QDate::currentDate();
@@ -222,7 +220,7 @@ void StoriesModel::reload()
             row["ts"] = q.value(2).toUInt(); // oldest first, so the last one is the newest
             const QDateTime when = QDateTime::fromTime_t(q.value(2).toUInt());
             row["time"] = when.date() == today ? locale.toString(when.time(), clock)
-                                               : dayLabel(when, today, locale, m_days);
+                                               : dayLabel(when, today, locale, dayFormatter());
             if (looking) { // this story is the tile unless an unseen one came before it
                 looking = seen;
                 const int kind = q.value(3).toInt();
@@ -277,7 +275,7 @@ QVariantMap StoriesModel::storyMap(QSqlQuery &q, QSqlDatabase &db)
     const QString bg = argb(extra, "bg");
     const QString fg = argb(extra, "fg");
     const QDateTime when = QDateTime::fromTime_t(q.value(2).toUInt());
-    m_days.applyCurrentTimeAsAnchor();
+    dayFormatter().applyCurrentTimeAsAnchor();
     const QLocale locale = m_region.locale();
     QVariantMap row;
     row["id"] = id;
@@ -287,7 +285,7 @@ QVariantMap StoriesModel::storyMap(QSqlQuery &q, QSqlDatabase &db)
     row["bg"] = bg.isEmpty() ? QString(pickColor(poster, kColors, kColorCount)) : bg;
     row["fg"] = fg.isEmpty() ? QString("#FFFFFF") : fg;
     row["seen"] = q.value(7).toInt() != 0;
-    row["time"] = dayLabel(when, QDate::currentDate(), locale, m_days) + ", "
+    row["time"] = dayLabel(when, QDate::currentDate(), locale, dayFormatter()) + ", "
                 + locale.toString(when.time(), timeFormat(locale, DateFormat::Short));
     row["duration"] = q.value(8).toInt();
     row["width"] = q.value(9).toInt();

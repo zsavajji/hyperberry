@@ -58,23 +58,17 @@ static bool longer(const QString &a, const QString &b)
     return a.size() > b.size();
 }
 
-QString MessageKinds::html(const QString &shown, const QString &json)
+QString MessageKinds::html(const QString &shown, const QVariantMap &extra)
 {
     const QString text = QString(shown).remove(QChar(0x20E3)); // as the bubble's plain text drops it
 
     // "@name" -> the key of the page it opens. Ours has no key (the profile is another page), so
     // it stays plain text. Two people of one name share a link: the last wins.
     QMap<QString, QString> pages;
-    if (json.contains("\"mentions\"")) {
-        JsonDataAccess parser;
-        const QVariant doc = parser.loadFromBuffer(json.toUtf8());
-        if (!parser.hasError() && doc.type() == QVariant::Map) {
-            foreach (const QVariant &v, doc.toMap().value("mentions").toList()) {
-                const QVariantMap m = v.toMap();
-                if (!m.value("jid").toString().isEmpty() && !m.value("name").toString().isEmpty())
-                    pages.insert("@" + m.value("name").toString(), m.value("jid").toString());
-            }
-        }
+    foreach (const QVariant &v, extra.value("mentions").toList()) {
+        const QVariantMap m = v.toMap();
+        if (!m.value("jid").toString().isEmpty() && !m.value("name").toString().isEmpty())
+            pages.insert("@" + m.value("name").toString(), m.value("jid").toString());
     }
 
     // One pass over the text, longest name first, so "@Ann" never takes the start of "@Anna". Each
@@ -111,9 +105,7 @@ QString MessageKinds::html(const QString &shown, const QString &json)
     return out;
 }
 
-bool MessageKinds::fill(int kind, const QString &chat, const QString &id, const QString &text,
-                        const QString &json, bool out, const QString &sender, const QString &time,
-                        const QLocale &locale, QVariantMap &data, QString &label, QString &shown)
+QVariantMap MessageKinds::parse(const QString &json)
 {
     // Only rows that have details; a damaged one reads as none.
     QVariantMap extra;
@@ -123,7 +115,13 @@ bool MessageKinds::fill(int kind, const QString &chat, const QString &id, const 
         if (!parser.hasError() && doc.type() == QVariant::Map)
             extra = doc.toMap();
     }
+    return extra;
+}
 
+bool MessageKinds::fill(int kind, const QString &chat, const QString &id, const QString &text,
+                        const QVariantMap &extra, bool out, const QString &sender, const QString &time,
+                        const QLocale &locale, QVariantMap &data, QString &label, QString &shown)
+{
     // A text's link preview (step 6.5f), drawn by LinkPreview; always set, so QML never reads undefined.
     const bool preview = kind == 0 && !extra.value("title").toString().isEmpty();
     data["linkTitle"] = preview ? extra.value("title").toString() : QString();

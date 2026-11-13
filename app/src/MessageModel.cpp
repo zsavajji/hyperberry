@@ -39,10 +39,10 @@ MessageModel::MessageModel(EngineLink *engine, const QString &chat, bool group, 
     , m_group(group)
     , m_atStart(false)
     , m_loading(true)
-    , m_days(RelativeDateFormat::NonTimeCritical)
     , m_region(bb::system::LocaleType::Region)
+    , m_now(0)
+    , m_titlesDay(0)
 {
-    m_days.applyUserRegionLocale();
     connect(engine, SIGNAL(msgsChanged(QString, QStringList)), this,
             SLOT(onMsgs(QString, QStringList)));
     connect(engine, SIGNAL(connectedChanged()), this, SLOT(onConnected()));
@@ -382,12 +382,30 @@ void MessageModel::unhide(const QStringList &ids)
     refresh(old, QSet<QString>());
 }
 
+// The header of a message's day: BB10's "Today" and "Yesterday", the weekday for the rest of the week, then
+// the date in full. Asked from the formatter once per day shown, and again when the date changes: it was
+// asked on every rebuild, with the anchor and the locale read each time (Q10, 0.1.1.306: 17 to 58 ms a rebuild).
+QString MessageModel::dayTitle(const Msg &m)
+{
+    const QDate today = QDate::currentDate();
+    if (m_titlesDay != today.toJulianDay()) {
+        m_titlesDay = today.toJulianDay();
+        m_dayTitles.clear();
+        dayFormatter().applyCurrentTimeAsAnchor();
+    }
+    QHash<int, QString>::const_iterator it = m_dayTitles.constFind(m.day);
+    if (it != m_dayTitles.constEnd())
+        return it.value();
+    const QDateTime when = QDateTime::fromTime_t(m.ts);
+    const QString title = when.date().daysTo(today) < 7 ? dayLabel(when, today, m_locale, dayFormatter())
+                                                      : longDay(when.date(), m_locale);
+    m_dayTitles.insert(m.day, title);
+    return title;
+}
+
 // ponytail: rebuilds the entries on each change, fine for the hundreds of rows a chat holds.
 void MessageModel::rebuild()
 {
-    m_days.applyCurrentTimeAsAnchor();
-    const QLocale locale = m_region.locale();
-    const QDate today = QDate::currentDate();
     const bool wasEmpty = m_entries.isEmpty();
     m_entries.clear();
     // m_all is oldest first: the visible rows become units (a message, or an album of 4 or more),
@@ -402,7 +420,7 @@ void MessageModel::rebuild()
         shown.append(i);
         Albums::Row r;
         r.ts = m.ts;
-        r.day = QDateTime::fromTime_t(m.ts).date().toJulianDay();
+        r.day = m.day;
         r.kind = m.kind;
         r.deleted = m.data["deleted"].toBool();
         r.text = !m.data["text"].toString().isEmpty();
@@ -434,14 +452,13 @@ void MessageModel::rebuild()
         units.append(e);
     }
     for (int u = units.size() - 1; u >= 0; --u) {
-        const QDateTime when = QDateTime::fromTime_t(m_all[units[u].msg].ts);
+        const Msg &m = m_all[units[u].msg];
         m_entries.append(units[u]);
         // An album is inside one day, so its first member's date is the unit's.
-        if (u == 0 || QDateTime::fromTime_t(m_all[units[u - 1].msg].ts).date() != when.date()) {
+        if (u == 0 || m_all[units[u - 1].msg].day != m.day) {
             Entry h;
-            h.key = "day:" + QString::number(when.date().toJulianDay());
-            h.title = when.date().daysTo(today) < 7 ? dayLabel(when, today, locale, m_days)
-                      : capitalized(locale.toString(when.date(), QLocale::LongFormat));
+            h.key = "day:" + QString::number(m.day);
+            h.title = dayTitle(m);
             h.msg = -1;
             m_entries.append(h);
         }

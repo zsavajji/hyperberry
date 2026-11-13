@@ -24,10 +24,8 @@ static const char *const kDb = "calls";
 CallsModel::CallsModel(EngineLink *engine, QObject *parent)
     : DataModel(parent)
     , m_active(false)
-    , m_days(RelativeDateFormat::NonTimeCritical)
     , m_region(bb::system::LocaleType::Region)
 {
-    m_days.applyUserRegionLocale();
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", kDb);
     db.setDatabaseName(QDir::homePath() + "/chats.db");
     db.setConnectOptions("QSQLITE_OPEN_READONLY");
@@ -87,7 +85,7 @@ void CallsModel::reload()
         qWarning() << "calls:" << q.lastError().text();
         return;
     }
-    m_days.applyCurrentTimeAsAnchor();
+    dayFormatter().applyCurrentTimeAsAnchor();
     const QLocale locale = m_region.locale();
     const QString clock = timeFormat(locale, DateFormat::Short);
     const QDate today = QDate::currentDate();
@@ -122,7 +120,7 @@ void CallsModel::reload()
         row["detail"] = detail;
         // Today by the clock, the last week by day, older by date (the chat list's time column).
         row["time"] = age == 0 ? locale.toString(when.time(), clock)
-                    : age < 7 ? dayLabel(when, today, locale, m_days)
+                    : age < 7 ? dayLabel(when, today, locale, dayFormatter())
                     : locale.toString(when.date(), QLocale::ShortFormat);
         rows.append(row);
     }

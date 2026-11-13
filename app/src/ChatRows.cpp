@@ -70,6 +70,8 @@ ChatRow::ChatRow(ListView *list)
     , m_ui(list->ui())
     , m_calls(list->property("callRows").toBool())
     , m_pressed(false)
+    , m_styled(false)
+    , m_scale(0)
     , m_callItem(0)
     , m_readItem(0)
     , m_pinItem(0)
@@ -209,12 +211,23 @@ void ChatRow::show(const QVariantMap &chat)
     const bool out = flag("out");
     const int state = m_chat.value("state").toInt();
 
+    // What only the text size decides, set again when it changed (a recycle keeps it), as MessageCard::restyle does.
+    if (!m_styled || scale != m_scale) {
+        m_styled = true;
+        m_scale = scale;
+        m_row->setMinHeight(m_ui->du(9.4 * scale));
+        m_tile->setPreferredSize(m_ui->du(7 * scale), m_ui->du(7 * scale));
+        Card::style(m_initials, m_list, qRound(118 * scale));
+        m_initials->textStyle()->setColor(Color::White);
+        Card::style(m_name, m_list, qRound(115 * scale));
+        m_time->textStyle()->setFontSizeValue(qRound(100 * scale));
+        Card::style(m_preview, m_list, qRound(90 * scale));
+    }
+
     paintBackground();
-    m_row->setMinHeight(m_ui->du(9.4 * scale));
 
     // The tile: the picture, or the initials on the chat's colour. Given the picture again only
     // when it changed, as a binding would.
-    m_tile->setPreferredSize(m_ui->du(7 * scale), m_ui->du(7 * scale));
     m_tile->setBackground(Card::color(str("color")));
     const QString photo = str("photo");
     if (photo != m_photoPath) {
@@ -223,18 +236,14 @@ void ChatRow::show(const QVariantMap &chat)
     }
     m_photo->setVisible(!photo.isEmpty());
     m_initials->setVisible(photo.isEmpty());
-    Card::style(m_initials, m_list, qRound(118 * scale));
-    m_initials->textStyle()->setColor(Color::White);
     m_initials->setText(str("initials"));
 
-    Card::style(m_name, m_list, qRound(115 * scale));
     m_name->setText(str("name"));
     m_pin->setVisible(flag("pinned"));
     m_pin->setFilterColor(quiet);
     m_mute->setVisible(muted);
     m_mute->setFilterColor(quiet);
     m_time->setText(str("time"));
-    m_time->textStyle()->setFontSizeValue(qRound(100 * scale));
     m_time->textStyle()->setColor(unread != 0 ? primary : quiet);
 
     const bool ticked = out && state < 4;
@@ -248,7 +257,6 @@ void ChatRow::show(const QVariantMap &chat)
 
     // Without U+20E3, a keycap's frame, as the message card's body (MessageCard.cpp). A call's row
     // has what the call was there, red when missed.
-    Card::style(m_preview, m_list, qRound(90 * scale));
     m_preview->textStyle()->setColor(m_calls && flag("missed") ? Card::color("#FF3333") : quiet);
     // WhatsApp's styles show in the preview as in the message (Markup.h); a line without any stays plain.
     const QString line = m_calls ? str("detail") : Card::noKeycaps(str("preview"));

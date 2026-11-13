@@ -102,6 +102,9 @@ private:
     QVariantMap m_msg;
     bool m_pressed;
     bool m_timeOnPicture;
+    bool m_timePlaced; // placeTime's paddings are set for m_timeOnPicture
+    float m_timeTop; // m_timeBox's top padding as last set, -1 for none
+    int m_tick; // the picture m_ticks has: -1 none yet, 0 the clock, 1 one tick, 2 two
 
     // Swipe to reply: where the finger went down, and whether this touch is a swipe (1), not one (-1)
     // or not yet known (0). m_slide holds translationX's implicit animation off while the finger drives it.
@@ -144,10 +147,12 @@ private:
     bb::cascades::Label *m_time;
     bb::cascades::ImageView *m_ticks;
     bb::cascades::Label *m_bang;
-    // The foot: a tail either side of the accent bar, one shown.
+    // The foot: a tail either side of the accent bar, one shown; the bar is one of two, as the tails are,
+    // so the fill only toggles them (theirs m_barL, ours m_barR; restyle() tints them).
     bb::cascades::Container *m_foot;
     bb::cascades::ImageView *m_tailL;
-    bb::cascades::ImageView *m_underline;
+    bb::cascades::ImageView *m_barL;
+    bb::cascades::ImageView *m_barR;
     bb::cascades::ImageView *m_tailR;
     bb::cascades::Container *m_chip;
     bb::cascades::Label *m_reactions;
