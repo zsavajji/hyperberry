@@ -26,15 +26,14 @@ Container {
         scalingMethod: ScalingMethod.AspectFill
         loadEffect: ImageViewLoadEffect.None
     }
-    Label {
+    ImageView {
         visible: tile.member.media == "video"
         horizontalAlignment: HorizontalAlignment.Center
         verticalAlignment: VerticalAlignment.Center
-        text: "▶"
-        textFormat: TextFormat.Plain
-        textStyle.fontSize: FontSize.PercentageValue
-        textStyle.fontSizeValue: 300
-        textStyle.color: Color.White
+        preferredWidth: ui.du(6)
+        preferredHeight: ui.du(6)
+        imageSource: "asset:///images/play.png"
+        opacity: 0.85
     }
     ActivityIndicator {
         visible: tile.loadingId == tile.member.id

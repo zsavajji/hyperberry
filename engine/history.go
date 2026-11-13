@@ -214,4 +214,7 @@ func (st *Store) apply(ctx context.Context, t *storeTx, cli *whatsmeow.Client, k
 	if live && fresh && row.MediaState == 1 && !isChannel(key) && (row.Kind == msgVoice || row.Kind == msgPhoto || row.Kind == msgSticker) {
 		go st.liveMedia(cli, row) // never in the writer: it is a network call; the rest, and a channel's media, wait for a tap
 	}
+	if live && fresh && row.Kind == msgVideo && row.MediaState == 1 && !isChannel(key) {
+		go st.liveVideoThumb(cli, row) // the video itself waits for a tap: only its larger thumbnail comes
+	}
 }

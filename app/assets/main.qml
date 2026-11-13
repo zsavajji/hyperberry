@@ -10,7 +10,7 @@ import "errors.js" as Errors
 TabbedPane {
     id: root
     showTabsOnActionBar: false
-    peekEnabled: nav.linked
+    peekEnabled: nav.linked && !nav.noPeek
     onActiveTabChanged: {
         callList.active = activeTab == callsTab
         storyList.active = activeTab == storiesTab
@@ -70,6 +70,18 @@ TabbedPane {
             // built on it, and each rule loads the font again. Pages take it as nav.emojiStyle, list
             // items through a property on their ListView.
             property variant emojiStyle: emoji.style
+            // A page that needs every horizontal drag (the video viewer's timeline: its noPeek) turns peeking off while it
+            // is on top, here and on the tab menu: both slid the page away under the finger. What this pane had is put
+            // back when the page goes.
+            property bool noPeek: false
+            property bool peekWas: true
+            onTopChanged: nav.noPeek = !!nav.top && !!nav.top.noPeek
+            onNoPeekChanged: {
+                if (nav.noPeek) {
+                    nav.peekWas = nav.peekEnabled
+                }
+                nav.peekEnabled = nav.noPeek ? false : nav.peekWas
+            }
             // Text sizes in percent of the emoji style at 100 % (capitals 20 px on the Q10), in one place,
             // scaled by the text size setting. body: messages and chat names, the stock Text Messages
             // body's 21 px; small: previews, senders, quotes and service lines. List items reach them
@@ -113,6 +125,10 @@ TabbedPane {
                 ComponentDefinition {
                     id: viewerDef
                     source: "PhotoViewer.qml"
+                },
+                ComponentDefinition {
+                    id: videoDef
+                    source: "VideoViewer.qml"
                 },
                 ComponentDefinition {
                     id: albumDef
@@ -249,6 +265,16 @@ TabbedPane {
                 var viewer = viewerDef.createObject()
                 viewer.path = path
                 push(viewer)
+            }
+
+            // A received video in the app: ratio is its height over its width, gif a video that plays by itself.
+            function showVideo(path, ratio, gif) {
+                var viewer = videoDef.createObject()
+                viewer.path = path
+                viewer.ratio = ratio
+                viewer.gif = gif
+                push(viewer)
+                viewer.start()
             }
 
             // An album's page (step 6.5g): members are its messages' maps, list the chat's ListView, whose

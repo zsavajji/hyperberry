@@ -123,6 +123,13 @@ func TestMoreKinds(t *testing.T) {
 		{"gif", &waE2E.Message{VideoMessage: &waE2E.VideoMessage{GifPlayback: proto.Bool(true), Seconds: proto.Uint32(3)}},
 			msgVideo, "", "Video", `{"gif":true}`, false},
 		{"video", &waE2E.Message{VideoMessage: &waE2E.VideoMessage{Seconds: proto.Uint32(3)}}, msgVideo, "", "Video", "", false},
+		// The premade thumbnail's keys (liveVideoThumb fetches it): the bytes are base64 in the JSON.
+		{"video with a premade thumbnail", &waE2E.Message{VideoMessage: &waE2E.VideoMessage{Seconds: proto.Uint32(3), ThumbnailDirectPath: proto.String("/v/t/p"),
+			ThumbnailSHA256: []byte{1, 2, 3}, ThumbnailEncSHA256: []byte{4, 5, 6}}},
+			msgVideo, "", "Video", `{"thumbPath":"/v/t/p","thumbSha":"AQID","thumbEncSha":"BAUG"}`, false},
+		{"gif with a premade thumbnail", &waE2E.Message{VideoMessage: &waE2E.VideoMessage{GifPlayback: proto.Bool(true), ThumbnailDirectPath: proto.String("/v/t/p"),
+			ThumbnailSHA256: []byte{1, 2, 3}, ThumbnailEncSHA256: []byte{4, 5, 6}}},
+			msgVideo, "", "Video", `{"gif":true,"thumbPath":"/v/t/p","thumbSha":"AQID","thumbEncSha":"BAUG"}`, false},
 		{"round video note", &waE2E.Message{PtvMessage: &waE2E.VideoMessage{Seconds: proto.Uint32(3)}}, msgVideo, "", "Video", "", false},
 		{"instant photo", &waE2E.Message{InstantImageMessage: &waE2E.ImageMessage{Caption: proto.String("now")}}, msgPhoto, "now", "Photo now", "", false},
 		{"spoiler", &waE2E.Message{SpoilerMessage: &waE2E.FutureProofMessage{Message: &waE2E.Message{ImageMessage: &waE2E.ImageMessage{Caption: proto.String("boo")}}}},

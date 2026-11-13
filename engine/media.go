@@ -116,6 +116,46 @@ func (st *Store) liveMedia(cli *whatsmeow.Client, row msgRow) {
 	}
 }
 
+// mediaVideoThumbnail is the key type of a video's premade thumbnail (Baileys' "thumbnail-video"): hypermeow names only
+// the link preview's, and takes the type as an argument.
+const mediaVideoThumbnail whatsmeow.MediaType = "WhatsApp Video Thumbnail Keys"
+
+// thumbInfo is what fillExtra keeps of a video's premade thumbnail.
+type thumbInfo struct {
+	Path   string `json:"thumbPath"`
+	SHA    []byte `json:"thumbSha"`
+	EncSHA []byte `json:"thumbEncSha"`
+}
+
+// liveVideoThumb swaps a video that just arrived's inline thumbnail (about 100 px, from WhatsApp's own phone) for the
+// premade larger one when the sender gave it (the user, 2026-11-12: "use a premade one if available"; the video itself is
+// never decoded here). It waits for a tap's rules (mobile data off), as a photo does. Anything that fails leaves the
+// inline thumbnail, and the log says which case it was: no premade one, the download, or something that is not a JPEG.
+func (st *Store) liveVideoThumb(cli *whatsmeow.Client, row msgRow) {
+	var ti thumbInfo
+	if json.Unmarshal([]byte(row.Extra), &ti) != nil || ti.Path == "" {
+		st.log.Infof("video %s: no premade thumbnail, the inline one (%d bytes) stays", row.ID, len(row.Thumb))
+		return
+	}
+	var info mediaInfo
+	if json.Unmarshal([]byte(row.Media), &info) != nil || len(info.MediaKey) == 0 || st.holdLive(row) {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
+	defer cancel()
+	data, err := cli.DownloadMediaWithPath(ctx, ti.Path, ti.EncSHA, ti.SHA, info.MediaKey, mediaVideoThumbnail, "thumbnail-video", false)
+	if err != nil {
+		st.log.Warnf("video %s: premade thumbnail: %v", row.ID, err)
+		return
+	}
+	if len(data) < 3 || data[0] != 0xFF || data[1] != 0xD8 {
+		st.log.Warnf("video %s: premade thumbnail is not a JPEG (%d bytes)", row.ID, len(data))
+		return
+	}
+	st.log.Infof("video %s: premade thumbnail, %d bytes for the inline %d", row.ID, len(data), len(row.Thumb))
+	st.ops <- func(t *storeTx) { t.setThumb(row.Chat, row.ID, data) }
+}
+
 // row reads one message through the writer.
 func (st *Store) row(chat, id string) (msgRow, bool) {
 	type got struct {

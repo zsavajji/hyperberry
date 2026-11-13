@@ -158,6 +158,11 @@ func keep[T comparable](x map[string]any, k string, v T) {
 // flattened, and r already has the kind content() gave it.
 func fillExtra(r *msgRow, m *waE2E.Message) {
 	x := map[string]any{}
+	// A video's premade thumbnail, WhatsApp's larger one when the sender gave it: where it is and how to check it, for
+	// liveVideoThumb to fetch (its key is the message's own, in media).
+	if v := m.GetVideoMessage(); v.GetThumbnailDirectPath() != "" {
+		x["thumbPath"], x["thumbSha"], x["thumbEncSha"] = v.GetThumbnailDirectPath(), v.GetThumbnailSHA256(), v.GetThumbnailEncSHA256()
+	}
 	switch {
 	case m.GetExtendedTextMessage().GetTitle() != "":
 		t := m.GetExtendedTextMessage()

@@ -52,14 +52,12 @@ public:
         m_thumb->setScalingMethod(ScalingMethod::AspectFill);
         m_thumb->setLoadEffect(ImageViewLoadEffect::None);
 
-        m_play = new Label();
+        m_play = new ImageView();
         m_play->setHorizontalAlignment(HorizontalAlignment::Center);
         m_play->setVerticalAlignment(VerticalAlignment::Center);
-        m_play->setText(QString::fromUtf8("\xE2\x96\xB6")); // U+25B6
-        m_play->setTextFormat(TextFormat::Plain);
-        m_play->textStyle()->setFontSize(FontSize::PercentageValue);
-        m_play->textStyle()->setFontSizeValue(300);
-        m_play->textStyle()->setColor(Color::White);
+        m_play->setPreferredSize(m_ui->du(6), m_ui->du(6));
+        m_play->setImageSource(Card::url("asset:///images/play.png"));
+        m_play->setOpacity(0.85f);
 
         // The member being fetched shows a spinner, as in MediaBubble.
         m_spin = new ActivityIndicator();
@@ -110,7 +108,7 @@ private:
     QString m_id;
     Container *m_box;
     ImageView *m_thumb;
-    Label *m_play;
+    ImageView *m_play;
     ActivityIndicator *m_spin;
     Container *m_more;
     Label *m_plus;

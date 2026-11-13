@@ -1,6 +1,7 @@
 #include "MessageKinds.h"
 
 #include "MediaData.h"
+#include "Markup.h"
 #include "Polls.h"
 #include "dates.h"
 
@@ -52,13 +53,6 @@ static QString notice(const QString &code, int secs, bool out, const QString &se
     return QCoreApplication::translate("MessageKinds", "Message");
 }
 
-// The text as rich text needs it: its own markup escaped, a newline a <br/>.
-static QString escaped(QString s)
-{
-    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;");
-    return s.replace('\n', "<br/>");
-}
-
 static bool longer(const QString &a, const QString &b)
 {
     return a.size() > b.size();
@@ -66,46 +60,55 @@ static bool longer(const QString &a, const QString &b)
 
 QString MessageKinds::html(const QString &shown, const QString &json)
 {
-    if (!json.contains("\"mentions\""))
-        return QString();
-    JsonDataAccess parser;
-    const QVariant doc = parser.loadFromBuffer(json.toUtf8());
-    if (parser.hasError() || doc.type() != QVariant::Map)
-        return QString();
+    const QString text = QString(shown).remove(QChar(0x20E3)); // as the bubble's plain text drops it
 
     // "@name" -> the key of the page it opens. Ours has no key (the profile is another page), so
     // it stays plain text. Two people of one name share a link: the last wins.
     QMap<QString, QString> pages;
-    foreach (const QVariant &v, doc.toMap().value("mentions").toList()) {
-        const QVariantMap m = v.toMap();
-        if (!m.value("jid").toString().isEmpty() && !m.value("name").toString().isEmpty())
-            pages.insert("@" + m.value("name").toString(), m.value("jid").toString());
+    if (json.contains("\"mentions\"")) {
+        JsonDataAccess parser;
+        const QVariant doc = parser.loadFromBuffer(json.toUtf8());
+        if (!parser.hasError() && doc.type() == QVariant::Map) {
+            foreach (const QVariant &v, doc.toMap().value("mentions").toList()) {
+                const QVariantMap m = v.toMap();
+                if (!m.value("jid").toString().isEmpty() && !m.value("name").toString().isEmpty())
+                    pages.insert("@" + m.value("name").toString(), m.value("jid").toString());
+            }
+        }
     }
-    if (pages.isEmpty())
-        return QString();
 
-    // One pass over the text, longest name first, so "@Ann" never takes the start of "@Anna" and a
-    // name can't match inside an anchor already made. The text is cut around the hits and each
-    // piece escaped, so the anchors are the only markup.
-    QStringList names = pages.keys();
-    qSort(names.begin(), names.end(), longer);
-    QStringList alternatives;
-    foreach (const QString &n, names)
-        alternatives << QRegExp::escape(n);
-    const QRegExp any(alternatives.join("|"));
-
-    const QString text = QString(shown).remove(QChar(0x20E3)); // as the bubble's plain text drops it
-    QString out;
-    int from = 0, at;
-    bool linked = false;
-    while ((at = any.indexIn(text, from)) != -1) {
-        const QString hit = any.cap(0);
-        out += escaped(text.mid(from, at - from)) + "<a href=\"hbmention:" + escaped(pages.value(hit))
-               + "\">" + escaped(hit) + "</a>";
-        from = at + hit.length();
-        linked = true;
+    // One pass over the text, longest name first, so "@Ann" never takes the start of "@Anna". Each
+    // hit becomes one private-use char, so the styles (Markup) see a mention as a single word and
+    // can't cut an anchor; the anchors go back in once the text is escaped and styled.
+    QString plain = text;
+    QStringList anchors;
+    if (!pages.isEmpty()) {
+        QStringList names = pages.keys();
+        qSort(names.begin(), names.end(), longer);
+        QStringList alternatives;
+        foreach (const QString &n, names)
+            alternatives << QRegExp::escape(n);
+        const QRegExp any(alternatives.join("|"));
+        plain.clear();
+        int from = 0, at;
+        while ((at = any.indexIn(text, from)) != -1 && anchors.size() < 0x800) {
+            const QString hit = any.cap(0);
+            plain += text.mid(from, at - from) + QChar(0xE000 + anchors.size());
+            anchors << "<a href=\"hbmention:" + Markup::escaped(pages.value(hit)) + "\">" + Markup::escaped(hit) + "</a>";
+            from = at + hit.length();
+        }
+        plain += text.mid(from);
     }
-    return linked ? out + escaped(text.mid(from)) : QString();
+
+    QString out = Markup::html(plain);
+    if (out.isEmpty()) {
+        if (anchors.isEmpty())
+            return QString();
+        out = Markup::escaped(plain);
+    }
+    for (int i = 0; i < anchors.size(); ++i)
+        out.replace(QChar(0xE000 + i), anchors.at(i));
+    return out;
 }
 
 bool MessageKinds::fill(int kind, const QString &chat, const QString &id, const QString &text,
@@ -128,6 +131,7 @@ bool MessageKinds::fill(int kind, const QString &chat, const QString &id, const 
     data["linkUrl"] = preview ? extra.value("url").toString() : QString();
 
     QStringList lines;
+    data["gif"] = extra.value("gif").toBool() && kind == 2; // a video that plays by itself, in a loop
     data["spoiler"] = extra.value("spoiler").toBool() && (kind == 1 || kind == 2); // MessageRows takes it off once tapped
     data["invite"] = kind == 14 && !out ? chat : QString(); // the chat of an invite card we can join, for its button
     data["poll"] = kind == 11; // always set, so QML never reads undefined

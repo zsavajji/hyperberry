@@ -100,11 +100,13 @@ MediaBubble::MediaBubble(ListView *list, bool wide)
     m_noneText = docked(HorizontalAlignment::Center, VerticalAlignment::Center);
     m_none->add(m_noneText);
 
-    m_play = docked(HorizontalAlignment::Center, VerticalAlignment::Center);
-    m_play->setText(QString::fromUtf8("\xE2\x96\xB6")); // U+25B6
-    m_play->textStyle()->setFontSize(FontSize::PercentageValue);
-    m_play->textStyle()->setFontSizeValue(300);
-    m_play->textStyle()->setColor(Color::White);
+    // The play mark of the Stories tiles (StoryTile.qml), not the U+25B6 glyph, which showed as an emoji.
+    m_play = new ImageView();
+    m_play->setHorizontalAlignment(HorizontalAlignment::Center);
+    m_play->setVerticalAlignment(VerticalAlignment::Center);
+    m_play->setPreferredSize(m_ui->du(12), m_ui->du(12)); // 2x the Stories tiles' (the user, 2026-11-12)
+    m_play->setImageSource(Card::url("asset:///images/play.png"));
+    m_play->setOpacity(0.85f);
     // At the left in the picture card: the time takes the right, as on Android.
     m_length = docked(wide ? HorizontalAlignment::Left : HorizontalAlignment::Right, VerticalAlignment::Bottom);
     m_length->textStyle()->setBase(SystemDefaults::TextStyles::smallText());
@@ -118,13 +120,20 @@ MediaBubble::MediaBubble(ListView *list, bool wide)
     spoiler->textStyle()->setFontWeight(FontWeight::Bold);
     spoiler->textStyle()->setColor(Color::White);
     m_cover->add(spoiler);
+    // A picture or video being fetched: the preview is dimmed so the spinner shows (it was white, small and lost on
+    // the picture, the user 2026-11-12), and the play mark gives way to it.
+    m_dim = cover();
+    m_dim->setBackground(Card::color("#99000000"));
+    m_dim->setVisible(false);
     m_photoSpin = spinner();
+    m_photoSpin->setPreferredSize(m_ui->du(9), m_ui->du(9));
 
     m_photo->add(m_thumb);
     m_photo->add(m_none);
     m_photo->add(m_play);
     m_photo->add(m_length);
     m_photo->add(m_cover);
+    m_photo->add(m_dim);
     // The time's corner, 1 du in from the edges; empty unless the card puts the time in it.
     m_stamp = new Container();
     m_stamp->setHorizontalAlignment(HorizontalAlignment::Right);
@@ -304,6 +313,8 @@ void MediaBubble::refresh()
         return;
     const bool loading = m_list->property("mediaLoadingId").toString() == str("id");
     m_photoSpin->setRunning(loading && m_picture);
+    m_dim->setVisible(loading && m_picture);
+    m_play->setVisible(str("media") == "video" && !flag("spoiler") && !loading);
     m_fileSpin->setRunning(loading && !m_picture && !m_sticker);
 }
 

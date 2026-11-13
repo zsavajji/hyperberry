@@ -472,8 +472,8 @@ void MessageCard::fillColumn()
             m_label->setText(label);
     }
 
-    // With mentions the engine's html has them linked (MessageKinds::html, which drops the keycaps
-    // too); else the plain text. Links, numbers and addresses are tappable, opened by the system
+    // With mentions or WhatsApp's styles the html has them linked or styled (MessageKinds::html, which
+    // drops the keycaps too); else the plain text. Links, numbers and addresses are tappable, opened by the system
     // (the user's request, 0.0.1.132: a YouTube link did nothing), but not on a deleted message's note.
     const QString html = str("html");
     const QString text = str("text");

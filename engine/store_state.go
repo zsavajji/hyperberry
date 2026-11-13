@@ -191,6 +191,13 @@ WHERE chat = ? AND id = ?`, state, path, chat, id) > 0 {
 	}
 }
 
+// setThumb replaces a message's thumbnail: a video's premade one, once it is here.
+func (t *storeTx) setThumb(chat, id string, thumb []byte) {
+	if t.exec("UPDATE messages SET thumb = ? WHERE chat = ? AND id = ?", blob(thumb), chat, id) > 0 {
+		t.changed(chat, id)
+	}
+}
+
 // setPlayed marks a voice note played, by them (ours) or by us (theirs).
 func (t *storeTx) setPlayed(chat, id string) {
 	if t.exec("UPDATE messages SET played = 1 WHERE chat = ? AND id = ? AND kind = ? AND played = 0",

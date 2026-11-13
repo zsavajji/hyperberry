@@ -69,9 +69,10 @@ private:
     bb::cascades::ImageView *m_thumb;
     bb::cascades::Container *m_none;
     bb::cascades::Label *m_noneText;
-    bb::cascades::Label *m_play;
+    bb::cascades::ImageView *m_play;
     bb::cascades::Label *m_length;
     bb::cascades::Container *m_cover;
+    bb::cascades::Container *m_dim;
     bb::cascades::Container *m_stamp;
     bb::cascades::ActivityIndicator *m_photoSpin;
     bb::cascades::ImageView *m_stickerImage;

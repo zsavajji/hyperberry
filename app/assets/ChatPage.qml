@@ -250,10 +250,16 @@ Page {
             list.scrollToItem([i], ScrollAnimation.None)
         }
     }
-    // A photo opens in our viewer, anything else in the system's app for its type.
+    // The shape and kind of the video being fetched (openMedia sets them): a newer get replaces an older, so these are
+    // the ones that land.
+    property real videoRatio: 0.75
+    property bool videoGif: false
+    // A photo and a video open in our viewers, anything else in the system's app for its type.
     function mediaReady(msgId, kind, path) {
         if (kind == "photo") {
             nav.showPhoto(path)
+        } else if (kind == "video") {
+            nav.showVideo(path, page.videoRatio, page.videoGif)
         } else if (!media.openFile(path)) {
             mediaFailed.show()
         }
@@ -382,6 +388,8 @@ Page {
                     } else if (msg.media == "contact") {
                         media.importContact(msg.vcard)
                     } else {
+                        page.videoRatio = msg.ratio > 0 ? msg.ratio : 0.75
+                        page.videoGif = !!msg.gif
                         media.get(page.chat.jid, msg.id, msg.media)
                     }
                 }

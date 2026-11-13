@@ -14,12 +14,14 @@
 #include <bb/cascades/ListView>
 #include <bb/cascades/ScalingMethod>
 #include <bb/cascades/SystemDefaults>
+#include <bb/cascades/TextFormat>
 #include <bb/cascades/TextStyleDefinition>
 #include <bb/cascades/UIConfig>
 #include <bb/cascades/UIPalette>
 #include <bb/cascades/VerticalAlignment>
 
 #include "CardStyle.h"
+#include "Markup.h"
 
 using namespace bb::cascades;
 
@@ -248,7 +250,11 @@ void ChatRow::show(const QVariantMap &chat)
     // has what the call was there, red when missed.
     Card::style(m_preview, m_list, qRound(90 * scale));
     m_preview->textStyle()->setColor(m_calls && flag("missed") ? Card::color("#FF3333") : quiet);
-    m_preview->setText(m_calls ? str("detail") : Card::noKeycaps(str("preview")));
+    // WhatsApp's styles show in the preview as in the message (Markup.h); a line without any stays plain.
+    const QString line = m_calls ? str("detail") : Card::noKeycaps(str("preview"));
+    const QString html = m_calls ? QString() : Markup::html(line);
+    m_preview->setTextFormat(html.isEmpty() ? TextFormat::Plain : TextFormat::Html);
+    m_preview->setText(html.isEmpty() ? line : html);
 
     const Color badge = muted ? palette->plain() : primary;
     m_badge->setVisible(unread > 0);
