@@ -82,6 +82,8 @@ signals:
     void msgsChanged(const QString &chat, const QStringList &ids);
     // A stories event: a row of the stories table was added, changed or dropped.
     void storiesChanged();
+    // A storyviews event: someone viewed a story of ours (a row of story_views was added).
+    void storyViewsChanged();
     // A storyop event: story.post or story.delete (cmd "post" or "delete") of this story ended, ok or not.
     void storyOp(const QString &cmd, const QString &id, bool ok);
     // A typing event: who ("" in 1:1) started or stopped typing in the chat; voice while recording.

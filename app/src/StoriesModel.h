@@ -22,7 +22,8 @@ class EngineLink;
 // CallsModel; the list reloads only while `active` (the tab is shown), but `unseen`, all posters'
 // unseen stories (the tab's badge), is kept up to date always. Our own stories (poster "me") are one row,
 // "My story", always first, with `own` true and nothing unseen. The viewer (StoryViewer.qml) reads one
-// poster's stories through storiesOf and asks the engine for a file through fetch.
+// poster's stories through storiesOf and asks the engine for a file through fetch. Who viewed one of our
+// stories (the engine's story_views) is viewersOf, newest first, and how many viewCount.
 class StoriesModel : public bb::cascades::DataModel
 {
     Q_OBJECT
@@ -51,6 +52,11 @@ public:
     // A poster as the tile row has them (poster, own, name, initials, color, photo), for opening their stories from a chat; {} when
     // none of their stories is left.
     Q_INVOKABLE QVariantMap posterOf(const QString &poster);
+    // Who viewed our story id, newest first, one map each: jid (the viewer's key), name, initials, color, photo
+    // ("" when none) and time (the clock alone when it was today, else the day and the clock).
+    Q_INVOKABLE QVariantList viewersOf(const QString &id);
+    // How many viewed our story id; 0 when none or unknown.
+    Q_INVOKABLE int viewCount(const QString &id);
     // Asks the engine for the story's file (story.get); storyReady or storyFailed answers.
     Q_INVOKABLE void fetch(const QString &poster, const QString &id);
     // The viewer showed it: the engine marks it seen and sends the read receipt (story.seen).
@@ -72,6 +78,8 @@ signals:
     void activeChanged();
     void emptyChanged();
     void unseenChanged();
+    // The viewers of one of our stories changed: read viewersOf / viewCount again.
+    void viewsChanged();
 
 private slots:
     void reloadSoon();
@@ -82,6 +90,8 @@ private slots:
 
 private:
     QVariantMap storyMap(QSqlQuery &q, QSqlDatabase &db);
+    // The name to show: the chat's, else the one that came with the row, else "+number", else "Unknown".
+    QString personName(const QString &chatName, const QString &ownName, const QString &key) const;
     EngineLink *m_engine;
     void ask(const QString &cmd, const QString &poster, const QString &id, QVariantMap args);
     // The requests in flight: their id -> the cmd, the poster and the story.

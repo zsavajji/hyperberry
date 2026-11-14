@@ -128,6 +128,14 @@ CREATE TABLE poll_votes(
   seen INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY(poster, id));
 CREATE INDEX stories_by_time ON stories(ts);`,
+	// Who viewed our stories (stories.go): one row per story of ours (stories.poster = 'me') and viewer, from the read
+	// receipt their phone sends. id is the story's, viewer their chat key (as chats.jid), name theirs when the receipt
+	// came (NULL when none is known), ts when they viewed it, unix seconds. The rows go with their story.
+	`CREATE TABLE story_views(
+  id TEXT NOT NULL, viewer TEXT NOT NULL,
+  name TEXT,
+  ts INTEGER NOT NULL,
+  PRIMARY KEY(id, viewer));`,
 }
 
 // openChats opens chats.db in WAL mode and migrates it to the newest schema.

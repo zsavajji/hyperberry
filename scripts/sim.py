@@ -8,6 +8,8 @@
     scripts/sim.py voice N [seconds]  an incoming voice note in chat N (5 s by default)
     scripts/sim.py photo N       an incoming photo in chat N, downloaded at once
     scripts/sim.py react N [emoji]  chat N reacts to our newest message (👍 by default; "" takes it back)
+    scripts/sim.py story [text]  a text story of ours, as if posted here
+    scripts/sim.py storyview N   chat N's person views our newest story (a group can't)
     scripts/sim.py removed       the device removed on the phone
     scripts/sim.py off           the simulated chats removed, back to the real engine
     scripts/sim.py state         the engine's link body
@@ -98,6 +100,10 @@ def main(argv):
     elif cmd == "react" and len(argv) >= 2:
         emoji = {"emoji": argv[2]} if len(argv) > 2 else {}  # absent is 👍, "" a removal
         print(request("sim.react", n=int(argv[1]), **emoji))
+    elif cmd == "story":
+        print(request("sim.story", text=" ".join(argv[1:])))
+    elif cmd == "storyview" and len(argv) >= 2:
+        print(request("sim.storyview", n=int(argv[1])))
     else:
         sys.exit(__doc__)
 

@@ -9,6 +9,7 @@ The phone has only the trash can among the info page's and chat menu's icons (us
 (a plus, which the phone has only beside a contact, a place or an event), megaphone_action and
 help_action (a question mark in a ring, for About), back_action (a thin "<" chevron, the chat
 title bar's Back) and overflow_action (three vertical dots, the composer's ⋮ column).
+The story viewer's marks are heart.png and eye.png (who viewed).
 It also draws the app's icon, in every size, and the splash.
 
 They're white on transparent, so QML tints them with ImageView.filterColor (grey, or the
@@ -85,6 +86,17 @@ def main(out):
              for a in (2 * math.pi * i / 360 for i in range(360))]
     ImageDraw.Draw(img).polygon([(n * (0.5 + x / 36), n * (0.47 + y / 36)) for x, y in heart], white)
     img.resize((72, 72), Image.LANCZOS).save(f"{out}/heart.png")
+
+    # The story viewer's eye (who viewed our story): an almond outline round a filled pupil, 72 px.
+    n = 72 * S
+    img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    # Two arcs of one radius meet at the corners: the lids. r = (c² + h²) / 2h for a half-width c of 0.42 and a height h of 0.26.
+    r, lw = 0.469 * n, round(0.085 * n)
+    d.arc((0.5 * n - r, 0.709 * n - r, 0.5 * n + r, 0.709 * n + r), 206.5, 333.5, white, lw)
+    d.arc((0.5 * n - r, 0.291 * n - r, 0.5 * n + r, 0.291 * n + r), 26.5, 153.5, white, lw)
+    d.ellipse((0.37 * n, 0.37 * n, 0.63 * n, 0.63 * n), white)
+    img.resize((72, 72), Image.LANCZOS).save(f"{out}/eye.png")
 
     # The second tick's short stroke starts past the first tick's long one, as WhatsApp draws it.
     img, d = canvas(round(H * 1.3))

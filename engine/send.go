@@ -329,8 +329,13 @@ func (st *Store) queueRow(jid types.JID, chat, quote string, row msgRow) (msgRow
 	return <-quoted, <-made
 }
 
-// receipt moves the ticks of our messages, or clears unread when our other devices read a chat.
+// receipt moves the ticks of our messages, or clears unread when our other devices read a chat. A story's
+// receipts (status@broadcast) are the viewers of ours instead.
 func (st *Store) receipt(ctx context.Context, t *storeTx, cli *whatsmeow.Client, e *events.Receipt) {
+	if e.Chat == types.StatusBroadcastJID { // a story's receipts: who viewed ours (stories.go), never a chat's ticks
+		st.storyView(ctx, t, cli, e)
+		return
+	}
 	alt := e.SenderAlt
 	if e.IsFromMe {
 		alt = e.RecipientAlt

@@ -109,6 +109,12 @@ func (t *storeTx) deleteStory(poster, id string) {
 	if t.exec("DELETE FROM stories WHERE poster = ? AND id = ?", poster, id) > 0 {
 		t.stories = true
 	}
+	t.dropStoryViews()
+}
+
+// dropStoryViews: the views go with their story.
+func (t *storeTx) dropStoryViews() {
+	t.exec("DELETE FROM story_views WHERE id NOT IN (SELECT id FROM stories WHERE poster = ?)", ownStory)
 }
 
 // expireStories drops the stories 24 hours old, with their files. The UI hides them by their time as
@@ -118,6 +124,7 @@ func (t *storeTx) expireStories(now int64) {
 	if t.exec("DELETE FROM stories WHERE ts <= ?", now-storyLife) > 0 {
 		t.stories = true
 	}
+	t.dropStoryViews()
 }
 
 // dropStoryFiles deletes the downloaded files of the stories the condition picks, before their rows go.
@@ -345,6 +352,38 @@ func (s *Session) handleStorySeen(req json.RawMessage) (any, error) {
 		}()
 	}
 	return nil, nil
+}
+
+// storyView handles a receipt of status@broadcast: a contact who opens a story of ours sends a read receipt, as our
+// own viewer does (handleStorySeen), and that is the story's list of viewers. Kept once per story and viewer, and only
+// for a story of ours that is here. Someone with read receipts off sends none. Delivery receipts, and our own
+// devices', say nothing about viewers.
+func (st *Store) storyView(ctx context.Context, t *storeTx, cli *whatsmeow.Client, e *events.Receipt) {
+	if e.IsFromMe || e.Type != types.ReceiptTypeRead || e.Sender.IsEmpty() {
+		return
+	}
+	viewer := chatKey(ctx, t, cli.Store.LIDs, e.Sender, e.SenderAlt)
+	name := resolveName(ctx, cli, e.Sender, e.SenderAlt, "")
+	ts := e.Timestamp.Unix()
+	if e.Timestamp.IsZero() {
+		ts = time.Now().Unix()
+	}
+	for _, id := range e.MessageIDs {
+		if t.addStoryView(id, viewer, name, ts) {
+			st.log.Infof("story %s viewed by %s", id, viewer)
+		}
+	}
+}
+
+// addStoryView keeps one view of a story of ours that is here. It reports whether it was new.
+func (t *storeTx) addStoryView(id, viewer, name string, ts int64) bool {
+	if t.exec(`INSERT OR IGNORE INTO story_views(id, viewer, name, ts)
+SELECT ?, ?, NULLIF(?, ''), ? WHERE EXISTS(SELECT 1 FROM stories WHERE poster = ? AND id = ?)`,
+		id, viewer, name, ts, ownStory, id) == 0 {
+		return false
+	}
+	t.views = true
+	return true
 }
 
 // storyQuote reads what a reply or a reaction needs of a story: its kind, caption and inline thumbnail.
