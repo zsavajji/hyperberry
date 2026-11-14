@@ -363,6 +363,12 @@ TabbedPane {
         content: NavigationPane {
             id: storiesNav
             onPopTransitionEnded: page.destroy()
+            // A page that waits while another is over it (the story viewer under its viewers' page) goes on when it is the top again.
+            onTopChanged: {
+                if (storiesNav.top && storiesNav.top.uncovered) {
+                    storiesNav.top.uncovered()
+                }
+            }
         }
     }
 }

@@ -15,6 +15,8 @@ import hyperberry 1.0
 // At the bottom, a reply field and a heart: a reply goes to the poster's chat quoting the story (story.reply),
 // the heart is a reaction to it (story.react). The story waits while the field has focus.
 // Our own stories (poster "me") have no reply bar or heart, and a trash can in the header takes one back (story.delete).
+// On them a band at the bottom has an eye and the number of people who viewed the story; a tap pushes
+// StoryViewersPage over this page and the story waits until it is the pane's top again.
 Page {
     id: sheet
     actionBarVisibility: ChromeVisibility.Hidden
@@ -50,6 +52,8 @@ Page {
     // The emoji picker is open: the story waits.
     property bool picking: false
     property bool own: sheet.poster.poster == "me"
+    // How many viewed the story on screen; ours only.
+    property int views: 0
 
     // The story startId when it is given (a tap on a quote of it) and there, else the first one not seen, else the first.
     function start(row, startId) {
@@ -76,6 +80,25 @@ Page {
         }
         sheet.segs = made
         sheet.show(first)
+    }
+    function countViews() {
+        sheet.views = sheet.own && sheet.cur.id ? storyList.viewCount(sheet.cur.id) : 0
+    }
+    // The viewers of the story on screen, on a page of its own over this one: the story waits meanwhile.
+    function showViewers() {
+        if (sheet.index < 0 || sheet.closing) {
+            return
+        }
+        sheet.paused = true
+        var p = viewersDef.createObject()
+        p.load(sheet.cur.id)
+        storiesNav.push(p)
+    }
+    // main.qml calls this when this page is the pane's top again (Back from the viewers' page): the story goes on.
+    function uncovered() {
+        if (!sheet.closing) {
+            sheet.paused = reply.focused || sheet.picking
+        }
     }
     // Once: the ticker could ask again during the pop's slide.
     function close() {
@@ -118,6 +141,7 @@ Page {
         if (ahead && ahead.kind == 2 && !ahead.ready) {
             storyList.fetch(sheet.poster.poster, ahead.id)
         }
+        sheet.countViews()
         ticker.start()
     }
     function next() {
@@ -225,6 +249,7 @@ Page {
         storyList.storyFailed.connect(sheet.failed)
         storyList.replyFailed.connect(sheet.replyFailed)
         storyList.reactFailed.connect(sheet.reactFailed)
+        storyList.viewsChanged.connect(sheet.countViews)
     }
     onPausedChanged: {
         if (sheet.videoShown) {
@@ -236,6 +261,10 @@ Page {
         }
     }
     attachedObjects: [
+        ComponentDefinition {
+            id: viewersDef
+            source: "StoryViewersPage.qml"
+        },
         Timer {
             id: ticker
             interval: 100
@@ -486,6 +515,41 @@ Page {
                         onTapped: sheet.heart()
                     }
                 }
+            }
+        }
+        // Ours: who viewed it. An eye and the count over a band, where the others' reply bar is; a tap slides the list in.
+        Container {
+            visible: sheet.own
+            horizontalAlignment: HorizontalAlignment.Fill
+            verticalAlignment: VerticalAlignment.Bottom
+            preferredHeight: ui.du(10)
+            background: Color.create(0.0, 0.0, 0.0, 0.55)
+            layout: DockLayout {}
+            Container {
+                horizontalAlignment: HorizontalAlignment.Center
+                verticalAlignment: VerticalAlignment.Center
+                layout: StackLayout {
+                    orientation: LayoutOrientation.LeftToRight
+                }
+                ImageView {
+                    verticalAlignment: VerticalAlignment.Center
+                    preferredWidth: ui.du(5.5)
+                    preferredHeight: ui.du(5.5)
+                    imageSource: "asset:///images/eye.png"
+                    filterColor: Color.White
+                }
+                Label {
+                    verticalAlignment: VerticalAlignment.Center
+                    leftMargin: ui.du(1)
+                    text: "" + sheet.views
+                    textFormat: TextFormat.Plain
+                    textStyle.fontSize: FontSize.PercentageValue
+                    textStyle.fontSizeValue: nav.bodySize
+                    textStyle.color: Color.White
+                }
+            }
+            gestureHandlers: TapHandler {
+                onTapped: sheet.showViewers()
             }
         }
         // The segments, and under them Back, the poster and the time, over a band so white reads on any picture.

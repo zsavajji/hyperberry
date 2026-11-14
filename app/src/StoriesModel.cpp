@@ -117,10 +117,20 @@ StoriesModel::StoriesModel(EngineLink *engine, QObject *parent)
     connect(&m_soon, SIGNAL(timeout()), this, SLOT(reload()));
     connect(engine, SIGNAL(storiesChanged()), this, SLOT(reloadSoon()));
     connect(engine, SIGNAL(connectedChanged()), this, SLOT(reloadSoon()));
+    connect(engine, SIGNAL(storyViewsChanged()), this, SIGNAL(viewsChanged()));
     connect(engine, SIGNAL(replied(QString, QString, QVariant)), this, SLOT(onReplied(QString, QString, QVariant)));
     connect(engine, SIGNAL(failureChanged()), this, SLOT(onFailure()));
     connect(engine, SIGNAL(storyOp(QString, QString, bool)), this, SLOT(onStoryOp(QString, QString, bool)));
     reloadSoon();
+}
+
+QString StoriesModel::personName(const QString &chatName, const QString &ownName, const QString &key) const
+{
+    if (!chatName.isEmpty())
+        return chatName;
+    if (!ownName.isEmpty())
+        return ownName;
+    return key.endsWith("@s.whatsapp.net") ? "+" + key.section('@', 0, 0) : tr("Unknown");
 }
 
 int StoriesModel::childCount(const QVariantList &indexPath)
@@ -194,11 +204,7 @@ void StoriesModel::reload()
                 poster = p;
                 row = QVariantMap();
                 looking = true;
-                QString name = q.value(9).toString();
-                if (name.isEmpty())
-                    name = q.value(8).toString();
-                if (name.isEmpty())
-                    name = p.endsWith("@s.whatsapp.net") ? "+" + p.section('@', 0, 0) : tr("Unknown");
+                const QString name = personName(q.value(9).toString(), q.value(8).toString(), p);
                 const bool own = p == kOwn;
                 row["poster"] = p;
                 row["own"] = own;
@@ -315,6 +321,53 @@ QVariantList StoriesModel::storiesOf(const QString &poster)
     return list;
 }
 
+QVariantList StoriesModel::viewersOf(const QString &id)
+{
+    QVariantList list;
+    QSqlDatabase db = QSqlDatabase::database(kDb, false);
+    if (!db.isOpen() && !db.open())
+        return list;
+    QSqlQuery q(db);
+    q.prepare("SELECT v.viewer, v.ts, v.name, c.name, c.photo FROM story_views v "
+              "LEFT JOIN chats c ON c.jid = v.viewer WHERE v.id = ? ORDER BY v.ts DESC");
+    q.addBindValue(id);
+    if (!q.exec()) {
+        qWarning() << "stories:" << q.lastError().text();
+        return list;
+    }
+    dayFormatter().applyCurrentTimeAsAnchor();
+    const QLocale locale = m_region.locale();
+    const QString clock = timeFormat(locale, DateFormat::Short);
+    const QDate today = QDate::currentDate();
+    while (q.next()) {
+        const QString key = q.value(0).toString();
+        const QString name = personName(q.value(3).toString(), q.value(2).toString(), key);
+        const QDateTime when = QDateTime::fromTime_t(q.value(1).toUInt());
+        QVariantMap row;
+        row["jid"] = key;
+        row["name"] = name;
+        row["initials"] = initials(name);
+        row["color"] = pickColor(key, kColors, kColorCount);
+        row["photo"] = q.value(4).toString();
+        row["time"] = when.date() == today ? locale.toString(when.time(), clock)
+                                           : dayLabel(when, today, locale, dayFormatter()) + ", "
+                                                 + locale.toString(when.time(), clock);
+        list.append(row);
+    }
+    return list;
+}
+
+int StoriesModel::viewCount(const QString &id)
+{
+    QSqlDatabase db = QSqlDatabase::database(kDb, false);
+    if (!db.isOpen() && !db.open())
+        return 0;
+    QSqlQuery q(db);
+    q.prepare("SELECT count(*) FROM story_views WHERE id = ?");
+    q.addBindValue(id);
+    return q.exec() && q.next() ? q.value(0).toInt() : 0;
+}
+
 QVariantMap StoriesModel::storyOf(const QString &poster, const QString &id)
 {
     QSqlDatabase db = QSqlDatabase::database(kDb, false);
@@ -351,11 +404,7 @@ QVariantMap StoriesModel::posterOf(const QString &poster)
     if (!q.exec() || !q.next())
         return row;
     const bool own = poster == kOwn;
-    QString name = q.value(1).toString();
-    if (name.isEmpty())
-        name = q.value(0).toString();
-    if (name.isEmpty())
-        name = poster.endsWith("@s.whatsapp.net") ? "+" + poster.section('@', 0, 0) : tr("Unknown");
+    const QString name = personName(q.value(1).toString(), q.value(0).toString(), poster);
     QString photo = q.value(2).toString();
     if (own) {
         const QString me = QDir::homePath() + "/profile/me.jpg";

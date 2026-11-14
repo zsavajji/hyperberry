@@ -2261,6 +2261,19 @@
     </message>
 </context>
 <context>
+    <name>StoryViewersPage</name>
+    <message>
+        <location filename="../assets/StoryViewersPage.qml" line="1" />
+        <source>Viewed by</source>
+        <translation>इन्होंने देखा</translation>
+    </message>
+    <message>
+        <location filename="../assets/StoryViewersPage.qml" line="1" />
+        <source>No views yet</source>
+        <translation>अभी तक किसी ने नहीं देखा</translation>
+    </message>
+</context>
+<context>
     <name>StoryComposer</name>
     <message>
         <location filename="../assets/StoryComposer.qml" line="1" />

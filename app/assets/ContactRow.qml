@@ -2,8 +2,9 @@ import bb.cascades 1.4
 
 // One row of the address book (NewChatPage, NewGroupPage) or of a group's members (CallPickPage):
 // the tile the chat will have in the chat list, its picture over it when the row has one, the name,
-// a 2 px separator, and a check when the contact is chosen. contact is a row of ContactPicker's
-// model; the view supplies the emoji style and sizes as the chat list's.
+// a 2 px separator, a check when the contact is chosen and, for the rows that carry a time, when (a story's
+// viewers). contact is a row of ContactPicker's model; the view supplies the emoji style and sizes as the
+// chat list's.
 Container {
     property variant contact
     id: row
@@ -55,6 +56,16 @@ Container {
             textStyle.base: row.ListItem.view.emojiStyle
             textStyle.fontSize: FontSize.PercentageValue
             textStyle.fontSizeValue: row.ListItem.view.bodySize
+        }
+        // When, at the right, for the rows that say (a story's viewers).
+        Label {
+            visible: !!row.contact.time
+            verticalAlignment: VerticalAlignment.Center
+            text: row.contact.time ? row.contact.time : ""
+            textFormat: TextFormat.Plain
+            textStyle.fontSize: FontSize.PercentageValue
+            textStyle.fontSizeValue: row.ListItem.view.smallSize
+            textStyle.color: ui.palette.secondaryTextOnPlain
         }
         ImageView {
             visible: !!row.contact.chosen
