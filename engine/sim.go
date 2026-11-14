@@ -68,6 +68,7 @@ func newSim(srv *Server, st *Store, log waLog.Logger) *Sim {
 	s.registerVoiceSend()
 	s.registerSimMedia()
 	s.registerSimReact()
+	s.registerSimStories()
 	s.registerProfile()
 	srv.Handle("media.send", s.handleMediaSend)
 	srv.Handle("msg.send", s.handleSend)

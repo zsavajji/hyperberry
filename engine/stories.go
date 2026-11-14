@@ -369,13 +369,21 @@ func (st *Store) storyView(ctx context.Context, t *storeTx, cli *whatsmeow.Clien
 		ts = time.Now().Unix()
 	}
 	for _, id := range e.MessageIDs {
-		if t.exec(`INSERT OR IGNORE INTO story_views(id, viewer, name, ts)
-SELECT ?, ?, NULLIF(?, ''), ? WHERE EXISTS(SELECT 1 FROM stories WHERE poster = ? AND id = ?)`,
-			id, viewer, name, ts, ownStory, id) > 0 {
-			t.views = true
+		if t.addStoryView(id, viewer, name, ts) {
 			st.log.Infof("story %s viewed by %s", id, viewer)
 		}
 	}
+}
+
+// addStoryView keeps one view of a story of ours that is here. It reports whether it was new.
+func (t *storeTx) addStoryView(id, viewer, name string, ts int64) bool {
+	if t.exec(`INSERT OR IGNORE INTO story_views(id, viewer, name, ts)
+SELECT ?, ?, NULLIF(?, ''), ? WHERE EXISTS(SELECT 1 FROM stories WHERE poster = ? AND id = ?)`,
+		id, viewer, name, ts, ownStory, id) == 0 {
+		return false
+	}
+	t.views = true
+	return true
 }
 
 // storyQuote reads what a reply or a reaction needs of a story: its kind, caption and inline thumbnail.
