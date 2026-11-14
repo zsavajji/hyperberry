@@ -1,8 +1,8 @@
 --- a/socket/framesocket.go
 +++ b/socket/framesocket.go
-@@ -190,8 +190,9 @@
- 					msg = msg[length:]
- 					fs.frameComplete()
+@@ -227,8 +227,9 @@ func (fs *FrameSocket) processData(msg []byte) {
+ 						return
+ 					}
  				} else {
 -					fs.incoming = make([]byte, length)
 -					copy(fs.incoming, msg)
@@ -12,14 +12,16 @@
  					msg = nil
  				}
  			} else {
-@@ -201,11 +202,11 @@
+@@ -238,13 +239,13 @@ func (fs *FrameSocket) processData(msg []byte) {
  			}
  		} else {
  			if fs.receivedLength+len(msg) >= fs.incomingLength {
 -				copy(fs.incoming[fs.receivedLength:], msg[:fs.incomingLength-fs.receivedLength])
 +				fs.incoming = append(fs.incoming, msg[:fs.incomingLength-fs.receivedLength]...)
  				msg = msg[fs.incomingLength-fs.receivedLength:]
- 				fs.frameComplete()
+ 				if !fs.frameComplete() {
+ 					return
+ 				}
  			} else {
 -				copy(fs.incoming[fs.receivedLength:], msg)
 +				fs.incoming = append(fs.incoming, msg...)

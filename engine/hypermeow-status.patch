@@ -1,6 +1,6 @@
 --- a/message.go
 +++ b/message.go
-@@ -93,6 +93,13 @@
+@@ -93,6 +93,13 @@ func (cli *Client) updateMessageContactNames(ctx context.Context, info *types.Me
  }
  
  func (cli *Client) handleUnencryptedMessage(ctx context.Context, node *waBinary.Node) {
@@ -16,10 +16,10 @@
  		cli.Log.Warnf("Failed to parse message: %v", err)
 --- a/send.go
 +++ b/send.go
-@@ -167,6 +167,10 @@
- 	Meta *types.MsgMetaInfo
- 	// use this only if you know what you are doing
+@@ -174,6 +174,10 @@ type SendRequestExtra struct {
  	AdditionalNodes *[]waBinary.Node
+ 
+ 	CheckPermissions bool
 +	// HyperBerry: for a status (sent to status@broadcast), the users to send it to, and ourselves, instead of
 +	// the recipients the account's status privacy settings give: a story for chosen people, or a reaction to a
 +	// story, which goes to its poster alone. Empty means the privacy settings.
@@ -27,7 +27,7 @@
  }
  
  // SendMessage sends the given message.
-@@ -333,6 +337,15 @@
+@@ -354,6 +358,15 @@ func (cli *Client) SendMessage(ctx context.Context, to types.JID, message *waE2E
  				// Why is this set to PN?
  				extraParams.addressingMode = types.AddressingModePN
  			}
