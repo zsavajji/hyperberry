@@ -304,6 +304,7 @@ func (st *Store) clear() {
 		t.exec("DELETE FROM reactions")
 		t.exec("DELETE FROM poll_votes")
 		t.exec("DELETE FROM stories")
+		t.exec("DELETE FROM story_views")
 		t.stories = true
 		t.exec("DELETE FROM chats")
 	}
@@ -328,7 +329,9 @@ type storeTx struct {
 	after []func()                   // afterCommit's
 	// A story was added, changed or dropped (stories.go): emit "stories" after the commit.
 	stories bool
-	stmts   map[string]*sql.Stmt // exec's, by their SQL
+	// A view of one of our stories was recorded: emit "storyviews" after the commit.
+	views bool
+	stmts map[string]*sql.Stmt // exec's, by their SQL
 }
 
 // run runs one op; a failing or panicking op doesn't stop the batch.
@@ -512,6 +515,9 @@ func (t *storeTx) emit(srv *Server) {
 	}
 	if t.stories {
 		srv.Emit("stories", map[string]any{})
+	}
+	if t.views {
+		srv.Emit("storyviews", map[string]any{})
 	}
 }
 

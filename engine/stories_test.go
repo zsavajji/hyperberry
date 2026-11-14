@@ -129,6 +129,64 @@ func TestStories(t *testing.T) {
 	}
 }
 
+// Who viewed our stories: a read receipt of status@broadcast for a story of ours, once per story and viewer.
+func TestStoryViews(t *testing.T) {
+	st, cli := historyFixture(t)
+	pia := types.NewJID("4915700000007", types.DefaultUserServer)
+	bo := types.NewJID("4915700000008", types.DefaultUserServer)
+	feed := func(e any) { st.handle(cli, e); st.runOp(func(*storeTx) {}) }
+	views := func(where string, args ...any) int {
+		return rows(st, "SELECT count(*) FROM story_views WHERE "+where, args...)
+	}
+	text := &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: proto.String("hello")}}
+	for _, id := range []string{"S1", "S2"} {
+		own := status(pia, id, time.Minute, text)
+		own.Info.IsFromMe = true
+		feed(own)
+	}
+	feed(status(pia, "P1", time.Minute, text)) // pia's own story, not ours
+	seen := func(who types.JID, typ types.ReceiptType, fromMe bool, ids ...string) *events.Receipt {
+		return &events.Receipt{MessageSource: types.MessageSource{Chat: types.StatusBroadcastJID, Sender: who, IsFromMe: fromMe, IsGroup: true},
+			MessageIDs: ids, Type: typ, Timestamp: time.Unix(1700000000, 0)}
+	}
+
+	feed(seen(pia, types.ReceiptTypeRead, false, "S1"))
+	if views("id = 'S1' AND viewer = ? AND ts = 1700000000", pia.String()) != 1 || views("1") != 1 {
+		t.Errorf("a read receipt: %d rows, want the one of S1 by pia", views("1"))
+	}
+	feed(seen(pia, types.ReceiptTypeRead, false, "S1"))
+	if views("1") != 1 {
+		t.Errorf("the same receipt twice: %d rows, want 1", views("1"))
+	}
+	feed(seen(bo, types.ReceiptTypeRead, false, "S1"))
+	if views("id = 'S1'") != 2 {
+		t.Errorf("a second viewer: %d rows, want 2", views("id = 'S1'"))
+	}
+	feed(seen(pia, types.ReceiptTypeRead, false, "S2"))
+
+	// Not recorded: a delivery receipt, our own device's, a story that doesn't exist, and someone else's story.
+	feed(seen(bo, "", false, "S2"))
+	feed(seen(bo, types.ReceiptTypeRead, true, "S2"))
+	feed(seen(bo, types.ReceiptTypeRead, false, "nope"))
+	feed(seen(bo, types.ReceiptTypeRead, false, "P1"))
+	if views("1") != 3 {
+		t.Errorf("%d rows after the receipts to ignore, want 3", views("1"))
+	}
+	if c, m := rows(st, "SELECT count(*) FROM chats"), rows(st, "SELECT count(*) FROM messages"); c+m != 0 {
+		t.Errorf("%d chats and %d messages from the receipts, want none", c, m)
+	}
+
+	// The views go with their story, and with the sweep.
+	st.runOp(func(tx *storeTx) { tx.deleteStory(ownStory, "S1") })
+	if views("id = 'S1'") != 0 || views("id = 'S2'") != 1 {
+		t.Errorf("after S1 is deleted: %d of S1 and %d of S2, want 0 and 1", views("id = 'S1'"), views("id = 'S2'"))
+	}
+	st.runOp(func(tx *storeTx) { tx.expireStories(time.Now().Unix() + storyLife + 60) })
+	if views("1") != 0 {
+		t.Errorf("%d views after the sweep, want 0", views("1"))
+	}
+}
+
 // A reply to a story: no session with the phone here, so the send fails, but our row is in the poster's chat
 // first, quoting the story, and the quote that goes out names the status and carries its thumbnail.
 func TestStoryReply(t *testing.T) {
