@@ -138,6 +138,11 @@ func TestMoreKinds(t *testing.T) {
 		{"animated sticker", &waE2E.Message{StickerMessage: &waE2E.StickerMessage{IsAnimated: proto.Bool(true)}}, msgSticker, "", "Sticker", `{"animated":true}`, false},
 		{"payment stays unknown", &waE2E.Message{SendPaymentMessage: &waE2E.SendPaymentMessage{}}, msgOther, unknownText, "Message", "", false},
 	}
+	// Every kind again as a forward: they now come wrapped (seen on the Q10 2026-11-15).
+	for _, tc := range tests {
+		tc.name, tc.m = "forwarded "+tc.name, &waE2E.Message{BotForwardedMessage: &waE2E.FutureProofMessage{Message: tc.m}}
+		tests = append(tests, tc)
+	}
 	for _, tc := range tests {
 		e := &events.Message{Message: tc.m, IsViewOnce: tc.once, Info: types.MessageInfo{ID: "id", Timestamp: time.Unix(100, 0)}}
 		r, ok := rowFromMessage("c", e, "")
