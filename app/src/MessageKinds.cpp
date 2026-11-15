@@ -130,6 +130,7 @@ bool MessageKinds::fill(int kind, const QString &chat, const QString &id, const 
 
     QStringList lines;
     data["gif"] = extra.value("gif").toBool() && kind == 2; // a video that plays by itself, in a loop
+    data["forwarded"] = extra.value("forwarded").toInt(); // the score: 5 and up is "Forwarded many times"
     data["spoiler"] = extra.value("spoiler").toBool() && (kind == 1 || kind == 2); // MessageRows takes it off once tapped
     data["invite"] = kind == 14 && !out ? chat : QString(); // the chat of an invite card we can join, for its button
     data["poll"] = kind == 11; // always set, so QML never reads undefined

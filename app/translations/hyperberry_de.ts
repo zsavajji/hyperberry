@@ -970,6 +970,14 @@
 <context>
     <name>MessageItem</name>
     <message>
+        <source>Forwarded</source>
+        <translation>Weitergeleitet</translation>
+    </message>
+    <message>
+        <source>Forwarded many times</source>
+        <translation>Häufig weitergeleitet</translation>
+    </message>
+    <message>
         <location filename="../assets/MessageItem.qml" line="30" />
         <source>Reply</source>
         <translation>Antworten</translation>

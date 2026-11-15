@@ -56,6 +56,9 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
     , m_body(0)
     , m_small(0)
     , m_sender(0)
+    , m_fwd(0)
+    , m_fwdIcon(0)
+    , m_fwdText(0)
     , m_quote(0)
     , m_bar(0)
     , m_quoteName(0)
@@ -251,6 +254,8 @@ void MessageCard::show(const QVariantMap &msg)
     // The parts this message needs and the card hasn't made yet.
     if (!str("sender").isEmpty() && !m_sender)
         makeSender();
+    if (m_msg.value("forwarded").toInt() > 0 && !m_fwd)
+        makeForwarded();
     if (!str("quote").isEmpty() && !m_quote)
         makeQuote();
     if (m_rich && !str("label").isEmpty() && !m_label)
@@ -348,6 +353,13 @@ void MessageCard::restyle()
     m_tick = -1;
     if (m_sender)
         Card::style(m_sender, m_list, small);
+    if (m_fwd) {
+        Card::style(m_fwdText, m_list, small);
+        m_fwdText->textStyle()->setFontStyle(FontStyle::Italic);
+        m_fwdText->textStyle()->setColor(quiet);
+        m_fwdIcon->setFilterColor(quiet);
+        m_fwdIcon->setPreferredSize(m_ui->du(2.2 * scale), m_ui->du(2.2 * scale));
+    }
     if (m_quote) {
         m_bar->setBackground(m_ui->palette()->primary());
         Card::style(m_quoteName, m_list, small);
@@ -371,6 +383,26 @@ void MessageCard::makeSender()
     m_sender->setBottomMargin(m_ui->du(0.5) + m_ui->px(2)); // +2 px (Q10, 0.0.1.212)
     m_sender->textStyle()->setFontWeight(FontWeight::Bold);
     (m_head ? m_head : m_col)->insert(0, m_sender);
+    m_styled = false;
+}
+
+// A forward's line, as WhatsApp's: under the sender, over the quote.
+void MessageCard::makeForwarded()
+{
+    m_fwd = new Container();
+    m_fwd->setLayout(Card::across());
+    m_fwd->setTopMargin(0);
+    m_fwd->setBottomMargin(m_ui->du(0.5));
+    m_fwdIcon = new ImageView();
+    m_fwdIcon->setVerticalAlignment(VerticalAlignment::Center);
+    m_fwdIcon->setScalingMethod(ScalingMethod::AspectFit);
+    m_fwdIcon->setLoadEffect(ImageViewLoadEffect::None);
+    m_fwdIcon->setRightMargin(m_ui->du(0.5));
+    m_fwdText = new Label();
+    m_fwdText->setVerticalAlignment(VerticalAlignment::Center);
+    m_fwd->add(m_fwdIcon);
+    m_fwd->add(m_fwdText);
+    (m_head ? m_head : m_col)->insert(m_sender ? 1 : 0, m_fwd);
     m_styled = false;
 }
 
@@ -423,7 +455,7 @@ void MessageCard::makeQuote()
     TapHandler *tap = new TapHandler(m_quote);
     m_quote->addGestureHandler(tap);
     connect(tap, SIGNAL(tapped(bb::cascades::TapEvent *)), this, SLOT(onQuote()));
-    (m_head ? m_head : m_col)->insert(m_sender ? 1 : 0, m_quote);
+    (m_head ? m_head : m_col)->insert((m_sender ? 1 : 0) + (m_fwd ? 1 : 0), m_quote);
     m_styled = false;
 }
 
@@ -498,6 +530,16 @@ void MessageCard::fillColumn()
         }
     }
 
+    // WhatsApp's "many times" is a score of 5 and up.
+    const int fwd = deleted ? 0 : m_msg.value("forwarded").toInt();
+    if (m_fwd) {
+        m_fwd->setVisible(fwd > 0);
+        if (fwd > 0) {
+            m_fwdText->setText(fwd >= 5 ? Card::tr(kContext, "Forwarded many times") : Card::tr(kContext, "Forwarded"));
+            m_fwdIcon->setImageSource(Card::url(fwd >= 5 ? "asset:///images/forward_many.png" : "asset:///images/forward.png"));
+        }
+    }
+
     const QString quote = str("quote");
     if (m_quote) {
         m_quote->setVisible(!quote.isEmpty());
@@ -551,7 +593,7 @@ void MessageCard::fillColumn()
     // The picture card: the head when there's a sender or quote, the card when there's a caption
     // (or no picture: a deleted one).
     if (m_head) {
-        m_head->setVisible(!sender.isEmpty() || !quote.isEmpty());
+        m_head->setVisible(!sender.isEmpty() || fwd > 0 || !quote.isEmpty());
         m_card->setVisible(!text.isEmpty() || !str("label").isEmpty() || str("media").isEmpty());
     }
 }
@@ -571,7 +613,7 @@ void MessageCard::fillFoot()
     // ponytail: linear in the scale, not measured at 90-140 %.
     // In the picture card the head holds them, so the caption is the card's first line. +2 px for
     // the time at 85 %, whose baseline sits higher (Q10, 0.0.1.212: +3 was 1 px low; 0.0.1.216: 2 more).
-    const bool small = !m_head && (!str("sender").isEmpty() || !str("quote").isEmpty());
+    const bool small = !m_head && (!str("sender").isEmpty() || (!flag("deleted") && m_msg.value("forwarded").toInt() > 0) || !str("quote").isEmpty());
     const bool onPicture = m_head && !m_card->isVisible();
     const int place = onPicture ? 2 : m_words->isVisible() ? 1 : m_voice && flag("voice") ? 3 : 0;
     placeTime(place);

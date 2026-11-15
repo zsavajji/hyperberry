@@ -5,7 +5,7 @@ static const long long kGap = 60;
 
 static bool fits(const Albums::Row &r)
 {
-    return (r.kind == 1 || r.kind == 2) && !r.deleted && !r.text && !r.quote && !r.spoiler;
+    return (r.kind == 1 || r.kind == 2) && !r.deleted && !r.text && !r.quote && !r.spoiler && !r.forwarded;
 }
 
 // r may follow p in an album. Same sender: ours are all out, a group's by messages.sender.

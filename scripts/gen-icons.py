@@ -9,7 +9,7 @@ The phone has only the trash can among the info page's and chat menu's icons (us
 (a plus, which the phone has only beside a contact, a place or an event), megaphone_action and
 help_action (a question mark in a ring, for About), back_action (a thin "<" chevron, the chat
 title bar's Back) and overflow_action (three vertical dots, the composer's ⋮ column).
-The story viewer's marks are heart.png and eye.png (who viewed).
+The story viewer's marks are heart.png and eye.png (who viewed); a forwarded card's, forward.png and forward_many.png.
 It also draws the app's icon, in every size, and the splash.
 
 They're white on transparent, so QML tints them with ImageView.filterColor (grey, or the
@@ -97,6 +97,20 @@ def main(out):
     d.arc((0.5 * n - r, 0.291 * n - r, 0.5 * n + r, 0.291 * n + r), 26.5, 153.5, white, lw)
     d.ellipse((0.37 * n, 0.37 * n, 0.63 * n, 0.63 * n), white)
     img.resize((72, 72), Image.LANCZOS).save(f"{out}/eye.png")
+
+    # A forward's mark over its card (WhatsApp's "Forwarded"): a shaft curving up and right into a head,
+    # 72 px; two heads for "Forwarded many times".
+    for name, heads in (("forward", 1), ("forward_many", 2)):
+        n = 72 * S
+        img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        lw = round(0.09 * n)
+        d.arc((0.12 * n, 0.4 * n, 1.04 * n, 1.32 * n), 180, 270, white, lw)
+        d.line(((0.58 * n, 0.4 * n + lw / 2 - 1), (0.84 * n, 0.4 * n + lw / 2 - 1)), white, lw)
+        for k in range(heads):
+            x = 0.9 - 0.2 * k
+            d.line(((x - 0.22) * n, 0.2 * n, x * n, 0.445 * n, (x - 0.22) * n, 0.69 * n), white, lw, joint="curve")
+        img.resize((72, 72), Image.LANCZOS).save(f"{out}/{name}.png")
 
     # The second tick's short stroke starts past the first tick's long one, as WhatsApp draws it.
     img, d = canvas(round(H * 1.3))

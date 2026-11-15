@@ -425,6 +425,7 @@ void MessageModel::rebuild()
         r.deleted = m.data["deleted"].toBool();
         r.text = !m.data["text"].toString().isEmpty();
         r.spoiler = m.data["spoiler"].toBool();
+        r.forwarded = m.data["forwarded"].toInt() > 0;
         r.quote = !m.data["quote"].toString().isEmpty();
         r.out = m.data["out"].toBool();
         r.sender = m.who.toUtf8().constData();

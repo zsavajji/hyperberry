@@ -972,6 +972,14 @@
 <context>
     <name>MessageItem</name>
     <message>
+        <source>Forwarded</source>
+        <translation>Пересланное</translation>
+    </message>
+    <message>
+        <source>Forwarded many times</source>
+        <translation>Пересылалось много раз</translation>
+    </message>
+    <message>
         <location filename="../assets/MessageItem.qml" line="30" />
         <source>Reply</source>
         <translation>Ответить</translation>

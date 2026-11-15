@@ -78,6 +78,7 @@ private:
     Invites *joiner() const;
 
     void makeSender();
+    void makeForwarded();
     void makeQuote();
     void makeLabel();
     void makeJoin();
@@ -134,6 +135,10 @@ private:
     bb::cascades::Container *m_card;
     bb::cascades::Container *m_col;
     bb::cascades::Label *m_sender;
+    // "Forwarded", or "Forwarded many times", under the sender: an arrow and a grey italic word.
+    bb::cascades::Container *m_fwd;
+    bb::cascades::ImageView *m_fwdIcon;
+    bb::cascades::Label *m_fwdText;
     bb::cascades::Container *m_quote;
     bb::cascades::Container *m_bar;
     bb::cascades::Label *m_quoteName;

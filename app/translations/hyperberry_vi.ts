@@ -968,6 +968,14 @@
 <context>
     <name>MessageItem</name>
     <message>
+        <source>Forwarded</source>
+        <translation>Đã chuyển tiếp</translation>
+    </message>
+    <message>
+        <source>Forwarded many times</source>
+        <translation>Đã chuyển tiếp nhiều lần</translation>
+    </message>
+    <message>
         <location filename="../assets/MessageItem.qml" line="30" />
         <source>Reply</source>
         <translation>Trả lời</translation>
