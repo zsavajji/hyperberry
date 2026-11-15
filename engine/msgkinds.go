@@ -229,13 +229,14 @@ func fillExtra(r *msgRow, m *waE2E.Message) {
 	}
 }
 
-// withSpoiler adds spoiler to a row's extra, keeping what's there. WhatsApp's spoiler wrapper is opened by flatten, so apply looks for it first.
-func withSpoiler(extra string) string {
+// withKey sets key to the JSON value raw in a row's extra, keeping what's there: a spoiler, a
+// forward. WhatsApp's wrappers for both are opened by flatten, so apply looks for them first.
+func withKey(extra, key, raw string) string {
 	x := map[string]json.RawMessage{}
 	if extra != "" && json.Unmarshal([]byte(extra), &x) != nil {
 		return extra
 	}
-	x["spoiler"] = json.RawMessage("true")
+	x[key] = json.RawMessage(raw)
 	b, err := json.Marshal(x)
 	if err != nil {
 		return extra

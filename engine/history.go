@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"sort"
+	"strconv"
 
 	"github.com/polymorfa/hypermeow"
 	"github.com/polymorfa/hypermeow/proto/waE2E"
@@ -127,6 +128,7 @@ func isViewOnce(r msgRow) bool { return r.Kind == msgNotice && r.Text == "view_o
 // reaction or a poll vote (its row, and the chat preview).
 func (st *Store) apply(ctx context.Context, t *storeTx, cli *whatsmeow.Client, key string, e *events.Message, live bool) {
 	spoiler := e.Message.GetSpoilerMessage() != nil // before flatten opens the wrapper
+	forwarded := e.Message.GetBotForwardedMessage() != nil
 	// A business message is written as what it wraps (msgflat.go). On a copy: the event is
 	// hypermeow's, and this runs on the writer after the handlers returned.
 	c := *e
@@ -171,7 +173,11 @@ func (st *Store) apply(ctx context.Context, t *storeTx, cli *whatsmeow.Client, k
 		return
 	}
 	if spoiler && (row.Kind == msgPhoto || row.Kind == msgVideo) {
-		row.Extra = withSpoiler(row.Extra)
+		row.Extra = withKey(row.Extra, "spoiler", "true")
+	}
+	// A forward keeps WhatsApp's score, at least 1: 5 and up is "Forwarded many times".
+	if ci := contextInfo(m); forwarded || ci.GetIsForwarded() {
+		row.Extra = withKey(row.Extra, "forwarded", strconv.Itoa(max(1, int(ci.GetForwardingScore()))))
 	}
 	// A reply to a story (ours, or one we are answering): the quote is the story, drawn with its picture, and opens it.
 	if ci := contextInfo(m); ci.GetRemoteJID() == types.StatusBroadcastJID.String() && ci.GetStanzaID() != "" {
