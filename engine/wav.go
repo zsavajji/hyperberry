@@ -75,9 +75,18 @@ func mixMono(b []byte, channels int) []int16 {
 
 // writeWAV makes a mono 16-bit PCM WAV.
 func writeWAV(pcm []int16, rate int) []byte {
-	b := make([]byte, 44, 44+2*len(pcm))
+	b := append(make([]byte, 0, 44+2*len(pcm)), wavHeader(len(pcm), rate)...)
+	for _, s := range pcm {
+		b = binary.LittleEndian.AppendUint16(b, uint16(s))
+	}
+	return b
+}
+
+// wavHeader is the 44 bytes before a mono 16-bit WAV's samples.
+func wavHeader(samples, rate int) []byte {
+	b := make([]byte, 44)
 	copy(b, "RIFF")
-	binary.LittleEndian.PutUint32(b[4:], uint32(36+2*len(pcm)))
+	binary.LittleEndian.PutUint32(b[4:], uint32(36+2*samples))
 	copy(b[8:], "WAVEfmt ")
 	binary.LittleEndian.PutUint32(b[16:], 16)
 	binary.LittleEndian.PutUint16(b[20:], 1)
@@ -87,10 +96,7 @@ func writeWAV(pcm []int16, rate int) []byte {
 	binary.LittleEndian.PutUint16(b[32:], 2)
 	binary.LittleEndian.PutUint16(b[34:], 16)
 	copy(b[36:], "data")
-	binary.LittleEndian.PutUint32(b[40:], uint32(2*len(pcm)))
-	for _, s := range pcm {
-		b = binary.LittleEndian.AppendUint16(b, uint16(s))
-	}
+	binary.LittleEndian.PutUint32(b[40:], uint32(2*samples))
 	return b
 }
 

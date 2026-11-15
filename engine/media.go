@@ -79,8 +79,9 @@ func (st *Store) downloadVoice(ctx context.Context, cli *whatsmeow.Client, dir s
 		}
 		if len(row.Waveform) == 0 {
 			if data, err := os.ReadFile(ogg); err == nil {
-				if pcm, err := decodeOpus(data); err == nil && len(pcm) > 0 {
-					wf = waveform(pcm)
+				var w waveTracker
+				if eachOpus(data, func(p []int16) error { w.Add(p); return nil }) == nil && len(w.peaks) > 0 {
+					wf = w.Result()
 				}
 			}
 		}
@@ -203,11 +204,7 @@ func (st *Store) playVoice(dir string, r voiceReq, fetch, notify func(msgRow) er
 		if err != nil {
 			return nil, err
 		}
-		pcm, err := decodeOpus(data)
-		if err != nil {
-			return nil, err
-		}
-		if err := writeFile(wav, writeWAV(pcm, 48000)); err != nil {
+		if err := opusToWAV(data, wav); err != nil {
 			return nil, err
 		}
 		go pruneCache(dir, st.nt.cacheLimit(), wav, time.Now(), st.log)

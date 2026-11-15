@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"math"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -141,5 +143,37 @@ func TestOpusRateAndWaveform(t *testing.T) {
 	w := waveform(pcm)
 	if len(w) != 64 || w[0] != 0 || w[63] < 90 {
 		t.Errorf("waveform %v", w)
+	}
+}
+
+// The WAV opusToWAV streams to disk is the one the whole PCM would make, trimmed the same.
+func TestOpusToWAV(t *testing.T) {
+	ogg, err := encodeOpus(tone(440, 16000, 3*16000), 16000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pcm, err := decodeOpus(ogg)
+	if err != nil || len(pcm) != 3*48000 {
+		t.Fatalf("decoded %d samples, %v", len(pcm), err)
+	}
+	path := filepath.Join(t.TempDir(), "cache", "n.wav")
+	if err := opusToWAV(ogg, path); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, writeWAV(pcm, 48000)) {
+		t.Errorf("streamed WAV differs: %d bytes, want %d", len(got), 44+2*len(pcm))
+	}
+	if _, err := os.Stat(path + ".tmp"); !os.IsNotExist(err) {
+		t.Errorf("tmp left behind: %v", err)
+	}
+	if opusToWAV([]byte("not ogg"), path+"2") == nil {
+		t.Error("bad OGG gave no error")
+	}
+	if _, err := os.Stat(path + "2.tmp"); !os.IsNotExist(err) {
+		t.Errorf("failed tmp left behind: %v", err)
 	}
 }

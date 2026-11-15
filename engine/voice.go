@@ -21,9 +21,13 @@ static OpusEncoder *hb_encoder(int rate, int *lookahead, int *err) {
 import "C"
 
 import (
+	"bufio"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"math"
+	"os"
+	"path/filepath"
 	"unsafe"
 )
 
@@ -138,53 +142,115 @@ func encodeOpus(pcm []int16, rate int) ([]byte, error) {
 	return e.Close()
 }
 
-// decodeOpus decodes an OGG Opus stream to mono PCM at 48 kHz, the format's own rate.
+// decodeOpus decodes an OGG Opus stream to mono PCM at 48 kHz, the format's own rate, all of it
+// in memory: for tests and short clips. A note goes through eachOpus.
 func decodeOpus(data []byte) ([]int16, error) {
+	var pcm []int16
+	err := eachOpus(data, func(p []int16) error {
+		pcm = append(pcm, p...)
+		return nil
+	})
+	return pcm, err
+}
+
+// eachOpus decodes an OGG Opus stream to mono PCM at 48 kHz a packet at a time, without the
+// pre-skip and the end's padding, handing each piece to f, which must copy what it keeps (the
+// piece is reused). A note is never held as PCM: a minute is 5.5 MB, more than the engine could
+// get on the Q10 (two "out of memory" crashes playing a 54 s note, 2026-11-15).
+func eachOpus(data []byte, f func([]int16) error) error {
 	packets, err := oggPackets(data)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if len(packets) < 2 || len(packets[0].data) < 19 || string(packets[0].data[:8]) != "OpusHead" {
-		return nil, errors.New("opus: no OpusHead")
+		return errors.New("opus: no OpusHead")
 	}
 	channels := int(packets[0].data[9])
 	preSkip := int(binary.LittleEndian.Uint16(packets[0].data[10:]))
 	if channels < 1 || channels > 2 {
-		return nil, fmt.Errorf("opus: %d channels", channels)
+		return fmt.Errorf("opus: %d channels", channels)
+	}
+	// The last granule is where the audio ends; one before the pre-skip is wrong, so all of it plays.
+	end := int(packets[len(packets)-1].granule)
+	if end < preSkip {
+		end = math.MaxInt
 	}
 	var cerr C.int
 	dec := C.opus_decoder_create(48000, C.int(channels), &cerr)
 	if dec == nil {
-		return nil, fmt.Errorf("opus decoder: %s", C.GoString(C.opus_strerror(cerr)))
+		return fmt.Errorf("opus decoder: %s", C.GoString(C.opus_strerror(cerr)))
 	}
 	defer C.opus_decoder_destroy(dec)
 
 	const maxFrame = 5760 // 120 ms at 48 kHz, the longest an Opus packet holds
 	buf := make([]int16, maxFrame*channels)
-	var pcm []int16
+	mono := make([]int16, maxFrame)
+	pos := 0 // samples decoded before this packet
 	for _, p := range packets[2:] {
 		if len(p.data) == 0 {
 			continue
 		}
-		n := C.opus_decode(dec, (*C.uchar)(unsafe.Pointer(&p.data[0])), C.opus_int32(len(p.data)),
-			(*C.opus_int16)(unsafe.Pointer(&buf[0])), maxFrame, 0)
+		n := int(C.opus_decode(dec, (*C.uchar)(unsafe.Pointer(&p.data[0])), C.opus_int32(len(p.data)),
+			(*C.opus_int16)(unsafe.Pointer(&buf[0])), maxFrame, 0))
 		if n < 0 {
-			return nil, fmt.Errorf("opus decode: %s", C.GoString(C.opus_strerror(n)))
+			return fmt.Errorf("opus decode: %s", C.GoString(C.opus_strerror(C.int(n))))
 		}
-		for i := 0; i < int(n); i++ {
+		for i := 0; i < n; i++ {
 			if channels == 2 {
-				pcm = append(pcm, int16((int32(buf[2*i])+int32(buf[2*i+1]))/2))
+				mono[i] = int16((int32(buf[2*i]) + int32(buf[2*i+1])) / 2)
 			} else {
-				pcm = append(pcm, buf[i])
+				mono[i] = buf[i]
 			}
 		}
+		if lo, hi := max(pos, preSkip), min(pos+n, end); lo < hi {
+			if err := f(mono[lo-pos : hi-pos]); err != nil {
+				return err
+			}
+		}
+		pos += n
 	}
-	end := int(packets[len(packets)-1].granule)
-	if end > len(pcm) || end < preSkip {
-		end = len(pcm)
+	return nil
+}
+
+// opusToWAV decodes an OGG Opus stream into a 48 kHz WAV at path, a packet at a time (eachOpus),
+// through a .tmp renamed when it's whole.
+func opusToWAV(data []byte, path string) (err error) {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
 	}
-	if preSkip > end {
-		preSkip = end
+	f, err := os.Create(path + ".tmp")
+	if err != nil {
+		return err
 	}
-	return pcm[preSkip:end], nil
+	defer func() {
+		if cerr := f.Close(); err == nil {
+			err = cerr
+		}
+		if err == nil {
+			err = os.Rename(path+".tmp", path)
+		}
+		if err != nil {
+			os.Remove(path + ".tmp")
+		}
+	}()
+	w := bufio.NewWriter(f)
+	w.Write(make([]byte, 44)) // the header, once the size is known
+	n := 0
+	var b []byte
+	if err := eachOpus(data, func(pcm []int16) error {
+		b = b[:0]
+		for _, s := range pcm {
+			b = binary.LittleEndian.AppendUint16(b, uint16(s))
+		}
+		n += len(pcm)
+		_, err := w.Write(b)
+		return err
+	}); err != nil {
+		return err
+	}
+	if err := w.Flush(); err != nil {
+		return err
+	}
+	_, err = f.WriteAt(wavHeader(n, 48000), 0)
+	return err
 }
