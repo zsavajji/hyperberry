@@ -71,3 +71,24 @@ func TestRenameAll(t *testing.T) {
 		t.Errorf("second pass wrote %d rows", n)
 	}
 }
+
+// A pin the app-state full sync stored without an event reaches chats.db; a chat hypermeow has no
+// settings for keeps its pin.
+func TestSyncPins(t *testing.T) {
+	ctx := context.Background()
+	cli := savedClient(t, "4915700000009")
+	carlotta := types.NewJID("233221170163922", types.HiddenUserServer)
+	if err := cli.Store.ChatSettings.PutPinned(ctx, carlotta, true); err != nil {
+		t.Fatal(err)
+	}
+	tx, _ := newTestTx(t)
+	tx.ensureChat(carlotta.String(), chatUser)
+	tx.ensureChat("1@lid", chatUser)
+	tx.setPinned("1@lid", true)
+
+	syncPins(ctx, tx, cli)
+
+	if n := count(t, tx, "SELECT count(*) FROM chats WHERE pinned = 1"); n != 2 {
+		t.Errorf("%d pinned, want 2", n)
+	}
+}

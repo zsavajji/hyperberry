@@ -80,6 +80,7 @@ func (st *Store) history(ctx context.Context, t *storeTx, cli *whatsmeow.Client,
 		t.setFlags(key, unread, muteUntil(int64(conv.GetMuteEndTime())), conv.GetPinned() > 0, conv.GetArchived())
 	}
 	sweep(ctx, t, lids)
+	syncPins(ctx, t, cli) // setFlags unpinned every chat: the conversations carry no pin
 }
 
 // message handles a live message.

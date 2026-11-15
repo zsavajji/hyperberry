@@ -141,7 +141,7 @@ func (st *Store) handle(cli *whatsmeow.Client, evt any) {
 		go st.syncGroups(cli)
 		go st.syncChannels(cli)
 		go st.hist.resume(cli) // the chunks a crash or a failure left on disk
-		st.ops <- func(t *storeTx) { t.tidy(cli) }
+		st.ops <- func(t *storeTx) { t.tidy(cli); syncPins(context.Background(), t, cli) }
 		return
 	case *events.NewsletterJoin: // followed on another device, or here
 		go st.syncChannels(cli)
@@ -218,6 +218,9 @@ func (st *Store) dispatch(t *storeTx, cli *whatsmeow.Client, evt any) {
 		// The contact list is in this patch; the link's bulk insert of it emits no Contact.
 		if e.Name == appstate.WAPatchCriticalUnblockLow {
 			st.renameAll(ctx, t, cli)
+		}
+		if e.Name == appstate.WAPatchRegularLow { // where the pins are
+			syncPins(ctx, t, cli)
 		}
 	case *events.PushName:
 		st.rename(ctx, t, cli, e.JID, e.JIDAlt)
@@ -528,4 +531,31 @@ func keys(m map[string]bool) []string {
 	}
 	sort.Strings(s)
 	return s
+}
+
+// syncPins copies hypermeow's chat settings' pins into chats.db. The app-state full sync (a link,
+// a version gap) stores them there without a Pin event, as EmitAppStateEventsOnFullSync is off, and
+// a history sync's conversations carry none: a chat pinned on the phone stayed unpinned here.
+// Only a chat hypermeow has settings for changes, so a pin from elsewhere stays.
+func syncPins(ctx context.Context, t *storeTx, cli *whatsmeow.Client) {
+	rows, err := t.tx.Query("SELECT jid FROM chats")
+	if err != nil {
+		t.log.Warnf("pins: %v", err)
+		return
+	}
+	var jids []string
+	for rows.Next() {
+		var j string
+		if rows.Scan(&j) == nil {
+			jids = append(jids, j)
+		}
+	}
+	rows.Close() // closed before the writes below
+	for _, j := range jids {
+		if jid, err := types.ParseJID(j); err == nil {
+			if s, err := cli.Store.ChatSettings.GetChatSettings(ctx, jid); err == nil && s.Found {
+				t.setPinned(j, s.Pinned)
+			}
+		}
+	}
 }
