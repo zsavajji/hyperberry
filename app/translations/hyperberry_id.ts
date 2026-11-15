@@ -1534,6 +1534,14 @@
 <context>
     <name>SettingsPage</name>
     <message>
+        <source>Proximity sensor</source>
+        <translation>Sensor jarak</translation>
+    </message>
+    <message>
+        <source>Off, voice notes stay on the speaker and the screen stays on in calls. For a faulty sensor.</source>
+        <translation>Jika nonaktif, pesan suara tetap di speaker dan layar tetap menyala saat panggilan. Untuk sensor yang rusak.</translation>
+    </message>
+    <message>
         <location filename="../assets/SettingsPage.qml" line="9" />
         <source>Settings</source>
         <translation>Pengaturan</translation>

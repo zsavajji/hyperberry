@@ -1537,6 +1537,14 @@
 <context>
     <name>SettingsPage</name>
     <message>
+        <source>Proximity sensor</source>
+        <translation>निकटता सेंसर</translation>
+    </message>
+    <message>
+        <source>Off, voice notes stay on the speaker and the screen stays on in calls. For a faulty sensor.</source>
+        <translation>बंद होने पर वॉइस नोट स्पीकर पर ही रहते हैं और कॉल में स्क्रीन चालू रहती है। खराब सेंसर के लिए।</translation>
+    </message>
+    <message>
         <location filename="../assets/SettingsPage.qml" line="9" />
         <source>Settings</source>
         <translation>सेटिंग</translation>

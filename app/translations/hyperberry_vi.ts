@@ -1534,6 +1534,14 @@
 <context>
     <name>SettingsPage</name>
     <message>
+        <source>Proximity sensor</source>
+        <translation>Cảm biến tiệm cận</translation>
+    </message>
+    <message>
+        <source>Off, voice notes stay on the speaker and the screen stays on in calls. For a faulty sensor.</source>
+        <translation>Khi tắt, tin nhắn thoại vẫn phát qua loa và màn hình vẫn sáng khi gọi. Dành cho cảm biến bị hỏng.</translation>
+    </message>
+    <message>
         <location filename="../assets/SettingsPage.qml" line="9" />
         <source>Settings</source>
         <translation>Cài đặt</translation>

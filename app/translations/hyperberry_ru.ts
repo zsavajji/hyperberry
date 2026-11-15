@@ -1540,6 +1540,14 @@
 <context>
     <name>SettingsPage</name>
     <message>
+        <source>Proximity sensor</source>
+        <translation>Датчик приближения</translation>
+    </message>
+    <message>
+        <source>Off, voice notes stay on the speaker and the screen stays on in calls. For a faulty sensor.</source>
+        <translation>Если выключено, голосовые сообщения играют через динамик, а экран не гаснет во время звонков. Для неисправного датчика.</translation>
+    </message>
+    <message>
         <location filename="../assets/SettingsPage.qml" line="9" />
         <source>Settings</source>
         <translation>Настройки</translation>

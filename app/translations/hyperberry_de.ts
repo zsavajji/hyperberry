@@ -1537,6 +1537,14 @@
 <context>
     <name>SettingsPage</name>
     <message>
+        <source>Proximity sensor</source>
+        <translation>Näherungssensor</translation>
+    </message>
+    <message>
+        <source>Off, voice notes stay on the speaker and the screen stays on in calls. For a faulty sensor.</source>
+        <translation>Wenn aus, bleiben Sprachnachrichten auf dem Lautsprecher und der Bildschirm bleibt bei Anrufen an. Für einen defekten Sensor.</translation>
+    </message>
+    <message>
         <location filename="../assets/SettingsPage.qml" line="9" />
         <source>Settings</source>
         <translation>Einstellungen</translation>

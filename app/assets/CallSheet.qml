@@ -30,7 +30,7 @@ Sheet {
     property bool held: false
     // At the ear: the screen goes black and takes no touch. Never on the loudspeaker, where the phone
     // is held away (a video call starts there).
-    property bool atEar: held && proximity.near && !callAudio.speaker
+    property bool atEar: held && proximity.near && !callAudio.speaker && settings.earSensor // off in Settings for a sensor that misreads
     // Our own preview hidden by the panel's toggle (the user's ask); our video still goes out. Shown
     // again with each call.
     property bool previewHidden: false

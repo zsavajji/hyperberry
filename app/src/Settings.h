@@ -17,6 +17,8 @@ class Settings : public QObject
     Q_PROPERTY(bool notifyPreview READ notifyPreview WRITE setNotifyPreview NOTIFY notifyPreviewChanged)
     Q_PROPERTY(bool startAtBoot READ startAtBoot WRITE setStartAtBoot NOTIFY startAtBootChanged)
     Q_PROPERTY(bool mediaOnMobile READ mediaOnMobile WRITE setMediaOnMobile NOTIFY mediaOnMobileChanged)
+    // Off for a phone whose proximity sensor misreads: voice notes stay on the speaker, the call screen never blanks.
+    Q_PROPERTY(bool earSensor READ earSensor WRITE setEarSensor NOTIFY earSensorChanged)
     Q_PROPERTY(int cacheLimit READ cacheLimit WRITE setCacheLimit NOTIFY cacheLimitChanged)         // MB
     Q_PROPERTY(int textSize READ textSize WRITE setTextSize NOTIFY textSizeChanged) // 0..2
     Q_PROPERTY(qreal textScale READ textScale NOTIFY textSizeChanged)
@@ -30,6 +32,7 @@ public:
     bool notifyPreview() const;
     bool startAtBoot() const;
     bool mediaOnMobile() const;
+    bool earSensor() const;
     int cacheLimit() const;
     int textSize() const;
     qreal textScale() const;
@@ -39,6 +42,7 @@ public:
     void setNotifyPreview(bool on);
     void setStartAtBoot(bool on);
     void setMediaOnMobile(bool on);
+    void setEarSensor(bool on);
     void setCacheLimit(int mb);
     void setTextSize(int size);
     void setCallHints(int count);
@@ -51,6 +55,7 @@ signals:
     void notifyPreviewChanged();
     void startAtBootChanged();
     void mediaOnMobileChanged();
+    void earSensorChanged();
     void cacheLimitChanged();
     void textSizeChanged();
     void callHintsChanged();

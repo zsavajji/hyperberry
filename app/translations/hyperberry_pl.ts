@@ -1540,6 +1540,14 @@
 <context>
     <name>SettingsPage</name>
     <message>
+        <source>Proximity sensor</source>
+        <translation>Czujnik zbliżeniowy</translation>
+    </message>
+    <message>
+        <source>Off, voice notes stay on the speaker and the screen stays on in calls. For a faulty sensor.</source>
+        <translation>Gdy wyłączone, wiadomości głosowe zostają na głośniku, a ekran pozostaje włączony podczas połączeń. Dla uszkodzonego czujnika.</translation>
+    </message>
+    <message>
         <location filename="../assets/SettingsPage.qml" line="9" />
         <source>Settings</source>
         <translation>Ustawienia</translation>

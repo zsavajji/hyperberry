@@ -18,7 +18,7 @@ MediaPlayer {
     // Playing now: the sensor's acquire/release follow this one flag, so they stay paired.
     property bool held: playingId != "" && !paused
     // The handle may change while playing ("seamlessly", MediaPlayer.hpp); 0 is the default output.
-    property bool atEar: held && proximity.near
+    property bool atEar: held && proximity.near && settings.earSensor // off in Settings for a sensor that misreads
     // Held by the player itself, so its destruction with the chat page releases it (Proximity).
     onHeldChanged: held ? proximity.acquire(player) : proximity.release(player)
     onAtEarChanged: audioManagerHandle = atEar ? proximity.earHandle() : 0
