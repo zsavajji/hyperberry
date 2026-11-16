@@ -8,6 +8,7 @@
 #include <QString>
 #include <QStringList>
 #include <QTimer>
+#include <QVariantList>
 #include <QVariantMap>
 
 class EngineLink;
@@ -44,6 +45,9 @@ public:
     Q_INVOKABLE QVariantMap chat(const QString &jid);
     // The ids of the chat's messages whose text has text in it, any case, newest first (step 5.10).
     Q_INVOKABLE QStringList findMessages(const QString &jid, const QString &text);
+    // The starred messages, newest first, each a map of chat (its jid), id, chatName, sender (the sender's name, "You"
+    // for ours, in a group; "" elsewhere), text (Pins::summary's line) and time (as a chat's row has it); deleted ones are left out.
+    Q_INVOKABLE QVariantList starred();
     // Who reacted to a message and how, oldest first, one per line (step 5.11).
     Q_INVOKABLE QString reactionsText(const QString &jid, const QString &id);
     // Shows only the chats whose name has a word starting with text; "" shows all.

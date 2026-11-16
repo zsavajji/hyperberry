@@ -36,6 +36,7 @@ func registerSend(srv *Server, s *Session) {
 	srv.Handle("msg.edit", s.handleEdit)
 	srv.Handle("msg.resend", s.handleResend)
 	srv.Handle("msg.react", s.handleReact)
+	srv.Handle("msg.star", s.handleStar)
 	srv.Handle("poll.vote", s.handlePollVote)
 	srv.Handle("poll.create", s.handlePollCreate)
 	srv.Handle("chat.set", s.handleChatSet)

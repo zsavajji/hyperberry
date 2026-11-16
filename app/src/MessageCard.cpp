@@ -75,10 +75,12 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
     , m_chip(0)
     , m_reactions(0)
     , m_edited(Card::tr(kContext, "edited") + " ")
+    , m_starMark(QString::fromUtf8("\xE2\x98\x85 "))
     , m_reply(0)
     , m_react(0)
     , m_votes(0)
     , m_copy(0)
+    , m_star(0)
     , m_edit(0)
     , m_revoke(0)
     , m_deleteMe(0)
@@ -598,13 +600,19 @@ void MessageCard::fillColumn()
     }
 }
 
-// The time ("edited" before it) and our message's state, as in ChatRows.cpp: sending, sent, delivered,
+// What goes before the time: a star for a starred message, then "edited".
+QString MessageCard::timeLead() const
+{
+    return (flag("starred") ? m_starMark : QString()) + (flag("edited") ? m_edited : QString());
+}
+
+// The time (the star and "edited" before it) and our message's state, as in ChatRows.cpp: sending, sent, delivered,
 // read, or a red "!" when it failed; then the foot and the reactions' chip.
 void MessageCard::fillFoot()
 {
     const bool out = flag("out");
     const int state = m_msg.value("state").toInt();
-    m_time->setText((flag("edited") ? m_edited : QString()) + str("time"));
+    m_time->setText(timeLead() + str("time"));
     // Where the time goes: on a picture with no caption, at the text's end, under a voice note's
     // waveform, or else (a sticker, a file) beside the column's first line.
     // Top-aligned boxes put the time's baseline above the first line's: 7 px under a name or quote
@@ -680,7 +688,7 @@ float MessageCard::timeWidth() const
 {
     const bool out = flag("out");
     const int state = m_msg.value("state").toInt();
-    const int chars = str("time").size() + (flag("edited") ? m_edited.size() : 0);
+    const int chars = str("time").size() + timeLead().size();
     return chars * m_ui->du(1.55 * m_scale) + (out && state < 4 ? m_ui->du(1 + 3.1 * m_scale) : 0)
            + (out && state == 4 ? m_ui->du(4) : 0);
 }

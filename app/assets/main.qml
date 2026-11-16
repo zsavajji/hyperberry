@@ -103,7 +103,13 @@ TabbedPane {
             // back when the page goes.
             property bool noPeek: false
             property bool peekWas: true
-            onTopChanged: nav.noPeek = !!nav.top && !!nav.top.noPeek
+            onTopChanged: {
+                nav.noPeek = !!nav.top && !!nav.top.noPeek
+                // A page that has a chat over it (the starred list) catches up when it is the top again.
+                if (nav.top && nav.top.uncovered) {
+                    nav.top.uncovered()
+                }
+            }
             onNoPeekChanged: {
                 if (nav.noPeek) {
                     nav.peekWas = nav.peekEnabled

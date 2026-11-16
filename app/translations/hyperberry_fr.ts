@@ -507,6 +507,10 @@
         <source>Channels</source>
         <translation>Chaînes</translation>
     </message>
+    <message>
+        <source>Starred messages</source>
+        <translation>Messages favoris</translation>
+    </message>
 </context>
 <context>
     <name>Composer</name>
@@ -1056,6 +1060,14 @@
         <location filename="../assets/MessageItem.qml" line="44"/>
         <source>Edit</source>
         <translation>Modifier</translation>
+    </message>
+    <message>
+        <source>Star</source>
+        <translation>Mettre en favori</translation>
+    </message>
+    <message>
+        <source>Unstar</source>
+        <translation>Retirer des favoris</translation>
     </message>
 </context>
 <context>
@@ -2373,6 +2385,17 @@
         <location filename="../assets/StoryAudienceSheet.qml" line="1" />
         <source>Loading…</source>
         <translation>Chargement…</translation>
+    </message>
+</context>
+<context>
+    <name>StarredPage</name>
+    <message>
+        <source>Starred messages</source>
+        <translation>Messages favoris</translation>
+    </message>
+    <message>
+        <source>No starred messages</source>
+        <translation>Aucun message favori</translation>
     </message>
 </context>
 </TS>

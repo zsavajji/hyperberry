@@ -505,6 +505,10 @@
         <source>Channels</source>
         <translation>Kênh</translation>
     </message>
+    <message>
+        <source>Starred messages</source>
+        <translation>Tin nhắn có gắn dấu sao</translation>
+    </message>
 </context>
 <context>
     <name>Composer</name>
@@ -1054,6 +1058,14 @@
         <location filename="../assets/MessageItem.qml" line="44"/>
         <source>Edit</source>
         <translation>Chỉnh sửa</translation>
+    </message>
+    <message>
+        <source>Star</source>
+        <translation>Gắn dấu sao</translation>
+    </message>
+    <message>
+        <source>Unstar</source>
+        <translation>Bỏ dấu sao</translation>
     </message>
 </context>
 <context>
@@ -2370,6 +2382,17 @@
         <location filename="../assets/StoryAudienceSheet.qml" line="1" />
         <source>Loading…</source>
         <translation>Đang tải…</translation>
+    </message>
+</context>
+<context>
+    <name>StarredPage</name>
+    <message>
+        <source>Starred messages</source>
+        <translation>Tin nhắn có gắn dấu sao</translation>
+    </message>
+    <message>
+        <source>No starred messages</source>
+        <translation>Không có tin nhắn gắn dấu sao</translation>
     </message>
 </context>
 </TS>

@@ -145,6 +145,9 @@ INSERT INTO engine_state SELECT 'appstate_resync', 1 WHERE EXISTS (SELECT 1 FROM
 	// The posters whose status updates the phone muted (UserStatusMute), mirrored from it: the Stories tab greys
 	// them and leaves them out of its badge. poster is the poster's chat key, as stories.poster has it.
 	`CREATE TABLE story_muted(poster TEXT PRIMARY KEY);`,
+	// Starred messages (star.go), as the phone's app state has them. ponytail: the Starred page scans messages for
+	// starred = 1, with no index since the UI's SQLite is Qt 4.8's; add one if that gets slow.
+	`ALTER TABLE messages ADD COLUMN starred INTEGER NOT NULL DEFAULT 0;`,
 }
 
 // openChats opens chats.db in WAL mode and migrates it to the newest schema.

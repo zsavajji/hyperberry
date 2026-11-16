@@ -13,6 +13,10 @@ namespace Pins {
 // message's text cut to about 60 characters, else the kind's name (Photo, Video, ...); "" when
 // chats.db doesn't hold the message.
 QVariantList current(const QString &chat);
+
+// The line a message is listed by: the first line of its text cut to about 60 characters, else the kind's name
+// (Photo, Video, Voice message, ...), else "Message". The pins' preview, and the Starred page's text.
+QString summary(int kind, const QString &text);
 }
 
 #endif

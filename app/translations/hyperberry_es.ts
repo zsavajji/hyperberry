@@ -507,6 +507,10 @@
         <source>Channels</source>
         <translation>Canales</translation>
     </message>
+    <message>
+        <source>Starred messages</source>
+        <translation>Mensajes destacados</translation>
+    </message>
 </context>
 <context>
     <name>Composer</name>
@@ -1056,6 +1060,14 @@
         <location filename="../assets/MessageItem.qml" line="44"/>
         <source>Edit</source>
         <translation>Editar</translation>
+    </message>
+    <message>
+        <source>Star</source>
+        <translation>Destacar</translation>
+    </message>
+    <message>
+        <source>Unstar</source>
+        <translation>Quitar destacado</translation>
     </message>
 </context>
 <context>
@@ -2373,6 +2385,17 @@
         <location filename="../assets/StoryAudienceSheet.qml" line="1" />
         <source>Loading…</source>
         <translation>Cargando…</translation>
+    </message>
+</context>
+<context>
+    <name>StarredPage</name>
+    <message>
+        <source>Starred messages</source>
+        <translation>Mensajes destacados</translation>
+    </message>
+    <message>
+        <source>No starred messages</source>
+        <translation>No hay mensajes destacados</translation>
     </message>
 </context>
 </TS>

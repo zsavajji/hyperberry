@@ -33,6 +33,10 @@ Page {
             source: "ArchivedPage.qml"
         },
         ComponentDefinition {
+            id: starredDef
+            source: "StarredPage.qml"
+        },
+        ComponentDefinition {
             id: channelsDef
             source: "ChannelsPage.qml"
         }
@@ -90,6 +94,13 @@ Page {
             imageSource: "file:///usr/share/icons/bb_action_archive.png"
             ActionBar.placement: ActionBarPlacement.InOverflow
             onTriggered: nav.push(archivedDef.createObject())
+        },
+        ActionItem {
+            title: qsTr("Starred messages")
+            // As the card's Star: no star among our icons, the heart is the nearest.
+            imageSource: "asset:///images/heart.png"
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            onTriggered: nav.push(starredDef.createObject())
         },
         ActionItem {
             title: qsTr("Channels")

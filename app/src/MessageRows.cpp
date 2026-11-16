@@ -35,7 +35,7 @@ static const char *const kColumns = "rowid, id, ts, out, state, sender, sender_n
                                     QUOTED("out") ", " QUOTED("sender") ", " QUOTED("sender_name") ", duration, waveform, media_state, played, "
                                     "thumb, width, height, size, path, "
                                     "(SELECT group_concat(emoji, ' ') FROM reactions r WHERE r.chat = messages.chat AND r.msg = messages.id), "
-                                    "(SELECT emoji FROM reactions r WHERE r.chat = messages.chat AND r.msg = messages.id AND r.sender = ''), extra";
+                                    "(SELECT emoji FROM reactions r WHERE r.chat = messages.chat AND r.msg = messages.id AND r.sender = ''), extra, starred";
 #undef QUOTED
 
 MessageModel::Msg MessageModel::read(QSqlQuery &q)
@@ -91,6 +91,7 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
     m.data["out"] = out;
     m.data["state"] = q.value(4).toInt();
     m.data["edited"] = q.value(10).toInt() != 0;
+    m.data["starred"] = q.value(27).toInt() != 0;
     m.data["deleted"] = deleted;
     // The chip under the card: up to three different emoji, and how many reactions there are.
     const QStringList all = deleted ? QStringList() : q.value(24).toString().split(' ', QString::SkipEmptyParts);

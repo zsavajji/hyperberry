@@ -507,6 +507,10 @@
         <source>Channels</source>
         <translation>चैनल</translation>
     </message>
+    <message>
+        <source>Starred messages</source>
+        <translation>स्टार किए गए संदेश</translation>
+    </message>
 </context>
 <context>
     <name>Composer</name>
@@ -1056,6 +1060,14 @@
         <location filename="../assets/MessageItem.qml" line="44"/>
         <source>Edit</source>
         <translation>संपादित करें</translation>
+    </message>
+    <message>
+        <source>Star</source>
+        <translation>स्टार करें</translation>
+    </message>
+    <message>
+        <source>Unstar</source>
+        <translation>स्टार हटाएं</translation>
     </message>
 </context>
 <context>
@@ -2373,6 +2385,17 @@
         <location filename="../assets/StoryAudienceSheet.qml" line="1" />
         <source>Loading…</source>
         <translation>लोड हो रहा है…</translation>
+    </message>
+</context>
+<context>
+    <name>StarredPage</name>
+    <message>
+        <source>Starred messages</source>
+        <translation>स्टार किए गए संदेश</translation>
+    </message>
+    <message>
+        <source>No starred messages</source>
+        <translation>कोई स्टार किया गया संदेश नहीं</translation>
     </message>
 </context>
 </TS>

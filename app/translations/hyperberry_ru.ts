@@ -509,6 +509,10 @@
         <source>Channels</source>
         <translation>Каналы</translation>
     </message>
+    <message>
+        <source>Starred messages</source>
+        <translation>Избранные сообщения</translation>
+    </message>
 </context>
 <context>
     <name>Composer</name>
@@ -1058,6 +1062,14 @@
         <location filename="../assets/MessageItem.qml" line="44"/>
         <source>Edit</source>
         <translation>Изменить</translation>
+    </message>
+    <message>
+        <source>Star</source>
+        <translation>В избранное</translation>
+    </message>
+    <message>
+        <source>Unstar</source>
+        <translation>Убрать из избранного</translation>
     </message>
 </context>
 <context>
@@ -2376,6 +2388,17 @@
         <location filename="../assets/StoryAudienceSheet.qml" line="1" />
         <source>Loading…</source>
         <translation>Загрузка…</translation>
+    </message>
+</context>
+<context>
+    <name>StarredPage</name>
+    <message>
+        <source>Starred messages</source>
+        <translation>Избранные сообщения</translation>
+    </message>
+    <message>
+        <source>No starred messages</source>
+        <translation>Нет избранных сообщений</translation>
     </message>
 </context>
 </TS>

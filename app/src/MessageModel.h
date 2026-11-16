@@ -23,7 +23,7 @@ class EngineLink;
 // it opens at the newest message with no scroll call, each header shows above its day, and an
 // older page is appended at the model's end (the visual top) without moving the rows on
 // screen. itemType: "header" (data: the title), "msg", or "service" for kinds 6 and 13 (MessageKinds
-// words it). A "msg" is a map of id, out, state, edited, deleted, revocable, time, label, text, quote,
+// words it). A "msg" is a map of id, out, state, edited, starred, deleted, revocable, time, label, text, quote,
 // sender and senderColor, and media ("photo", "video", "doc", "sticker", "audio" or "") with the keys
 // MediaData.h lists. Reading a sticker row that is still on the server asks the engine for its file,
 // once per page. Every "msg" has album, a list: empty, or for an album (step 6.5g, Albums.h's rule) the

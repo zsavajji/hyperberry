@@ -74,6 +74,7 @@ func newSim(srv *Server, st *Store, log waLog.Logger) *Sim {
 	srv.Handle("msg.send", s.handleSend)
 	srv.Handle("msg.delete", s.handleDelete)
 	srv.Handle("msg.edit", s.handleEdit)
+	srv.Handle("msg.star", s.handleStar)
 	srv.Handle("chat.read", s.handleRead)
 	srv.Handle("chat.set", s.handleChatSet)
 	srv.Handle("contact.block", s.handleContactBlock)

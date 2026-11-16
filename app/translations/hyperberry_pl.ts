@@ -509,6 +509,10 @@
         <source>Channels</source>
         <translation>Kanały</translation>
     </message>
+    <message>
+        <source>Starred messages</source>
+        <translation>Wiadomości z gwiazdką</translation>
+    </message>
 </context>
 <context>
     <name>Composer</name>
@@ -1058,6 +1062,14 @@
         <location filename="../assets/MessageItem.qml" line="44"/>
         <source>Edit</source>
         <translation>Edytuj</translation>
+    </message>
+    <message>
+        <source>Star</source>
+        <translation>Oznacz gwiazdką</translation>
+    </message>
+    <message>
+        <source>Unstar</source>
+        <translation>Usuń gwiazdkę</translation>
     </message>
 </context>
 <context>
@@ -2376,6 +2388,17 @@
         <location filename="../assets/StoryAudienceSheet.qml" line="1" />
         <source>Loading…</source>
         <translation>Ładowanie…</translation>
+    </message>
+</context>
+<context>
+    <name>StarredPage</name>
+    <message>
+        <source>Starred messages</source>
+        <translation>Wiadomości z gwiazdką</translation>
+    </message>
+    <message>
+        <source>No starred messages</source>
+        <translation>Brak wiadomości z gwiazdką</translation>
     </message>
 </context>
 </TS>

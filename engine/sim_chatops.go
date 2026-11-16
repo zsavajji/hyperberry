@@ -28,6 +28,20 @@ func (s *Sim) handleContactBlock(req json.RawMessage) (any, error) {
 	return nil, nil
 }
 
+// handleStar is msg.star: the same row changes as with the real one, nothing is sent.
+func (s *Sim) handleStar(req json.RawMessage) (any, error) {
+	r, err := parseStar(req)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := s.chat(r.Chat); err != nil {
+		return nil, err
+	}
+	time.Sleep(simDelay)
+	_, err = s.store.applyStar(r)
+	return nil, err
+}
+
 func (s *Sim) handleChatClear(req json.RawMessage) (any, error) {
 	return s.clearChat(req, "chat.clear", false)
 }

@@ -67,6 +67,9 @@ func (st *Store) history(ctx context.Context, t *storeTx, cli *whatsmeow.Client,
 				continue
 			}
 			st.apply(ctx, t, cli, key, ev, false)
+			if ev.SourceWebMsg.GetStarred() {
+				t.setStarred(key, ev.Info.ID, true)
+			}
 			historyReactions(ctx, t, cli, key, chat, alt, ev)
 			historyVotes(ctx, t, cli, key, chat, alt, ev)
 		}

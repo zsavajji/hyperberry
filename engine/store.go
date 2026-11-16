@@ -172,7 +172,7 @@ func (st *Store) handle(cli *whatsmeow.Client, evt any) {
 			st.ops <- func(t *storeTx) { st.dispatch(t, cli, evt) }
 		}
 	case *events.HistorySync, *events.Message, *events.Contact, *events.LIDContact, *events.AppStateSyncComplete,
-		*events.PushName, *events.GroupInfo, *events.JoinedGroup, *events.Mute, *events.Pin, *events.Archive, *events.UnarchiveChatsSetting, *events.UserStatusMute, *events.MarkChatAsRead,
+		*events.PushName, *events.GroupInfo, *events.JoinedGroup, *events.Mute, *events.Pin, *events.Archive, *events.UnarchiveChatsSetting, *events.UserStatusMute, *events.Star, *events.MarkChatAsRead,
 		*events.Receipt, *events.ChatPresence, *events.Presence, *events.DeleteForMe, *events.ClearChat, *events.DeleteChat:
 		st.ops <- func(t *storeTx) { st.dispatch(t, cli, evt) }
 		if h, ok := e.(*events.HistorySync); ok && st.historyIn != nil {
@@ -286,6 +286,8 @@ func (st *Store) dispatch(t *storeTx, cli *whatsmeow.Client, evt any) {
 		if t.exec(q, key) > 0 {
 			t.stories = true
 		}
+	case *events.Star:
+		t.setStarred(chatKey(ctx, t, lids, e.ChatJID, types.EmptyJID), e.MessageID, e.Action.GetStarred())
 	case *events.MarkChatAsRead:
 		n := 0
 		if !e.Action.GetRead() {

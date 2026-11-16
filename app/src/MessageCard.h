@@ -68,6 +68,7 @@ private slots:
     void onEdit();
     void onRevoke();
     void onDeleteMe();
+    void onStar();
     void onWho();
     void onJoin();
     void onQuote();
@@ -98,6 +99,7 @@ private:
     void fillBubbles();
     void placeTime(int place);
     float timeWidth() const;
+    QString timeLead() const;
 
     bb::cascades::ListView *m_list;
     bb::cascades::UIConfig *m_ui;
@@ -169,11 +171,13 @@ private:
     bb::cascades::Label *m_reactions;
 
     QString m_edited; // "edited ", translated
+    QString m_starMark; // the star (U+2605) and a space, before the time of a starred message
     bb::cascades::ActionSet *m_menu;
     bb::cascades::ActionItem *m_reply;
     bb::cascades::ActionItem *m_react;
     bb::cascades::ActionItem *m_votes;
     bb::cascades::ActionItem *m_copy;
+    bb::cascades::ActionItem *m_star;
     bb::cascades::ActionItem *m_edit;
     bb::cascades::ActionItem *m_revoke;
     bb::cascades::DeleteActionItem *m_deleteMe;

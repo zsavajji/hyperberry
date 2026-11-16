@@ -509,6 +509,10 @@
         <source>Channels</source>
         <translation>Канали</translation>
     </message>
+    <message>
+        <source>Starred messages</source>
+        <translation>Обрані повідомлення</translation>
+    </message>
 </context>
 <context>
     <name>Composer</name>
@@ -1058,6 +1062,14 @@
         <location filename="../assets/MessageItem.qml" line="44"/>
         <source>Edit</source>
         <translation>Редагувати</translation>
+    </message>
+    <message>
+        <source>Star</source>
+        <translation>В обране</translation>
+    </message>
+    <message>
+        <source>Unstar</source>
+        <translation>Прибрати з обраного</translation>
     </message>
 </context>
 <context>
@@ -2376,6 +2388,17 @@
         <location filename="../assets/StoryAudienceSheet.qml" line="1" />
         <source>Loading…</source>
         <translation>Завантаження…</translation>
+    </message>
+</context>
+<context>
+    <name>StarredPage</name>
+    <message>
+        <source>Starred messages</source>
+        <translation>Обрані повідомлення</translation>
+    </message>
+    <message>
+        <source>No starred messages</source>
+        <translation>Немає обраних повідомлень</translation>
     </message>
 </context>
 </TS>

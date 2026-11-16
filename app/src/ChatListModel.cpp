@@ -3,6 +3,7 @@
 #include "EngineLink.h"
 #include "Moves.h"
 #include "colors.h"
+#include "Pins.h"
 #include "dates.h"
 
 #include <bb/utility/i18n/Formatting>
@@ -164,6 +165,45 @@ QStringList ChatListModel::findMessages(const QString &jid, const QString &text)
             ids << q.value(0).toString();
     }
     return ids;
+}
+
+// ponytail: scans messages for starred = 1 (no index, as Qt 4.8's SQLite reads the file); an index on the engine's
+// side if the page gets slow.
+QVariantList ChatListModel::starred()
+{
+    QVariantList rows;
+    QSqlDatabase db = QSqlDatabase::database(m_dbName, false);
+    if (!db.isOpen() && !db.open())
+        return rows;
+    QSqlQuery q(db);
+    if (!q.exec("SELECT m.chat, m.id, m.ts, m.out, m.sender_name, m.kind, m.text, c.name, c.kind "
+                "FROM messages m JOIN chats c ON c.jid = m.chat WHERE m.starred = 1 AND m.deleted = 0 "
+                "ORDER BY m.ts DESC, m.rowid DESC")) {
+        qWarning() << "starred:" << q.lastError().text();
+        return rows;
+    }
+    dayFormatter().applyCurrentTimeAsAnchor();
+    const QLocale locale = m_region.locale();
+    const QString clock = timeFormat(locale, DateFormat::Short);
+    const QDate today = QDate::currentDate();
+    while (q.next()) {
+        const QString chat = q.value(0).toString();
+        const int kind = q.value(8).toInt();
+        const QDateTime when = QDateTime::fromTime_t(q.value(2).toUInt());
+        const int age = when.date().daysTo(today);
+        QVariantMap row;
+        row["chat"] = chat;
+        row["id"] = q.value(1).toString();
+        row["chatName"] = q.value(7).isNull() ? placeholder(chat, kind) : q.value(7).toString();
+        row["sender"] = kind != 1 ? QString() : q.value(3).toInt() != 0 ? tr("You") : q.value(4).toString();
+        row["text"] = Pins::summary(q.value(5).toInt(), q.value(6).toString());
+        // As the chat list: the time today, the day within the week, else the date.
+        row["time"] = age == 0 ? locale.toString(when.time(), clock)
+                    : age < 7 ? dayLabel(when, today, locale, dayFormatter())
+                    : locale.toString(when.date(), QLocale::ShortFormat);
+        rows << row;
+    }
+    return rows;
 }
 
 // For the toast of the chip under a card: "You 👍" for ours, else the reactor's name, or the part

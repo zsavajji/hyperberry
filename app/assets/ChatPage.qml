@@ -41,6 +41,7 @@ Page {
         if (chat.kind != 2) addAction(infoAction, ActionBarPlacement.InOverflow)
         if (chat.kind <= 1) addAction(pollAction, ActionBarPlacement.InOverflow)
         ctl.messages.itemAdded.connect(page.added)
+        ctl.messages.loadingChanged.connect(page.loaded)
         media.ready.connect(page.mediaReady)
         media.openFailed.connect(mediaFailed.show)
     }
@@ -362,9 +363,22 @@ Page {
     // A search match (step 5.10): its day is loaded if it wasn't, then it's scrolled to and tinted.
     function jump(id) {
         list.foundId = id
+        // A chat just opened has no messages for 50 ms (the first page comes after the push): wait for it.
+        if (ctl.messages.loading) {
+            page.jumpPending = id
+            return
+        }
         var i = ctl.messages.reveal(id)
         if (i >= 0) {
             list.scrollToItem([i], ScrollAnimation.None)
+        }
+    }
+    property string jumpPending: ""
+    function loaded() {
+        if (!ctl.messages.loading && page.jumpPending != "") {
+            var id = page.jumpPending
+            page.jumpPending = ""
+            page.jump(id)
         }
     }
     // The shape and kind of the video being fetched (openMedia sets them): a newer get replaces an older, so these are
@@ -459,6 +473,10 @@ Page {
                 }
                 function copy(text) {
                     ctl.copy(text)
+                }
+                // Star, or take the star off one that has it: the engine tells the phone, and the card redraws.
+                function star(msg) {
+                    engine.request("msg.star", {"chat": page.chat.jid, "id": msg.id, "star": !msg.starred})
                 }
                 // Edit (ours, a text): the composer takes its text, the bar above says so, Send replaces it.
                 function edit(msg) {

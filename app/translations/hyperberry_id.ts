@@ -505,6 +505,10 @@
         <source>Channels</source>
         <translation>Saluran</translation>
     </message>
+    <message>
+        <source>Starred messages</source>
+        <translation>Pesan berbintang</translation>
+    </message>
 </context>
 <context>
     <name>Composer</name>
@@ -1054,6 +1058,14 @@
         <location filename="../assets/MessageItem.qml" line="44"/>
         <source>Edit</source>
         <translation>Edit</translation>
+    </message>
+    <message>
+        <source>Star</source>
+        <translation>Beri bintang</translation>
+    </message>
+    <message>
+        <source>Unstar</source>
+        <translation>Hapus bintang</translation>
     </message>
 </context>
 <context>
@@ -2370,6 +2382,17 @@
         <location filename="../assets/StoryAudienceSheet.qml" line="1" />
         <source>Loading…</source>
         <translation>Memuat…</translation>
+    </message>
+</context>
+<context>
+    <name>StarredPage</name>
+    <message>
+        <source>Starred messages</source>
+        <translation>Pesan berbintang</translation>
+    </message>
+    <message>
+        <source>No starred messages</source>
+        <translation>Tidak ada pesan berbintang</translation>
     </message>
 </context>
 </TS>

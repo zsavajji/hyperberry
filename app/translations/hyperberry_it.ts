@@ -507,6 +507,10 @@
         <source>Channels</source>
         <translation>Canali</translation>
     </message>
+    <message>
+        <source>Starred messages</source>
+        <translation>Messaggi con stella</translation>
+    </message>
 </context>
 <context>
     <name>Composer</name>
@@ -1056,6 +1060,14 @@
         <location filename="../assets/MessageItem.qml" line="44"/>
         <source>Edit</source>
         <translation>Modifica</translation>
+    </message>
+    <message>
+        <source>Star</source>
+        <translation>Aggiungi stella</translation>
+    </message>
+    <message>
+        <source>Unstar</source>
+        <translation>Rimuovi stella</translation>
     </message>
 </context>
 <context>
@@ -2373,6 +2385,17 @@
         <location filename="../assets/StoryAudienceSheet.qml" line="1"/>
         <source>Loading…</source>
         <translation>Caricamento…</translation>
+    </message>
+</context>
+<context>
+    <name>StarredPage</name>
+    <message>
+        <source>Starred messages</source>
+        <translation>Messaggi con stella</translation>
+    </message>
+    <message>
+        <source>No starred messages</source>
+        <translation>Nessun messaggio con stella</translation>
     </message>
 </context>
 </TS>
