@@ -142,7 +142,13 @@ func (st *Store) handle(cli *whatsmeow.Client, evt any) {
 		go st.syncGroups(cli)
 		go st.syncChannels(cli)
 		go st.hist.resume(cli) // the chunks a crash or a failure left on disk
-		st.ops <- func(t *storeTx) { t.tidy(cli); syncSettings(context.Background(), t, cli) }
+		st.ops <- func(t *storeTx) {
+			t.tidy(cli)
+			syncSettings(context.Background(), t, cli)
+			if t.stateInt("appstate_resync") == 1 {
+				go st.resyncAppState(cli) // off the writer: it is network
+			}
+		}
 		return
 	case *events.NewsletterJoin: // followed on another device, or here
 		go st.syncChannels(cli)
@@ -176,6 +182,20 @@ func (st *Store) handle(cli *whatsmeow.Client, evt any) {
 			}
 		}
 	}
+}
+
+// resyncAppState fetches the three app-state collections that hold settings in full once more, so the
+// stars, muted stories and "Keep chats archived" the phone set before this link existed arrive as
+// events (session.go: EmitFullSyncIndexes). A fetch that fails leaves the flag for the next connect.
+func (st *Store) resyncAppState(cli *whatsmeow.Client) {
+	ctx := context.Background()
+	for _, name := range []appstate.WAPatchName{appstate.WAPatchRegular, appstate.WAPatchRegularLow, appstate.WAPatchRegularHigh} {
+		if err := cli.FetchAppState(ctx, name, true, false); err != nil {
+			st.log.Warnf("app state resync %s: %v", name, err)
+			return
+		}
+	}
+	st.ops <- func(t *storeTx) { t.exec("DELETE FROM engine_state WHERE key = 'appstate_resync'") }
 }
 
 // syncGroups fetches the group subjects off the writer, since it is a network call, and
@@ -392,6 +412,16 @@ func (t *storeTx) touch(jid, q string, args ...any) bool {
 		return true
 	}
 	return false
+}
+
+// stateInt reads one of engine_state's facts, 0 when there is none.
+func (t *storeTx) stateInt(key string) (v int) {
+	t.tx.QueryRow("SELECT value FROM engine_state WHERE key = ?", key).Scan(&v)
+	return v
+}
+
+func (t *storeTx) setStateInt(key string, v int) {
+	t.exec("INSERT OR REPLACE INTO engine_state(key, value) VALUES(?, ?)", key, v)
 }
 
 func (t *storeTx) hasChat(jid string) bool {

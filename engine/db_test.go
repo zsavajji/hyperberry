@@ -121,3 +121,50 @@ func TestOpenChats(t *testing.T) {
 		t.Fatal("a newer user_version must fail")
 	}
 }
+
+// Only a chats.db that has chats asks for the app-state refetch: a fresh one gets those settings
+// with its own link's first sync.
+func TestMigrateAppStateResync(t *testing.T) {
+	flagAfter := func(chats bool) int {
+		path := filepath.Join(t.TempDir(), "chats.db")
+		old, err := sql.Open("sqlite3", "file:"+path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		qs := append(migrations[:8:8], "PRAGMA user_version = 8") // before engine_state
+		if chats {
+			qs = append(qs, `INSERT INTO chats(jid, kind) VALUES('a@lid', 0)`)
+		}
+		for _, q := range qs {
+			if _, err := old.Exec(q); err != nil {
+				t.Fatal(err)
+			}
+		}
+		old.Close()
+		db, err := openChats(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer db.Close()
+		var n int
+		if err := db.QueryRow("SELECT count(*) FROM engine_state WHERE key = 'appstate_resync' AND value = 1").Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	if n := flagAfter(true); n != 1 {
+		t.Errorf("a chats.db with chats: %d flags, want 1", n)
+	}
+	if n := flagAfter(false); n != 0 {
+		t.Errorf("a chats.db with none: %d flags, want 0", n)
+	}
+	tx, _ := newTestTx(t)
+	if tx.stateInt("appstate_resync") != 0 {
+		t.Error("a fresh chats.db has no flag")
+	}
+	tx.setStateInt("k", 1)
+	tx.setStateInt("k", 2)
+	if tx.stateInt("k") != 2 {
+		t.Error("setStateInt replaces")
+	}
+}

@@ -136,6 +136,12 @@ CREATE INDEX stories_by_time ON stories(ts);`,
   name TEXT,
   ts INTEGER NOT NULL,
   PRIMARY KEY(id, viewer));`,
+	// The engine's own small facts (store.go's stateInt), one integer per key; the UI never reads it.
+	// appstate_resync: a chat list that exists was linked before the full app-state sync emitted stars,
+	// muted stories and "Keep chats archived" (session.go), so it fetches the app state once more; a fresh
+	// link has none yet and gets them with its own first sync.
+	`CREATE TABLE engine_state(key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+INSERT INTO engine_state SELECT 'appstate_resync', 1 WHERE EXISTS (SELECT 1 FROM chats);`,
 }
 
 // openChats opens chats.db in WAL mode and migrates it to the newest schema.

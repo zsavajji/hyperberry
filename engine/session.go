@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/polymorfa/hypermeow"
+	"github.com/polymorfa/hypermeow/appstate"
 	"github.com/polymorfa/hypermeow/store"
 	"github.com/polymorfa/hypermeow/store/sqlstore"
 	"github.com/polymorfa/hypermeow/types/events"
@@ -123,6 +124,10 @@ func (s *Session) newClient(device *store.Device) *whatsmeow.Client {
 	// It only dispatches the notification now; the Store works it and sends the receipt itself.
 	cli.ManualHistorySyncDownload = true
 	cli.DisableManualHistorySyncReceipt = true
+	// A full app-state sync (a link, or a gap in the versions) emits nothing but these, so a star, a muted
+	// story or "Keep chats archived" set on the phone before the link reaches us; the rest of the full
+	// sync stays silent, since EmitAppStateEventsOnFullSync would replay mark-read, contacts and deletes.
+	cli.EmitFullSyncIndexes = map[string]bool{appstate.IndexStar: true, appstate.IndexUserStatusMute: true, appstate.IndexSettingUnarchiveChats: true}
 	configureReconnect(cli)
 	s.callsOn(cli) // before it connects: meowcaller listens to the call stanzas from the start
 	cli.AddEventHandler(func(evt any) { s.onEvent(cli, evt) })

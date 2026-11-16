@@ -1,8 +1,9 @@
 #!/bin/sh
-# Prints the path of a go.work that swaps hypermeow for a copy with engine/framesocket.patch and
-# engine/hypermeow-status.patch applied, and meowcaller for one with engine/meowcaller.patch (`go -overlay` refuses files in
-# the module cache). Runs in the build image, from /src/engine. A module whose file has moved on
-# makes patch fail, which stops the build instead of losing the fix.
+# Prints the path of a go.work that swaps hypermeow for a copy with engine/framesocket.patch,
+# engine/hypermeow-status.patch and engine/hypermeow-fullsync.patch applied, and meowcaller for one with
+# engine/meowcaller.patch (`go -overlay` refuses files in the module cache). Runs in the build image,
+# from /src/engine. A module whose file has moved on makes patch fail, which stops the build instead
+# of losing the fix.
 set -eu
 go mod download github.com/polymorfa/hypermeow
 src=$(go list -m -f '{{.Dir}}' github.com/polymorfa/hypermeow)
@@ -11,6 +12,7 @@ cp -r "$src" /tmp/hypermeow
 chmod -R u+w /tmp/hypermeow
 patch -s --fuzz=0 -p1 -d /tmp/hypermeow </src/engine/framesocket.patch >&2
 patch -s --fuzz=0 -p1 -d /tmp/hypermeow </src/engine/hypermeow-status.patch >&2
+patch -s --fuzz=0 -p1 -d /tmp/hypermeow </src/engine/hypermeow-fullsync.patch >&2
 go mod download github.com/purpshell/meowcaller
 src=$(go list -m -f '{{.Dir}}' github.com/purpshell/meowcaller)
 rm -rf /tmp/meowcaller

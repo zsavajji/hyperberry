@@ -1,0 +1,43 @@
+--- a/client.go
++++ b/client.go
+@@ -133,6 +133,10 @@
+ 	EmitAppStateEventsOnFullSync   bool
+ 	EmitLabelEventsOnFullSync      bool
+ 	EmitQuickReplyEventsOnFullSync bool
++	// HyperBerry: app state indexes (appstate.Index*) whose events are emitted on a full sync even though
++	// EmitAppStateEventsOnFullSync is off, which replays everything (mark-read, contacts, deletes). A link
++	// brings the phone's stars, muted stories and "Keep chats archived" setting only this way.
++	EmitFullSyncIndexes map[string]bool
+ 
+ 	// EmitStickerEventsOnFullSync emits favorite and recent-removal snapshot events.
+ 	EmitStickerEventsOnFullSync bool
+--- a/appstate.go
++++ b/appstate.go
+@@ -77,7 +77,7 @@
+ 	wantSnapshot := fullSync
+ 	var eventsToDispatch []any
+ 	eventsToDispatchPtr := &eventsToDispatch
+-	if fullSync && !cli.EmitAppStateEventsOnFullSync && !cli.EmitLabelEventsOnFullSync && !cli.EmitQuickReplyEventsOnFullSync && !cli.EmitStickerEventsOnFullSync {
++	if fullSync && !cli.EmitAppStateEventsOnFullSync && !cli.EmitLabelEventsOnFullSync && !cli.EmitQuickReplyEventsOnFullSync && !cli.EmitStickerEventsOnFullSync && len(cli.EmitFullSyncIndexes) == 0 {
+ 		eventsToDispatchPtr = nil
+ 	}
+ 	for hasMore {
+@@ -127,7 +127,7 @@
+ 	}
+ 	var eventsToDispatch []any
+ 	eventsToDispatchPtr := &eventsToDispatch
+-	if !cli.EmitAppStateEventsOnFullSync && !cli.EmitLabelEventsOnFullSync && !cli.EmitQuickReplyEventsOnFullSync && !cli.EmitStickerEventsOnFullSync {
++	if !cli.EmitAppStateEventsOnFullSync && !cli.EmitLabelEventsOnFullSync && !cli.EmitQuickReplyEventsOnFullSync && !cli.EmitStickerEventsOnFullSync && len(cli.EmitFullSyncIndexes) == 0 {
+ 		eventsToDispatchPtr = nil
+ 	}
+ 	snapshot, err := appstate.ParseRecovery(result[0].GetSyncdSnapshotFatalRecoveryResponse())
+@@ -224,6 +224,9 @@
+ 	if len(index) == 0 {
+ 		return false
+ 	}
++	if cli.EmitFullSyncIndexes[index[0]] {
++		return true
++	}
+ 	if cli.EmitStickerEventsOnFullSync && (index[0] == appstate.IndexFavoriteSticker || index[0] == appstate.IndexRemoveRecentSticker) {
+ 		return true
+ 	}
