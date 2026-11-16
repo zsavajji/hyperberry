@@ -96,11 +96,14 @@ void MessageCard::onQuote()
 }
 
 // Swipe left to reply (the user, 2026-11-08): the card follows the finger up to 56 px left; let go
-// there and it replies, as the menu's Reply does. Either way it slides back. A touch that moves
-// up or down first is the list's scroll, and the card stays put.
+// past 36 px and it replies, as the menu's Reply does. Either way it slides back. A touch that moves
+// up or down first is the list's scroll, and the card stays put. The release counts where the finger
+// left, not the card's last move: a quick flick's last move is short of where it ends (the user,
+// 2026-11-16: the card slid and no reply came).
 void MessageCard::onTouch(TouchEvent *event)
 {
     const float full = 56;
+    const float enough = 36;
     if (event->isDown()) {
         m_downX = event->windowX(); // the window's: the card's own coordinates move with it
         m_downY = event->windowY();
@@ -122,7 +125,9 @@ void MessageCard::onTouch(TouchEvent *event)
     if (m_swipe != 1) // up or cancel
         return;
     m_swipe = 0;
-    const bool reply = event->isUp() && m_root->translationX() <= -full;
+    const bool reply = event->isUp() && qMin(dx, m_root->translationX()) <= -enough;
+    if (!reply)
+        qDebug("swipe: no reply, %s at %.0f px", event->isUp() ? "up" : "cancelled", dx);
     m_slide = ImplicitAnimationController(); // the animation back on, for the slide back
     m_root->setTranslationX(0);
     if (reply)
