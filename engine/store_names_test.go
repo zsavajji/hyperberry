@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/polymorfa/hypermeow"
 	"github.com/polymorfa/hypermeow/proto/waAdv"
+	"github.com/polymorfa/hypermeow/store"
 	"github.com/polymorfa/hypermeow/store/sqlstore"
 	"github.com/polymorfa/hypermeow/types"
 	waLog "github.com/polymorfa/hypermeow/util/log"
@@ -72,23 +74,31 @@ func TestRenameAll(t *testing.T) {
 	}
 }
 
-// A pin the app-state full sync stored without an event reaches chats.db; a chat hypermeow has no
-// settings for keeps its pin.
-func TestSyncPins(t *testing.T) {
+// A pin or mute the app-state full sync stored without an event reaches chats.db; a chat hypermeow
+// has no settings for keeps its pin.
+func TestSyncSettings(t *testing.T) {
 	ctx := context.Background()
 	cli := savedClient(t, "4915700000009")
 	carlotta := types.NewJID("233221170163922", types.HiddenUserServer)
 	if err := cli.Store.ChatSettings.PutPinned(ctx, carlotta, true); err != nil {
 		t.Fatal(err)
 	}
+	mario := types.NewJID("233221170163923", types.HiddenUserServer)
+	if err := cli.Store.ChatSettings.PutMutedUntil(ctx, mario, store.MutedForever); err != nil {
+		t.Fatal(err)
+	}
 	tx, _ := newTestTx(t)
+	tx.ensureChat(mario.String(), chatUser)
 	tx.ensureChat(carlotta.String(), chatUser)
 	tx.ensureChat("1@lid", chatUser)
 	tx.setPinned("1@lid", true)
 
-	syncPins(ctx, tx, cli)
+	syncSettings(ctx, tx, cli)
 
 	if n := count(t, tx, "SELECT count(*) FROM chats WHERE pinned = 1"); n != 2 {
 		t.Errorf("%d pinned, want 2", n)
+	}
+	if n := count(t, tx, fmt.Sprintf("SELECT count(*) FROM chats WHERE muted_until = %d", muteForever)); n != 1 {
+		t.Errorf("%d muted forever, want 1", n)
 	}
 }

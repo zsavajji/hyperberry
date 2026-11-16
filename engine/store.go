@@ -12,6 +12,7 @@ import (
 	"github.com/polymorfa/hypermeow"
 	"github.com/polymorfa/hypermeow/appstate"
 	"github.com/polymorfa/hypermeow/proto/waHistorySync"
+	"github.com/polymorfa/hypermeow/store"
 	"github.com/polymorfa/hypermeow/types"
 	"github.com/polymorfa/hypermeow/types/events"
 	waLog "github.com/polymorfa/hypermeow/util/log"
@@ -141,7 +142,7 @@ func (st *Store) handle(cli *whatsmeow.Client, evt any) {
 		go st.syncGroups(cli)
 		go st.syncChannels(cli)
 		go st.hist.resume(cli) // the chunks a crash or a failure left on disk
-		st.ops <- func(t *storeTx) { t.tidy(cli); syncPins(context.Background(), t, cli) }
+		st.ops <- func(t *storeTx) { t.tidy(cli); syncSettings(context.Background(), t, cli) }
 		return
 	case *events.NewsletterJoin: // followed on another device, or here
 		go st.syncChannels(cli)
@@ -219,8 +220,8 @@ func (st *Store) dispatch(t *storeTx, cli *whatsmeow.Client, evt any) {
 		if e.Name == appstate.WAPatchCriticalUnblockLow {
 			st.renameAll(ctx, t, cli)
 		}
-		if e.Name == appstate.WAPatchRegularLow { // where the pins are
-			syncPins(ctx, t, cli)
+		if e.Name == appstate.WAPatchRegularLow || e.Name == appstate.WAPatchRegularHigh { // pins; mutes
+			syncSettings(ctx, t, cli)
 		}
 	case *events.PushName:
 		st.rename(ctx, t, cli, e.JID, e.JIDAlt)
@@ -287,6 +288,17 @@ func muteUntil(v int64) int64 {
 		return v / 1000
 	}
 	return v
+}
+
+// settingsMute turns hypermeow's MutedUntil (zero: not muted) into chats.muted_until.
+func settingsMute(v time.Time) int64 {
+	switch {
+	case v.IsZero():
+		return 0
+	case v.Equal(store.MutedForever):
+		return muteForever
+	}
+	return v.Unix()
 }
 
 // clear drops every chat and message, then wipes the rest (wipe): a logout ends the link the
@@ -533,11 +545,12 @@ func keys(m map[string]bool) []string {
 	return s
 }
 
-// syncPins copies hypermeow's chat settings' pins into chats.db. The app-state full sync (a link,
-// a version gap) stores them there without a Pin event, as EmitAppStateEventsOnFullSync is off, and
-// a history sync's conversations carry none: a chat pinned on the phone stayed unpinned here.
-// Only a chat hypermeow has settings for changes, so a pin from elsewhere stays.
-func syncPins(ctx context.Context, t *storeTx, cli *whatsmeow.Client) {
+// syncSettings copies hypermeow's chat settings' pins and mutes into chats.db. The app-state full
+// sync (a link, a version gap) stores them there without a Pin or Mute event, as
+// EmitAppStateEventsOnFullSync is off, and a history sync's conversations carry no pin: a chat
+// pinned or muted on the phone stayed unpinned and loud here.
+// Only a chat hypermeow has settings for changes, so a pin or mute from elsewhere stays.
+func syncSettings(ctx context.Context, t *storeTx, cli *whatsmeow.Client) {
 	rows, err := t.tx.Query("SELECT jid FROM chats")
 	if err != nil {
 		t.log.Warnf("pins: %v", err)
@@ -555,6 +568,7 @@ func syncPins(ctx context.Context, t *storeTx, cli *whatsmeow.Client) {
 		if jid, err := types.ParseJID(j); err == nil {
 			if s, err := cli.Store.ChatSettings.GetChatSettings(ctx, jid); err == nil && s.Found {
 				t.setPinned(j, s.Pinned)
+				t.setMuted(j, settingsMute(s.MutedUntil))
 			}
 		}
 	}
