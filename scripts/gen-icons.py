@@ -9,7 +9,7 @@ The phone has only the trash can among the info page's and chat menu's icons (us
 (a plus, which the phone has only beside a contact, a place or an event), megaphone_action and
 help_action (a question mark in a ring, for About), back_action (a thin "<" chevron, the chat
 title bar's Back) and overflow_action (three vertical dots, the composer's ⋮ column).
-The story viewer's marks are heart.png and eye.png (who viewed); a forwarded card's, forward.png and forward_many.png.
+The story viewer's marks are heart.png and eye.png (who viewed); a forwarded card's, forward.png and forward_many.png;\nthe card menu's star_action (Star, filled) and unstar_action (Unstar, an outline).
 It also draws the app's icon, in every size, and the splash.
 
 They're white on transparent, so QML tints them with ImageView.filterColor (grey, or the
@@ -86,6 +86,19 @@ def main(out):
              for a in (2 * math.pi * i / 360 for i in range(360))]
     ImageDraw.Draw(img).polygon([(n * (0.5 + x / 36), n * (0.47 + y / 36)) for x, y in heart], white)
     img.resize((72, 72), Image.LANCZOS).save(f"{out}/heart.png")
+
+    # The card menu's Star and Unstar (the user's, 2026-11-16): a five-pointed star, filled to star, an outline to
+    # take the star off; 81 px action icons, the star 80% of the box, nudged down a little as its weight sits low.
+    n = 81 * S
+    R, cy = 0.42 * n, 0.53 * n
+    star = [(n / 2 + (R if i % 2 == 0 else 0.382 * R) * math.sin(math.pi * i / 5),
+             cy - (R if i % 2 == 0 else 0.382 * R) * math.cos(math.pi * i / 5)) for i in range(10)]
+    img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
+    ImageDraw.Draw(img).polygon(star, white)
+    img.resize((81, 81), Image.LANCZOS).save(f"{out}/star_action.png")
+    img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
+    ImageDraw.Draw(img).line(star + star[:2], white, round(0.075 * n), joint="curve")
+    img.resize((81, 81), Image.LANCZOS).save(f"{out}/unstar_action.png")
 
     # The story viewer's eye (who viewed our story): an almond outline round a filled pupil, 72 px.
     n = 72 * S

@@ -97,8 +97,7 @@ Page {
         },
         ActionItem {
             title: qsTr("Starred messages")
-            // As the card's Star: no star among our icons, the heart is the nearest.
-            imageSource: "asset:///images/heart.png"
+            imageSource: "asset:///images/star_action.png"
             ActionBar.placement: ActionBarPlacement.InOverflow
             onTriggered: nav.push(starredDef.createObject())
         },

@@ -51,7 +51,9 @@ void MessageCard::onPopulating()
     if (m_votes)
         m_votes->setEnabled(flag("poll") && !deleted);
     m_copy->setEnabled(!deleted && !str("text").isEmpty());
-    m_star->setTitle(Card::tr(kContext, flag("starred") ? "Unstar" : "Star"));
+    const bool starred = flag("starred");
+    m_star->setTitle(Card::tr(kContext, starred ? "Unstar" : "Star"));
+    m_star->setImageSource(Card::url(starred ? "asset:///images/unstar_action.png" : "asset:///images/star_action.png"));
     m_star->setEnabled(!deleted);
     m_edit->setEnabled(flag("editable"));
     m_revoke->setEnabled(flag("revocable"));
@@ -78,8 +80,8 @@ void MessageCard::makeActions()
         m_votes = action("View votes", "file:///usr/share/icons/ic_accept.png", SLOT(onVotes()));
     // /usr/share/icons has no copy icon: this one is the stock Text Messages app's.
     m_copy = action("Copy", "asset:///images/copy.png", SLOT(onCopy()));
-    // No star among the stock icons or ours: the story viewer's heart is the nearest ("favourite").
-    m_star = action("Star", "asset:///images/heart.png", SLOT(onStar()));
+    // A filled star to star, an outline to take it off (gen-icons.py); onPopulating swaps them.
+    m_star = action("Star", "asset:///images/star_action.png", SLOT(onStar()));
     m_edit = action("Edit", "file:///usr/share/icons/ic_edit.png", SLOT(onEdit()));
     m_revoke = action("Delete for everyone", "file:///usr/share/icons/bb_action_delete.png",
                       SLOT(onRevoke()));
