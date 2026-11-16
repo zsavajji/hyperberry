@@ -206,6 +206,8 @@ Page {
         composer.requestFocus()
     }
     property variant playerObj
+    // A voice note plays at the ear (VoicePlayer.atEar: the sensor near, and on in Settings).
+    property bool atEar: page.playerObj ? page.playerObj.atEar : false
     property variant recorderObj
     property variant searchObj
     property variant reactObj
@@ -419,6 +421,7 @@ Page {
         composer.editor.cursorPosition = composer.text.length
     }
     titleBar: ChatTitleBar {
+        visibility: page.atEar ? ChromeVisibility.Hidden : ChromeVisibility.Visible
         chat: page.chat
         status: ctl.status
         members: ctl.groupInfo.participants ? ctl.groupInfo.participants.length : 0
@@ -437,219 +440,233 @@ Page {
     function callPlaced() {
         nav.pop()
     }
+    // At the ear, a voice note playing: the screen goes black and takes no touch, as the call screen does (the
+    // user's ask, 2026-11-16); the title bar hides, so the black covers it all. The action bar is hidden already.
     Container {
+        layout: DockLayout {}
         horizontalAlignment: HorizontalAlignment.Fill
         verticalAlignment: VerticalAlignment.Fill
-        layout: StackLayout {
-            orientation: LayoutOrientation.TopToBottom
-        }
         Container {
-            id: searchSlot
-            horizontalAlignment: HorizontalAlignment.Fill
-        }
-        // Holds the player's and the recorder's containers; nothing in it shows.
-        Container {
-            id: partSlot
-            visible: false
-        }
-        // The list, and over it the note of an empty chat.
-        Container {
-            layoutProperties: StackLayoutProperties {
-                spaceQuota: 1
-            }
-            layout: DockLayout {}
             horizontalAlignment: HorizontalAlignment.Fill
             verticalAlignment: VerticalAlignment.Fill
-            ListView {
-                id: list
-                // Filled: a DockLayout's child sits at its top left, at its own size, otherwise.
+            layout: StackLayout {
+                orientation: LayoutOrientation.TopToBottom
+            }
+            Container {
+                id: searchSlot
+                horizontalAlignment: HorizontalAlignment.Fill
+            }
+            // Holds the player's and the recorder's containers; nothing in it shows.
+            Container {
+                id: partSlot
+                visible: false
+            }
+            // The list, and over it the note of an empty chat.
+            Container {
+                layoutProperties: StackLayoutProperties {
+                    spaceQuota: 1
+                }
+                layout: DockLayout {}
                 horizontalAlignment: HorizontalAlignment.Fill
                 verticalAlignment: VerticalAlignment.Fill
-                // The C++ cards call these functions on the list: the long-press menu's actions, a mention's
-                // tap, the reactions' chip.
-                function reply(msg) {
-                    ctl.reply(msg)
-                    composer.requestFocus()
-                }
-                function copy(text) {
-                    ctl.copy(text)
-                }
-                // Star, or take the star off one that has it: the engine tells the phone, and the card redraws.
-                function star(msg) {
-                    engine.request("msg.star", {"chat": page.chat.jid, "id": msg.id, "star": !msg.starred})
-                }
-                // Edit (ours, a text): the composer takes its text, the bar above says so, Send replaces it.
-                function edit(msg) {
-                    page.unstage()
-                    ctl.edit(msg)
-                    composer.text = msg.text
-                    composer.requestFocus()
-                    composer.editor.cursorPosition = msg.text.length
-                }
-                // A tap on the quote of a reply to a story, or of a like on one of ours: the Stories tab plays it.
-                function openStory(msg) {
-                    nav.showStory(msg.storyPoster, msg.quote)
-                }
-                // A mention's link in a card: the person's page.
-                function openPerson(jid, name) {
-                    infoAction.showPerson(jid, name)
-                }
-                // Reactions (step 5.11): the bar over the composer, and the chip's who-reacted toast.
-                function react(msg) {
-                    page.reactBar().open(msg)
-                }
-                function whoReacted(id) {
-                    page.reactBar().who(id)
-                }
-                // Polls (step 6.5e): a vote, and the toast of who chose an option, ReactBar's.
-                function vote(id, options) {
-                    engine.request("poll.vote", {"chat": page.chat.jid, "id": id, "options": options})
-                }
-                function showVoters(text) {
-                    page.reactBar().say(text)
-                }
-                // Voice notes: the player's state, for the bubbles (VoicePlayer.qml).
-                property string playingId: page.playerObj ? page.playerObj.playingId : ""
-                // The search match, tinted (SearchBar.qml).
-                property string foundId
-                property string loadingId: page.playerObj ? page.playerObj.loadingId : ""
-                property bool paused: page.playerObj ? page.playerObj.paused : false
-                property int posMs: page.playerObj ? page.playerObj.posMs : 0
-                property int durMs: page.playerObj ? page.playerObj.durMs : 0
-                function playVoice(msg) {
-                    page.player().toggle(msg.id)
-                }
-                function playedWave(data, bars) {
-                    return ctl.playedWave(data, bars)
-                }
-                // Photos, videos, audio files and documents: the message being fetched, for the bubbles
-                // (MediaBubble.cpp). Always through media.get: it answers at once when the file is here,
-                // and fetches it again when the user moved it out of Downloads. A location and a contact
-                // have no file.
-                property string mediaLoadingId: media.loadingId
-                property variant joiner: invites // for the cards, which see no context objects
-                function openMedia(msg) {
-                    if (msg.media == "location") {
-                        maps.choose(msg.lat, msg.lon, msg.place)
-                    } else if (msg.media == "contact") {
-                        media.importContact(msg.vcard)
-                    } else {
-                        page.videoRatio = msg.ratio > 0 ? msg.ratio : 0.75
-                        page.videoGif = !!msg.gif
-                        media.get(page.chat.jid, msg.id, msg.media)
+                ListView {
+                    id: list
+                    // Filled: a DockLayout's child sits at its top left, at its own size, otherwise.
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    verticalAlignment: VerticalAlignment.Fill
+                    // The C++ cards call these functions on the list: the long-press menu's actions, a mention's
+                    // tap, the reactions' chip.
+                    function reply(msg) {
+                        ctl.reply(msg)
+                        composer.requestFocus()
                     }
-                }
-                function showAlbum(members) {
-                    nav.showAlbum(list, members)
-                }
-                function deleteForMe(id) {
-                    ctl.deleteForMe(id)
-                    deletedToast.show()
-                }
-                function deleteForEveryone(id) {
-                    revokeDialog.msgId = id
-                    revokeDialog.show()
-                }
-                // The cards reach the shared emoji style (main.qml) through ListItem.view.
-                property variant emojiStyle: nav.emojiStyle
-                property int bodySize: nav.bodySize
-                property int smallSize: nav.smallSize
-                property real textScale: settings.textScale
-                // A quote's background: white at 8 % lifts it off a dark card, black at 5 % off
-                // a bright one.
-                property string quoteTint: settings.theme == 1 ? "#0D000000" : "#14FFFFFF"
-                property string pressColor: nav.pressColor
-                dataModel: ctl.messages
-                // Bottom to top: the model is newest first, so the list opens at the newest message
-                // with no scroll call, and an older page is appended at the visual top without
-                // moving the rows on screen.
-                layout: StackListLayout {
-                    orientation: LayoutOrientation.BottomToTop
-                }
-                // The newest card keeps the cards' gap above the composer.
-                bottomPadding: ui.du(1.5)
-                // The beginning is the bottom: a new message is followed only when the list was
-                // already there.
-                stickToEdgePolicy: ListViewStickToEdgePolicy.Beginning
-                attachedObjects: [
-                    ListScrollStateHandler {
-                        // Older pages are appends, so asking on every change can't cascade.
-                        onFirstVisibleItemChanged: ctl.nearTop(firstVisibleItem)
-                        // The list runs bottom to top, so its beginning is the bottom.
-                        onAtBeginningChanged: ctl.setAtBottom(atBeginning)
+                    function copy(text) {
+                        ctl.copy(text)
                     }
-                ]
-                // The cards are C++ (MessageCards.cpp, step 8.6): they reach the page through these functions and properties.
-                listItemProvider: MessageCards {}
+                    // Star, or take the star off one that has it: the engine tells the phone, and the card redraws.
+                    function star(msg) {
+                        engine.request("msg.star", {"chat": page.chat.jid, "id": msg.id, "star": !msg.starred})
+                    }
+                    // Edit (ours, a text): the composer takes its text, the bar above says so, Send replaces it.
+                    function edit(msg) {
+                        page.unstage()
+                        ctl.edit(msg)
+                        composer.text = msg.text
+                        composer.requestFocus()
+                        composer.editor.cursorPosition = msg.text.length
+                    }
+                    // A tap on the quote of a reply to a story, or of a like on one of ours: the Stories tab plays it.
+                    function openStory(msg) {
+                        nav.showStory(msg.storyPoster, msg.quote)
+                    }
+                    // A mention's link in a card: the person's page.
+                    function openPerson(jid, name) {
+                        infoAction.showPerson(jid, name)
+                    }
+                    // Reactions (step 5.11): the bar over the composer, and the chip's who-reacted toast.
+                    function react(msg) {
+                        page.reactBar().open(msg)
+                    }
+                    function whoReacted(id) {
+                        page.reactBar().who(id)
+                    }
+                    // Polls (step 6.5e): a vote, and the toast of who chose an option, ReactBar's.
+                    function vote(id, options) {
+                        engine.request("poll.vote", {"chat": page.chat.jid, "id": id, "options": options})
+                    }
+                    function showVoters(text) {
+                        page.reactBar().say(text)
+                    }
+                    // Voice notes: the player's state, for the bubbles (VoicePlayer.qml).
+                    property string playingId: page.playerObj ? page.playerObj.playingId : ""
+                    // The search match, tinted (SearchBar.qml).
+                    property string foundId
+                    property string loadingId: page.playerObj ? page.playerObj.loadingId : ""
+                    property bool paused: page.playerObj ? page.playerObj.paused : false
+                    property int posMs: page.playerObj ? page.playerObj.posMs : 0
+                    property int durMs: page.playerObj ? page.playerObj.durMs : 0
+                    function playVoice(msg) {
+                        page.player().toggle(msg.id)
+                    }
+                    function playedWave(data, bars) {
+                        return ctl.playedWave(data, bars)
+                    }
+                    // Photos, videos, audio files and documents: the message being fetched, for the bubbles
+                    // (MediaBubble.cpp). Always through media.get: it answers at once when the file is here,
+                    // and fetches it again when the user moved it out of Downloads. A location and a contact
+                    // have no file.
+                    property string mediaLoadingId: media.loadingId
+                    property variant joiner: invites // for the cards, which see no context objects
+                    function openMedia(msg) {
+                        if (msg.media == "location") {
+                            maps.choose(msg.lat, msg.lon, msg.place)
+                        } else if (msg.media == "contact") {
+                            media.importContact(msg.vcard)
+                        } else {
+                            page.videoRatio = msg.ratio > 0 ? msg.ratio : 0.75
+                            page.videoGif = !!msg.gif
+                            media.get(page.chat.jid, msg.id, msg.media)
+                        }
+                    }
+                    function showAlbum(members) {
+                        nav.showAlbum(list, members)
+                    }
+                    function deleteForMe(id) {
+                        ctl.deleteForMe(id)
+                        deletedToast.show()
+                    }
+                    function deleteForEveryone(id) {
+                        revokeDialog.msgId = id
+                        revokeDialog.show()
+                    }
+                    // The cards reach the shared emoji style (main.qml) through ListItem.view.
+                    property variant emojiStyle: nav.emojiStyle
+                    property int bodySize: nav.bodySize
+                    property int smallSize: nav.smallSize
+                    property real textScale: settings.textScale
+                    // A quote's background: white at 8 % lifts it off a dark card, black at 5 % off
+                    // a bright one.
+                    property string quoteTint: settings.theme == 1 ? "#0D000000" : "#14FFFFFF"
+                    property string pressColor: nav.pressColor
+                    dataModel: ctl.messages
+                    // Bottom to top: the model is newest first, so the list opens at the newest message
+                    // with no scroll call, and an older page is appended at the visual top without
+                    // moving the rows on screen.
+                    layout: StackListLayout {
+                        orientation: LayoutOrientation.BottomToTop
+                    }
+                    // The newest card keeps the cards' gap above the composer.
+                    bottomPadding: ui.du(1.5)
+                    // The beginning is the bottom: a new message is followed only when the list was
+                    // already there.
+                    stickToEdgePolicy: ListViewStickToEdgePolicy.Beginning
+                    attachedObjects: [
+                        ListScrollStateHandler {
+                            // Older pages are appends, so asking on every change can't cascade.
+                            onFirstVisibleItemChanged: ctl.nearTop(firstVisibleItem)
+                            // The list runs bottom to top, so its beginning is the bottom.
+                            onAtBeginningChanged: ctl.setAtBottom(atBeginning)
+                        }
+                    ]
+                    // The cards are C++ (MessageCards.cpp, step 8.6): they reach the page through these functions and properties.
+                    listItemProvider: MessageCards {}
+                }
+                // ctl.messages is null until the page opens the chat, hence the first test.
+                EmptyNote {
+                    model: ctl.messages
+                }
             }
-            // ctl.messages is null until the page opens the chat, hence the first test.
-            EmptyNote {
-                model: ctl.messages
+            Container {
+                id: reactSlot
+                horizontalAlignment: HorizontalAlignment.Fill
+            }
+            MentionBar {
+                id: mentionBar
+                people: page.chat && page.chat.kind == 1 && ctl.groupInfo.participants ? ctl.groupInfo.participants : []
+                field: composer
+            }
+            ReplyBar {
+                name: ctl.replyName
+                quote: ctl.replyText
+                editing: ctl.editing
+                // A cancelled edit takes its text out of the composer, as WhatsApp does.
+                onCancelled: {
+                    if (ctl.editing) {
+                        composer.text = ""
+                    }
+                    ctl.cancelReply()
+                }
+            }
+            Container {
+                id: stagedSlot
+                horizontalAlignment: HorizontalAlignment.Fill
+            }
+            // Typing while recording leaves the recording alone: the text stays for later, and Send
+            // finishes the recording first.
+            RecordingBar {
+                visible: page.recording
+                clock: page.recorderObj ? page.recorderObj.clock : ""
+            }
+            // Created at the first open and kept (delegateActive stays true).
+            ControlDelegate {
+                id: pickerSlot
+                source: "EmojiPicker.qml"
+                delegateActive: false
+                visible: page.picking
+                horizontalAlignment: HorizontalAlignment.Fill
+                onControlChanged: {
+                    if (control) {
+                        control.picked.connect(page.picked)
+                    }
+                }
+            }
+            // Last: the picker above it takes the keyboard's place, as stock.
+            Composer {
+                id: composerBar
+                mic: page.mic
+                recording: page.recording
+                readOnly: page.chat ? page.chat.kind == 3 : false
+                onEmoji: page.picking = !page.picking
+                onDiscard: page.recorder().discard()
+                onAttach: attachPicker.open()
+                onSend: page.mic ? page.recorder().start() : page.recording ? page.recorder().finish() : page.send()
+                // Off, Enter is a new line: the key still submits, so the field keeps its focus.
+                onSubmitted: settings.enterSends ? page.send() : composer.editor.insertPlainText("\n")
+                // The field's text notifies only when committed, so mic follows this.
+                onChanging: {
+                    page.typed = /\S/.test(text)
+                    mentionBar.find(text)
+                    ctl.composing(text)
+                }
+                onMenu: page.openActionMenu()
             }
         }
         Container {
-            id: reactSlot
+            visible: page.atEar
             horizontalAlignment: HorizontalAlignment.Fill
-        }
-        MentionBar {
-            id: mentionBar
-            people: page.chat && page.chat.kind == 1 && ctl.groupInfo.participants ? ctl.groupInfo.participants : []
-            field: composer
-        }
-        ReplyBar {
-            name: ctl.replyName
-            quote: ctl.replyText
-            editing: ctl.editing
-            // A cancelled edit takes its text out of the composer, as WhatsApp does.
-            onCancelled: {
-                if (ctl.editing) {
-                    composer.text = ""
-                }
-                ctl.cancelReply()
-            }
-        }
-        Container {
-            id: stagedSlot
-            horizontalAlignment: HorizontalAlignment.Fill
-        }
-        // Typing while recording leaves the recording alone: the text stays for later, and Send
-        // finishes the recording first.
-        RecordingBar {
-            visible: page.recording
-            clock: page.recorderObj ? page.recorderObj.clock : ""
-        }
-        // Created at the first open and kept (delegateActive stays true).
-        ControlDelegate {
-            id: pickerSlot
-            source: "EmojiPicker.qml"
-            delegateActive: false
-            visible: page.picking
-            horizontalAlignment: HorizontalAlignment.Fill
-            onControlChanged: {
-                if (control) {
-                    control.picked.connect(page.picked)
-                }
-            }
-        }
-        // Last: the picker above it takes the keyboard's place, as stock.
-        Composer {
-            id: composerBar
-            mic: page.mic
-            recording: page.recording
-            readOnly: page.chat ? page.chat.kind == 3 : false
-            onEmoji: page.picking = !page.picking
-            onDiscard: page.recorder().discard()
-            onAttach: attachPicker.open()
-            onSend: page.mic ? page.recorder().start() : page.recording ? page.recorder().finish() : page.send()
-            // Off, Enter is a new line: the key still submits, so the field keeps its focus.
-            onSubmitted: settings.enterSends ? page.send() : composer.editor.insertPlainText("\n")
-            // The field's text notifies only when committed, so mic follows this.
-            onChanging: {
-                page.typed = /\S/.test(text)
-                mentionBar.find(text)
-                ctl.composing(text)
-            }
-            onMenu: page.openActionMenu()
+            verticalAlignment: VerticalAlignment.Fill
+            background: Color.Black
+            onTouch: {}
         }
     }
 }
