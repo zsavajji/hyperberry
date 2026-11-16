@@ -485,8 +485,11 @@ func (t *storeTx) addUnread(jid string, n int) {
 	t.touch(jid, "UPDATE chats SET unread = MAX(unread, 0) + ? WHERE jid = ?", n)
 }
 
+// setMuted refreshes the chat's Hub item: muted shows read, unmuted shows its count again.
 func (t *storeTx) setMuted(jid string, until int64) {
-	t.touch(jid, "UPDATE chats SET muted_until = ?1 WHERE muted_until != ?1 AND jid = ?2", until)
+	if t.touch(jid, "UPDATE chats SET muted_until = ?1 WHERE muted_until != ?1 AND jid = ?2", until) {
+		t.hubItem(jid, false, false)
+	}
 }
 
 func (t *storeTx) setPinned(jid string, v bool) {

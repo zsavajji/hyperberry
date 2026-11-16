@@ -164,7 +164,8 @@ func TestHubLiveMessage(t *testing.T) {
 
 func TestHubSilentItems(t *testing.T) {
 	s, st, _, h := hubSim(t)
-	// Muted chats and the chat on screen get their item, but the Hub doesn't alert.
+	// Muted chats and the chat on screen get their item, but the Hub doesn't alert; a muted
+	// chat's item shows read.
 	msg(s, 11, "forever") // muted always, 41 unread
 	msg(s, 14, "8 hours") // muted for a while
 	flush(t, st)
@@ -176,9 +177,8 @@ func TestHubSilentItems(t *testing.T) {
 		if x.item.alert {
 			t.Errorf("a muted chat alerts: %+v", x.item)
 		}
-		// The batch's notes come in map order, so the item is found by its id.
-		if x.item.id == hubItemID(simChats[11].jid) && x.item.unread != 42 {
-			t.Errorf("unread %d, want 42", x.item.unread)
+		if x.item.unread != 0 {
+			t.Errorf("a muted chat shows unread %d", x.item.unread)
 		}
 	}
 	chat := simChats[0].jid

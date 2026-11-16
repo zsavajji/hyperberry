@@ -66,9 +66,16 @@ func TestHubChatSet(t *testing.T) {
 	set(`"mute":-1`)
 	msg(s, 2, "quiet")
 	flush(t, st)
-	item(t, only(t, h.take(), "add"), 2, "quiet", 1, false) // a muted chat's item is silent
+	item(t, only(t, h.take(), "add"), 2, "quiet", 0, false) // a muted chat's item is silent and read
 	set(`"unread":true`)
 	item(t, only(t, h.take(), "update"), 2, "quiet", 1, false) // marked unread by hand shows as one
 	set(`"unread":false`)
 	item(t, only(t, h.take(), "update"), 2, "quiet", 0, false)
+	msg(s, 2, "again")
+	flush(t, st)
+	item(t, only(t, h.take(), "update"), 2, "again", 0, false)
+	set(`"mute":0`) // unmuting shows the count again, silently
+	item(t, only(t, h.take(), "update"), 2, "again", 1, false)
+	set(`"mute":-1`)
+	item(t, only(t, h.take(), "update"), 2, "again", 0, false)
 }

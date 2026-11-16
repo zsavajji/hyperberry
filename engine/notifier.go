@@ -68,7 +68,7 @@ type note struct {
 
 // hubItem queues the chat's item as the chat is now: its name, last message and unread count.
 // alert asks for the Hub's alert, which stays only for a chat with unread messages that is
-// neither muted nor on screen. An archived chat has no item at all (the user's, 2026-11-06), so this
+// neither muted nor on screen. A muted chat's item shows read unless marked unread by hand. An archived chat has no item at all (the user's, 2026-11-06), so this
 // takes away any it has. Call it after the row has its new values.
 func (t *storeTx) hubItem(chat string, add, alert bool) {
 	var name, preview sql.NullString
@@ -85,7 +85,10 @@ func (t *storeTx) hubItem(chat string, add, alert bool) {
 		t.note(chat, note{gone: true})
 		return
 	}
-	alert = alert && unread > 0 && muted <= time.Now().Unix() && !t.st.ui.seen(chat)
+	if muted > time.Now().Unix() && unread > 0 {
+		unread = 0 // a muted chat's item shows read, so no LED and no Hub splat (the user's, 2026-11-16)
+	}
+	alert = alert && unread > 0 && !t.st.ui.seen(chat)
 	title := name.String
 	if title == "" {
 		title, _, _ = strings.Cut(chat, "@")
