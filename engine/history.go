@@ -215,6 +215,9 @@ func (st *Store) apply(ctx context.Context, t *storeTx, cli *whatsmeow.Client, k
 	// A pin is a line in the chat, not news: WhatsApp doesn't alert for it either.
 	pin := row.Kind == msgNotice && (row.Text == "pin" || row.Text == "unpin")
 	if live && fresh && !row.Out && !pin {
+		if t.stateInt("unarchive_chats") == 1 { // before the unread: the chat gets its item, and the alert
+			t.setArchived(key, false)
+		}
 		t.addUnread(key, 1)
 		t.notifyIncoming(key)
 	}
