@@ -142,6 +142,9 @@ CREATE INDEX stories_by_time ON stories(ts);`,
 	// link has none yet and gets them with its own first sync.
 	`CREATE TABLE engine_state(key TEXT PRIMARY KEY, value INTEGER NOT NULL);
 INSERT INTO engine_state SELECT 'appstate_resync', 1 WHERE EXISTS (SELECT 1 FROM chats);`,
+	// The posters whose status updates the phone muted (UserStatusMute), mirrored from it: the Stories tab greys
+	// them and leaves them out of its badge. poster is the poster's chat key, as stories.poster has it.
+	`CREATE TABLE story_muted(poster TEXT PRIMARY KEY);`,
 }
 
 // openChats opens chats.db in WAL mode and migrates it to the newest schema.

@@ -4,10 +4,11 @@ import bb.cascades 1.4
 // design, 2026-11-12): the poster's tile story fills it, their picture sits over it top left in a ring that is
 // the primary colour while something is unseen, the unseen count top right, the name and the time along the
 // bottom over a dark band. story is a row of StoriesModel; the view supplies the emoji style, the sizes and the
-// press colour, as the chat list's does.
+// press colour, as the chat list's does. A poster the phone muted is dimmed, as WhatsApp greys their updates.
 Container {
     property variant story
     id: tile
+    opacity: tile.story.muted ? 0.5 : 1.0
     layout: DockLayout {}
     horizontalAlignment: HorizontalAlignment.Fill
     verticalAlignment: VerticalAlignment.Fill

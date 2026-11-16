@@ -96,6 +96,8 @@ static bool before(const QVariantMap &a, const QVariantMap &b)
 {
     if (a["own"].toBool() != b["own"].toBool())
         return a["own"].toBool();
+    if (a["muted"].toBool() != b["muted"].toBool())
+        return b["muted"].toBool(); // the ones the phone muted go below
     const bool au = a["unseen"].toInt() > 0, bu = b["unseen"].toInt() > 0;
     if (au != bu)
         return au;
@@ -176,7 +178,8 @@ void StoriesModel::reload()
         return;
     const uint cutoff = QDateTime::currentDateTime().toTime_t() - kLife;
     QSqlQuery q(db);
-    q.prepare("SELECT s.poster, s.id, s.ts, s.kind, s.text, s.path, s.extra, s.seen, s.name, c.name, c.photo "
+    q.prepare("SELECT s.poster, s.id, s.ts, s.kind, s.text, s.path, s.extra, s.seen, s.name, c.name, c.photo, "
+              "EXISTS(SELECT 1 FROM story_muted m WHERE m.poster = s.poster) "
               "FROM stories s LEFT JOIN chats c ON c.jid = s.poster WHERE s.ts > ? ORDER BY s.poster, s.ts");
     q.addBindValue(cutoff);
     if (!q.exec()) {
@@ -196,7 +199,8 @@ void StoriesModel::reload()
         while (q.next()) {
             const QString p = q.value(0).toString();
             const bool seen = q.value(7).toInt() != 0;
-            if (!seen)
+            const bool muted = q.value(11).toInt() != 0;
+            if (!seen && !muted) // a muted poster's stories don't call for the badge
                 ++unseenAll;
             if (p != poster) {
                 if (!row.isEmpty())
@@ -208,6 +212,7 @@ void StoriesModel::reload()
                 const bool own = p == kOwn;
                 row["poster"] = p;
                 row["own"] = own;
+                row["muted"] = muted;
                 // Ours: "My story", on a tile with our own name's initials ("#" until the link says one).
                 row["name"] = own ? tr("My story") : name;
                 row["initials"] = initials(own ? m_engine->link().value("name").toString() : name);
@@ -248,7 +253,7 @@ void StoriesModel::reload()
         qSort(rows.begin(), rows.end(), before);
     } else {
         while (q.next())
-            if (q.value(7).toInt() == 0)
+            if (q.value(7).toInt() == 0 && q.value(11).toInt() == 0)
                 ++unseenAll;
     }
     if (unseenAll != m_unseen) {

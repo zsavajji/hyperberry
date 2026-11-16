@@ -12,6 +12,7 @@ import (
 	whatsmeow "github.com/polymorfa/hypermeow"
 	"github.com/polymorfa/hypermeow/proto/waCommon"
 	"github.com/polymorfa/hypermeow/proto/waE2E"
+	"github.com/polymorfa/hypermeow/proto/waSyncAction"
 	"github.com/polymorfa/hypermeow/types"
 	"github.com/polymorfa/hypermeow/types/events"
 	waLog "github.com/polymorfa/hypermeow/util/log"
@@ -418,5 +419,31 @@ func TestStoryQuotes(t *testing.T) {
 	}
 	if got := withStoryQuote("", "x", make([]byte, 30<<10)); strings.Contains(got, "qthumb") {
 		t.Error("a thumbnail over 24 KB was kept")
+	}
+}
+
+// The phone muting a poster's status updates is mirrored into story_muted, and the unmute takes it out again; a
+// repeat changes nothing, so the UI isn't told twice.
+func TestStoryMute(t *testing.T) {
+	st, cli := historyFixture(t)
+	tx, _ := newTestTx(t)
+	pia := types.NewJID("4915700000007", types.DefaultUserServer)
+	mute := func(muted bool) (told bool) {
+		tx.stories = false
+		st.dispatch(tx, cli, &events.UserStatusMute{JID: pia, Action: &waSyncAction.UserStatusMuteAction{Muted: proto.Bool(muted)}})
+		return tx.stories
+	}
+	muted := func() int { return count(t, tx, "SELECT count(*) FROM story_muted WHERE poster = ?", pia.String()) }
+	if !mute(true) || muted() != 1 {
+		t.Errorf("a mute: %d rows, want 1 and the UI told", muted())
+	}
+	if mute(true) || muted() != 1 {
+		t.Errorf("the same mute again: %d rows, want 1 and the UI left alone", muted())
+	}
+	if !mute(false) || muted() != 0 {
+		t.Errorf("an unmute: %d rows, want 0 and the UI told", muted())
+	}
+	if mute(false) {
+		t.Error("an unmute of a poster not muted told the UI")
 	}
 }

@@ -16,7 +16,8 @@ class EngineLink;
 
 // The Stories tab: one row per poster with a story under 24 h old (docs/protocol.md, `stories`), the
 // ones with something unseen first, then by the newest story. A flat list of maps: poster, name,
-// initials, color, photo (the chat's picture, "" when none), count, unseen, time, and the tile: kind
+// initials, color, photo (the chat's picture, "" when none), count, unseen, muted (the phone muted the poster's
+// updates, the engine's story_muted: below the others, greyed, and not in the badge), time, and the tile: kind
 // (0 text, 1 photo, 2 video), tile (a small JPEG's path, "" when none), bg and fg (a text story's colours)
 // and text. The tile is the first story not yet seen, else the newest. Read-only on chats.db, like
 // CallsModel; the list reloads only while `active` (the tab is shown), but `unseen`, all posters'

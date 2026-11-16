@@ -172,7 +172,7 @@ func (st *Store) handle(cli *whatsmeow.Client, evt any) {
 			st.ops <- func(t *storeTx) { st.dispatch(t, cli, evt) }
 		}
 	case *events.HistorySync, *events.Message, *events.Contact, *events.LIDContact, *events.AppStateSyncComplete,
-		*events.PushName, *events.GroupInfo, *events.JoinedGroup, *events.Mute, *events.Pin, *events.Archive, *events.UnarchiveChatsSetting, *events.MarkChatAsRead,
+		*events.PushName, *events.GroupInfo, *events.JoinedGroup, *events.Mute, *events.Pin, *events.Archive, *events.UnarchiveChatsSetting, *events.UserStatusMute, *events.MarkChatAsRead,
 		*events.Receipt, *events.ChatPresence, *events.Presence, *events.DeleteForMe, *events.ClearChat, *events.DeleteChat:
 		st.ops <- func(t *storeTx) { st.dispatch(t, cli, evt) }
 		if h, ok := e.(*events.HistorySync); ok && st.historyIn != nil {
@@ -276,6 +276,16 @@ func (st *Store) dispatch(t *storeTx, cli *whatsmeow.Client, evt any) {
 			v = 1
 		}
 		t.setStateInt("unarchive_chats", v)
+	case *events.UserStatusMute:
+		// Mirrored only: hypermeow has no builder for the mute, so the app can't set it, just show the phone's choice.
+		key := chatKey(ctx, t, lids, e.JID, types.EmptyJID)
+		q := "DELETE FROM story_muted WHERE poster = ?"
+		if e.Action.GetMuted() {
+			q = "INSERT OR IGNORE INTO story_muted(poster) VALUES(?)"
+		}
+		if t.exec(q, key) > 0 {
+			t.stories = true
+		}
 	case *events.MarkChatAsRead:
 		n := 0
 		if !e.Action.GetRead() {
@@ -347,6 +357,8 @@ func (st *Store) clear() {
 		t.exec("DELETE FROM poll_votes")
 		t.exec("DELETE FROM stories")
 		t.exec("DELETE FROM story_views")
+		t.exec("DELETE FROM story_muted")
+		t.exec("DELETE FROM engine_state WHERE key = 'unarchive_chats'") // the phone's settings go with its link
 		t.stories = true
 		t.exec("DELETE FROM chats")
 	}
