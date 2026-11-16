@@ -220,7 +220,7 @@ func (st *Store) dispatch(t *storeTx, cli *whatsmeow.Client, evt any) {
 		if e.Name == appstate.WAPatchCriticalUnblockLow {
 			st.renameAll(ctx, t, cli)
 		}
-		if e.Name == appstate.WAPatchRegularLow || e.Name == appstate.WAPatchRegularHigh { // pins; mutes
+		if e.Name == appstate.WAPatchRegularLow || e.Name == appstate.WAPatchRegularHigh { // pins, archives; mutes
 			syncSettings(ctx, t, cli)
 		}
 	case *events.PushName:
@@ -545,11 +545,11 @@ func keys(m map[string]bool) []string {
 	return s
 }
 
-// syncSettings copies hypermeow's chat settings' pins and mutes into chats.db. The app-state full
-// sync (a link, a version gap) stores them there without a Pin or Mute event, as
+// syncSettings copies hypermeow's chat settings' pins, mutes and archives into chats.db. The app-state full
+// sync (a link, a version gap) stores them there without a Pin, Mute or Archive event, as
 // EmitAppStateEventsOnFullSync is off, and a history sync's conversations carry no pin: a chat
 // pinned or muted on the phone stayed unpinned and loud here.
-// Only a chat hypermeow has settings for changes, so a pin or mute from elsewhere stays.
+// Only a chat hypermeow has settings for changes, so a pin, mute or archive from elsewhere stays.
 func syncSettings(ctx context.Context, t *storeTx, cli *whatsmeow.Client) {
 	rows, err := t.tx.Query("SELECT jid FROM chats")
 	if err != nil {
@@ -569,6 +569,7 @@ func syncSettings(ctx context.Context, t *storeTx, cli *whatsmeow.Client) {
 			if s, err := cli.Store.ChatSettings.GetChatSettings(ctx, jid); err == nil && s.Found {
 				t.setPinned(j, s.Pinned)
 				t.setMuted(j, settingsMute(s.MutedUntil))
+				t.setArchived(j, s.Archived)
 			}
 		}
 	}
