@@ -49,6 +49,10 @@
 <context>
     <name>SharePage</name>
     <message>
+        <source>Forward to</source>
+        <translation>फ़ॉरवर्ड करें</translation>
+    </message>
+    <message>
         <location filename="../assets/SharePage.qml" line="11" />
         <source>Send to</source>
         <translation>इन्हें भेजें</translation>
@@ -285,6 +289,10 @@
 </context>
 <context>
     <name>ChatPage</name>
+    <message>
+        <source>Couldn't forward this message</source>
+        <translation>यह संदेश फ़ॉरवर्ड नहीं हो सका</translation>
+    </message>
     <message>
         <location filename="../assets/ChatPage.qml" line="45" />
         <source>Attach</source>
@@ -973,6 +981,10 @@
 </context>
 <context>
     <name>MessageItem</name>
+    <message>
+        <source>Forward</source>
+        <translation>फ़ॉरवर्ड करें</translation>
+    </message>
     <message>
         <source>Forwarded</source>
         <translation>फ़ॉरवर्ड किया गया</translation>

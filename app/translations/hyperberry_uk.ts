@@ -49,6 +49,10 @@
 <context>
     <name>SharePage</name>
     <message>
+        <source>Forward to</source>
+        <translation>Переслати</translation>
+    </message>
+    <message>
         <location filename="../assets/SharePage.qml" line="11" />
         <source>Send to</source>
         <translation>Надіслати кому</translation>
@@ -286,6 +290,10 @@
 </context>
 <context>
     <name>ChatPage</name>
+    <message>
+        <source>Couldn't forward this message</source>
+        <translation>Не вдалося переслати це повідомлення</translation>
+    </message>
     <message>
         <location filename="../assets/ChatPage.qml" line="45" />
         <source>Attach</source>
@@ -975,6 +983,10 @@
 </context>
 <context>
     <name>MessageItem</name>
+    <message>
+        <source>Forward</source>
+        <translation>Переслати</translation>
+    </message>
     <message>
         <source>Forwarded</source>
         <translation>Переслане</translation>

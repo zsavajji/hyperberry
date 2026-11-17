@@ -49,6 +49,10 @@
 <context>
     <name>SharePage</name>
     <message>
+        <source>Forward to</source>
+        <translation>Chuyển tiếp đến</translation>
+    </message>
+    <message>
         <location filename="../assets/SharePage.qml" line="11" />
         <source>Send to</source>
         <translation>Gửi tới</translation>
@@ -284,6 +288,10 @@
 </context>
 <context>
     <name>ChatPage</name>
+    <message>
+        <source>Couldn't forward this message</source>
+        <translation>Không thể chuyển tiếp tin nhắn này</translation>
+    </message>
     <message>
         <location filename="../assets/ChatPage.qml" line="45" />
         <source>Attach</source>
@@ -971,6 +979,10 @@
 </context>
 <context>
     <name>MessageItem</name>
+    <message>
+        <source>Forward</source>
+        <translation>Chuyển tiếp</translation>
+    </message>
     <message>
         <source>Forwarded</source>
         <translation>Đã chuyển tiếp</translation>

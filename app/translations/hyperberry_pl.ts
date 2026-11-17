@@ -49,6 +49,10 @@
 <context>
     <name>SharePage</name>
     <message>
+        <source>Forward to</source>
+        <translation>Przekaż do</translation>
+    </message>
+    <message>
         <location filename="../assets/SharePage.qml" line="11" />
         <source>Send to</source>
         <translation>Wyślij do</translation>
@@ -286,6 +290,10 @@
 </context>
 <context>
     <name>ChatPage</name>
+    <message>
+        <source>Couldn't forward this message</source>
+        <translation>Nie udało się przekazać tej wiadomości</translation>
+    </message>
     <message>
         <location filename="../assets/ChatPage.qml" line="45" />
         <source>Attach</source>
@@ -975,6 +983,10 @@
 </context>
 <context>
     <name>MessageItem</name>
+    <message>
+        <source>Forward</source>
+        <translation>Przekaż dalej</translation>
+    </message>
     <message>
         <source>Forwarded</source>
         <translation>Przekazane dalej</translation>
