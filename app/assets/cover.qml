@@ -57,7 +57,8 @@ SceneCover {
                 text: engine.linked ? qsTr("No new messages or calls") : qsTr("Not logged in")
                 textStyle.base: SystemDefaults.TextStyles.SmallText
                 textStyle.fontSize: FontSize.PercentageValue
-                textStyle.fontSizeValue: 55
+                // 47: at 55 the Italian line ran to the frame's edge (the user, 0.2.0.356).
+                textStyle.fontSizeValue: 47
                 textStyle.fontWeight: FontWeight.Bold
                 textStyle.color: quiet
                 topMargin: 4
