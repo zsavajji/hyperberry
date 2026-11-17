@@ -1,97 +1,196 @@
 import bb.cascades 1.4
 
-// The Active Frame (PLAN.md step 5.2). The Q10 shows all of its 310 x 211 px, above the system's
-// title strip (screenshot, 0.0.1.76): the count at 250 % with the labels' default spacing pushed
-// the last line under the strip. Margins are set, since unset ones put about 20 px between
-// labels. It takes no touch. Created by main.qml, so nav and chats are in its scope.
+// The Active Frame (PLAN.md step 5.2), the user's design of 2026-11-17. The Q10 shows all of its 310 x 211 px,
+// above the system's title strip (screenshot, 0.0.1.76), so nothing may run past the bottom. Idle: the app's
+// glyph, and "All caught up" low on the left. Active (unread chats or missed calls): two equal rows on a panel,
+// Messages and Missed calls, each a big count, its label and a line of detail. Margins are set, since unset
+// ones put about 20 px between labels. Type is sized in percent, about 5 % to the px (BodyText 130 % is the
+// mockup's 26 px). It takes no touch. Created by main.qml, so nav, chats and callList are in its scope.
 SceneCover {
     // It follows the theme (the user, 2026-11-17): Bright's page and text, its accent; Dark keeps black and the
-    // bright green, which reads on black where Dark's #12543a accent would not.
+    // bright green, which reads on black where Dark's #12543a accent would not. Written out: a cover's scene
+    // may not share the app's palette.
     property bool bright: settings.theme == 1
     property variant ink: bright ? Color.create("#111111") : Color.White
     property variant quiet: bright ? Color.create("#5E5E5E") : Color.Gray
     property variant accent: Color.create(bright ? "#1eaa61" : "#1BD862")
+    // The panel lifts the rows off the home screen's wallpaper behind the frame; the idle page is plain.
+    property variant panel: bright ? Color.White : Color.create("#2B2B2B")
+    property variant line: bright ? Color.create("#D0D0D0") : Color.create("#464646")
+    property bool idle: chats.unreadTotal == 0 && callList.missedNew == 0
     content: Container {
-        background: bright ? Color.White : Color.Black
+        background: idle ? (bright ? Color.White : Color.Black) : panel
         preferredWidth: 310
         preferredHeight: 211
         layout: DockLayout {
         }
-        // Unread: the count, and the chats' names under it (the user's design, 2026-11-01).
+        // Idle. The glyph is white and tinted, as the bars' images are. Its 64 px box has 3 px of air above the
+        // bubble, so the 17 puts the bubble's top at the mockup's 20.
+        ImageView {
+            visible: idle
+            horizontalAlignment: HorizontalAlignment.Left
+            verticalAlignment: VerticalAlignment.Top
+            leftMargin: 18
+            topMargin: 17
+            imageSource: "asset:///images/cover_glyph.png"
+            filterColor: accent
+        }
         Container {
-            visible: chats.unreadTotal > 0
-            horizontalAlignment: HorizontalAlignment.Fill
-            leftPadding: 16
-            rightPadding: 16
-            topPadding: 12
-            // The count and its word side by side: the count's line alone is about 86 px tall at
-            // 200 %, and the word under it left the second line touching the strip (0.0.1.78).
-            // Sizes follow the stock frames' small type (0.0.1.80 looked oversized beside
-            // Settings').
+            visible: idle
+            horizontalAlignment: HorizontalAlignment.Left
+            verticalAlignment: VerticalAlignment.Bottom
+            leftPadding: 18
+            bottomPadding: 20
+            Label {
+                text: engine.linked ? qsTr("All caught up") : "HyperBerry"
+                textStyle.base: SystemDefaults.TextStyles.BodyText
+                textStyle.fontSize: FontSize.PercentageValue
+                textStyle.fontSizeValue: 130
+                textStyle.color: ink
+                topMargin: 0
+                bottomMargin: 0
+            }
+            Label {
+                text: engine.linked ? qsTr("No new messages or calls") : qsTr("Not logged in")
+                textStyle.base: SystemDefaults.TextStyles.SmallText
+                textStyle.fontSize: FontSize.PercentageValue
+                textStyle.fontSizeValue: 80
+                textStyle.fontWeight: FontWeight.Bold
+                textStyle.color: quiet
+                topMargin: 4
+                bottomMargin: 0
+            }
+        }
+        // Active: two rows of the same height, the separator between. A row's text column takes what the count
+        // leaves (spaceQuota 1), so a long detail is elided at the frame's edge, not run past it. Details take the
+        // emoji style, so names' emoji draw (they do, in a cover: 0.0.1.76). A count of 0 is quiet, not accent.
+        Container {
+            visible: !idle
+            preferredWidth: 310
+            preferredHeight: 211
+            layout: StackLayout {
+            }
             Container {
+                layoutProperties: StackLayoutProperties {
+                    spaceQuota: 1
+                }
+                leftPadding: 10
+                rightPadding: 10
                 topMargin: 0
                 bottomMargin: 0
                 layout: StackLayout {
                     orientation: LayoutOrientation.LeftToRight
                 }
-                Label {
-                    text: chats.unreadTotal
-                    textStyle.base: SystemDefaults.TextStyles.BodyText
-                    textStyle.fontSize: FontSize.PercentageValue
-                    textStyle.fontSizeValue: 130
-                    textStyle.color: accent // as the idle state's name
-                    topMargin: 0
-                    bottomMargin: 0
+                Container {
+                    preferredWidth: 46
+                    verticalAlignment: VerticalAlignment.Center
+                    leftMargin: 0
+                    rightMargin: 0
+                    Label {
+                        horizontalAlignment: HorizontalAlignment.Center
+                        text: chats.unreadTotal
+                        textStyle.base: SystemDefaults.TextStyles.BodyText
+                        textStyle.fontSize: FontSize.PercentageValue
+                        // Three digits would not fit the column.
+                        textStyle.fontSizeValue: chats.unreadTotal > 99 ? 130 : 200
+                        textStyle.color: chats.unreadTotal > 0 ? accent : quiet
+                        topMargin: 0
+                        bottomMargin: 0
+                    }
                 }
-                Label {
-                    verticalAlignment: VerticalAlignment.Bottom
-                    leftMargin: 12
-                    text: qsTr("unread")
-                    textStyle.base: SystemDefaults.TextStyles.SmallText
-                    textStyle.fontSize: FontSize.PercentageValue
-                    textStyle.fontSizeValue: 85
-                    textStyle.color: quiet
-                    topMargin: 0
-                    bottomMargin: 0
+                Container {
+                    layoutProperties: StackLayoutProperties {
+                        spaceQuota: 1
+                    }
+                    verticalAlignment: VerticalAlignment.Center
+                    leftMargin: 0
+                    rightMargin: 0
+                    Label {
+                        text: qsTr("Messages")
+                        textStyle.base: SystemDefaults.TextStyles.SmallText
+                        textStyle.fontSize: FontSize.PercentageValue
+                        textStyle.fontSizeValue: 90
+                        textStyle.color: quiet
+                        topMargin: 0
+                        bottomMargin: 0
+                    }
+                    // The unread chats' names, newest first, ", " between them (ChatListModel builds the line).
+                    Label {
+                        text: chats.unreadTotal > 0 ? chats.unreadChats : qsTr("None")
+                        textStyle.base: nav.emojiStyle
+                        textStyle.fontSize: FontSize.PercentageValue
+                        textStyle.fontSizeValue: 75
+                        textStyle.fontWeight: FontWeight.Bold
+                        textStyle.color: ink
+                        multiline: false
+                        topMargin: 2
+                        bottomMargin: 0
+                    }
                 }
             }
-            // Newest first, no message text. The emoji style, so names' emoji draw (they do, in a
-            // cover: 0.0.1.76), at the chat list's preview size; up to three lines, then "…".
-            Label {
-                text: chats.unreadChats
-                textStyle.base: nav.emojiStyle
-                textStyle.fontSize: FontSize.PercentageValue
-                textStyle.fontSizeValue: 74
-                textStyle.color: ink
-                multiline: true
-                autoSize.maxLineCount: 3
-                topMargin: 8
-                bottomMargin: 0
-            }
-        }
-        // Nothing unread, or not linked: centred, in small type, the name in the accent (the user's,
-        // 2026-11-01). Written out: a cover's scene may not share the app's palette.
-        Container {
-            visible: chats.unreadTotal == 0
-            horizontalAlignment: HorizontalAlignment.Center
-            verticalAlignment: VerticalAlignment.Center
-            Label {
-                horizontalAlignment: HorizontalAlignment.Center
-                text: "HyperBerry"
-                textStyle.base: SystemDefaults.TextStyles.BodyText
-                textStyle.color: accent
+            Container {
+                horizontalAlignment: HorizontalAlignment.Fill
+                preferredHeight: 2
+                background: line
                 topMargin: 0
                 bottomMargin: 0
             }
-            Label {
-                horizontalAlignment: HorizontalAlignment.Center
-                text: engine.linked ? qsTr("Nothing new to see") : qsTr("Not logged in")
-                textStyle.base: SystemDefaults.TextStyles.SmallText
-                textStyle.fontSize: FontSize.PercentageValue
-                textStyle.fontSizeValue: 85
-                textStyle.color: quiet
-                topMargin: 4
+            Container {
+                layoutProperties: StackLayoutProperties {
+                    spaceQuota: 1
+                }
+                leftPadding: 10
+                rightPadding: 10
+                topMargin: 0
                 bottomMargin: 0
+                layout: StackLayout {
+                    orientation: LayoutOrientation.LeftToRight
+                }
+                Container {
+                    preferredWidth: 46
+                    verticalAlignment: VerticalAlignment.Center
+                    leftMargin: 0
+                    rightMargin: 0
+                    Label {
+                        horizontalAlignment: HorizontalAlignment.Center
+                        text: callList.missedNew
+                        textStyle.base: SystemDefaults.TextStyles.BodyText
+                        textStyle.fontSize: FontSize.PercentageValue
+                        textStyle.fontSizeValue: callList.missedNew > 99 ? 130 : 200
+                        textStyle.color: callList.missedNew > 0 ? accent : quiet
+                        topMargin: 0
+                        bottomMargin: 0
+                    }
+                }
+                Container {
+                    layoutProperties: StackLayoutProperties {
+                        spaceQuota: 1
+                    }
+                    verticalAlignment: VerticalAlignment.Center
+                    leftMargin: 0
+                    rightMargin: 0
+                    Label {
+                        text: qsTr("Missed calls")
+                        textStyle.base: SystemDefaults.TextStyles.SmallText
+                        textStyle.fontSize: FontSize.PercentageValue
+                        textStyle.fontSizeValue: 90
+                        textStyle.color: quiet
+                        topMargin: 0
+                        bottomMargin: 0
+                    }
+                    // The newest one, "Name · time" (CallsModel).
+                    Label {
+                        text: callList.missedNew > 0 ? callList.missedLast : qsTr("None")
+                        textStyle.base: nav.emojiStyle
+                        textStyle.fontSize: FontSize.PercentageValue
+                        textStyle.fontSizeValue: 75
+                        textStyle.fontWeight: FontWeight.Bold
+                        textStyle.color: ink
+                        multiline: false
+                        topMargin: 2
+                        bottomMargin: 0
+                    }
+                }
             }
         }
     }
