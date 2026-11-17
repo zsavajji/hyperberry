@@ -103,7 +103,7 @@ Page {
                     minWidth: ui.du(14)
                     leftPadding: ui.du(1.5)
                     rightPadding: ui.du(1.5)
-                    background: pressed ? ui.palette.primaryBase : ui.palette.plain
+                    background: pressed ? ui.palette.primaryBase : settings.theme == 1 ? nav.fieldColor : ui.palette.plain // as the number field beside it
                     layout: DockLayout {}
                     gestureHandlers: TapHandler {
                         onTapped: page.pickCountry()
