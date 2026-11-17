@@ -6,7 +6,7 @@ import bb.cascades 1.4
 // labels. It takes no touch. Created by main.qml, so nav and chats are in its scope.
 SceneCover {
     // It follows the theme (the user, 2026-11-17): Bright's page and text, its accent; Dark keeps black and the
-    // bright green, which reads on black where Dark's #154d37 accent would not.
+    // bright green, which reads on black where Dark's #12543a accent would not.
     property bool bright: settings.theme == 1
     property variant ink: bright ? Color.create("#111111") : Color.White
     property variant quiet: bright ? Color.create("#5E5E5E") : Color.Gray

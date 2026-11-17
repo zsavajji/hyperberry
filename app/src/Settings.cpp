@@ -66,7 +66,7 @@ void Settings::store(const char *key, const QVariant &value)
     m_file.sync();
 }
 
-// The accent per theme (the user's, 2026-11-17): #1eaa61 on Bright, its base 20 % darker; #154d37 on Dark, its
+// The accent per theme (the user's, 2026-11-17): #1eaa61 on Bright, its base 20 % darker; #12543a on Dark, its
 // base the old bright green, in case the trackpad's highlight follows the base (it was too dark with a dark one).
 // Dark's is the bar descriptor's CASCADES_THEME, the colours before this runs.
 void Settings::applyTheme()
@@ -74,7 +74,7 @@ void Settings::applyTheme()
     using namespace bb::cascades;
     const bool bright = theme() == 1;
     Application::instance()->themeSupport()->setVisualStyleAndPrimaryColor(
-        bright ? VisualStyle::Bright : VisualStyle::Dark, Color::fromARGB(bright ? 0xff1eaa61 : 0xff154d37),
+        bright ? VisualStyle::Bright : VisualStyle::Dark, Color::fromARGB(bright ? 0xff1eaa61 : 0xff12543a),
         Color::fromARGB(bright ? 0xff18884e : 0xff1bd862));
 }
 
