@@ -2051,6 +2051,26 @@
 <context>
     <name>cover</name>
     <message>
+        <source>All caught up</source>
+        <translation>Đã xem hết</translation>
+    </message>
+    <message>
+        <source>No new messages or calls</source>
+        <translation>Không có tin nhắn hay cuộc gọi mới</translation>
+    </message>
+    <message>
+        <source>Messages</source>
+        <translation>Tin nhắn</translation>
+    </message>
+    <message>
+        <source>Missed calls</source>
+        <translation>Cuộc gọi nhỡ</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>Không có</translation>
+    </message>
+    <message>
         <location filename="../assets/cover.qml" line="25" />
         <source>unread</source>
         <translation>chưa đọc</translation>

@@ -2054,6 +2054,26 @@
 <context>
     <name>cover</name>
     <message>
+        <source>All caught up</source>
+        <translation>Todo al día</translation>
+    </message>
+    <message>
+        <source>No new messages or calls</source>
+        <translation>Sin mensajes ni llamadas nuevos</translation>
+    </message>
+    <message>
+        <source>Messages</source>
+        <translation>Mensajes</translation>
+    </message>
+    <message>
+        <source>Missed calls</source>
+        <translation>Llamadas perdidas</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>Ninguno</translation>
+    </message>
+    <message>
         <location filename="../assets/cover.qml" line="25" />
         <source>unread</source>
         <translation>sin leer</translation>

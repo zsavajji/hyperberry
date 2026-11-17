@@ -2057,6 +2057,26 @@
 <context>
     <name>cover</name>
     <message>
+        <source>All caught up</source>
+        <translation>Усе прочитано</translation>
+    </message>
+    <message>
+        <source>No new messages or calls</source>
+        <translation>Немає нових повідомлень і дзвінків</translation>
+    </message>
+    <message>
+        <source>Messages</source>
+        <translation>Повідомлення</translation>
+    </message>
+    <message>
+        <source>Missed calls</source>
+        <translation>Пропущені дзвінки</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>Немає</translation>
+    </message>
+    <message>
         <location filename="../assets/cover.qml" line="25" />
         <source>unread</source>
         <translation>непрочитано</translation>

@@ -2054,6 +2054,26 @@
 <context>
     <name>cover</name>
     <message>
+        <source>All caught up</source>
+        <translation>सब देख लिया</translation>
+    </message>
+    <message>
+        <source>No new messages or calls</source>
+        <translation>कोई नया संदेश या कॉल नहीं</translation>
+    </message>
+    <message>
+        <source>Messages</source>
+        <translation>संदेश</translation>
+    </message>
+    <message>
+        <source>Missed calls</source>
+        <translation>मिस्ड कॉल</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>कोई नहीं</translation>
+    </message>
+    <message>
         <location filename="../assets/cover.qml" line="25" />
         <source>unread</source>
         <translation>अनपढ़े</translation>

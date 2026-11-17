@@ -2051,6 +2051,26 @@
 <context>
     <name>cover</name>
     <message>
+        <source>All caught up</source>
+        <translation>Semua sudah dibaca</translation>
+    </message>
+    <message>
+        <source>No new messages or calls</source>
+        <translation>Tidak ada pesan atau panggilan baru</translation>
+    </message>
+    <message>
+        <source>Messages</source>
+        <translation>Pesan</translation>
+    </message>
+    <message>
+        <source>Missed calls</source>
+        <translation>Panggilan tak terjawab</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>Tidak ada</translation>
+    </message>
+    <message>
         <location filename="../assets/cover.qml" line="25" />
         <source>unread</source>
         <translation>belum dibaca</translation>
