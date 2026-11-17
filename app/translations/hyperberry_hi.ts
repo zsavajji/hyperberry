@@ -1577,6 +1577,10 @@
 <context>
     <name>SettingsPage</name>
     <message>
+        <source>Automatic downloads, mobile data, cache</source>
+        <translation>स्वचालित डाउनलोड, मोबाइल डेटा, कैश</translation>
+    </message>
+    <message>
         <source>Account</source>
         <translation>खाता</translation>
     </message>
@@ -2565,6 +2569,38 @@
 </context>
 <context>
     <name>DataSettingsPage</name>
+    <message>
+        <source>Download automatically</source>
+        <translation>अपने आप डाउनलोड करें</translation>
+    </message>
+    <message>
+        <source>Photos</source>
+        <translation>फ़ोटो</translation>
+    </message>
+    <message>
+        <source>Audio</source>
+        <translation>ऑडियो</translation>
+    </message>
+    <message>
+        <source>Voice notes and audio files</source>
+        <translation>वॉइस नोट और ऑडियो फ़ाइलें</translation>
+    </message>
+    <message>
+        <source>Videos</source>
+        <translation>वीडियो</translation>
+    </message>
+    <message>
+        <source>Documents</source>
+        <translation>दस्तावेज़</translation>
+    </message>
+    <message>
+        <source>Off, nothing downloads by itself on mobile data; it waits for Wi-Fi or a tap.</source>
+        <translation>बंद होने पर, मोबाइल डेटा पर कुछ भी अपने आप डाउनलोड नहीं होता; वाई-फ़ाई या टैप का इंतज़ार होता है।</translation>
+    </message>
+    <message>
+        <source>Storage</source>
+        <translation>स्टोरेज</translation>
+    </message>
     <message>
         <source>Data and storage</source>
         <translation>डेटा और स्टोरेज</translation>

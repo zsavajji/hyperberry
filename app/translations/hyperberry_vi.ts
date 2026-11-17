@@ -1574,6 +1574,10 @@
 <context>
     <name>SettingsPage</name>
     <message>
+        <source>Automatic downloads, mobile data, cache</source>
+        <translation>Tự động tải xuống, dữ liệu di động, bộ nhớ đệm</translation>
+    </message>
+    <message>
         <source>Account</source>
         <translation>Tài khoản</translation>
     </message>
@@ -2562,6 +2566,38 @@
 </context>
 <context>
     <name>DataSettingsPage</name>
+    <message>
+        <source>Download automatically</source>
+        <translation>Tự động tải xuống</translation>
+    </message>
+    <message>
+        <source>Photos</source>
+        <translation>Ảnh</translation>
+    </message>
+    <message>
+        <source>Audio</source>
+        <translation>Âm thanh</translation>
+    </message>
+    <message>
+        <source>Voice notes and audio files</source>
+        <translation>Tin nhắn thoại và tệp âm thanh</translation>
+    </message>
+    <message>
+        <source>Videos</source>
+        <translation>Video</translation>
+    </message>
+    <message>
+        <source>Documents</source>
+        <translation>Tài liệu</translation>
+    </message>
+    <message>
+        <source>Off, nothing downloads by itself on mobile data; it waits for Wi-Fi or a tap.</source>
+        <translation>Tắt: không tự tải gì qua dữ liệu di động; chờ Wi-Fi hoặc một lần chạm.</translation>
+    </message>
+    <message>
+        <source>Storage</source>
+        <translation>Bộ nhớ</translation>
+    </message>
     <message>
         <source>Data and storage</source>
         <translation>Dữ liệu và bộ nhớ</translation>

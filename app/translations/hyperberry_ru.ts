@@ -1580,6 +1580,10 @@
 <context>
     <name>SettingsPage</name>
     <message>
+        <source>Automatic downloads, mobile data, cache</source>
+        <translation>Автозагрузка, мобильные данные, кэш</translation>
+    </message>
+    <message>
         <source>Account</source>
         <translation>Аккаунт</translation>
     </message>
@@ -2568,6 +2572,38 @@
 </context>
 <context>
     <name>DataSettingsPage</name>
+    <message>
+        <source>Download automatically</source>
+        <translation>Загружать автоматически</translation>
+    </message>
+    <message>
+        <source>Photos</source>
+        <translation>Фото</translation>
+    </message>
+    <message>
+        <source>Audio</source>
+        <translation>Аудио</translation>
+    </message>
+    <message>
+        <source>Voice notes and audio files</source>
+        <translation>Голосовые сообщения и аудиофайлы</translation>
+    </message>
+    <message>
+        <source>Videos</source>
+        <translation>Видео</translation>
+    </message>
+    <message>
+        <source>Documents</source>
+        <translation>Документы</translation>
+    </message>
+    <message>
+        <source>Off, nothing downloads by itself on mobile data; it waits for Wi-Fi or a tap.</source>
+        <translation>Если выключено, по мобильной сети ничего не загружается само; ждёт Wi-Fi или нажатия.</translation>
+    </message>
+    <message>
+        <source>Storage</source>
+        <translation>Хранилище</translation>
+    </message>
     <message>
         <source>Data and storage</source>
         <translation>Данные и память</translation>

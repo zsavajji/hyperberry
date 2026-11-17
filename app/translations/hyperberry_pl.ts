@@ -1580,6 +1580,10 @@
 <context>
     <name>SettingsPage</name>
     <message>
+        <source>Automatic downloads, mobile data, cache</source>
+        <translation>Automatyczne pobieranie, dane komórkowe, pamięć podręczna</translation>
+    </message>
+    <message>
         <source>Account</source>
         <translation>Konto</translation>
     </message>
@@ -2568,6 +2572,38 @@
 </context>
 <context>
     <name>DataSettingsPage</name>
+    <message>
+        <source>Download automatically</source>
+        <translation>Pobieraj automatycznie</translation>
+    </message>
+    <message>
+        <source>Photos</source>
+        <translation>Zdjęcia</translation>
+    </message>
+    <message>
+        <source>Audio</source>
+        <translation>Audio</translation>
+    </message>
+    <message>
+        <source>Voice notes and audio files</source>
+        <translation>Wiadomości głosowe i pliki audio</translation>
+    </message>
+    <message>
+        <source>Videos</source>
+        <translation>Filmy</translation>
+    </message>
+    <message>
+        <source>Documents</source>
+        <translation>Dokumenty</translation>
+    </message>
+    <message>
+        <source>Off, nothing downloads by itself on mobile data; it waits for Wi-Fi or a tap.</source>
+        <translation>Wyłączone: na danych komórkowych nic nie pobiera się samo; czeka na Wi-Fi lub dotknięcie.</translation>
+    </message>
+    <message>
+        <source>Storage</source>
+        <translation>Pamięć</translation>
+    </message>
     <message>
         <source>Data and storage</source>
         <translation>Dane i pamięć</translation>

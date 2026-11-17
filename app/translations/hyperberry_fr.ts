@@ -1577,6 +1577,10 @@
 <context>
     <name>SettingsPage</name>
     <message>
+        <source>Automatic downloads, mobile data, cache</source>
+        <translation>Téléchargements automatiques, données mobiles, cache</translation>
+    </message>
+    <message>
         <source>Account</source>
         <translation>Compte</translation>
     </message>
@@ -2565,6 +2569,38 @@
 </context>
 <context>
     <name>DataSettingsPage</name>
+    <message>
+        <source>Download automatically</source>
+        <translation>Télécharger automatiquement</translation>
+    </message>
+    <message>
+        <source>Photos</source>
+        <translation>Photos</translation>
+    </message>
+    <message>
+        <source>Audio</source>
+        <translation>Audio</translation>
+    </message>
+    <message>
+        <source>Voice notes and audio files</source>
+        <translation>Messages vocaux et fichiers audio</translation>
+    </message>
+    <message>
+        <source>Videos</source>
+        <translation>Vidéos</translation>
+    </message>
+    <message>
+        <source>Documents</source>
+        <translation>Documents</translation>
+    </message>
+    <message>
+        <source>Off, nothing downloads by itself on mobile data; it waits for Wi-Fi or a tap.</source>
+        <translation>Désactivé, rien ne se télécharge seul sur les données mobiles ; tout attend le Wi-Fi ou un appui.</translation>
+    </message>
+    <message>
+        <source>Storage</source>
+        <translation>Stockage</translation>
+    </message>
     <message>
         <source>Data and storage</source>
         <translation>Données et stockage</translation>

@@ -1574,6 +1574,10 @@
 <context>
     <name>SettingsPage</name>
     <message>
+        <source>Automatic downloads, mobile data, cache</source>
+        <translation>Unduhan otomatis, data seluler, cache</translation>
+    </message>
+    <message>
         <source>Account</source>
         <translation>Akun</translation>
     </message>
@@ -2562,6 +2566,38 @@
 </context>
 <context>
     <name>DataSettingsPage</name>
+    <message>
+        <source>Download automatically</source>
+        <translation>Unduh otomatis</translation>
+    </message>
+    <message>
+        <source>Photos</source>
+        <translation>Foto</translation>
+    </message>
+    <message>
+        <source>Audio</source>
+        <translation>Audio</translation>
+    </message>
+    <message>
+        <source>Voice notes and audio files</source>
+        <translation>Pesan suara dan file audio</translation>
+    </message>
+    <message>
+        <source>Videos</source>
+        <translation>Video</translation>
+    </message>
+    <message>
+        <source>Documents</source>
+        <translation>Dokumen</translation>
+    </message>
+    <message>
+        <source>Off, nothing downloads by itself on mobile data; it waits for Wi-Fi or a tap.</source>
+        <translation>Nonaktif, tidak ada yang terunduh sendiri lewat data seluler; menunggu Wi-Fi atau ketukan.</translation>
+    </message>
+    <message>
+        <source>Storage</source>
+        <translation>Penyimpanan</translation>
+    </message>
     <message>
         <source>Data and storage</source>
         <translation>Data dan penyimpanan</translation>

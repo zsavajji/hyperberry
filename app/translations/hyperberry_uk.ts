@@ -1580,6 +1580,10 @@
 <context>
     <name>SettingsPage</name>
     <message>
+        <source>Automatic downloads, mobile data, cache</source>
+        <translation>Автозавантаження, мобільні дані, кеш</translation>
+    </message>
+    <message>
         <source>Account</source>
         <translation>Обліковий запис</translation>
     </message>
@@ -2568,6 +2572,38 @@
 </context>
 <context>
     <name>DataSettingsPage</name>
+    <message>
+        <source>Download automatically</source>
+        <translation>Завантажувати автоматично</translation>
+    </message>
+    <message>
+        <source>Photos</source>
+        <translation>Фото</translation>
+    </message>
+    <message>
+        <source>Audio</source>
+        <translation>Аудіо</translation>
+    </message>
+    <message>
+        <source>Voice notes and audio files</source>
+        <translation>Голосові повідомлення та аудіофайли</translation>
+    </message>
+    <message>
+        <source>Videos</source>
+        <translation>Відео</translation>
+    </message>
+    <message>
+        <source>Documents</source>
+        <translation>Документи</translation>
+    </message>
+    <message>
+        <source>Off, nothing downloads by itself on mobile data; it waits for Wi-Fi or a tap.</source>
+        <translation>Якщо вимкнено, мобільними даними нічого не завантажується само; чекає на Wi-Fi або дотик.</translation>
+    </message>
+    <message>
+        <source>Storage</source>
+        <translation>Сховище</translation>
+    </message>
     <message>
         <source>Data and storage</source>
         <translation>Дані та пам'ять</translation>
