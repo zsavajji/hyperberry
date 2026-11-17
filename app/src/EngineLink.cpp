@@ -205,6 +205,10 @@ void EngineLink::readLines()
                     QSettings file(QDir::homePath() + "/settings.ini", QSettings::IniFormat);
                     prefs["notifyPreview"] = file.value("notifyPreview", true).toBool();
                     prefs["mediaOnMobile"] = file.value("mediaOnMobile", true).toBool();
+                    prefs["autoPhoto"] = file.value("autoPhoto", true).toBool();
+                    prefs["autoAudio"] = file.value("autoAudio", true).toBool();
+                    prefs["autoVideo"] = file.value("autoVideo", false).toBool();
+                    prefs["autoDoc"] = file.value("autoDoc", false).toBool();
                     prefs["language"] = m_language;
                     prefs["cacheMB"] = qBound(64, file.value("cacheLimit", 64).toInt(), 512);
                     request("prefs.set", prefs);

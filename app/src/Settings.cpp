@@ -43,6 +43,10 @@ bool Settings::enterSends() const { return m_file.value("enterSends", true).toBo
 bool Settings::notifyPreview() const { return m_file.value("notifyPreview", true).toBool(); }
 bool Settings::startAtBoot() const { return m_file.value("startAtBoot", false).toBool(); }
 bool Settings::mediaOnMobile() const { return m_file.value("mediaOnMobile", true).toBool(); }
+bool Settings::autoPhoto() const { return m_file.value("autoPhoto", true).toBool(); }
+bool Settings::autoAudio() const { return m_file.value("autoAudio", true).toBool(); }
+bool Settings::autoVideo() const { return m_file.value("autoVideo", false).toBool(); }
+bool Settings::autoDoc() const { return m_file.value("autoDoc", false).toBool(); }
 bool Settings::earSensor() const { return m_file.value("earSensor", true).toBool(); }
 int Settings::cacheLimit() const { return qBound(64, m_file.value("cacheLimit", 64).toInt(), 512); }
 // Larger (3, 140 %) went at the user's word (2026-11-01); a saved 3 reads as Large.
@@ -165,18 +169,56 @@ void Settings::bootTimerReplied()
     reply->deleteLater();
 }
 
+// A setting the engine keeps too (prefs.set): stored here, and sent when connected.
+void Settings::storePref(const char *key, bool on)
+{
+    store(key, on);
+    // Not connected: the hello path sends it on the next connect.
+    if (m_engine->connected()) {
+        QVariantMap prefs;
+        prefs[key] = on;
+        m_engine->request("prefs.set", prefs);
+    }
+}
+
 void Settings::setMediaOnMobile(bool on)
 {
     if (on == mediaOnMobile())
         return;
-    store("mediaOnMobile", on);
-    // Not connected: the hello path sends it on the next connect.
-    if (m_engine->connected()) {
-        QVariantMap prefs;
-        prefs["mediaOnMobile"] = on;
-        m_engine->request("prefs.set", prefs);
-    }
+    storePref("mediaOnMobile", on);
     emit mediaOnMobileChanged();
+}
+
+void Settings::setAutoPhoto(bool on)
+{
+    if (on == autoPhoto())
+        return;
+    storePref("autoPhoto", on);
+    emit autoDownloadChanged();
+}
+
+void Settings::setAutoAudio(bool on)
+{
+    if (on == autoAudio())
+        return;
+    storePref("autoAudio", on);
+    emit autoDownloadChanged();
+}
+
+void Settings::setAutoVideo(bool on)
+{
+    if (on == autoVideo())
+        return;
+    storePref("autoVideo", on);
+    emit autoDownloadChanged();
+}
+
+void Settings::setAutoDoc(bool on)
+{
+    if (on == autoDoc())
+        return;
+    storePref("autoDoc", on);
+    emit autoDownloadChanged();
 }
 
 void Settings::setCacheLimit(int mb)

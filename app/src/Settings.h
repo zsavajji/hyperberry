@@ -17,6 +17,11 @@ class Settings : public QObject
     Q_PROPERTY(bool notifyPreview READ notifyPreview WRITE setNotifyPreview NOTIFY notifyPreviewChanged)
     Q_PROPERTY(bool startAtBoot READ startAtBoot WRITE setStartAtBoot NOTIFY startAtBootChanged)
     Q_PROPERTY(bool mediaOnMobile READ mediaOnMobile WRITE setMediaOnMobile NOTIFY mediaOnMobileChanged)
+    // What downloads by itself when it arrives (the engine's prefs, on top of mediaOnMobile): one signal for the four.
+    Q_PROPERTY(bool autoPhoto READ autoPhoto WRITE setAutoPhoto NOTIFY autoDownloadChanged)
+    Q_PROPERTY(bool autoAudio READ autoAudio WRITE setAutoAudio NOTIFY autoDownloadChanged) // voice notes and audio files
+    Q_PROPERTY(bool autoVideo READ autoVideo WRITE setAutoVideo NOTIFY autoDownloadChanged)
+    Q_PROPERTY(bool autoDoc READ autoDoc WRITE setAutoDoc NOTIFY autoDownloadChanged)
     // Off for a phone whose proximity sensor misreads: voice notes stay on the speaker, the call screen never blanks.
     Q_PROPERTY(bool earSensor READ earSensor WRITE setEarSensor NOTIFY earSensorChanged)
     Q_PROPERTY(int cacheLimit READ cacheLimit WRITE setCacheLimit NOTIFY cacheLimitChanged)         // MB
@@ -34,6 +39,10 @@ public:
     bool notifyPreview() const;
     bool startAtBoot() const;
     bool mediaOnMobile() const;
+    bool autoPhoto() const;
+    bool autoAudio() const;
+    bool autoVideo() const;
+    bool autoDoc() const;
     bool earSensor() const;
     int cacheLimit() const;
     int textSize() const;
@@ -45,6 +54,10 @@ public:
     void setNotifyPreview(bool on);
     void setStartAtBoot(bool on);
     void setMediaOnMobile(bool on);
+    void setAutoPhoto(bool on);
+    void setAutoAudio(bool on);
+    void setAutoVideo(bool on);
+    void setAutoDoc(bool on);
     void setEarSensor(bool on);
     void setCacheLimit(int mb);
     void setTextSize(int size);
@@ -59,6 +72,7 @@ signals:
     void notifyPreviewChanged();
     void startAtBootChanged();
     void mediaOnMobileChanged();
+    void autoDownloadChanged();
     void earSensorChanged();
     void cacheLimitChanged();
     void textSizeChanged();
@@ -72,6 +86,7 @@ private:
     void applyTheme();
     void applyBootTimer(bool on);
     void store(const char *key, const QVariant &value);
+    void storePref(const char *key, bool on);
     QSettings m_file;
     EngineLink *m_engine;
     bb::system::LocaleHandler m_region; // for the size text, as the chat models have it

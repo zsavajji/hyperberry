@@ -38,7 +38,7 @@ Page {
         items.push({ title: qsTr("Appearance"), description: qsTr("Theme, text size, interface"), target: "appearance" })
         items.push({ title: qsTr("Chats"), description: qsTr("Enter key, proximity sensor"), target: "chats" })
         items.push({ title: qsTr("Notifications"), description: qsTr("Preview, start at boot"), target: "notifications" })
-        items.push({ title: qsTr("Data and storage"), description: qsTr("Mobile data, cache"), target: "data" })
+        items.push({ title: qsTr("Data and storage"), description: qsTr("Automatic downloads, mobile data, cache"), target: "data" })
         rows.append(items)
     }
     function openPage(target) {
