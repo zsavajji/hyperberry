@@ -5,8 +5,14 @@ import bb.cascades 1.4
 // the last line under the strip. Margins are set, since unset ones put about 20 px between
 // labels. It takes no touch. Created by main.qml, so nav and chats are in its scope.
 SceneCover {
+    // It follows the theme (the user, 2026-11-17): Bright's page and text, its accent; Dark keeps black and the
+    // bright green, which reads on black where Dark's #154d37 accent would not.
+    property bool bright: settings.theme == 1
+    property variant ink: bright ? Color.create("#111111") : Color.White
+    property variant quiet: bright ? Color.create("#5E5E5E") : Color.Gray
+    property variant accent: Color.create(bright ? "#1eaa61" : "#1BD862")
     content: Container {
-        background: Color.Black
+        background: bright ? Color.White : Color.Black
         preferredWidth: 310
         preferredHeight: 211
         layout: DockLayout {
@@ -33,7 +39,7 @@ SceneCover {
                     textStyle.base: SystemDefaults.TextStyles.BodyText
                     textStyle.fontSize: FontSize.PercentageValue
                     textStyle.fontSizeValue: 130
-                    textStyle.color: Color.create("#1BD862") // as the idle state's name
+                    textStyle.color: accent // as the idle state's name
                     topMargin: 0
                     bottomMargin: 0
                 }
@@ -44,7 +50,7 @@ SceneCover {
                     textStyle.base: SystemDefaults.TextStyles.SmallText
                     textStyle.fontSize: FontSize.PercentageValue
                     textStyle.fontSizeValue: 85
-                    textStyle.color: Color.Gray
+                    textStyle.color: quiet
                     topMargin: 0
                     bottomMargin: 0
                 }
@@ -56,16 +62,15 @@ SceneCover {
                 textStyle.base: nav.emojiStyle
                 textStyle.fontSize: FontSize.PercentageValue
                 textStyle.fontSizeValue: 74
-                textStyle.color: Color.White
+                textStyle.color: ink
                 multiline: true
                 autoSize.maxLineCount: 3
                 topMargin: 8
                 bottomMargin: 0
             }
         }
-        // Nothing unread, or not linked: centred, in small type, the name in the primary colour
-        // (the user's, 2026-11-01). The bar descriptor's primary, written out: a cover's scene may
-        // not share the app's palette.
+        // Nothing unread, or not linked: centred, in small type, the name in the accent (the user's,
+        // 2026-11-01). Written out: a cover's scene may not share the app's palette.
         Container {
             visible: chats.unreadTotal == 0
             horizontalAlignment: HorizontalAlignment.Center
@@ -74,7 +79,7 @@ SceneCover {
                 horizontalAlignment: HorizontalAlignment.Center
                 text: "HyperBerry"
                 textStyle.base: SystemDefaults.TextStyles.BodyText
-                textStyle.color: Color.create("#1BD862")
+                textStyle.color: accent
                 topMargin: 0
                 bottomMargin: 0
             }
@@ -84,7 +89,7 @@ SceneCover {
                 textStyle.base: SystemDefaults.TextStyles.SmallText
                 textStyle.fontSize: FontSize.PercentageValue
                 textStyle.fontSizeValue: 85
-                textStyle.color: Color.Gray
+                textStyle.color: quiet
                 topMargin: 4
                 bottomMargin: 0
             }
