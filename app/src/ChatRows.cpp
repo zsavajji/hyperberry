@@ -205,7 +205,7 @@ void ChatRow::show(const QVariantMap &chat)
     const float scale = Card::textScale(m_list);
     const bool compact = m_list->property("compact").toBool();
     UIPalette *palette = m_ui->palette();
-    const Color quiet = palette->secondaryTextOnPlain();
+    const Color quiet = Card::quiet(m_list, m_ui);
     const Color primary = palette->primary();
     const int unread = m_chat.value("unread").toInt();
     const bool muted = flag("muted");
@@ -248,6 +248,7 @@ void ChatRow::show(const QVariantMap &chat)
     m_initials->setText(str("initials"));
 
     m_name->setText(str("name"));
+    m_name->textStyle()->setColor(Card::text(m_list, m_ui));
     m_pin->setVisible(flag("pinned"));
     m_pin->setFilterColor(quiet);
     m_mute->setVisible(muted);

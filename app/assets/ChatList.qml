@@ -13,6 +13,8 @@ ListView {
     property int smallSize
     property real textScale: settings.textScale
     property bool compact: settings.compact
+    // Bright\'s darker text (CardStyle.h).
+    property bool bright: settings.theme == 1
     property string pressColor: nav.pressColor
     // True on the Archived page, where "Archive" reads "Unarchive".
     property bool archivedList: false

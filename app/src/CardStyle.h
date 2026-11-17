@@ -13,6 +13,7 @@
 #include <bb/cascades/TextStyle>
 #include <bb/cascades/TextStyleDefinition>
 #include <bb/cascades/UIConfig>
+#include <bb/cascades/UIPalette>
 #include <bb/device/DisplayInfo>
 #include <QCoreApplication>
 #include <QMetaObject>
@@ -33,6 +34,22 @@ inline QString quoteTint(bb::cascades::ListView *list) { return list->property("
 inline QString pressColor(bb::cascades::ListView *list) { return list->property("pressColor").toString(); }
 // Our cards' colour, "" for the page's own (ChatPage.qml's ownColor).
 inline QString ownColor(bb::cascades::ListView *list) { return list->property("ownColor").toString(); }
+// The strip under their cards, "" for the theme's quiet grey (ChatPage.qml's theirBar).
+inline QString theirBar(bb::cascades::ListView *list) { return list->property("theirBar").toString(); }
+// Bright: the list's flag (ChatPage.qml), for the colours that differ from Dark's.
+inline bool bright(bb::cascades::ListView *list) { return list->property("bright").toBool(); }
+// The text, and the quiet text (times, previews, quotes): on Bright darker than the theme's, which read faint
+// there (the user, 2026-11-17); on Dark the theme's.
+inline bb::cascades::Color text(bb::cascades::ListView *list, bb::cascades::UIConfig *ui)
+{
+    return bright(list) ? bb::cascades::Color::fromARGB(0xff111111) : ui->palette()->textOnPlain();
+}
+inline bb::cascades::Color quiet(bb::cascades::ListView *list, bb::cascades::UIConfig *ui)
+{
+    return bright(list) ? bb::cascades::Color::fromARGB(0xff5e5e5e) : ui->palette()->secondaryTextOnPlain();
+}
+// Their cards' colour, "" for the page's own (ChatPage.qml's theirColor).
+inline QString theirColor(bb::cascades::ListView *list) { return list->property("theirColor").toString(); }
 inline QString foundId(bb::cascades::ListView *list) { return list->property("foundId").toString(); }
 inline bb::cascades::TextStyle emojiStyle(bb::cascades::ListView *list)
 {

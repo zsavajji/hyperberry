@@ -28,6 +28,19 @@ static const char *const kSenders[] = { "#4FC3F7", "#FF8A65", "#AED581", "#BA68C
                                         "#4DB6AC", "#F06292", "#7986CB" };
 static const int kSenderCount = sizeof kSenders / sizeof *kSenders;
 
+// The same hues, deep enough to read on Bright's light cards (the user, 2026-11-17: the names were unreadable).
+static const char *const kSendersBright[] = { "#0277BD", "#D84315", "#558B2F", "#8E24AA", "#A67C00",
+                                              "#00796B", "#C2185B", "#303F9F" };
+
+// A sender colour as Bright shows it: its deep twin; anything else as it is.
+inline QString onBright(const QString &color)
+{
+    for (int i = 0; i < kSenderCount; ++i)
+        if (color.compare(QLatin1String(kSenders[i]), Qt::CaseInsensitive) == 0)
+            return QLatin1String(kSendersBright[i]);
+    return color;
+}
+
 // The first character of a word, a whole surrogate pair when it's one.
 inline QString firstChar(const QString &word)
 {

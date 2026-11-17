@@ -605,6 +605,12 @@ Page {
                     property string pressColor: nav.pressColor
                     // Our cards on Bright (the user's, 2026-11-17); "" keeps the page's colour, as on Dark.
                     property string ownColor: settings.theme == 1 ? "#d9fdd2" : ""
+                    // Their cards on Bright, a step darker than the theme's #F0F0F0, which hardly stood off the page (the user, 2026-11-17).
+                    property string theirColor: settings.theme == 1 ? "#E4E4E4" : ""
+                    // Bright's deep sender colours (colors.h).
+                    property bool bright: settings.theme == 1
+                    // The strip under their cards on Bright: the quiet grey was too dark there (the user, 2026-11-17).
+                    property string theirBar: settings.theme == 1 ? "#C8C8C8" : ""
                     dataModel: ctl.messages
                     // Bottom to top: the model is newest first, so the list opens at the newest message
                     // with no scroll call, and an older page is appended at the visual top without

@@ -64,6 +64,8 @@ Page {
             property int smallSize: nav.smallSize
             property real textScale: settings.textScale
             property bool compact: settings.compact
+            // Bright\'s darker text (CardStyle.h).
+            property bool bright: settings.theme == 1
             property string pressColor: nav.pressColor
             // The rows are the chat list's (ChatRows.cpp), as a call's: the call in the preview's place.
             property bool callRows: true

@@ -28,6 +28,7 @@
 #include <bb/cascades/VerticalAlignment>
 
 #include "CardStyle.h"
+#include "colors.h"
 #include "MediaBubble.h"
 #include "PollBubble.h"
 #include "VoiceBubble.h"
@@ -287,14 +288,14 @@ void MessageCard::show(const QVariantMap &msg)
 }
 
 // Pressed: the page's pressColor. A search match: the primary colour at 20 % over the page, so it reads
-// in both themes (25 % until the user found it strong, 2026-11-17). Ours on Bright: the list's ownColor.
+// in both themes (25 % until the user found it strong, 2026-11-17). On Bright, the list's ownColor and theirColor.
 // Else the page's own colour; a sticker has none, it sits on the page (user).
 // An empty foundId matches nothing.
 void MessageCard::paintBackground()
 {
     const QString found = Card::foundId(m_list);
     const bool match = !found.isEmpty() && found == str("id");
-    const QString own = flag("out") ? Card::ownColor(m_list) : QString();
+    const QString own = flag("out") ? Card::ownColor(m_list) : Card::theirColor(m_list);
     const Color c = m_pressed ? Card::color(Card::pressColor(m_list))
                   : match ? Card::color("#331bd862")
                   : !own.isEmpty() ? Card::color(own) : m_ui->palette()->plain();
@@ -339,8 +340,9 @@ void MessageCard::restyle()
     m_small = small;
     m_plain = plain;
 
-    const Color quiet = m_ui->palette()->secondaryTextOnPlain();
-    m_barL->setFilterColor(quiet);
+    const Color quiet = Card::quiet(m_list, m_ui);
+    const QString theirs = Card::theirBar(m_list);
+    m_barL->setFilterColor(theirs.isEmpty() ? quiet : Card::color(theirs));
     m_barR->setFilterColor(m_ui->palette()->primary());
     const float side = Card::side(m_ui, scale);
     m_root->setTopPadding(m_ui->du(1.5 * scale));
@@ -532,7 +534,7 @@ void MessageCard::fillColumn()
     if (m_sender) {
         m_sender->setVisible(!sender.isEmpty());
         if (!sender.isEmpty()) {
-            const QString tint = str("senderColor");
+            const QString tint = Card::bright(m_list) ? onBright(str("senderColor")) : str("senderColor");
             m_sender->setText(sender);
             m_sender->textStyle()->setColor(Card::color(tint.isEmpty() ? QString("#FFFFFF") : tint));
         }
@@ -553,7 +555,7 @@ void MessageCard::fillColumn()
         m_quote->setVisible(!quote.isEmpty());
         if (!quote.isEmpty()) {
             const QString name = str("quoteName");
-            const QString tint = str("quoteColor");
+            const QString tint = Card::bright(m_list) ? onBright(str("quoteColor")) : str("quoteColor");
             m_quote->setBackground(Card::color(Card::quoteTint(m_list)));
             // A story's quote is labelled so, and shows the story's picture when it came with one.
             const bool story = flag("quoteStory");
@@ -592,8 +594,7 @@ void MessageCard::fillColumn()
     m_text->setText((html.isEmpty() ? Card::noKeycaps(text) : html) + room);
     m_text->content()->setFlags(deleted ? TextContentFlag::Default : TextContentFlag::ActiveText);
     m_text->textStyle()->setFontStyle(deleted ? FontStyle::Italic : FontStyle::Default);
-    m_text->textStyle()->setColor(deleted ? m_ui->palette()->secondaryTextOnPlain()
-                                          : m_ui->palette()->textOnPlain());
+    m_text->textStyle()->setColor(deleted ? Card::quiet(m_list, m_ui) : Card::text(m_list, m_ui));
 
     if (m_join)
         m_join->setVisible(!str("invite").isEmpty() && !deleted);
@@ -638,7 +639,7 @@ void MessageCard::fillFoot()
         m_timeBox->setTopPadding(top);
     }
     // White on the picture's dark chip.
-    const Color quiet = onPicture ? Color::White : m_ui->palette()->secondaryTextOnPlain();
+    const Color quiet = onPicture ? Color::White : Card::quiet(m_list, m_ui);
     m_time->textStyle()->setColor(quiet);
 
     const bool ticked = out && state < 4;
