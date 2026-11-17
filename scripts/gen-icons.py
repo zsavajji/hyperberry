@@ -2,7 +2,7 @@
 the action bar's record icon, the row menu's pin and mute, the voice bubble's play, pause and
 retry discs, and the Hub's: the item menu's tick_action, unread_action and delete_action, and
 the items' hub_read.png and hub_unread.png (grey and yellow, hub.png the grey again for the items older
-builds wrote) and the account's white hub_account.png.
+builds wrote) and the account's white hub_account.png, and the Active Frame's cover_glyph.png.
 The phone has only the trash can among the info page's and chat menu's icons (user's choice,
 2026-11-01), so these are drawn as action icons too: contacts_action (two people), save_action
 (a floppy disk), block_action (the "forbidden" sign), attach_action (a paperclip), plus_action
@@ -373,6 +373,9 @@ def main(out):
     # Q10 2026-11-11): white as the lock screen's system glyphs, larger for the banner (the user's ask), no rim
     # A new name: 242 drew it into hub.png, which the read items of older builds name (Q10, 2026-11-11).
     app_icon(81, (255, 255, 255, 255), fill=0.84).save(f"{out}/hub_account.png")
+    # The Active Frame's idle glyph (the user's design, 2026-11-17): the same bubble with the handset cut
+    # out, white, 64 px wide; cover.qml tints it with filterColor, as it does the bar's marks.
+    app_icon(64, (255, 255, 255, 255), fill=1.0).save(f"{out}/cover_glyph.png")
     # One per screen an app that stays in portrait can meet (bb10-devices): the Q10 and Classic, the Z30, the
     # Z10, the Passport. The tile is 30 % of the width, in the middle, so it looks the same on each.
     for w, h in ((720, 720), (720, 1280), (768, 1280), (1440, 1440)):
