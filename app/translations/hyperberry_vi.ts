@@ -1546,6 +1546,14 @@
 <context>
     <name>SettingsPage</name>
     <message>
+        <source>Interface</source>
+        <translation>Giao diện</translation>
+    </message>
+    <message>
+        <source>Compact</source>
+        <translation>Thu gọn</translation>
+    </message>
+    <message>
         <source>Proximity sensor</source>
         <translation>Cảm biến tiệm cận</translation>
     </message>

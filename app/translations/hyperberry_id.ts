@@ -1546,6 +1546,14 @@
 <context>
     <name>SettingsPage</name>
     <message>
+        <source>Interface</source>
+        <translation>Antarmuka</translation>
+    </message>
+    <message>
+        <source>Compact</source>
+        <translation>Ringkas</translation>
+    </message>
+    <message>
         <source>Proximity sensor</source>
         <translation>Sensor jarak</translation>
     </message>

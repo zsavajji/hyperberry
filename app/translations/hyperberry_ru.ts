@@ -1552,6 +1552,14 @@
 <context>
     <name>SettingsPage</name>
     <message>
+        <source>Interface</source>
+        <translation>Интерфейс</translation>
+    </message>
+    <message>
+        <source>Compact</source>
+        <translation>Компактный</translation>
+    </message>
+    <message>
         <source>Proximity sensor</source>
         <translation>Датчик приближения</translation>
     </message>

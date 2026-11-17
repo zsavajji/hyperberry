@@ -1549,6 +1549,14 @@
 <context>
     <name>SettingsPage</name>
     <message>
+        <source>Interface</source>
+        <translation>Interface</translation>
+    </message>
+    <message>
+        <source>Compact</source>
+        <translation>Compacte</translation>
+    </message>
+    <message>
         <source>Proximity sensor</source>
         <translation>Capteur de proximité</translation>
     </message>
