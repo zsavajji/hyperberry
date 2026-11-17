@@ -186,19 +186,26 @@ Page {
             layout: StackLayout {
                 orientation: LayoutOrientation.LeftToRight
             }
-            TextField {
-                id: search
+            // The wrapper carries Bright's field fill (nav.fieldColor); Dark keeps the system box.
+            Container {
                 verticalAlignment: VerticalAlignment.Center
                 layoutProperties: StackLayoutProperties {
                     spaceQuota: 1
                 }
-                hintText: qsTr("Search chats")
-                input.submitKey: SubmitKey.Search
-                onTextChanging: chats.setFilter(text)
-                keyListeners: KeyListener {
-                    onKeyPressed: {
-                        if (event.key == 27) {
-                            page.closeSearch()
+                background: nav.fieldColor
+                leftPadding: settings.theme == 1 ? ui.du(1) : 0
+                TextField {
+                    id: search
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    backgroundVisible: settings.theme != 1
+                    hintText: qsTr("Search chats")
+                    input.submitKey: SubmitKey.Search
+                    onTextChanging: chats.setFilter(text)
+                    keyListeners: KeyListener {
+                        onKeyPressed: {
+                            if (event.key == 27) {
+                                page.closeSearch()
+                            }
                         }
                     }
                 }

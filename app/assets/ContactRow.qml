@@ -79,6 +79,6 @@ Container {
     Container {
         horizontalAlignment: HorizontalAlignment.Fill
         preferredHeight: ui.px(2)
-        background: ui.palette.plain
+        background: row.ListItem.view.lineColor
     }
 }

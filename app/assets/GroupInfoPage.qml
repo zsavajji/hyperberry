@@ -239,6 +239,7 @@ Page {
                 property int bodySize: nav.bodySize
                 property int smallSize: nav.smallSize
                 property string pressColor: nav.pressColor
+                property variant lineColor: nav.lineColor
                 // The rows' long-press menu reaches the page through the view, as the message cards' do.
                 property bool admin: page.amAdmin
                 function change(p, action) {
@@ -338,7 +339,7 @@ Page {
                         Container {
                             horizontalAlignment: HorizontalAlignment.Fill
                             preferredHeight: ui.px(2)
-                            background: ui.palette.plain
+                            background: row.ListItem.view.lineColor
                         }
                     }
                 }

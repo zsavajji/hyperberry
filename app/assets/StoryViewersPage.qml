@@ -44,6 +44,7 @@ Page {
             property int bodySize: nav.bodySize
             property int smallSize: nav.smallSize
             property string pressColor: nav.pressColor
+            property variant lineColor: nav.lineColor
             dataModel: people
             listItemComponents: ListItemComponent {
                 type: ""

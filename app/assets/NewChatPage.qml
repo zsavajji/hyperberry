@@ -35,16 +35,24 @@ Page {
                 rightPadding: ui.du(1.5)
                 topPadding: ui.du(1.5)
                 bottomPadding: ui.du(1.5)
-                TextField {
-                    id: search
-                    hintText: qsTr("Search contacts")
-                    input.submitKey: SubmitKey.Search
-                    input.onSubmitted: {
-                        if (picker.shown > 0) {
-                            page.picked(picker.model.data([0]))
+                // The wrapper carries Bright's field fill (nav.fieldColor); Dark keeps the system box.
+                Container {
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    background: nav.fieldColor
+                    leftPadding: settings.theme == 1 ? ui.du(1) : 0
+                    TextField {
+                        id: search
+                        horizontalAlignment: HorizontalAlignment.Fill
+                        backgroundVisible: settings.theme != 1
+                        hintText: qsTr("Search contacts")
+                        input.submitKey: SubmitKey.Search
+                        input.onSubmitted: {
+                            if (picker.shown > 0) {
+                                page.picked(picker.model.data([0]))
+                            }
                         }
+                        onTextChanging: picker.filter(text)
                     }
-                    onTextChanging: picker.filter(text)
                 }
             }
             ListView {
@@ -53,6 +61,7 @@ Page {
                 property int bodySize: nav.bodySize
                 property int smallSize: nav.smallSize
                 property string pressColor: nav.pressColor
+                property variant lineColor: nav.lineColor
                 dataModel: picker.model
                 onTriggered: page.picked(dataModel.data(indexPath))
                 listItemComponents: ListItemComponent {

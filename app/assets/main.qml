@@ -127,6 +127,10 @@ TabbedPane {
             // 10.3 palette), so it shows on the message cards as well as on the bare page. List items
             // reach it through a property on their ListView, as they reach emojiStyle.
             property string pressColor: settings.theme == 1 ? "#DCDCDC" : "#464646"
+            // Bright's lines and text-field fills, a step darker than the theme's #F0F0F0, which vanished on the white
+            // page (the user, Q20, 2026-11-17); Dark keeps the theme's own.
+            property variant lineColor: settings.theme == 1 ? Color.create("#D0D0D0") : ui.palette.plain
+            property variant fieldColor: settings.theme == 1 ? Color.create("#E4E4E4") : Color.Transparent
             // The chat a notification tap asked for, until the chat list is up to open it.
             property string pendingChat
             // The Share menu's {path, text}, held like pendingChat until the chat list is up.

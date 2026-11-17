@@ -74,15 +74,32 @@ Page {
                 rightPadding: ui.du(1.5)
                 topPadding: ui.du(1.5)
                 bottomPadding: ui.du(1.5)
-                TextField {
-                    id: name
-                    hintText: qsTr("Group name")
+                // The wrappers carry Bright's field fill (nav.fieldColor); Dark keeps the system box. On
+                // Bright the two fills would meet, so a gap between them.
+                Container {
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    background: nav.fieldColor
+                    leftPadding: settings.theme == 1 ? ui.du(1) : 0
+                    bottomMargin: settings.theme == 1 ? ui.du(1) : 0
+                    TextField {
+                        id: name
+                        horizontalAlignment: HorizontalAlignment.Fill
+                        backgroundVisible: settings.theme != 1
+                        hintText: qsTr("Group name")
+                    }
                 }
-                TextField {
-                    id: search
-                    hintText: qsTr("Search contacts")
-                    input.submitKey: SubmitKey.Search
-                    onTextChanging: picker.filter(text)
+                Container {
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    background: nav.fieldColor
+                    leftPadding: settings.theme == 1 ? ui.du(1) : 0
+                    TextField {
+                        id: search
+                        horizontalAlignment: HorizontalAlignment.Fill
+                        backgroundVisible: settings.theme != 1
+                        hintText: qsTr("Search contacts")
+                        input.submitKey: SubmitKey.Search
+                        onTextChanging: picker.filter(text)
+                    }
                 }
                 Label {
                     visible: picker.chosenCount > 0
@@ -96,6 +113,7 @@ Page {
                 property int bodySize: nav.bodySize
                 property int smallSize: nav.smallSize
                 property string pressColor: nav.pressColor
+                property variant lineColor: nav.lineColor
                 dataModel: picker.model
                 onTriggered: picker.toggle(indexPath)
                 listItemComponents: ListItemComponent {

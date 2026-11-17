@@ -47,11 +47,19 @@ Sheet {
                     rightPadding: ui.du(1.5)
                     topPadding: ui.du(1.5)
                     bottomPadding: ui.du(1.5)
-                    TextField {
-                        id: search
-                        hintText: qsTr("Search contacts")
-                        input.submitKey: SubmitKey.Search
-                        onTextChanging: picker.filter(text)
+                    // The wrapper carries Bright's field fill (nav.fieldColor); Dark keeps the system box.
+                    Container {
+                        horizontalAlignment: HorizontalAlignment.Fill
+                        background: nav.fieldColor
+                        leftPadding: settings.theme == 1 ? ui.du(1) : 0
+                        TextField {
+                            id: search
+                            horizontalAlignment: HorizontalAlignment.Fill
+                            backgroundVisible: settings.theme != 1
+                            hintText: qsTr("Search contacts")
+                            input.submitKey: SubmitKey.Search
+                            onTextChanging: picker.filter(text)
+                        }
                     }
                     Label {
                         visible: picker.chosenCount > 0
@@ -110,7 +118,7 @@ Sheet {
                 Container {
                     horizontalAlignment: HorizontalAlignment.Fill
                     preferredHeight: ui.px(2)
-                    background: ui.palette.plain
+                    background: nav.lineColor
                 }
                 ListView {
                     // The rows reach the shared emoji style and sizes through the view, as the chat list's do.
@@ -118,6 +126,7 @@ Sheet {
                     property int bodySize: nav.bodySize
                     property int smallSize: nav.smallSize
                     property string pressColor: nav.pressColor
+                    property variant lineColor: nav.lineColor
                     dataModel: picker.model
                     onTriggered: picker.toggle(indexPath)
                     listItemComponents: ListItemComponent {

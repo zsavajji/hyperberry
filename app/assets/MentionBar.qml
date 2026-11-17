@@ -75,6 +75,7 @@ Container {
         property variant emojiStyle: nav.emojiStyle
         property int bodySize: nav.bodySize
         property string pressColor: nav.pressColor
+        property variant lineColor: nav.lineColor
         // At most four rows (a row and its hairline); the rest scroll.
         preferredHeight: Math.min(bar.count, 4) * (ui.du(9.4) + ui.px(2))
         dataModel: matches
@@ -103,7 +104,7 @@ Container {
                 Container {
                     horizontalAlignment: HorizontalAlignment.Fill
                     preferredHeight: ui.px(2)
-                    background: ui.palette.plain
+                    background: row.ListItem.view.lineColor
                 }
             }
         }

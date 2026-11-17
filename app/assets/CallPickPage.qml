@@ -90,10 +90,18 @@ Page {
                 rightPadding: ui.du(1.5)
                 topPadding: ui.du(1.5)
                 bottomPadding: ui.du(1.5)
-                TextField {
-                    hintText: qsTr("Search members")
-                    input.submitKey: SubmitKey.Search
-                    onTextChanging: picker.filter(text)
+                // The wrapper carries Bright's field fill (nav.fieldColor); Dark keeps the system box.
+                Container {
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    background: nav.fieldColor
+                    leftPadding: settings.theme == 1 ? ui.du(1) : 0
+                    TextField {
+                        horizontalAlignment: HorizontalAlignment.Fill
+                        backgroundVisible: settings.theme != 1
+                        hintText: qsTr("Search members")
+                        input.submitKey: SubmitKey.Search
+                        onTextChanging: picker.filter(text)
+                    }
                 }
                 Label {
                     visible: picker.chosenCount > 0
@@ -107,6 +115,7 @@ Page {
                 property int bodySize: nav.bodySize
                 property int smallSize: nav.smallSize
                 property string pressColor: nav.pressColor
+                property variant lineColor: nav.lineColor
                 dataModel: picker.model
                 onTriggered: {
                     if (!picker.toggle(indexPath)) {

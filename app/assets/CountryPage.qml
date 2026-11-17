@@ -33,19 +33,28 @@ Page {
     }
 
     Container {
-        TextField {
-            id: search
-            hintText: qsTr("Search by name or code")
-            input.submitKey: SubmitKey.Search
-            input.onSubmitted: {
-                if (model.size() > 0)
-                    page.picked(model.value(0))
+        // The wrapper carries Bright's field fill (nav.fieldColor); Dark keeps the system box.
+        Container {
+            horizontalAlignment: HorizontalAlignment.Fill
+            background: nav.fieldColor
+            leftPadding: settings.theme == 1 ? ui.du(1) : 0
+            TextField {
+                id: search
+                horizontalAlignment: HorizontalAlignment.Fill
+                backgroundVisible: settings.theme != 1
+                hintText: qsTr("Search by name or code")
+                input.submitKey: SubmitKey.Search
+                input.onSubmitted: {
+                    if (model.size() > 0)
+                        page.picked(model.value(0))
+                }
+                onTextChanging: page.filter(text)
             }
-            onTextChanging: page.filter(text)
         }
         ListView {
             property variant emojiStyle: nav.emojiStyle
             property string pressColor: nav.pressColor
+            property variant lineColor: nav.lineColor
             layoutProperties: StackLayoutProperties {
                 spaceQuota: 1
             }
@@ -82,7 +91,7 @@ Page {
                     Container {
                         horizontalAlignment: HorizontalAlignment.Fill
                         preferredHeight: ui.px(2)
-                        background: ui.palette.plain
+                        background: item.ListItem.view.lineColor
                     }
                 }
             }

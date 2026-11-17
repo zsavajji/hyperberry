@@ -54,6 +54,7 @@ Page {
             property int bodySize: nav.bodySize
             property int smallSize: nav.smallSize
             property string pressColor: nav.pressColor
+            property variant lineColor: nav.lineColor
             dataModel: rows
             onTriggered: page.openMessage(rows.data(indexPath))
             listItemComponents: ListItemComponent {
@@ -107,7 +108,7 @@ Page {
                     Container {
                         horizontalAlignment: HorizontalAlignment.Fill
                         preferredHeight: ui.px(2)
-                        background: ui.palette.plain
+                        background: row.ListItem.view.lineColor
                     }
                 }
             }

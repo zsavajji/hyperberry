@@ -164,7 +164,7 @@ Page {
                 Container {
                     horizontalAlignment: HorizontalAlignment.Fill
                     preferredHeight: ui.px(2)
-                    background: ui.palette.plain
+                    background: nav.lineColor
                 }
             }
         },

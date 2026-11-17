@@ -20,11 +20,19 @@ Page {
             Label {
                 text: qsTr("Question")
             }
-            TextField {
-                id: question
-                hintText: qsTr("Ask something")
-                input.submitKey: SubmitKey.Next
-                input.submitKeyFocusBehavior: SubmitKeyFocusBehavior.Next
+            // The wrapper carries Bright's field fill (nav.fieldColor); Dark keeps the system box.
+            Container {
+                horizontalAlignment: HorizontalAlignment.Fill
+                background: nav.fieldColor
+                leftPadding: settings.theme == 1 ? ui.du(1) : 0
+                TextField {
+                    id: question
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    backgroundVisible: settings.theme != 1
+                    hintText: qsTr("Ask something")
+                    input.submitKey: SubmitKey.Next
+                    input.submitKeyFocusBehavior: SubmitKeyFocusBehavior.Next
+                }
             }
             Label {
                 text: qsTr("Options")
@@ -71,11 +79,20 @@ Page {
     attachedObjects: [
         ComponentDefinition {
             id: optionDef
-            TextField {
+            Container {
+                // The field inside: addOption and send reach it through this.
+                property alias field: optionField
                 topMargin: ui.du(1)
                 horizontalAlignment: HorizontalAlignment.Fill
-                input.submitKey: SubmitKey.Next
-                input.submitKeyFocusBehavior: SubmitKeyFocusBehavior.Next
+                background: nav.fieldColor
+                leftPadding: settings.theme == 1 ? ui.du(1) : 0
+                TextField {
+                    id: optionField
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    backgroundVisible: settings.theme != 1
+                    input.submitKey: SubmitKey.Next
+                    input.submitKeyFocusBehavior: SubmitKeyFocusBehavior.Next
+                }
             }
         },
         SystemToast {
@@ -97,16 +114,17 @@ Page {
     }
     // A new option field, to WhatsApp's 12. Returns it, so Add option can focus it.
     function addOption() {
-        var f = optionDef.createObject()
+        var w = optionDef.createObject()
+        var f = w.field
         f.hintText = qsTr("Option %1").arg(options.count() + 1)
-        options.add(f)
+        options.add(w)
         addButton.enabled = options.count() < 12
         return f
     }
     function send() {
         var list = []
         for (var i = 0; i < options.count(); i++) {
-            var t = options.at(i).text.trim()
+            var t = options.at(i).field.text.trim()
             if (t != "") {
                 list.push(t)
             }

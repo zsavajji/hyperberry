@@ -66,24 +66,31 @@ Container {
             jump(matches[at])
         }
     }
-    TextField {
-        id: field
+    // The wrapper carries Bright's field fill (nav.fieldColor); Dark keeps the system box.
+    Container {
         verticalAlignment: VerticalAlignment.Center
         layoutProperties: StackLayoutProperties {
             spaceQuota: 1
         }
-        hintText: qsTr("Search in chat")
-        input {
-            submitKey: SubmitKey.Search
-            // Enter again steps on, and the field keeps the keyboard.
-            submitKeyFocusBehavior: SubmitKeyFocusBehavior.Keep
-            onSubmitted: bar.older()
-        }
-        onTextChanging: {
-            bar.hasText = text.trim() != ""
-            bar.matches = []
-            bar.at = -1
-            bar.searched = false
+        background: nav.fieldColor
+        leftPadding: settings.theme == 1 ? ui.du(1) : 0
+        TextField {
+            id: field
+            horizontalAlignment: HorizontalAlignment.Fill
+            backgroundVisible: settings.theme != 1
+            hintText: qsTr("Search in chat")
+            input {
+                submitKey: SubmitKey.Search
+                // Enter again steps on, and the field keeps the keyboard.
+                submitKeyFocusBehavior: SubmitKeyFocusBehavior.Keep
+                onSubmitted: bar.older()
+            }
+            onTextChanging: {
+                bar.hasText = text.trim() != ""
+                bar.matches = []
+                bar.at = -1
+                bar.searched = false
+            }
         }
     }
     Label {

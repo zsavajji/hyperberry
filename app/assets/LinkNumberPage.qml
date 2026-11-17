@@ -117,20 +117,27 @@ Page {
                         textStyle.base: nav.emojiStyle
                     }
                 }
-                TextField {
-                    id: number
+                // The wrapper carries Bright's field fill (nav.fieldColor); Dark keeps the system box.
+                Container {
                     leftMargin: ui.du(1)
                     layoutProperties: StackLayoutProperties {
                         spaceQuota: 1
                     }
-                    inputMode: TextFieldInputMode.PhoneNumber
-                    hintText: qsTr("Phone number")
-                    input.submitKey: SubmitKey.Submit
-                    input.onSubmitted: {
-                        if (Date.now() - page.pickedAt > 1000)
-                            page.submit()
+                    background: nav.fieldColor
+                    leftPadding: settings.theme == 1 ? ui.du(1) : 0
+                    TextField {
+                        id: number
+                        horizontalAlignment: HorizontalAlignment.Fill
+                        backgroundVisible: settings.theme != 1
+                        inputMode: TextFieldInputMode.PhoneNumber
+                        hintText: qsTr("Phone number")
+                        input.submitKey: SubmitKey.Submit
+                        input.onSubmitted: {
+                            if (Date.now() - page.pickedAt > 1000)
+                                page.submit()
+                        }
+                        onTextChanging: page.detect(text)
                     }
-                    onTextChanging: page.detect(text)
                 }
             }
             Label {
