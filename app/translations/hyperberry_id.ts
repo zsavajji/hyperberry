@@ -1448,6 +1448,22 @@
 <context>
     <name>ProfilePage</name>
     <message>
+        <source>Unlink this device?</source>
+        <translation>Putuskan tautan perangkat ini?</translation>
+    </message>
+    <message>
+        <source>This device is removed from your linked devices and its chats are deleted here.</source>
+        <translation>Perangkat ini akan dihapus dari perangkat tertaut Anda dan chat-nya dihapus di sini.</translation>
+    </message>
+    <message>
+        <source>Unlink</source>
+        <translation>Putuskan tautan</translation>
+    </message>
+    <message>
+        <source>Unlink this device</source>
+        <translation>Putuskan tautan perangkat ini</translation>
+    </message>
+    <message>
         <location filename="../assets/ProfilePage.qml" line="20" />
         <source>Profile</source>
         <translation>Profil</translation>
@@ -1557,6 +1573,46 @@
 </context>
 <context>
     <name>SettingsPage</name>
+    <message>
+        <source>Account</source>
+        <translation>Akun</translation>
+    </message>
+    <message>
+        <source>Name, about, picture, unlink</source>
+        <translation>Nama, info, foto, putuskan tautan</translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation>Tampilan</translation>
+    </message>
+    <message>
+        <source>Theme, text size, interface</source>
+        <translation>Tema, ukuran teks, antarmuka</translation>
+    </message>
+    <message>
+        <source>Chats</source>
+        <translation>Chat</translation>
+    </message>
+    <message>
+        <source>Enter key, proximity sensor</source>
+        <translation>Tombol Enter, sensor jarak</translation>
+    </message>
+    <message>
+        <source>Notifications</source>
+        <translation>Notifikasi</translation>
+    </message>
+    <message>
+        <source>Preview, start at boot</source>
+        <translation>Pratinjau, mulai saat boot</translation>
+    </message>
+    <message>
+        <source>Data and storage</source>
+        <translation>Data dan penyimpanan</translation>
+    </message>
+    <message>
+        <source>Mobile data, cache</source>
+        <translation>Data seluler, cache</translation>
+    </message>
     <message>
         <source>Interface</source>
         <translation>Antarmuka</translation>
@@ -2413,6 +2469,130 @@
     <message>
         <source>No starred messages</source>
         <translation>Tidak ada pesan berbintang</translation>
+    </message>
+</context>
+<context>
+    <name>AppearanceSettingsPage</name>
+    <message>
+        <source>Appearance</source>
+        <translation>Tampilan</translation>
+    </message>
+    <message>
+        <source>Theme</source>
+        <translation>Tema</translation>
+    </message>
+    <message>
+        <source>Dark</source>
+        <translation>Gelap</translation>
+    </message>
+    <message>
+        <source>Bright</source>
+        <translation>Terang</translation>
+    </message>
+    <message>
+        <source>Text size</source>
+        <translation>Ukuran teks</translation>
+    </message>
+    <message>
+        <source>Small</source>
+        <translation>Kecil</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <translation>Normal</translation>
+    </message>
+    <message>
+        <source>Large</source>
+        <translation>Besar</translation>
+    </message>
+    <message>
+        <source>Interface</source>
+        <translation>Antarmuka</translation>
+    </message>
+    <message>
+        <source>Compact</source>
+        <translation>Ringkas</translation>
+    </message>
+</context>
+<context>
+    <name>ChatSettingsPage</name>
+    <message>
+        <source>Chats</source>
+        <translation>Chat</translation>
+    </message>
+    <message>
+        <source>Enter sends</source>
+        <translation>Enter untuk mengirim</translation>
+    </message>
+    <message>
+        <source>Off, Enter starts a new line; the Send action still sends.</source>
+        <translation>Jika nonaktif, Enter membuat baris baru; tindakan Kirim tetap mengirim.</translation>
+    </message>
+    <message>
+        <source>Proximity sensor</source>
+        <translation>Sensor jarak</translation>
+    </message>
+    <message>
+        <source>Off, voice notes stay on the speaker and the screen stays on in calls. For a faulty sensor.</source>
+        <translation>Jika nonaktif, pesan suara tetap di speaker dan layar tetap menyala saat panggilan. Untuk sensor yang rusak.</translation>
+    </message>
+</context>
+<context>
+    <name>NotificationSettingsPage</name>
+    <message>
+        <source>Notifications</source>
+        <translation>Notifikasi</translation>
+    </message>
+    <message>
+        <source>Notification preview</source>
+        <translation>Pratinjau notifikasi</translation>
+    </message>
+    <message>
+        <source>Off, a notification says "New message" instead of the text.</source>
+        <translation>Jika nonaktif, notifikasi menampilkan "Pesan baru", bukan teksnya.</translation>
+    </message>
+    <message>
+        <source>Start at boot</source>
+        <translation>Mulai saat boot</translation>
+    </message>
+    <message>
+        <source>Brings HyperBerry back within 6 minutes of a reboot, or if it stops, with the app closed.</source>
+        <translation>Menjalankan kembali HyperBerry dalam 6 menit setelah ponsel di-reboot, atau jika berhenti, saat aplikasi ditutup.</translation>
+    </message>
+</context>
+<context>
+    <name>DataSettingsPage</name>
+    <message>
+        <source>Data and storage</source>
+        <translation>Data dan penyimpanan</translation>
+    </message>
+    <message>
+        <source>Download on mobile data</source>
+        <translation>Unduh lewat data seluler</translation>
+    </message>
+    <message>
+        <source>Off, photos and voice notes wait for a tap unless you're on Wi-Fi.</source>
+        <translation>Jika nonaktif, foto dan pesan suara menunggu ketukan kecuali Anda memakai Wi-Fi.</translation>
+    </message>
+    <message>
+        <source>Cache limit</source>
+        <translation>Batas cache</translation>
+    </message>
+    <message>
+        <source>Cache: %1</source>
+        <translation>Cache: %1</translation>
+    </message>
+    <message>
+        <source>Clear cache</source>
+        <translation>Hapus cache</translation>
+    </message>
+    <message>
+        <source>Cache cleared: %1 freed</source>
+        <translation>Cache dihapus: %1 dibebaskan</translation>
+    </message>
+    <message>
+        <source>Voice notes' decoded audio and photo previews; they're made again when needed.</source>
+        <translation>Audio pesan suara yang sudah didekode dan pratinjau foto; keduanya dibuat lagi saat diperlukan.</translation>
     </message>
 </context>
 </TS>

@@ -1451,6 +1451,22 @@
 <context>
     <name>ProfilePage</name>
     <message>
+        <source>Unlink this device?</source>
+        <translation>इस डिवाइस को अनलिंक करें?</translation>
+    </message>
+    <message>
+        <source>This device is removed from your linked devices and its chats are deleted here.</source>
+        <translation>यह डिवाइस आपके लिंक किए गए डिवाइस से हटा दिया जाएगा और इसकी चैट यहाँ से डिलीट हो जाएँगी।</translation>
+    </message>
+    <message>
+        <source>Unlink</source>
+        <translation>अनलिंक करें</translation>
+    </message>
+    <message>
+        <source>Unlink this device</source>
+        <translation>इस डिवाइस को अनलिंक करें</translation>
+    </message>
+    <message>
         <location filename="../assets/ProfilePage.qml" line="20" />
         <source>Profile</source>
         <translation>प्रोफ़ाइल</translation>
@@ -1560,6 +1576,46 @@
 </context>
 <context>
     <name>SettingsPage</name>
+    <message>
+        <source>Account</source>
+        <translation>खाता</translation>
+    </message>
+    <message>
+        <source>Name, about, picture, unlink</source>
+        <translation>नाम, परिचय, फ़ोटो, अनलिंक</translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation>दिखावट</translation>
+    </message>
+    <message>
+        <source>Theme, text size, interface</source>
+        <translation>थीम, टेक्स्ट का आकार, इंटरफ़ेस</translation>
+    </message>
+    <message>
+        <source>Chats</source>
+        <translation>चैट</translation>
+    </message>
+    <message>
+        <source>Enter key, proximity sensor</source>
+        <translation>Enter कुंजी, निकटता सेंसर</translation>
+    </message>
+    <message>
+        <source>Notifications</source>
+        <translation>सूचनाएँ</translation>
+    </message>
+    <message>
+        <source>Preview, start at boot</source>
+        <translation>पूर्वावलोकन, बूट पर शुरू</translation>
+    </message>
+    <message>
+        <source>Data and storage</source>
+        <translation>डेटा और स्टोरेज</translation>
+    </message>
+    <message>
+        <source>Mobile data, cache</source>
+        <translation>मोबाइल डेटा, कैश</translation>
+    </message>
     <message>
         <source>Interface</source>
         <translation>इंटरफ़ेस</translation>
@@ -2416,6 +2472,130 @@
     <message>
         <source>No starred messages</source>
         <translation>कोई स्टार किया गया संदेश नहीं</translation>
+    </message>
+</context>
+<context>
+    <name>AppearanceSettingsPage</name>
+    <message>
+        <source>Appearance</source>
+        <translation>दिखावट</translation>
+    </message>
+    <message>
+        <source>Theme</source>
+        <translation>थीम</translation>
+    </message>
+    <message>
+        <source>Dark</source>
+        <translation>डार्क</translation>
+    </message>
+    <message>
+        <source>Bright</source>
+        <translation>लाइट</translation>
+    </message>
+    <message>
+        <source>Text size</source>
+        <translation>टेक्स्ट साइज़</translation>
+    </message>
+    <message>
+        <source>Small</source>
+        <translation>छोटा</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <translation>सामान्य</translation>
+    </message>
+    <message>
+        <source>Large</source>
+        <translation>बड़ा</translation>
+    </message>
+    <message>
+        <source>Interface</source>
+        <translation>इंटरफ़ेस</translation>
+    </message>
+    <message>
+        <source>Compact</source>
+        <translation>कॉम्पैक्ट</translation>
+    </message>
+</context>
+<context>
+    <name>ChatSettingsPage</name>
+    <message>
+        <source>Chats</source>
+        <translation>चैट</translation>
+    </message>
+    <message>
+        <source>Enter sends</source>
+        <translation>Enter से भेजें</translation>
+    </message>
+    <message>
+        <source>Off, Enter starts a new line; the Send action still sends.</source>
+        <translation>बंद होने पर Enter नई लाइन शुरू करता है; भेजें एक्शन फिर भी भेजता है।</translation>
+    </message>
+    <message>
+        <source>Proximity sensor</source>
+        <translation>निकटता सेंसर</translation>
+    </message>
+    <message>
+        <source>Off, voice notes stay on the speaker and the screen stays on in calls. For a faulty sensor.</source>
+        <translation>बंद होने पर वॉइस नोट स्पीकर पर ही रहते हैं और कॉल में स्क्रीन चालू रहती है। खराब सेंसर के लिए।</translation>
+    </message>
+</context>
+<context>
+    <name>NotificationSettingsPage</name>
+    <message>
+        <source>Notifications</source>
+        <translation>सूचनाएँ</translation>
+    </message>
+    <message>
+        <source>Notification preview</source>
+        <translation>सूचना प्रीव्यू</translation>
+    </message>
+    <message>
+        <source>Off, a notification says "New message" instead of the text.</source>
+        <translation>बंद होने पर सूचना में टेक्स्ट की जगह "नया मैसेज" दिखता है।</translation>
+    </message>
+    <message>
+        <source>Start at boot</source>
+        <translation>बूट पर शुरू करें</translation>
+    </message>
+    <message>
+        <source>Brings HyperBerry back within 6 minutes of a reboot, or if it stops, with the app closed.</source>
+        <translation>रीबूट के बाद या रुक जाने पर, ऐप बंद होने के बावजूद, 6 मिनट के भीतर HyperBerry को वापस चालू कर देता है।</translation>
+    </message>
+</context>
+<context>
+    <name>DataSettingsPage</name>
+    <message>
+        <source>Data and storage</source>
+        <translation>डेटा और स्टोरेज</translation>
+    </message>
+    <message>
+        <source>Download on mobile data</source>
+        <translation>मोबाइल डेटा पर डाउनलोड करें</translation>
+    </message>
+    <message>
+        <source>Off, photos and voice notes wait for a tap unless you're on Wi-Fi.</source>
+        <translation>बंद होने पर फ़ोटो और वॉइस मैसेज तब तक टैप का इंतज़ार करते हैं, जब तक आप Wi-Fi पर न हों।</translation>
+    </message>
+    <message>
+        <source>Cache limit</source>
+        <translation>कैश की सीमा</translation>
+    </message>
+    <message>
+        <source>Cache: %1</source>
+        <translation>कैश: %1</translation>
+    </message>
+    <message>
+        <source>Clear cache</source>
+        <translation>कैश साफ़ करें</translation>
+    </message>
+    <message>
+        <source>Cache cleared: %1 freed</source>
+        <translation>कैश साफ़ हुआ: %1 खाली हुआ</translation>
+    </message>
+    <message>
+        <source>Voice notes' decoded audio and photo previews; they're made again when needed.</source>
+        <translation>वॉइस मैसेज का डीकोड किया गया ऑडियो और फ़ोटो के प्रीव्यू; ज़रूरत पड़ने पर ये दोबारा बन जाते हैं।</translation>
     </message>
 </context>
 </TS>

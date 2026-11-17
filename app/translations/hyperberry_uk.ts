@@ -1454,6 +1454,22 @@
 <context>
     <name>ProfilePage</name>
     <message>
+        <source>Unlink this device?</source>
+        <translation>Від’єднати цей пристрій?</translation>
+    </message>
+    <message>
+        <source>This device is removed from your linked devices and its chats are deleted here.</source>
+        <translation>Пристрій буде видалено з пов’язаних пристроїв, а його чати тут буде видалено.</translation>
+    </message>
+    <message>
+        <source>Unlink</source>
+        <translation>Від’єднати</translation>
+    </message>
+    <message>
+        <source>Unlink this device</source>
+        <translation>Від’єднати цей пристрій</translation>
+    </message>
+    <message>
         <location filename="../assets/ProfilePage.qml" line="20" />
         <source>Profile</source>
         <translation>Профіль</translation>
@@ -1563,6 +1579,46 @@
 </context>
 <context>
     <name>SettingsPage</name>
+    <message>
+        <source>Account</source>
+        <translation>Обліковий запис</translation>
+    </message>
+    <message>
+        <source>Name, about, picture, unlink</source>
+        <translation>Ім'я, відомості, фото, відв'язування</translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation>Вигляд</translation>
+    </message>
+    <message>
+        <source>Theme, text size, interface</source>
+        <translation>Тема, розмір тексту, інтерфейс</translation>
+    </message>
+    <message>
+        <source>Chats</source>
+        <translation>Чати</translation>
+    </message>
+    <message>
+        <source>Enter key, proximity sensor</source>
+        <translation>Клавіша Enter, датчик наближення</translation>
+    </message>
+    <message>
+        <source>Notifications</source>
+        <translation>Сповіщення</translation>
+    </message>
+    <message>
+        <source>Preview, start at boot</source>
+        <translation>Попередній перегляд, запуск під час завантаження</translation>
+    </message>
+    <message>
+        <source>Data and storage</source>
+        <translation>Дані та пам'ять</translation>
+    </message>
+    <message>
+        <source>Mobile data, cache</source>
+        <translation>Мобільні дані, кеш</translation>
+    </message>
     <message>
         <source>Interface</source>
         <translation>Інтерфейс</translation>
@@ -2419,6 +2475,130 @@
     <message>
         <source>No starred messages</source>
         <translation>Немає обраних повідомлень</translation>
+    </message>
+</context>
+<context>
+    <name>AppearanceSettingsPage</name>
+    <message>
+        <source>Appearance</source>
+        <translation>Вигляд</translation>
+    </message>
+    <message>
+        <source>Theme</source>
+        <translation>Тема</translation>
+    </message>
+    <message>
+        <source>Dark</source>
+        <translation>Темна</translation>
+    </message>
+    <message>
+        <source>Bright</source>
+        <translation>Світла</translation>
+    </message>
+    <message>
+        <source>Text size</source>
+        <translation>Розмір тексту</translation>
+    </message>
+    <message>
+        <source>Small</source>
+        <translation>Малий</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <translation>Звичайний</translation>
+    </message>
+    <message>
+        <source>Large</source>
+        <translation>Великий</translation>
+    </message>
+    <message>
+        <source>Interface</source>
+        <translation>Інтерфейс</translation>
+    </message>
+    <message>
+        <source>Compact</source>
+        <translation>Компактний</translation>
+    </message>
+</context>
+<context>
+    <name>ChatSettingsPage</name>
+    <message>
+        <source>Chats</source>
+        <translation>Чати</translation>
+    </message>
+    <message>
+        <source>Enter sends</source>
+        <translation>Enter надсилає</translation>
+    </message>
+    <message>
+        <source>Off, Enter starts a new line; the Send action still sends.</source>
+        <translation>Якщо вимкнено, Enter переносить рядок; дія «Надіслати» все одно надсилає.</translation>
+    </message>
+    <message>
+        <source>Proximity sensor</source>
+        <translation>Датчик наближення</translation>
+    </message>
+    <message>
+        <source>Off, voice notes stay on the speaker and the screen stays on in calls. For a faulty sensor.</source>
+        <translation>Якщо вимкнено, голосові повідомлення грають через динамік, а екран не гасне під час дзвінків. Для несправного датчика.</translation>
+    </message>
+</context>
+<context>
+    <name>NotificationSettingsPage</name>
+    <message>
+        <source>Notifications</source>
+        <translation>Сповіщення</translation>
+    </message>
+    <message>
+        <source>Notification preview</source>
+        <translation>Попередній перегляд сповіщень</translation>
+    </message>
+    <message>
+        <source>Off, a notification says "New message" instead of the text.</source>
+        <translation>Якщо вимкнено, у сповіщенні замість тексту буде «Нове повідомлення».</translation>
+    </message>
+    <message>
+        <source>Start at boot</source>
+        <translation>Запуск під час ввімкнення</translation>
+    </message>
+    <message>
+        <source>Brings HyperBerry back within 6 minutes of a reboot, or if it stops, with the app closed.</source>
+        <translation>Повертає HyperBerry до роботи протягом 6 хвилин після перезавантаження або зупинки, навіть коли застосунок закрито.</translation>
+    </message>
+</context>
+<context>
+    <name>DataSettingsPage</name>
+    <message>
+        <source>Data and storage</source>
+        <translation>Дані та пам'ять</translation>
+    </message>
+    <message>
+        <source>Download on mobile data</source>
+        <translation>Завантаження в мобільній мережі</translation>
+    </message>
+    <message>
+        <source>Off, photos and voice notes wait for a tap unless you're on Wi-Fi.</source>
+        <translation>Якщо вимкнено, фото та голосові повідомлення завантажуються після дотику, якщо немає Wi-Fi.</translation>
+    </message>
+    <message>
+        <source>Cache limit</source>
+        <translation>Ліміт кешу</translation>
+    </message>
+    <message>
+        <source>Cache: %1</source>
+        <translation>Кеш: %1</translation>
+    </message>
+    <message>
+        <source>Clear cache</source>
+        <translation>Очистити кеш</translation>
+    </message>
+    <message>
+        <source>Cache cleared: %1 freed</source>
+        <translation>Кеш очищено: звільнено %1</translation>
+    </message>
+    <message>
+        <source>Voice notes' decoded audio and photo previews; they're made again when needed.</source>
+        <translation>Декодоване аудіо голосових повідомлень і мініатюри фото; за потреби створюються знову.</translation>
     </message>
 </context>
 </TS>

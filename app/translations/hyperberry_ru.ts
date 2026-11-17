@@ -1454,6 +1454,22 @@
 <context>
     <name>ProfilePage</name>
     <message>
+        <source>Unlink this device?</source>
+        <translation>Отвязать это устройство?</translation>
+    </message>
+    <message>
+        <source>This device is removed from your linked devices and its chats are deleted here.</source>
+        <translation>Устройство будет удалено из связанных устройств, а его чаты здесь удалятся.</translation>
+    </message>
+    <message>
+        <source>Unlink</source>
+        <translation>Отвязать</translation>
+    </message>
+    <message>
+        <source>Unlink this device</source>
+        <translation>Отвязать это устройство</translation>
+    </message>
+    <message>
         <location filename="../assets/ProfilePage.qml" line="20" />
         <source>Profile</source>
         <translation>Профиль</translation>
@@ -1563,6 +1579,46 @@
 </context>
 <context>
     <name>SettingsPage</name>
+    <message>
+        <source>Account</source>
+        <translation>Аккаунт</translation>
+    </message>
+    <message>
+        <source>Name, about, picture, unlink</source>
+        <translation>Имя, сведения, фото, отвязка</translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation>Оформление</translation>
+    </message>
+    <message>
+        <source>Theme, text size, interface</source>
+        <translation>Тема, размер текста, интерфейс</translation>
+    </message>
+    <message>
+        <source>Chats</source>
+        <translation>Чаты</translation>
+    </message>
+    <message>
+        <source>Enter key, proximity sensor</source>
+        <translation>Клавиша Enter, датчик приближения</translation>
+    </message>
+    <message>
+        <source>Notifications</source>
+        <translation>Уведомления</translation>
+    </message>
+    <message>
+        <source>Preview, start at boot</source>
+        <translation>Предпросмотр, запуск при загрузке</translation>
+    </message>
+    <message>
+        <source>Data and storage</source>
+        <translation>Данные и память</translation>
+    </message>
+    <message>
+        <source>Mobile data, cache</source>
+        <translation>Мобильные данные, кэш</translation>
+    </message>
     <message>
         <source>Interface</source>
         <translation>Интерфейс</translation>
@@ -2419,6 +2475,130 @@
     <message>
         <source>No starred messages</source>
         <translation>Нет избранных сообщений</translation>
+    </message>
+</context>
+<context>
+    <name>AppearanceSettingsPage</name>
+    <message>
+        <source>Appearance</source>
+        <translation>Оформление</translation>
+    </message>
+    <message>
+        <source>Theme</source>
+        <translation>Тема</translation>
+    </message>
+    <message>
+        <source>Dark</source>
+        <translation>Тёмная</translation>
+    </message>
+    <message>
+        <source>Bright</source>
+        <translation>Светлая</translation>
+    </message>
+    <message>
+        <source>Text size</source>
+        <translation>Размер текста</translation>
+    </message>
+    <message>
+        <source>Small</source>
+        <translation>Мелкий</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <translation>Обычный</translation>
+    </message>
+    <message>
+        <source>Large</source>
+        <translation>Крупный</translation>
+    </message>
+    <message>
+        <source>Interface</source>
+        <translation>Интерфейс</translation>
+    </message>
+    <message>
+        <source>Compact</source>
+        <translation>Компактный</translation>
+    </message>
+</context>
+<context>
+    <name>ChatSettingsPage</name>
+    <message>
+        <source>Chats</source>
+        <translation>Чаты</translation>
+    </message>
+    <message>
+        <source>Enter sends</source>
+        <translation>Enter отправляет</translation>
+    </message>
+    <message>
+        <source>Off, Enter starts a new line; the Send action still sends.</source>
+        <translation>Если выключено, Enter переносит строку; действие «Отправить» по-прежнему отправляет.</translation>
+    </message>
+    <message>
+        <source>Proximity sensor</source>
+        <translation>Датчик приближения</translation>
+    </message>
+    <message>
+        <source>Off, voice notes stay on the speaker and the screen stays on in calls. For a faulty sensor.</source>
+        <translation>Если выключено, голосовые сообщения играют через динамик, а экран не гаснет во время звонков. Для неисправного датчика.</translation>
+    </message>
+</context>
+<context>
+    <name>NotificationSettingsPage</name>
+    <message>
+        <source>Notifications</source>
+        <translation>Уведомления</translation>
+    </message>
+    <message>
+        <source>Notification preview</source>
+        <translation>Предпросмотр уведомлений</translation>
+    </message>
+    <message>
+        <source>Off, a notification says "New message" instead of the text.</source>
+        <translation>Если выключено, в уведомлении вместо текста будет «Новое сообщение».</translation>
+    </message>
+    <message>
+        <source>Start at boot</source>
+        <translation>Запуск при включении</translation>
+    </message>
+    <message>
+        <source>Brings HyperBerry back within 6 minutes of a reboot, or if it stops, with the app closed.</source>
+        <translation>Возвращает HyperBerry в работу в течение 6 минут после перезагрузки или остановки, даже если приложение закрыто.</translation>
+    </message>
+</context>
+<context>
+    <name>DataSettingsPage</name>
+    <message>
+        <source>Data and storage</source>
+        <translation>Данные и память</translation>
+    </message>
+    <message>
+        <source>Download on mobile data</source>
+        <translation>Загрузка по мобильной сети</translation>
+    </message>
+    <message>
+        <source>Off, photos and voice notes wait for a tap unless you're on Wi-Fi.</source>
+        <translation>Если выключено, фото и голосовые сообщения загружаются по нажатию, если нет Wi-Fi.</translation>
+    </message>
+    <message>
+        <source>Cache limit</source>
+        <translation>Лимит кеша</translation>
+    </message>
+    <message>
+        <source>Cache: %1</source>
+        <translation>Кеш: %1</translation>
+    </message>
+    <message>
+        <source>Clear cache</source>
+        <translation>Очистить кеш</translation>
+    </message>
+    <message>
+        <source>Cache cleared: %1 freed</source>
+        <translation>Кеш очищен: освобождено %1</translation>
+    </message>
+    <message>
+        <source>Voice notes' decoded audio and photo previews; they're made again when needed.</source>
+        <translation>Декодированное аудио голосовых сообщений и миниатюры фото; при необходимости создаются заново.</translation>
     </message>
 </context>
 </TS>

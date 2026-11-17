@@ -1448,6 +1448,22 @@
 <context>
     <name>ProfilePage</name>
     <message>
+        <source>Unlink this device?</source>
+        <translation>Hủy liên kết thiết bị này?</translation>
+    </message>
+    <message>
+        <source>This device is removed from your linked devices and its chats are deleted here.</source>
+        <translation>Thiết bị này sẽ bị xóa khỏi các thiết bị đã liên kết của bạn và các đoạn chat của nó sẽ bị xóa tại đây.</translation>
+    </message>
+    <message>
+        <source>Unlink</source>
+        <translation>Hủy liên kết</translation>
+    </message>
+    <message>
+        <source>Unlink this device</source>
+        <translation>Hủy liên kết thiết bị này</translation>
+    </message>
+    <message>
         <location filename="../assets/ProfilePage.qml" line="20" />
         <source>Profile</source>
         <translation>Hồ sơ</translation>
@@ -1557,6 +1573,46 @@
 </context>
 <context>
     <name>SettingsPage</name>
+    <message>
+        <source>Account</source>
+        <translation>Tài khoản</translation>
+    </message>
+    <message>
+        <source>Name, about, picture, unlink</source>
+        <translation>Tên, giới thiệu, ảnh, hủy liên kết</translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation>Giao diện</translation>
+    </message>
+    <message>
+        <source>Theme, text size, interface</source>
+        <translation>Chủ đề, cỡ chữ, giao diện</translation>
+    </message>
+    <message>
+        <source>Chats</source>
+        <translation>Trò chuyện</translation>
+    </message>
+    <message>
+        <source>Enter key, proximity sensor</source>
+        <translation>Phím Enter, cảm biến tiệm cận</translation>
+    </message>
+    <message>
+        <source>Notifications</source>
+        <translation>Thông báo</translation>
+    </message>
+    <message>
+        <source>Preview, start at boot</source>
+        <translation>Xem trước, khởi động cùng máy</translation>
+    </message>
+    <message>
+        <source>Data and storage</source>
+        <translation>Dữ liệu và bộ nhớ</translation>
+    </message>
+    <message>
+        <source>Mobile data, cache</source>
+        <translation>Dữ liệu di động, bộ nhớ đệm</translation>
+    </message>
     <message>
         <source>Interface</source>
         <translation>Giao diện</translation>
@@ -2413,6 +2469,130 @@
     <message>
         <source>No starred messages</source>
         <translation>Không có tin nhắn gắn dấu sao</translation>
+    </message>
+</context>
+<context>
+    <name>AppearanceSettingsPage</name>
+    <message>
+        <source>Appearance</source>
+        <translation>Giao diện</translation>
+    </message>
+    <message>
+        <source>Theme</source>
+        <translation>Giao diện</translation>
+    </message>
+    <message>
+        <source>Dark</source>
+        <translation>Tối</translation>
+    </message>
+    <message>
+        <source>Bright</source>
+        <translation>Sáng</translation>
+    </message>
+    <message>
+        <source>Text size</source>
+        <translation>Cỡ chữ</translation>
+    </message>
+    <message>
+        <source>Small</source>
+        <translation>Nhỏ</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <translation>Bình thường</translation>
+    </message>
+    <message>
+        <source>Large</source>
+        <translation>Lớn</translation>
+    </message>
+    <message>
+        <source>Interface</source>
+        <translation>Giao diện</translation>
+    </message>
+    <message>
+        <source>Compact</source>
+        <translation>Thu gọn</translation>
+    </message>
+</context>
+<context>
+    <name>ChatSettingsPage</name>
+    <message>
+        <source>Chats</source>
+        <translation>Trò chuyện</translation>
+    </message>
+    <message>
+        <source>Enter sends</source>
+        <translation>Enter để gửi</translation>
+    </message>
+    <message>
+        <source>Off, Enter starts a new line; the Send action still sends.</source>
+        <translation>Khi tắt, Enter xuống dòng mới; hành động Gửi vẫn gửi tin nhắn.</translation>
+    </message>
+    <message>
+        <source>Proximity sensor</source>
+        <translation>Cảm biến tiệm cận</translation>
+    </message>
+    <message>
+        <source>Off, voice notes stay on the speaker and the screen stays on in calls. For a faulty sensor.</source>
+        <translation>Khi tắt, tin nhắn thoại vẫn phát qua loa và màn hình vẫn sáng khi gọi. Dành cho cảm biến bị hỏng.</translation>
+    </message>
+</context>
+<context>
+    <name>NotificationSettingsPage</name>
+    <message>
+        <source>Notifications</source>
+        <translation>Thông báo</translation>
+    </message>
+    <message>
+        <source>Notification preview</source>
+        <translation>Xem trước thông báo</translation>
+    </message>
+    <message>
+        <source>Off, a notification says "New message" instead of the text.</source>
+        <translation>Khi tắt, thông báo hiện "Tin nhắn mới" thay vì nội dung.</translation>
+    </message>
+    <message>
+        <source>Start at boot</source>
+        <translation>Khởi động cùng máy</translation>
+    </message>
+    <message>
+        <source>Brings HyperBerry back within 6 minutes of a reboot, or if it stops, with the app closed.</source>
+        <translation>Đưa HyperBerry hoạt động trở lại trong vòng 6 phút sau khi khởi động lại máy, hoặc nếu nó dừng, kể cả khi ứng dụng đã đóng.</translation>
+    </message>
+</context>
+<context>
+    <name>DataSettingsPage</name>
+    <message>
+        <source>Data and storage</source>
+        <translation>Dữ liệu và bộ nhớ</translation>
+    </message>
+    <message>
+        <source>Download on mobile data</source>
+        <translation>Tải xuống bằng dữ liệu di động</translation>
+    </message>
+    <message>
+        <source>Off, photos and voice notes wait for a tap unless you're on Wi-Fi.</source>
+        <translation>Khi tắt, ảnh và tin nhắn thoại chờ nhấn để tải, trừ khi bạn dùng Wi-Fi.</translation>
+    </message>
+    <message>
+        <source>Cache limit</source>
+        <translation>Giới hạn bộ nhớ đệm</translation>
+    </message>
+    <message>
+        <source>Cache: %1</source>
+        <translation>Bộ nhớ đệm: %1</translation>
+    </message>
+    <message>
+        <source>Clear cache</source>
+        <translation>Xóa bộ nhớ đệm</translation>
+    </message>
+    <message>
+        <source>Cache cleared: %1 freed</source>
+        <translation>Đã xóa bộ nhớ đệm: giải phóng %1</translation>
+    </message>
+    <message>
+        <source>Voice notes' decoded audio and photo previews; they're made again when needed.</source>
+        <translation>Âm thanh đã giải mã của tin nhắn thoại và bản xem trước ảnh; chúng được tạo lại khi cần.</translation>
     </message>
 </context>
 </TS>

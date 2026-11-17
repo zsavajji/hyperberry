@@ -1451,6 +1451,22 @@
 <context>
     <name>ProfilePage</name>
     <message>
+        <source>Unlink this device?</source>
+        <translation>¿Desvincular este dispositivo?</translation>
+    </message>
+    <message>
+        <source>This device is removed from your linked devices and its chats are deleted here.</source>
+        <translation>Este dispositivo se quita de tus dispositivos vinculados y sus chats se eliminan aquí.</translation>
+    </message>
+    <message>
+        <source>Unlink</source>
+        <translation>Desvincular</translation>
+    </message>
+    <message>
+        <source>Unlink this device</source>
+        <translation>Desvincular este dispositivo</translation>
+    </message>
+    <message>
         <location filename="../assets/ProfilePage.qml" line="20" />
         <source>Profile</source>
         <translation>Perfil</translation>
@@ -1560,6 +1576,46 @@
 </context>
 <context>
     <name>SettingsPage</name>
+    <message>
+        <source>Account</source>
+        <translation>Cuenta</translation>
+    </message>
+    <message>
+        <source>Name, about, picture, unlink</source>
+        <translation>Nombre, info., foto, desvincular</translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation>Apariencia</translation>
+    </message>
+    <message>
+        <source>Theme, text size, interface</source>
+        <translation>Tema, tamaño del texto, interfaz</translation>
+    </message>
+    <message>
+        <source>Chats</source>
+        <translation>Chats</translation>
+    </message>
+    <message>
+        <source>Enter key, proximity sensor</source>
+        <translation>Tecla Intro, sensor de proximidad</translation>
+    </message>
+    <message>
+        <source>Notifications</source>
+        <translation>Notificaciones</translation>
+    </message>
+    <message>
+        <source>Preview, start at boot</source>
+        <translation>Vista previa, inicio al arrancar</translation>
+    </message>
+    <message>
+        <source>Data and storage</source>
+        <translation>Datos y almacenamiento</translation>
+    </message>
+    <message>
+        <source>Mobile data, cache</source>
+        <translation>Datos móviles, caché</translation>
+    </message>
     <message>
         <source>Interface</source>
         <translation>Interfaz</translation>
@@ -2416,6 +2472,130 @@
     <message>
         <source>No starred messages</source>
         <translation>No hay mensajes destacados</translation>
+    </message>
+</context>
+<context>
+    <name>AppearanceSettingsPage</name>
+    <message>
+        <source>Appearance</source>
+        <translation>Apariencia</translation>
+    </message>
+    <message>
+        <source>Theme</source>
+        <translation>Tema</translation>
+    </message>
+    <message>
+        <source>Dark</source>
+        <translation>Oscuro</translation>
+    </message>
+    <message>
+        <source>Bright</source>
+        <translation>Claro</translation>
+    </message>
+    <message>
+        <source>Text size</source>
+        <translation>Tamaño del texto</translation>
+    </message>
+    <message>
+        <source>Small</source>
+        <translation>Pequeño</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <translation>Normal</translation>
+    </message>
+    <message>
+        <source>Large</source>
+        <translation>Grande</translation>
+    </message>
+    <message>
+        <source>Interface</source>
+        <translation>Interfaz</translation>
+    </message>
+    <message>
+        <source>Compact</source>
+        <translation>Compacta</translation>
+    </message>
+</context>
+<context>
+    <name>ChatSettingsPage</name>
+    <message>
+        <source>Chats</source>
+        <translation>Chats</translation>
+    </message>
+    <message>
+        <source>Enter sends</source>
+        <translation>Intro envía</translation>
+    </message>
+    <message>
+        <source>Off, Enter starts a new line; the Send action still sends.</source>
+        <translation>Si está desactivado, Intro inserta un salto de línea; la acción Enviar sigue enviando.</translation>
+    </message>
+    <message>
+        <source>Proximity sensor</source>
+        <translation>Sensor de proximidad</translation>
+    </message>
+    <message>
+        <source>Off, voice notes stay on the speaker and the screen stays on in calls. For a faulty sensor.</source>
+        <translation>Si está desactivado, las notas de voz siguen en el altavoz y la pantalla sigue encendida en las llamadas. Para un sensor averiado.</translation>
+    </message>
+</context>
+<context>
+    <name>NotificationSettingsPage</name>
+    <message>
+        <source>Notifications</source>
+        <translation>Notificaciones</translation>
+    </message>
+    <message>
+        <source>Notification preview</source>
+        <translation>Vista previa de notificaciones</translation>
+    </message>
+    <message>
+        <source>Off, a notification says "New message" instead of the text.</source>
+        <translation>Si está desactivado, una notificación dice "Mensaje nuevo" en lugar del texto.</translation>
+    </message>
+    <message>
+        <source>Start at boot</source>
+        <translation>Iniciar al encender</translation>
+    </message>
+    <message>
+        <source>Brings HyperBerry back within 6 minutes of a reboot, or if it stops, with the app closed.</source>
+        <translation>Vuelve a poner en marcha HyperBerry en un plazo de 6 minutos tras un reinicio, o si se detiene, con la app cerrada.</translation>
+    </message>
+</context>
+<context>
+    <name>DataSettingsPage</name>
+    <message>
+        <source>Data and storage</source>
+        <translation>Datos y almacenamiento</translation>
+    </message>
+    <message>
+        <source>Download on mobile data</source>
+        <translation>Descargar con datos móviles</translation>
+    </message>
+    <message>
+        <source>Off, photos and voice notes wait for a tap unless you're on Wi-Fi.</source>
+        <translation>Si está desactivado, las fotos y los mensajes de voz esperan un toque, salvo con Wi-Fi.</translation>
+    </message>
+    <message>
+        <source>Cache limit</source>
+        <translation>Límite de caché</translation>
+    </message>
+    <message>
+        <source>Cache: %1</source>
+        <translation>Caché: %1</translation>
+    </message>
+    <message>
+        <source>Clear cache</source>
+        <translation>Vaciar caché</translation>
+    </message>
+    <message>
+        <source>Cache cleared: %1 freed</source>
+        <translation>Caché vaciada: %1 liberados</translation>
+    </message>
+    <message>
+        <source>Voice notes' decoded audio and photo previews; they're made again when needed.</source>
+        <translation>El audio decodificado de los mensajes de voz y las vistas previas de fotos; se vuelven a crear cuando hacen falta.</translation>
     </message>
 </context>
 </TS>
