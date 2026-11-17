@@ -74,6 +74,7 @@ func newSim(srv *Server, st *Store, log waLog.Logger) *Sim {
 	srv.Handle("msg.send", s.handleSend)
 	srv.Handle("msg.delete", s.handleDelete)
 	srv.Handle("msg.edit", s.handleEdit)
+	srv.Handle("msg.forward", s.handleForward)
 	srv.Handle("msg.star", s.handleStar)
 	srv.Handle("chat.read", s.handleRead)
 	srv.Handle("chat.set", s.handleChatSet)
@@ -450,6 +451,31 @@ func (s *Sim) handleEdit(req json.RawMessage) (any, error) {
 	}
 	s.store.ops <- func(t *storeTx) { t.editMessage(r.Chat, r.ID, r.Text) }
 	return nil, nil
+}
+
+// handleForward is msg.forward: the row is the real one's, sent after the first tick, and nothing goes on the wire.
+func (s *Sim) handleForward(req json.RawMessage) (any, error) {
+	r, err := parseForward(req)
+	if err != nil {
+		return nil, err
+	}
+	jid, err := s.chat(r.To)
+	if err != nil {
+		return nil, err
+	}
+	id := fmt.Sprintf("SIMOUT%d", time.Now().UnixNano())
+	_, row, err := s.store.forwardCopy(r, id, time.Now().Unix())
+	if err != nil {
+		return nil, err
+	}
+	_, created := s.store.queueRow(jid, r.To, "", row)
+	if created && chatKind(jid) == chatUser {
+		name := simBookName(r.To)
+		s.store.ops <- func(t *storeTx) { t.setName(r.To, name) }
+	}
+	time.Sleep(simTicks[0])
+	s.store.ops <- func(t *storeTx) { t.sentAs(r.To, id, 0, stateSent) }
+	return map[string]string{"id": id}, nil
 }
 
 func (s *Sim) handleRead(req json.RawMessage) (any, error) {
