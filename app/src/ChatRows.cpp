@@ -52,6 +52,9 @@ VisualNode *ChatRows::createItem(ListView *list, const QString &type)
             qWarning("chat rows: the list has no textScaleChanged");
         if (!connect(list, SIGNAL(compactChanged()), this, SIGNAL(itemUpdatesNeeded())))
             qWarning("chat rows: the list has no compactChanged");
+        // A theme switch too: the colours are set, not bound (Bright's stayed on Dark, the user, 2026-11-17).
+        if (!connect(list, SIGNAL(brightChanged()), this, SIGNAL(itemUpdatesNeeded())))
+            qWarning("chat rows: the list has no brightChanged");
     }
     if (type == "header")
         return new Header();
@@ -248,7 +251,11 @@ void ChatRow::show(const QVariantMap &chat)
     m_initials->setText(str("initials"));
 
     m_name->setText(str("name"));
-    m_name->textStyle()->setColor(Card::text(m_list, m_ui));
+    // Bright's darker text; Dark's the system's own, as before (textOnPlain is dark there: the rows sit on the page).
+    if (Card::bright(m_list))
+        m_name->textStyle()->setColor(Card::text(m_list, m_ui));
+    else
+        m_name->textStyle()->resetColor();
     m_pin->setVisible(flag("pinned"));
     m_pin->setFilterColor(quiet);
     m_mute->setVisible(muted);
@@ -284,7 +291,8 @@ void ChatRow::show(const QVariantMap &chat)
     m_dot->setVisible(unread < 0);
     m_dot->setBackground(badge);
 
-    m_sep->setBackground(palette->plain());
+    // Bright's #F0F0F0 vanished on the white page (the user, Q20, 2026-11-17): a step darker there, as main.qml's lineColor.
+    m_sep->setBackground(Card::bright(m_list) ? Card::color("#D0D0D0") : palette->plain());
 }
 
 // Pressed: the page's pressColor, else none (QML had Color.Transparent).

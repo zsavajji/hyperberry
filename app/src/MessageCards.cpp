@@ -26,6 +26,9 @@ VisualNode *MessageCards::createItem(ListView *list, const QString &type)
         m_list = list;
         if (!connect(list, SIGNAL(textScaleChanged()), this, SIGNAL(itemUpdatesNeeded())))
             qWarning("cards: the list has no textScaleChanged");
+        // A theme switch too: the colours are set, not bound (Bright's stayed on Dark, the user, 2026-11-17).
+        // Not every list of cards has the flag (Starred's): those keep Dark's colours.
+        connect(list, SIGNAL(brightChanged()), this, SIGNAL(itemUpdatesNeeded()));
     }
     if (type == "header")
         return new Header();
