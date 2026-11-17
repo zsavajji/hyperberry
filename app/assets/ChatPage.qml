@@ -32,6 +32,8 @@ Page {
             mediaFailed.show()
         } else if (failedCmd == "msg.edit") {
             editFailed.show()
+        } else if (failedCmd == "msg.forward") {
+            forwardFailed.show()
         } else if (failedCmd == "poll.vote" || failedCmd == "poll.create") {
             page.reactBar() // its own failedCmd words these (ReactBar.qml)
         }
@@ -151,6 +153,10 @@ Page {
         SystemToast {
             id: editFailed
             body: qsTr("Couldn't edit this message")
+        },
+        SystemToast {
+            id: forwardFailed
+            body: qsTr("Couldn't forward this message")
         },
         // Delete for me: the card is already hidden, the request goes when the toast closes. Several
         // deletes while it shows join one batch (show() on a showing toast keeps it up), and Undo
@@ -493,6 +499,10 @@ Page {
                     // Star, or take the star off one that has it: the engine tells the phone, and the card redraws.
                     function star(msg) {
                         engine.request("msg.star", {"chat": page.chat.jid, "id": msg.id, "star": !msg.starred})
+                    }
+                    // Forward: the Send to page, titled Forward to; its pick sends the message (main.qml's forwardTo).
+                    function forward(msg) {
+                        nav.forwardPick({"chat": page.chat.jid, "id": msg.id})
                     }
                     // Edit (ours, a text): the composer takes its text, the bar above says so, Send replaces it.
                     function edit(msg) {

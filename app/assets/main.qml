@@ -306,6 +306,21 @@ TabbedPane {
                 at(0).openChat(chat).share(share.path, share.text)
             }
 
+            // The Send to page over the chat, for a message to forward; SharePage's pick comes back as forwardTo.
+            function forwardPick(fwd) {
+                var picker = shareDef.createObject()
+                picker.forward = fwd
+                push(picker)
+            }
+
+            // SharePage's pick for a forward: the engine sends the message, and the chat opens as after a share.
+            function forwardTo(chat, fwd) {
+                engine.request("msg.forward", {"chat": fwd.chat, "id": fwd.id, "to": chat.jid})
+                root.activeTab = chatsTab
+                backToList()
+                at(0).openChat(chat)
+            }
+
             // A photo full screen (step 6.1): a received one, or an info page's picture.
             function showPhoto(path) {
                 var viewer = viewerDef.createObject()
