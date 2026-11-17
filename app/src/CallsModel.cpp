@@ -112,6 +112,9 @@ void CallsModel::countSoon()
 // Our own incoming missed calls since the Calls tab was last shown: how many, and the newest by name and time.
 void CallsModel::count()
 {
+    // A call missed while the tab shows is seen there: it doesn't wait in the frame for the next visit.
+    if (m_active)
+        markSeen();
     QSqlDatabase db = QSqlDatabase::database(kDb, false);
     if (!db.isOpen() && !db.open())
         return;
