@@ -194,7 +194,11 @@ TabbedPane {
                     id: inviteFailed
                 }
             ]
-            onPopTransitionEnded: page.destroy()
+            onPopTransitionEnded: {
+                if (page) {
+                    page.destroy()
+                }
+            }
             onLinkedChanged: show()
             onCreationCompleted: {
                 // Not a Connections: Cascades' QML has none.
@@ -355,7 +359,11 @@ TabbedPane {
         // A pane of its own, so New call's picker opens inside the tab (the user's ask, 2026-11-07).
         content: NavigationPane {
             id: callsNav
-            onPopTransitionEnded: page.destroy()
+            onPopTransitionEnded: {
+                if (page) {
+                    page.destroy()
+                }
+            }
         }
     }
     // The stories of the people we know (docs/plan/stories.md): a grid of tiles, one per poster. The badge on
@@ -368,7 +376,11 @@ TabbedPane {
         unreadContentCount: storyList.unseen
         content: NavigationPane {
             id: storiesNav
-            onPopTransitionEnded: page.destroy()
+            onPopTransitionEnded: {
+                if (page) {
+                    page.destroy()
+                }
+            }
             // A page that waits while another is over it (the story viewer under its viewers' page) goes on when it is the top again.
             onTopChanged: {
                 if (storiesNav.top && storiesNav.top.uncovered) {

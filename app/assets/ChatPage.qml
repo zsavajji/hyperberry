@@ -426,7 +426,13 @@ Page {
         status: ctl.status
         members: ctl.groupInfo.participants ? ctl.groupInfo.participants.length : 0
         onTapped: infoAction.showInfo()
-        onBack: nav.pop()
+        // Only while this page is on top: a second tap during the slide out popped the chat list too, the last page,
+        // and left the app black (found in Tengram, the same code, 2026-11-17).
+        onBack: {
+            if (nav.top == page) {
+                nav.pop()
+            }
+        }
         onGroupCall: page.pickGroupCall()
     }
     // A group call (step 7d.G4): who to ring is picked on a page of its own; it pops once the call
