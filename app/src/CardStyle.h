@@ -31,6 +31,8 @@ inline int smallSize(bb::cascades::ListView *list) { return list->property("smal
 inline float textScale(bb::cascades::ListView *list) { return list->property("textScale").toFloat(); }
 inline QString quoteTint(bb::cascades::ListView *list) { return list->property("quoteTint").toString(); }
 inline QString pressColor(bb::cascades::ListView *list) { return list->property("pressColor").toString(); }
+// Our cards' colour, "" for the page's own (ChatPage.qml's ownColor).
+inline QString ownColor(bb::cascades::ListView *list) { return list->property("ownColor").toString(); }
 inline QString foundId(bb::cascades::ListView *list) { return list->property("foundId").toString(); }
 inline bb::cascades::TextStyle emojiStyle(bb::cascades::ListView *list)
 {

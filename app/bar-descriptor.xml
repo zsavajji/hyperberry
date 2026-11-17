@@ -142,5 +142,5 @@
          working Hub account on the Q10. -->
     <permission system="true">_sys_access_pim_unified</permission>
     <env var="LD_LIBRARY_PATH" value="app/native/lib:/usr/lib/qt4/lib"/>
-    <env var="CASCADES_THEME" value="dark?primaryColor=0x1BD862&amp;primaryBase=0x14A249"/>
+    <env var="CASCADES_THEME" value="dark?primaryColor=0x154D37&amp;primaryBase=0x113E2C"/>
 </qnx>

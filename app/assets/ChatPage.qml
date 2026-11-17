@@ -603,6 +603,8 @@ Page {
                     // a bright one.
                     property string quoteTint: settings.theme == 1 ? "#0D000000" : "#14FFFFFF"
                     property string pressColor: nav.pressColor
+                    // Our cards on Bright (the user's, 2026-11-17); "" keeps the page's colour, as on Dark.
+                    property string ownColor: settings.theme == 1 ? "#d9fdd2" : ""
                     dataModel: ctl.messages
                     // Bottom to top: the model is newest first, so the list opens at the newest message
                     // with no scroll call, and an older page is appended at the visual top without

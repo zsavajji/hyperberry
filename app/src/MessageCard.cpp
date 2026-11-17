@@ -287,14 +287,17 @@ void MessageCard::show(const QVariantMap &msg)
 }
 
 // Pressed: the page's pressColor. A search match: the primary colour at 20 % over the page, so it reads
-// in both themes (25 % until the user found it strong, 2026-11-17). Else the page's own colour; a sticker has none, it sits on the page (user).
+// in both themes (25 % until the user found it strong, 2026-11-17). Ours on Bright: the list's ownColor.
+// Else the page's own colour; a sticker has none, it sits on the page (user).
 // An empty foundId matches nothing.
 void MessageCard::paintBackground()
 {
     const QString found = Card::foundId(m_list);
     const bool match = !found.isEmpty() && found == str("id");
+    const QString own = flag("out") ? Card::ownColor(m_list) : QString();
     const Color c = m_pressed ? Card::color(Card::pressColor(m_list))
-                  : match ? Card::color("#331bd862") : m_ui->palette()->plain();
+                  : match ? Card::color("#331bd862")
+                  : !own.isEmpty() ? Card::color(own) : m_ui->palette()->plain();
     m_bg->setVisible(m_pressed || match || str("media") != "sticker");
     m_bg->setFilterColor(c);
     m_tailL->setFilterColor(c);
@@ -338,8 +341,7 @@ void MessageCard::restyle()
 
     const Color quiet = m_ui->palette()->secondaryTextOnPlain();
     m_barL->setFilterColor(quiet);
-    // The primary green 20 % darker, quieter under our cards (the user, 2026-11-17).
-    m_barR->setFilterColor(Card::color("#16AD4E"));
+    m_barR->setFilterColor(m_ui->palette()->primary());
     const float side = Card::side(m_ui, scale);
     m_root->setTopPadding(m_ui->du(1.5 * scale));
     m_card->setLeftPadding(side);

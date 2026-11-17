@@ -40,7 +40,7 @@ Container {
         preferredHeight: slider.px(66)
         scalingMethod: ScalingMethod.AspectFit
         imageSource: "file:///usr/share/icons/ic_phone.png"
-        filterColor: Color.create("#1bd862") // the primary colour, the user's ask (2026-11-07)
+        filterColor: ui.palette.primary // the accent, the user's ask (2026-11-07)
     }
     ImageView {
         id: knob

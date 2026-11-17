@@ -62,13 +62,15 @@ void Settings::store(const char *key, const QVariant &value)
     m_file.sync();
 }
 
-// With the primary colours of the bar descriptor's CASCADES_THEME, so a switch keeps them.
+// The accent per theme (the user's, 2026-11-17): #1eaa61 on Bright, #154d37 on Dark, each base 20 %
+// darker. Dark's is the bar descriptor's CASCADES_THEME, the colours before this runs.
 void Settings::applyTheme()
 {
     using namespace bb::cascades;
+    const bool bright = theme() == 1;
     Application::instance()->themeSupport()->setVisualStyleAndPrimaryColor(
-        theme() == 1 ? VisualStyle::Bright : VisualStyle::Dark, Color::fromARGB(0xff1bd862),
-        Color::fromARGB(0xff14a249));
+        bright ? VisualStyle::Bright : VisualStyle::Dark, Color::fromARGB(bright ? 0xff1eaa61 : 0xff154d37),
+        Color::fromARGB(bright ? 0xff18884e : 0xff113e2c));
 }
 
 void Settings::setTheme(int value)
