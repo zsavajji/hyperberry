@@ -96,7 +96,12 @@ func (s *Session) uploadVoice(cli *whatsmeow.Client, jid types.JID, chat, id str
 		}
 		var resp whatsmeow.SendResponse
 		if resp, err = cli.SendMessage(ctx, jid, &waE2E.Message{AudioMessage: am}, whatsmeow.SendRequestExtra{ID: id}); err == nil {
-			s.store.ops <- func(t *storeTx) { t.sentAs(chat, id, resp.Timestamp.Unix(), stateSent) }
+			// The upload, as uploadMedia keeps a file's: a forward sends it again (forward.go).
+			info, _ := json.Marshal(mediaInfo{up.DirectPath, up.MediaKey, up.FileEncSHA256, up.FileSHA256, up.FileLength, mime})
+			s.store.ops <- func(t *storeTx) {
+				t.sentAs(chat, id, resp.Timestamp.Unix(), stateSent)
+				t.exec("UPDATE messages SET media = ? WHERE chat = ? AND id = ?", string(info), chat, id)
+			}
 			return
 		}
 	}
