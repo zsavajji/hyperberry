@@ -224,10 +224,13 @@ func (st *Store) apply(ctx context.Context, t *storeTx, cli *whatsmeow.Client, k
 		t.addUnread(key, 1)
 		t.notifyIncoming(key)
 	}
-	if live && fresh && row.MediaState == 1 && !isChannel(key) && (row.Kind == msgVoice || row.Kind == msgPhoto || row.Kind == msgSticker) {
-		go st.liveMedia(cli, row) // never in the writer: it is a network call; the rest, and a channel's media, wait for a tap
-	}
-	if live && fresh && row.Kind == msgVideo && row.MediaState == 1 && !isChannel(key) {
-		go st.liveVideoThumb(cli, row) // the video itself waits for a tap: only its larger thumbnail comes
+	if live && fresh && row.MediaState == 1 && !isChannel(key) {
+		// Never in the writer: it is a network call. What the user's categories (prefs.go) leave out, and a channel's
+		// media, wait for a tap; a video that waits still gets its larger thumbnail, one that downloads has no need.
+		if st.nt.autoDownload(row.Kind) {
+			go st.liveMedia(cli, row)
+		} else if row.Kind == msgVideo {
+			go st.liveVideoThumb(cli, row)
+		}
 	}
 }

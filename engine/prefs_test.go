@@ -49,6 +49,43 @@ func TestPrefsMerge(t *testing.T) {
 	}
 }
 
+func TestPrefsAutoDownload(t *testing.T) {
+	dir := t.TempDir()
+	n := newNotifier(dir, waLog.Noop)
+	kinds := []int{msgPhoto, msgVoice, msgAudio, msgVideo, msgDoc, msgSticker, msgText, msgLocation}
+	check := func(when string, want ...bool) {
+		t.Helper()
+		for i, k := range kinds {
+			if got := n.autoDownload(k); got != want[i] {
+				t.Errorf("%s: kind %d downloads %v", when, k, got)
+			}
+		}
+	}
+	check("defaults", true, true, true, false, false, true, false, false)
+	// Only the new fields are a request of their own, and each moves its own category.
+	if _, err := n.setPrefs([]byte(`{"autoVideo":true,"autoDoc":true}`)); err != nil {
+		t.Fatal(err)
+	}
+	check("video and doc on", true, true, true, true, true, true, false, false)
+	if _, err := n.setPrefs([]byte(`{"autoPhoto":false,"autoAudio":false,"autoVideo":false}`)); err != nil {
+		t.Fatal(err)
+	}
+	check("photo, audio and video off", false, false, false, false, true, true, false, false)
+	if _, err := n.setPrefs([]byte(`{"autoPhoto":true}`)); err != nil {
+		t.Fatal(err)
+	}
+	check("photo on again", true, false, false, false, true, true, false, false)
+	n.close()
+	again := newNotifier(dir, waLog.Noop) // what a restart reads
+	defer again.close()
+	if !again.autoDownload(msgPhoto) || again.autoDownload(msgVoice) || !again.autoDownload(msgDoc) {
+		t.Errorf("after a restart: %+v", again.prefs)
+	}
+	if _, err := again.setPrefs([]byte(`{}`)); err == nil {
+		t.Error("an empty prefs.set: no error")
+	}
+}
+
 func TestRewritePreviews(t *testing.T) {
 	t.Cleanup(func() { setLanguage("") })
 	tx, _ := newTestTx(t)

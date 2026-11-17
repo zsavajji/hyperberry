@@ -10,6 +10,10 @@ import (
 type prefs struct {
 	NotifyPreview *bool   `json:"notifyPreview,omitempty"`
 	MediaOnMobile *bool   `json:"mediaOnMobile,omitempty"`
+	AutoPhoto     *bool   `json:"autoPhoto,omitempty"`
+	AutoAudio     *bool   `json:"autoAudio,omitempty"`
+	AutoVideo     *bool   `json:"autoVideo,omitempty"`
+	AutoDoc       *bool   `json:"autoDoc,omitempty"`
 	Language      *string `json:"language,omitempty"`
 	CacheMB       *int    `json:"cacheMB,omitempty"`
 }
@@ -28,6 +32,25 @@ func (n *Notifier) mediaOnMobile() bool {
 	return n.prefs.MediaOnMobile == nil || *n.prefs.MediaOnMobile
 }
 
+// autoDownload is whether a live message of this kind downloads by itself: photos and audio (voice notes and
+// audio files) on until set otherwise, videos and documents off. A sticker always does: it is small, and the
+// chat fetches it as it draws it. Anything else has no file.
+func (n *Notifier) autoDownload(kind int) bool {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	switch kind {
+	case msgPhoto:
+		return n.prefs.AutoPhoto == nil || *n.prefs.AutoPhoto
+	case msgVoice, msgAudio:
+		return n.prefs.AutoAudio == nil || *n.prefs.AutoAudio
+	case msgVideo:
+		return n.prefs.AutoVideo != nil && *n.prefs.AutoVideo
+	case msgDoc:
+		return n.prefs.AutoDoc != nil && *n.prefs.AutoDoc
+	}
+	return kind == msgSticker
+}
+
 // cacheLimit is what data/cache/ may hold, in bytes.
 func (n *Notifier) cacheLimit() int64 {
 	n.mu.Lock()
@@ -42,8 +65,9 @@ func (n *Notifier) cacheLimit() int64 {
 // is true when the language differs from the stored one, so the previews need wording again.
 func (n *Notifier) setPrefs(req json.RawMessage) (langChanged bool, err error) {
 	var r prefs
-	if json.Unmarshal(req, &r) != nil || r.NotifyPreview == nil && r.MediaOnMobile == nil && r.Language == nil && r.CacheMB == nil {
-		return false, &Error{"bad_request", "prefs.set needs notifyPreview, mediaOnMobile, language or cacheMB"}
+	if json.Unmarshal(req, &r) != nil || r.NotifyPreview == nil && r.MediaOnMobile == nil && r.AutoPhoto == nil && r.AutoAudio == nil &&
+		r.AutoVideo == nil && r.AutoDoc == nil && r.Language == nil && r.CacheMB == nil {
+		return false, &Error{"bad_request", "prefs.set needs notifyPreview, mediaOnMobile, autoPhoto, autoAudio, autoVideo, autoDoc, language or cacheMB"}
 	}
 	if r.CacheMB != nil && (*r.CacheMB < cacheDefaultMB || *r.CacheMB > cacheMaxMB) {
 		return false, &Error{"bad_request", "cacheMB is 64 to 512"}
@@ -55,6 +79,18 @@ func (n *Notifier) setPrefs(req json.RawMessage) (langChanged bool, err error) {
 	}
 	if r.MediaOnMobile != nil {
 		n.prefs.MediaOnMobile = r.MediaOnMobile
+	}
+	if r.AutoPhoto != nil {
+		n.prefs.AutoPhoto = r.AutoPhoto
+	}
+	if r.AutoAudio != nil {
+		n.prefs.AutoAudio = r.AutoAudio
+	}
+	if r.AutoVideo != nil {
+		n.prefs.AutoVideo = r.AutoVideo
+	}
+	if r.AutoDoc != nil {
+		n.prefs.AutoDoc = r.AutoDoc
 	}
 	if r.Language != nil {
 		langChanged = n.prefs.Language == nil || *n.prefs.Language != *r.Language

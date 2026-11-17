@@ -98,19 +98,24 @@ func (st *Store) downloadVoice(ctx context.Context, cli *whatsmeow.Client, dir s
 // onCellular is whether the default network is mobile data; tests swap it.
 var onCellular = cellular
 
-// holdLive: a live photo or voice note waits for a tap on mobile data when the user turned that
-// off (step 6.6c). Stickers still come: they're small, and the chat fetches them as it draws them.
+// holdLive: a live message's file waits for a tap on mobile data when the user turned that
+// off (step 6.6c), on top of the categories. Stickers still come: they're small, and the chat fetches them as it draws them.
 func (st *Store) holdLive(row msgRow) bool {
 	return row.Kind != msgSticker && !st.nt.mediaOnMobile() && onCellular()
 }
 
-// liveMedia downloads a voice note, a photo or a sticker that just arrived.
+// liveMedia downloads the file of a message that just arrived and that the user's categories let come by itself: a voice
+// note, a photo, a sticker, and, when they are on, an audio file, a video or a document.
 func (st *Store) liveMedia(cli *whatsmeow.Client, row msgRow) {
 	if st.holdLive(row) {
 		st.log.Debugf("media %s: waits for a tap, mobile data is off", row.ID)
 		return
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
+	timeout := sendTimeout // a video or a file can be big: it gets what a tap's download gets
+	if row.Kind == msgVideo || row.Kind == msgDoc || row.Kind == msgAudio {
+		timeout = mediaTimeout
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	if _, err := st.downloadMedia(ctx, cli, st.srv.dir, row); err != nil {
 		st.log.Warnf("media %s: %v", row.ID, err)
