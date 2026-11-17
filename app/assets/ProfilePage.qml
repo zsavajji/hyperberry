@@ -108,6 +108,17 @@ Page {
         SystemToast {
             id: unreadableToast
             body: qsTr("Couldn't read that picture.")
+        },
+        SystemDialog {
+            id: unlinkDialog
+            title: qsTr("Unlink this device?")
+            body: qsTr("This device is removed from your linked devices and its chats are deleted here.")
+            confirmButton.label: qsTr("Unlink")
+            cancelButton.label: qsTr("Cancel")
+            onFinished: {
+                if (value == SystemUiResult.ConfirmButtonSelection)
+                    engine.request("link.logout", {})
+            }
         }
     ]
     ScrollView {
@@ -242,6 +253,21 @@ Page {
                 }
                 onTouch: aboutBox.pressed = event.isDown() || event.isMove()
                 onTouchExit: aboutBox.pressed = false
+            }
+            // Last: the one action that ends the link. In a padded container, since margins never
+            // space from the edge of the page's own container.
+            Container {
+                horizontalAlignment: HorizontalAlignment.Fill
+                topMargin: ui.du(4)
+                leftPadding: ui.du(2)
+                rightPadding: ui.du(2)
+                bottomPadding: ui.du(2)
+                Button {
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    text: qsTr("Unlink this device")
+                    enabled: engine.linked
+                    onClicked: unlinkDialog.show()
+                }
             }
         }
     }
