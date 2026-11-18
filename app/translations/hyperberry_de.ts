@@ -2653,5 +2653,17 @@
         <source>Voice notes' decoded audio and photo previews; they're made again when needed.</source>
         <translation>Dekodierte Audiodaten von Sprachnachrichten und Fotovorschauen; sie werden bei Bedarf neu erstellt.</translation>
     </message>
+    <message>
+        <source>Network</source>
+        <translation>Netzwerk</translation>
+    </message>
+    <message>
+        <source>Cloudflare DNS</source>
+        <translation>Cloudflare DNS</translation>
+    </message>
+    <message>
+        <source>Finds WhatsApp's servers through 1.1.1.1 and 1.0.0.1 instead of your network's DNS. Try it if messages or media don't go through.</source>
+        <translation>Findet die Server von WhatsApp über 1.1.1.1 und 1.0.0.1 statt über das DNS deines Netzwerks. Probier es aus, wenn Nachrichten oder Medien nicht ankommen.</translation>
+    </message>
 </context>
 </TS>

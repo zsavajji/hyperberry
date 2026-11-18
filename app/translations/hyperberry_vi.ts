@@ -2650,5 +2650,17 @@
         <source>Voice notes' decoded audio and photo previews; they're made again when needed.</source>
         <translation>Âm thanh đã giải mã của tin nhắn thoại và bản xem trước ảnh; chúng được tạo lại khi cần.</translation>
     </message>
+    <message>
+        <source>Network</source>
+        <translation>Mạng</translation>
+    </message>
+    <message>
+        <source>Cloudflare DNS</source>
+        <translation>Cloudflare DNS</translation>
+    </message>
+    <message>
+        <source>Finds WhatsApp's servers through 1.1.1.1 and 1.0.0.1 instead of your network's DNS. Try it if messages or media don't go through.</source>
+        <translation>Tìm máy chủ của WhatsApp qua 1.1.1.1 và 1.0.0.1 thay vì DNS của mạng. Hãy thử nếu tin nhắn hoặc tệp đa phương tiện không gửi được.</translation>
+    </message>
 </context>
 </TS>
