@@ -1,5 +1,10 @@
 // hyperberryd is the WhatsApp engine of HyperBerry (PLAN.md §6). It serves the UI over
 // loopback TCP.
+
+// Names through libsocket's getaddrinfo: BB10 keeps each interface's DNS servers in
+// /pps/services/networking/interfaces, and on mobile data _CS_RESOLVE (all Go's resolver
+// reads) holds msm1's placeholder 0.0.0.0, so no lookup worked (a user's log, 2026-11-18).
+//go:debug netdns=cgo
 package main
 
 import (
