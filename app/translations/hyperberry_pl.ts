@@ -2668,5 +2668,13 @@
         <source>Finds WhatsApp's servers through 1.1.1.1 and 1.0.0.1 instead of your network's DNS. Try it if messages or media don't go through.</source>
         <translation>Wyszukuje serwery WhatsApp przez 1.1.1.1 i 1.0.0.1 zamiast przez DNS sieci. Spróbuj, jeśli wiadomości lub multimedia nie przechodzą.</translation>
     </message>
+    <message>
+        <source>%1 isn&apos;t on WhatsApp</source>
+        <translation>%1 nie ma WhatsAppa</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t open this link. Try again in a moment.</source>
+        <translation>Nie udało się otworzyć tego linku. Spróbuj ponownie za chwilę.</translation>
+    </message>
 </context>
 </TS>

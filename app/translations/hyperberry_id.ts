@@ -2662,5 +2662,13 @@
         <source>Finds WhatsApp's servers through 1.1.1.1 and 1.0.0.1 instead of your network's DNS. Try it if messages or media don't go through.</source>
         <translation>Mencari server WhatsApp lewat 1.1.1.1 dan 1.0.0.1, bukan lewat DNS jaringan. Coba aktifkan jika pesan atau media tidak terkirim.</translation>
     </message>
+    <message>
+        <source>%1 isn&apos;t on WhatsApp</source>
+        <translation>%1 tidak ada di WhatsApp</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t open this link. Try again in a moment.</source>
+        <translation>Tidak dapat membuka tautan ini. Coba lagi sebentar lagi.</translation>
+    </message>
 </context>
 </TS>

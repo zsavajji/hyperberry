@@ -2662,5 +2662,13 @@
         <source>Finds WhatsApp's servers through 1.1.1.1 and 1.0.0.1 instead of your network's DNS. Try it if messages or media don't go through.</source>
         <translation>Tìm máy chủ của WhatsApp qua 1.1.1.1 và 1.0.0.1 thay vì DNS của mạng. Hãy thử nếu tin nhắn hoặc tệp đa phương tiện không gửi được.</translation>
     </message>
+    <message>
+        <source>%1 isn&apos;t on WhatsApp</source>
+        <translation>%1 không dùng WhatsApp</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t open this link. Try again in a moment.</source>
+        <translation>Không thể mở liên kết này. Hãy thử lại sau giây lát.</translation>
+    </message>
 </context>
 </TS>
