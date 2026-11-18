@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net"
 	"os"
 	"path/filepath"
 	"testing"
@@ -157,4 +158,28 @@ func TestPrefsLowerLimitPrunes(t *testing.T) {
 		time.Sleep(10 * time.Millisecond)
 	}
 	t.Error("the file over the new limit is still there")
+}
+
+func TestPrefsCloudflareDNS(t *testing.T) {
+	t.Cleanup(func() { useCloudflareDNS(false) })
+	dir := t.TempDir()
+	n := newNotifier(dir, waLog.Noop)
+	if net.DefaultResolver != systemResolver {
+		t.Error("Cloudflare before it was set")
+	}
+	n.setPrefs([]byte(`{"cloudflareDNS":true}`))
+	if net.DefaultResolver != cloudflareResolver {
+		t.Error("prefs.set didn't switch to Cloudflare")
+	}
+	n.close()
+	useCloudflareDNS(false)
+	n = newNotifier(dir, waLog.Noop) // the stored choice at start
+	defer n.close()
+	if net.DefaultResolver != cloudflareResolver {
+		t.Error("not Cloudflare after a restart")
+	}
+	n.setPrefs([]byte(`{"cloudflareDNS":false}`))
+	if net.DefaultResolver != systemResolver {
+		t.Error("prefs.set didn't switch back")
+	}
 }

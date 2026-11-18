@@ -188,8 +188,12 @@ func newNotifier(dir string, log waLog.Logger) *Notifier {
 		// assets from /apps/<pkg>/public/.
 		assets: "/apps/" + filepath.Base(filepath.Dir(dir)) + "/public/",
 		open:   hubOpenFn, account: hubAccountFn, item: hubItemFn, remove: hubRemoveFn, items: map[string]bool{}}
-	if b, err := os.ReadFile(n.path); err == nil && json.Unmarshal(b, &n.prefs) == nil && n.prefs.Language != nil {
-		setLanguage(*n.prefs.Language)
+	if b, err := os.ReadFile(n.path); err == nil && json.Unmarshal(b, &n.prefs) == nil {
+		if n.prefs.Language != nil {
+			setLanguage(*n.prefs.Language)
+		}
+		// Before the session dials: the stored choice holds from the first lookup.
+		useCloudflareDNS(n.prefs.CloudflareDNS != nil && *n.prefs.CloudflareDNS)
 	}
 	var hs hubState
 	if b, err := os.ReadFile(n.state); err == nil && json.Unmarshal(b, &hs) == nil {

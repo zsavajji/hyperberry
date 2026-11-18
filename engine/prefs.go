@@ -16,6 +16,7 @@ type prefs struct {
 	AutoDoc       *bool   `json:"autoDoc,omitempty"`
 	Language      *string `json:"language,omitempty"`
 	CacheMB       *int    `json:"cacheMB,omitempty"`
+	CloudflareDNS *bool   `json:"cloudflareDNS,omitempty"` // off until set: the network's own DNS
 }
 
 // notifyPreview is whether the Hub shows the message text; on until set otherwise.
@@ -66,8 +67,8 @@ func (n *Notifier) cacheLimit() int64 {
 func (n *Notifier) setPrefs(req json.RawMessage) (langChanged bool, err error) {
 	var r prefs
 	if json.Unmarshal(req, &r) != nil || r.NotifyPreview == nil && r.MediaOnMobile == nil && r.AutoPhoto == nil && r.AutoAudio == nil &&
-		r.AutoVideo == nil && r.AutoDoc == nil && r.Language == nil && r.CacheMB == nil {
-		return false, &Error{"bad_request", "prefs.set needs notifyPreview, mediaOnMobile, autoPhoto, autoAudio, autoVideo, autoDoc, language or cacheMB"}
+		r.AutoVideo == nil && r.AutoDoc == nil && r.Language == nil && r.CacheMB == nil && r.CloudflareDNS == nil {
+		return false, &Error{"bad_request", "prefs.set needs notifyPreview, mediaOnMobile, autoPhoto, autoAudio, autoVideo, autoDoc, language, cacheMB or cloudflareDNS"}
 	}
 	if r.CacheMB != nil && (*r.CacheMB < cacheDefaultMB || *r.CacheMB > cacheMaxMB) {
 		return false, &Error{"bad_request", "cacheMB is 64 to 512"}
@@ -99,6 +100,10 @@ func (n *Notifier) setPrefs(req json.RawMessage) (langChanged bool, err error) {
 	}
 	if r.CacheMB != nil {
 		n.prefs.CacheMB = r.CacheMB
+	}
+	if r.CloudflareDNS != nil {
+		n.prefs.CloudflareDNS = r.CloudflareDNS
+		useCloudflareDNS(*r.CloudflareDNS)
 	}
 	b, _ := json.Marshal(n.prefs)
 	return langChanged, writeAtomic(n.path, b)
