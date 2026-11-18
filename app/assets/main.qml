@@ -135,6 +135,10 @@ TabbedPane {
             property string pendingChat
             // The Share menu's {path, text}, held like pendingChat until the chat list is up.
             property variant pendingShare: ({})
+            // A WhatsApp address from elsewhere on the phone, held until the engine is up; then a
+            // number's chat (Invites.chatLinked) as {jid, phone, text}, held like pendingChat.
+            property string pendingLink
+            property variant pendingNumber: ({})
             attachedObjects: [
                 ComponentDefinition {
                     id: chatsDef
@@ -210,6 +214,8 @@ TabbedPane {
                 openRequests.shared.connect(nav.shareRequested)
                 invites.offered.connect(nav.askToJoin)
                 invites.joined.connect(nav.openRequested)
+                invites.chatLinked.connect(nav.numberRequested)
+                openRequests.link.connect(nav.linkRequested)
                 // setCover, as the skills have it: cover belongs to Application, not to a page.
                 Application.setCover(coverDef.createObject())
                 show()
@@ -222,6 +228,10 @@ TabbedPane {
                     inviteFailed.body = code == "invite_invalid" ? qsTr("This invite doesn't work any more")
                                       : code == "invite_not_allowed" ? qsTr("WhatsApp won't let this number join by link. If an admin removed it, an admin has to add it back.")
                                       : qsTr("Couldn't open this invite. Try again in a moment.")
+                    inviteFailed.show()
+                } else if (failedCmd == "contact.lookup") {
+                    inviteFailed.body = engine.failure.code == "not_on_whatsapp" ? qsTr("%1 isn't on WhatsApp").arg(engine.failure.message)
+                                      : qsTr("Couldn't open this link. Try again in a moment.")
                     inviteFailed.show()
                 }
             }
@@ -265,6 +275,16 @@ TabbedPane {
                 openPending()
             }
 
+            function linkRequested(url) {
+                pendingLink = url
+                openPending()
+            }
+
+            function numberRequested(jid, phone, text) {
+                pendingNumber = {"jid": jid, "phone": phone, "text": text}
+                openPending()
+            }
+
             function shareRequested(path, text) {
                 pendingShare = {"path": path, "text": text}
                 openPending()
@@ -275,6 +295,24 @@ TabbedPane {
             function openPending() {
                 if (!linked || count() == 0)
                     return
+                if (pendingLink != "") {
+                    var url = pendingLink
+                    pendingLink = ""
+                    invites.openExternal(url)
+                }
+                if (pendingNumber.jid) {
+                    // A chat that may not exist yet, as openRow's; the link's text waits in the composer.
+                    var n = pendingNumber
+                    pendingNumber = {}
+                    var row = chats.chat(n.jid)
+                    if (!row.jid) {
+                        row = {"jid": n.jid, "name": "+" + n.phone, "initials": "", "color": "#087099"}
+                    }
+                    root.activeTab = chatsTab
+                    backToList()
+                    at(0).openChat(row).share("", n.text)
+                    return
+                }
                 if (pendingShare.path || pendingShare.text) {
                     var picker = shareDef.createObject()
                     picker.share = pendingShare

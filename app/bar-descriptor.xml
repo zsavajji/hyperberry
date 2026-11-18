@@ -81,6 +81,15 @@
             <mime-type>*</mime-type>
             <property var="uris" value="file://"/>
         </filter>
+        <!-- WhatsApp addresses tapped anywhere (Hub, messages, other apps): a number's chat, a group
+             or channel invite. A more specific uri wins over the browser's http://. Invites.cpp takes
+             them, and sends what it doesn't (wa.me/qr/..., wa.me/message/...) on to the browser. -->
+        <filter>
+            <action>bb.action.OPEN</action>
+            <action>bb.action.VIEW</action>
+            <mime-type>*</mime-type>
+            <property var="uris" value="http://wa.me/,https://wa.me/,http://www.wa.me/,https://www.wa.me/,http://chat.whatsapp.com/,https://chat.whatsapp.com/,http://api.whatsapp.com/send,https://api.whatsapp.com/send,https://www.whatsapp.com/channel/,https://whatsapp.com/channel/,whatsapp://"/>
+        </filter>
         <filter>
             <action>bb.action.SHARE</action>
             <mime-type>text/plain</mime-type>

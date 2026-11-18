@@ -20,6 +20,8 @@ public:
 
 signals:
     void openChat(const QString &jid);
+    // A WhatsApp address tapped elsewhere on the phone (bar-descriptor's filter): Invites opens it.
+    void link(const QString &url);
     // The Share menu's file (a local path) or text; one of the two is empty.
     void shared(const QString &path, const QString &text);
 
