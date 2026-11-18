@@ -143,6 +143,42 @@ Page {
                 }
             }
             Header {
+                title: qsTr("Network")
+            }
+            Container {
+                topPadding: zoom * ui.du(2)
+                leftPadding: zoom * ui.du(2)
+                rightPadding: zoom * ui.du(2)
+                bottomPadding: zoom * ui.du(2)
+                Container {
+                    layout: StackLayout {
+                        orientation: LayoutOrientation.LeftToRight
+                    }
+                    Container {
+                        layoutProperties: StackLayoutProperties {
+                            spaceQuota: 1
+                        }
+                        verticalAlignment: VerticalAlignment.Center
+                        Label {
+                            text: qsTr("Cloudflare DNS")
+                            bottomMargin: 0
+                        }
+                        Label {
+                            text: qsTr("Finds WhatsApp's servers through 1.1.1.1 and 1.0.0.1 instead of your network's DNS. Try it if messages or media don't go through.")
+                            multiline: true
+                            topMargin: 0
+                            textStyle.base: SystemDefaults.TextStyles.SubtitleText
+                            textStyle.color: ui.palette.secondaryTextOnPlain
+                        }
+                    }
+                    ToggleButton {
+                        verticalAlignment: VerticalAlignment.Center
+                        checked: settings.cloudflareDns
+                        onCheckedChanged: settings.cloudflareDns = checked
+                    }
+                }
+            }
+            Header {
                 title: qsTr("Storage")
             }
             Container {

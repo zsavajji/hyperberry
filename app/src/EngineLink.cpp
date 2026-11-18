@@ -209,6 +209,7 @@ void EngineLink::readLines()
                     prefs["autoAudio"] = file.value("autoAudio", true).toBool();
                     prefs["autoVideo"] = file.value("autoVideo", false).toBool();
                     prefs["autoDoc"] = file.value("autoDoc", false).toBool();
+                    prefs["cloudflareDNS"] = file.value("cloudflareDNS", false).toBool();
                     prefs["language"] = m_language;
                     prefs["cacheMB"] = qBound(64, file.value("cacheLimit", 64).toInt(), 512);
                     request("prefs.set", prefs);

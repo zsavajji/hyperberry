@@ -23,6 +23,8 @@ class Settings : public QObject
     Q_PROPERTY(bool autoVideo READ autoVideo WRITE setAutoVideo NOTIFY autoDownloadChanged)
     Q_PROPERTY(bool autoDoc READ autoDoc WRITE setAutoDoc NOTIFY autoDownloadChanged)
     // Off for a phone whose proximity sensor misreads: voice notes stay on the speaker, the call screen never blanks.
+    // The engine's lookups through Cloudflare (1.1.1.1, 1.0.0.1) instead of the network's DNS; off by default.
+    Q_PROPERTY(bool cloudflareDns READ cloudflareDns WRITE setCloudflareDns NOTIFY cloudflareDnsChanged)
     Q_PROPERTY(bool earSensor READ earSensor WRITE setEarSensor NOTIFY earSensorChanged)
     Q_PROPERTY(int cacheLimit READ cacheLimit WRITE setCacheLimit NOTIFY cacheLimitChanged)         // MB
     Q_PROPERTY(int textSize READ textSize WRITE setTextSize NOTIFY textSizeChanged) // 0..2
@@ -44,6 +46,7 @@ public:
     bool autoVideo() const;
     bool autoDoc() const;
     bool earSensor() const;
+    bool cloudflareDns() const;
     int cacheLimit() const;
     int textSize() const;
     qreal textScale() const;
@@ -58,6 +61,7 @@ public:
     void setAutoAudio(bool on);
     void setAutoVideo(bool on);
     void setAutoDoc(bool on);
+    void setCloudflareDns(bool on);
     void setEarSensor(bool on);
     void setCacheLimit(int mb);
     void setTextSize(int size);
@@ -72,6 +76,7 @@ signals:
     void notifyPreviewChanged();
     void startAtBootChanged();
     void mediaOnMobileChanged();
+    void cloudflareDnsChanged();
     void autoDownloadChanged();
     void earSensorChanged();
     void cacheLimitChanged();

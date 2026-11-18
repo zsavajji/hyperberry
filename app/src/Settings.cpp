@@ -48,6 +48,7 @@ bool Settings::autoAudio() const { return m_file.value("autoAudio", true).toBool
 bool Settings::autoVideo() const { return m_file.value("autoVideo", false).toBool(); }
 bool Settings::autoDoc() const { return m_file.value("autoDoc", false).toBool(); }
 bool Settings::earSensor() const { return m_file.value("earSensor", true).toBool(); }
+bool Settings::cloudflareDns() const { return m_file.value("cloudflareDNS", false).toBool(); }
 int Settings::cacheLimit() const { return qBound(64, m_file.value("cacheLimit", 64).toInt(), 512); }
 // Larger (3, 140 %) went at the user's word (2026-11-01); a saved 3 reads as Large.
 int Settings::textSize() const { return qBound(0, m_file.value("textSize", 1).toInt(), 2); }
@@ -188,6 +189,14 @@ void Settings::setMediaOnMobile(bool on)
         return;
     storePref("mediaOnMobile", on);
     emit mediaOnMobileChanged();
+}
+
+void Settings::setCloudflareDns(bool on)
+{
+    if (on == cloudflareDns())
+        return;
+    storePref("cloudflareDNS", on);
+    emit cloudflareDnsChanged();
 }
 
 void Settings::setAutoPhoto(bool on)
