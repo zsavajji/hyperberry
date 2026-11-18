@@ -6,10 +6,10 @@ Container {
     property string clock
     horizontalAlignment: HorizontalAlignment.Fill
     background: ui.palette.plain
-    leftPadding: ui.du(1.5)
-    rightPadding: ui.du(1.5)
-    topPadding: ui.du(1)
-    bottomPadding: ui.du(1)
+    leftPadding: zoom * ui.du(1.5)
+    rightPadding: zoom * ui.du(1.5)
+    topPadding: zoom * ui.du(1)
+    bottomPadding: zoom * ui.du(1)
     layout: StackLayout {
         orientation: LayoutOrientation.LeftToRight
     }

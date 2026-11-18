@@ -45,7 +45,7 @@ Container {
         text: toggle.on ? toggle.textOn : toggle.text
         textFormat: TextFormat.Plain
         textStyle.fontSize: FontSize.PercentageValue
-        textStyle.fontSizeValue: 80
+        textStyle.fontSizeValue: 80 * zoom
         textStyle.textAlign: toggle.stacked ? TextAlign.Center : TextAlign.Default
         textStyle.color: Color.create("#e8e8e8")
     }

@@ -32,7 +32,7 @@ LinkPreview::LinkPreview(ListView *list)
     , m_ui(list->ui())
     , m_invoker(0)
 {
-    setTopMargin(m_ui->du(0.5));
+    setTopMargin(Card::du(m_ui, 0.5));
     setBottomMargin(0);
     setHorizontalAlignment(HorizontalAlignment::Fill);
 
@@ -46,17 +46,17 @@ LinkPreview::LinkPreview(ListView *list)
 
     m_bar = new Container();
     m_bar->setVerticalAlignment(VerticalAlignment::Fill);
-    m_bar->setPreferredWidth(m_ui->du(0.5));
+    m_bar->setPreferredWidth(Card::du(m_ui, 0.5));
 
     // The picture is square and grows with the text size, as the lines beside it do.
     m_thumb = new ImageView();
     m_thumb->setVerticalAlignment(VerticalAlignment::Top);
-    m_thumb->setLeftMargin(m_ui->du(1));
+    m_thumb->setLeftMargin(Card::du(m_ui, 1));
     m_thumb->setScalingMethod(ScalingMethod::AspectFill);
     m_thumb->setLoadEffect(ImageViewLoadEffect::None);
 
     Container *words = new Container();
-    words->setLeftMargin(m_ui->du(1));
+    words->setLeftMargin(Card::du(m_ui, 1));
     Card::quota(words, 1);
 
     m_title = new Label();
@@ -93,8 +93,8 @@ void LinkPreview::show(const QVariantMap &msg)
     m_bar->setBackground(palette->primary());
 
     m_thumb->setVisible(msg.value("hasLinkThumb").toBool());
-    m_thumb->setPreferredWidth(m_ui->du(10 * scale));
-    m_thumb->setPreferredHeight(m_ui->du(10 * scale));
+    m_thumb->setPreferredWidth(Card::du(m_ui, 10 * scale));
+    m_thumb->setPreferredHeight(Card::du(m_ui, 10 * scale));
     m_thumb->setImage(msg.value("linkThumb").value<Image>());
 
     Card::style(m_title, m_list, small);

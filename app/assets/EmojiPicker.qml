@@ -44,8 +44,8 @@ Container {
             property alias image: icon.imageSource
             property alias marked: underline.visible
             signal tapped(int index)
-            preferredWidth: ui.px(72)
-            preferredHeight: ui.px(72)
+            preferredWidth: zoom * ui.px(72)
+            preferredHeight: zoom * ui.px(72)
             layout: DockLayout {}
             gestureHandlers: TapHandler {
                 onTapped: cell.tapped(cell.index)
@@ -54,15 +54,15 @@ Container {
                 id: icon
                 horizontalAlignment: HorizontalAlignment.Center
                 verticalAlignment: VerticalAlignment.Center
-                preferredWidth: ui.px(54)
-                preferredHeight: ui.px(54)
+                preferredWidth: zoom * ui.px(54)
+                preferredHeight: zoom * ui.px(54)
             }
             Container {
                 id: underline
                 visible: false
                 horizontalAlignment: HorizontalAlignment.Fill
                 verticalAlignment: VerticalAlignment.Bottom
-                preferredHeight: ui.px(5)
+                preferredHeight: zoom * ui.px(5)
                 background: ui.palette.primary
             }
         }
@@ -75,7 +75,7 @@ Container {
     }
     ListView {
         id: list
-        preferredHeight: ui.px(240)
+        preferredHeight: zoom * ui.px(240)
         dataModel: emojis
         // headerMode must be set: a grid's default (None) shows only the groups, as cells, and
         // never their emoji (Q10, 2026-10-31). StackListLayout's default is Standard.
@@ -108,8 +108,8 @@ Container {
                     ImageView {
                         horizontalAlignment: HorizontalAlignment.Center
                         verticalAlignment: VerticalAlignment.Center
-                        preferredWidth: ui.px(54)
-                        preferredHeight: ui.px(54)
+                        preferredWidth: zoom * ui.px(54)
+                        preferredHeight: zoom * ui.px(54)
                         imageSource: ListItemData.image
                     }
                 }

@@ -39,8 +39,8 @@ Container {
         visible: tile.story.kind == 2
         horizontalAlignment: HorizontalAlignment.Center
         verticalAlignment: VerticalAlignment.Center
-        preferredWidth: ui.du(6)
-        preferredHeight: ui.du(6)
+        preferredWidth: zoom * ui.du(6)
+        preferredHeight: zoom * ui.du(6)
         imageSource: "asset:///images/play.png"
         opacity: 0.85
     }
@@ -49,10 +49,10 @@ Container {
         horizontalAlignment: HorizontalAlignment.Fill
         verticalAlignment: VerticalAlignment.Bottom
         background: Color.create(0.0, 0.0, 0.0, 0.55)
-        leftPadding: ui.du(1)
-        rightPadding: ui.du(1)
-        topPadding: ui.du(0.6)
-        bottomPadding: ui.du(0.6)
+        leftPadding: zoom * ui.du(1)
+        rightPadding: zoom * ui.du(1)
+        topPadding: zoom * ui.du(0.6)
+        bottomPadding: zoom * ui.du(0.6)
         layout: StackLayout {
             orientation: LayoutOrientation.LeftToRight
         }
@@ -70,7 +70,7 @@ Container {
         }
         Label {
             verticalAlignment: VerticalAlignment.Center
-            leftMargin: ui.du(1)
+            leftMargin: zoom * ui.du(1)
             text: tile.story.time
             textFormat: TextFormat.Plain
             textStyle.fontSize: FontSize.PercentageValue
@@ -83,20 +83,20 @@ Container {
         horizontalAlignment: HorizontalAlignment.Fill
         verticalAlignment: VerticalAlignment.Fill
         layout: DockLayout {}
-        leftPadding: ui.du(0.8)
-        topPadding: ui.du(0.8)
-        rightPadding: ui.du(0.8)
+        leftPadding: zoom * ui.du(0.8)
+        topPadding: zoom * ui.du(0.8)
+        rightPadding: zoom * ui.du(0.8)
         Container {
             horizontalAlignment: HorizontalAlignment.Left
             verticalAlignment: VerticalAlignment.Top
-            leftPadding: ui.px(3)
-            topPadding: ui.px(3)
-            rightPadding: ui.px(3)
-            bottomPadding: ui.px(3)
+            leftPadding: zoom * ui.px(3)
+            topPadding: zoom * ui.px(3)
+            rightPadding: zoom * ui.px(3)
+            bottomPadding: zoom * ui.px(3)
             background: tile.story.unseen > 0 ? ui.palette.primary : Color.create("#7D7D7D")
             Container {
-                preferredWidth: ui.du(6)
-                preferredHeight: ui.du(6)
+                preferredWidth: zoom * ui.du(6)
+                preferredHeight: zoom * ui.du(6)
                 background: Color.create(tile.story.color)
                 layout: DockLayout {}
                 Label {
@@ -106,7 +106,7 @@ Container {
                     textFormat: TextFormat.Plain
                     textStyle.base: tile.ListItem.view.emojiStyle
                     textStyle.fontSize: FontSize.PercentageValue
-                    textStyle.fontSizeValue: 100
+                    textStyle.fontSizeValue: 100 * zoom
                     textStyle.color: Color.White
                 }
                 ImageView {
@@ -123,10 +123,10 @@ Container {
             visible: tile.story.unseen > 0
             horizontalAlignment: HorizontalAlignment.Right
             verticalAlignment: VerticalAlignment.Top
-            minWidth: ui.du(3.4)
-            minHeight: ui.du(3.4)
-            leftPadding: ui.du(0.8)
-            rightPadding: ui.du(0.8)
+            minWidth: zoom * ui.du(3.4)
+            minHeight: zoom * ui.du(3.4)
+            leftPadding: zoom * ui.du(0.8)
+            rightPadding: zoom * ui.du(0.8)
             background: ui.palette.primary
             layout: DockLayout {}
             Label {

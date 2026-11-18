@@ -33,14 +33,14 @@ TitleBar {
         Container {
             horizontalAlignment: HorizontalAlignment.Fill
             verticalAlignment: VerticalAlignment.Fill
-            rightPadding: ui.px(7)
+            rightPadding: zoom * ui.px(7)
             layout: StackLayout {
                 orientation: LayoutOrientation.LeftToRight
             }
             // Back: the stock arrow's thin "<", in a box the bar's height that carries the margin.
             Container {
                 verticalAlignment: VerticalAlignment.Fill
-                preferredWidth: ui.du(7)
+                preferredWidth: zoom * ui.du(7)
                 layout: DockLayout {}
                 gestureHandlers: TapHandler {
                     onTapped: bar.back()
@@ -49,8 +49,8 @@ TitleBar {
                     horizontalAlignment: HorizontalAlignment.Center
                     verticalAlignment: VerticalAlignment.Center
                     imageSource: "asset:///images/back_action.png"
-                    preferredWidth: ui.du(6)
-                    preferredHeight: ui.du(6)
+                    preferredWidth: zoom * ui.du(6)
+                    preferredHeight: zoom * ui.du(6)
                     scalingMethod: ScalingMethod.AspectFit
                     filterColor: ui.palette.textOnPlain
                 }
@@ -76,7 +76,7 @@ TitleBar {
                     textFormat: TextFormat.Plain
                     textStyle.base: nav.emojiStyle
                     textStyle.fontSize: FontSize.PercentageValue
-                    textStyle.fontSizeValue: 110
+                    textStyle.fontSizeValue: 110 * zoom
                 }
                 Label {
                     visible: bar.status != ""
@@ -85,7 +85,7 @@ TitleBar {
                     textFormat: TextFormat.Plain
                     textStyle.base: nav.emojiStyle
                     textStyle.fontSize: FontSize.PercentageValue
-                    textStyle.fontSizeValue: 75
+                    textStyle.fontSizeValue: 75 * zoom
                     textStyle.color: ui.palette.secondaryTextOnPlain
                 }
             }
@@ -95,9 +95,9 @@ TitleBar {
             Container {
                 visible: bar.canCall
                 verticalAlignment: VerticalAlignment.Center
-                leftPadding: ui.du(1.5)
-                rightPadding: ui.du(1.5)
-                minHeight: ui.px(81)
+                leftPadding: zoom * ui.du(1.5)
+                rightPadding: zoom * ui.du(1.5)
+                minHeight: zoom * ui.px(81)
                 layout: DockLayout {}
                 gestureHandlers: TapHandler {
                     onTapped: {
@@ -128,8 +128,8 @@ TitleBar {
                     verticalAlignment: VerticalAlignment.Center
                     imageSource: "file:///usr/share/icons/ic_phone.png"
                     filterColor: ui.palette.primary
-                    preferredWidth: ui.du(5)
-                    preferredHeight: ui.du(5)
+                    preferredWidth: zoom * ui.du(5)
+                    preferredHeight: zoom * ui.du(5)
                     scalingMethod: ScalingMethod.AspectFit
                 }
             }
@@ -137,9 +137,9 @@ TitleBar {
             // it, over the initials tile.
             Container {
                 verticalAlignment: VerticalAlignment.Center
-                leftMargin: ui.du(1.5)
-                preferredWidth: ui.px(81)
-                preferredHeight: ui.px(81)
+                leftMargin: zoom * ui.du(1.5)
+                preferredWidth: zoom * ui.px(81)
+                preferredHeight: zoom * ui.px(81)
                 background: bar.chat ? Color.create(bar.chat.color) : Color.Transparent
                 layout: DockLayout {}
                 gestureHandlers: TapHandler {
@@ -161,7 +161,7 @@ TitleBar {
                     textFormat: TextFormat.Plain
                     textStyle.base: nav.emojiStyle
                     textStyle.fontSize: FontSize.PercentageValue
-                    textStyle.fontSizeValue: 150
+                    textStyle.fontSizeValue: 150 * zoom
                     textStyle.color: Color.White
                 }
             }

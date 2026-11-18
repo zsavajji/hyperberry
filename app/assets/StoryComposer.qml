@@ -100,17 +100,17 @@ Sheet {
                 property string tint
                 property bool marked: sheet.colour == cell.index
                 signal tapped(int index)
-                leftMargin: ui.du(0.7)
-                rightMargin: ui.du(0.7)
-                preferredWidth: ui.du(8)
-                preferredHeight: ui.du(8)
+                leftMargin: zoom * ui.du(0.7)
+                rightMargin: zoom * ui.du(0.7)
+                preferredWidth: zoom * ui.du(8)
+                preferredHeight: zoom * ui.du(8)
                 // A DockLayout, so the colour inside fills the frame: in a StackLayout it got no height and only the frame showed.
                 layout: DockLayout {}
                 background: cell.marked ? Color.White : Color.create(1.0, 1.0, 1.0, 0.45)
-                leftPadding: cell.marked ? ui.px(5) : ui.px(2)
-                topPadding: cell.marked ? ui.px(5) : ui.px(2)
-                rightPadding: cell.marked ? ui.px(5) : ui.px(2)
-                bottomPadding: cell.marked ? ui.px(5) : ui.px(2)
+                leftPadding: cell.marked ? zoom * ui.px(5) : ui.px(2)
+                topPadding: cell.marked ? zoom * ui.px(5) : ui.px(2)
+                rightPadding: cell.marked ? zoom * ui.px(5) : ui.px(2)
+                bottomPadding: cell.marked ? zoom * ui.px(5) : ui.px(2)
                 gestureHandlers: TapHandler {
                     onTapped: cell.tapped(cell.index)
                 }
@@ -168,8 +168,8 @@ Sheet {
                 verticalAlignment: VerticalAlignment.Center
                 ImageView {
                     horizontalAlignment: HorizontalAlignment.Center
-                    preferredWidth: ui.du(9)
-                    preferredHeight: ui.du(9)
+                    preferredWidth: zoom * ui.du(9)
+                    preferredHeight: zoom * ui.du(9)
                     imageSource: "asset:///images/play.png"
                 }
                 Label {
@@ -190,8 +190,8 @@ Sheet {
                 visible: sheet.mode == "text"
                 horizontalAlignment: HorizontalAlignment.Fill
                 verticalAlignment: VerticalAlignment.Center
-                leftPadding: ui.du(3)
-                rightPadding: ui.du(3)
+                leftPadding: zoom * ui.du(3)
+                rightPadding: zoom * ui.du(3)
                 TextArea {
                     id: story
                     hintText: qsTr("Write something")
@@ -218,7 +218,7 @@ Sheet {
                     id: strip
                     visible: sheet.picking
                     horizontalAlignment: HorizontalAlignment.Center
-                    topPadding: ui.du(1.2)
+                    topPadding: zoom * ui.du(1.2)
                     layout: StackLayout {
                         orientation: LayoutOrientation.LeftToRight
                     }
@@ -226,33 +226,33 @@ Sheet {
                 // The icon, in a box 10 du high that is the touch target: a mosaic of the palette in a frame that
                 // takes the primary colour while the strip is open.
                 Container {
-                    leftPadding: ui.du(1)
+                    leftPadding: zoom * ui.du(1)
                     layout: DockLayout {}
-                    preferredHeight: ui.du(10)
+                    preferredHeight: zoom * ui.du(10)
                     Container {
                         verticalAlignment: VerticalAlignment.Center
                         background: sheet.picking ? ui.palette.primary : Color.White
-                        leftPadding: ui.px(3)
-                        topPadding: ui.px(3)
-                        rightPadding: ui.px(3)
-                        bottomPadding: ui.px(3)
+                        leftPadding: zoom * ui.px(3)
+                        topPadding: zoom * ui.px(3)
+                        rightPadding: zoom * ui.px(3)
+                        bottomPadding: zoom * ui.px(3)
                         Container {
                             layout: StackLayout {
                                 orientation: LayoutOrientation.LeftToRight
                             }
                             Container {
-                                preferredWidth: ui.du(2.2)
-                                preferredHeight: ui.du(2.2)
+                                preferredWidth: zoom * ui.du(2.2)
+                                preferredHeight: zoom * ui.du(2.2)
                                 background: Color.create(sheet.colours[0])
                             }
                             Container {
-                                preferredWidth: ui.du(2.2)
-                                preferredHeight: ui.du(2.2)
+                                preferredWidth: zoom * ui.du(2.2)
+                                preferredHeight: zoom * ui.du(2.2)
                                 background: Color.create(sheet.colours[1])
                             }
                             Container {
-                                preferredWidth: ui.du(2.2)
-                                preferredHeight: ui.du(2.2)
+                                preferredWidth: zoom * ui.du(2.2)
+                                preferredHeight: zoom * ui.du(2.2)
                                 background: Color.create(sheet.colours[2])
                             }
                         }
@@ -261,18 +261,18 @@ Sheet {
                                 orientation: LayoutOrientation.LeftToRight
                             }
                             Container {
-                                preferredWidth: ui.du(2.2)
-                                preferredHeight: ui.du(2.2)
+                                preferredWidth: zoom * ui.du(2.2)
+                                preferredHeight: zoom * ui.du(2.2)
                                 background: Color.create(sheet.colours[3])
                             }
                             Container {
-                                preferredWidth: ui.du(2.2)
-                                preferredHeight: ui.du(2.2)
+                                preferredWidth: zoom * ui.du(2.2)
+                                preferredHeight: zoom * ui.du(2.2)
                                 background: Color.create(sheet.colours[4])
                             }
                             Container {
-                                preferredWidth: ui.du(2.2)
-                                preferredHeight: ui.du(2.2)
+                                preferredWidth: zoom * ui.du(2.2)
+                                preferredHeight: zoom * ui.du(2.2)
                                 background: Color.create(sheet.colours[5])
                             }
                         }
@@ -291,10 +291,10 @@ Sheet {
                 horizontalAlignment: HorizontalAlignment.Fill
                 verticalAlignment: VerticalAlignment.Bottom
                 background: Color.create(0.0, 0.0, 0.0, 0.55)
-                leftPadding: ui.du(1)
-                rightPadding: ui.du(1)
-                topPadding: ui.du(1)
-                bottomPadding: ui.du(1)
+                leftPadding: zoom * ui.du(1)
+                rightPadding: zoom * ui.du(1)
+                topPadding: zoom * ui.du(1)
+                bottomPadding: zoom * ui.du(1)
                 TextField {
                     id: caption
                     hintText: qsTr("Add a caption")
@@ -306,9 +306,9 @@ Sheet {
                 horizontalAlignment: HorizontalAlignment.Fill
                 verticalAlignment: VerticalAlignment.Top
                 background: Color.create(0.0, 0.0, 0.0, 0.55)
-                minHeight: ui.du(8)
-                leftPadding: ui.du(1.5)
-                rightPadding: ui.du(1.5)
+                minHeight: zoom * ui.du(8)
+                leftPadding: zoom * ui.du(1.5)
+                rightPadding: zoom * ui.du(1.5)
                 layout: StackLayout {
                     orientation: LayoutOrientation.LeftToRight
                 }
@@ -326,7 +326,7 @@ Sheet {
                     layoutProperties: StackLayoutProperties {
                         spaceQuota: 1
                     }
-                    leftMargin: ui.du(1)
+                    leftMargin: zoom * ui.du(1)
                     text: sheet.audience.length == 0 ? qsTr("Everyone") : qsTr("%1 chosen").arg(sheet.audience.length)
                     textFormat: TextFormat.Plain
                     textStyle.color: Color.White

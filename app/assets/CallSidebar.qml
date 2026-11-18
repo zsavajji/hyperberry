@@ -150,7 +150,7 @@ Container {
                             textFormat: TextFormat.Plain
                             textStyle.base: row.ListItem.view.emojiStyle
                             textStyle.fontSize: FontSize.PercentageValue
-                            textStyle.fontSizeValue: 120
+                            textStyle.fontSizeValue: 120 * zoom
                             textStyle.color: Color.White
                         }
                         ImageView {

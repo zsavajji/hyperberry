@@ -155,13 +155,13 @@ ChatRow::ChatRow(ListView *list)
     m_preview->setVerticalAlignment(VerticalAlignment::Center);
     // Closer to the ticks than Cascades' default gap (about 20 px between labels): the user's, Q10,
     // 2026-11-02.
-    m_preview->setLeftMargin(m_ui->du(1));
+    m_preview->setLeftMargin(Card::du(m_ui, 1));
     Card::quota(m_preview, 1);
     // The unread count, grey while muted, as WhatsApp does.
     m_badge = new Container();
     m_badge->setVerticalAlignment(VerticalAlignment::Center);
-    m_badge->setLeftPadding(m_ui->du(0.8));
-    m_badge->setRightPadding(m_ui->du(0.8));
+    m_badge->setLeftPadding(Card::du(m_ui, 0.8));
+    m_badge->setRightPadding(Card::du(m_ui, 0.8));
     m_count = new Label();
     m_count->textStyle()->setBase(SystemDefaults::TextStyles::smallText());
     m_count->textStyle()->setFontWeight(FontWeight::Bold);
@@ -169,8 +169,8 @@ ChatRow::ChatRow(ListView *list)
     // Marked unread (-1): a dot in the badge's place, no number.
     m_dot = new Container();
     m_dot->setVerticalAlignment(VerticalAlignment::Center);
-    m_dot->setLeftMargin(m_ui->du(0.8));
-    m_dot->setPreferredSize(m_ui->du(1.6), m_ui->du(1.6));
+    m_dot->setLeftMargin(Card::du(m_ui, 0.8));
+    m_dot->setPreferredSize(Card::du(m_ui, 1.6), Card::du(m_ui, 1.6));
     bottom->add(m_ticks);
     bottom->add(m_bang);
     bottom->add(m_preview);
@@ -224,16 +224,16 @@ void ChatRow::show(const QVariantMap &chat)
         m_compact = compact;
         const float side = compact ? 1.5 : 2;
         const float tile = compact ? 7 : 8.2;
-        m_row->setLeftPadding(m_ui->du(side));
-        m_row->setRightPadding(m_ui->du(side));
-        m_col->setLeftMargin(m_ui->du(side));
-        m_row->setMinHeight(m_ui->du((compact ? 9.4 : 11.4) * scale));
-        m_tile->setPreferredSize(m_ui->du(tile * scale), m_ui->du(tile * scale));
-        Card::style(m_initials, m_list, qRound(118 * scale));
+        m_row->setLeftPadding(Card::du(m_ui, side));
+        m_row->setRightPadding(Card::du(m_ui, side));
+        m_col->setLeftMargin(Card::du(m_ui, side));
+        m_row->setMinHeight(Card::du(m_ui, (compact ? 9.4 : 11.4) * scale));
+        m_tile->setPreferredSize(Card::du(m_ui, tile * scale), Card::du(m_ui, tile * scale));
+        Card::style(m_initials, m_list, qRound(118 * scale * Card::zoom()));
         m_initials->textStyle()->setColor(Color::White);
-        Card::style(m_name, m_list, qRound(115 * scale));
-        m_time->textStyle()->setFontSizeValue(qRound(100 * scale));
-        Card::style(m_preview, m_list, qRound(90 * scale));
+        Card::style(m_name, m_list, qRound(115 * scale * Card::zoom()));
+        m_time->textStyle()->setFontSizeValue(qRound(100 * scale * Card::zoom()));
+        Card::style(m_preview, m_list, qRound(90 * scale * Card::zoom()));
     }
 
     paintBackground();

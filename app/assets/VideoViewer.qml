@@ -34,10 +34,10 @@ Page {
                         : page.dur > 0 ? Math.min(player.position / page.dur, 1) : 0
     // The timeline's side margin and its dot's size: the finger's x is measured inside the margin and half a dot, so the
     // dot is under the finger.
-    property real side: ui.du(2)
-    property real dot: ui.du(3)
+    property real side: zoom * ui.du(2)
+    property real dot: zoom * ui.du(3)
     // The stock action bar's height, which our bar stands above: 97 px on the Q10 (a screenshot of the Back / Install bar), 11 du, and a du of slack.
-    property real abar: ui.du(12)
+    property real abar: zoom * ui.du(12)
     actionBarVisibility: page.stockShown ? ChromeVisibility.Overlay : ChromeVisibility.Hidden
 
     function clock(ms) {
@@ -236,7 +236,7 @@ Page {
                     id: line
                     property real w: 0
                     horizontalAlignment: HorizontalAlignment.Fill
-                    preferredHeight: ui.du(8)
+                    preferredHeight: zoom * ui.du(8)
                     layout: DockLayout {}
                     attachedObjects: LayoutUpdateHandler {
                         onLayoutFrameChanged: line.w = layoutFrame.width
@@ -248,7 +248,7 @@ Page {
                         verticalAlignment: VerticalAlignment.Center
                         leftMargin: page.side
                         rightMargin: page.side
-                        preferredHeight: ui.px(6)
+                        preferredHeight: zoom * ui.px(6)
                         background: Color.create(1.0, 1.0, 1.0, 0.25)
                     }
                     // The fill, the dot and the rest share the width by quotas: the dot's own width is taken first, so
@@ -266,7 +266,7 @@ Page {
                         }
                         Container {
                             verticalAlignment: VerticalAlignment.Center
-                            preferredHeight: ui.px(6)
+                            preferredHeight: zoom * ui.px(6)
                             implicitLayoutAnimationsEnabled: false
                             layoutProperties: StackLayoutProperties {
                                 spaceQuota: Math.max(page.frac, 0.001)
@@ -297,14 +297,14 @@ Page {
                     }
                     Container {
                         verticalAlignment: VerticalAlignment.Center
-                        preferredWidth: ui.du(10)
-                        preferredHeight: ui.du(10)
+                        preferredWidth: zoom * ui.du(10)
+                        preferredHeight: zoom * ui.du(10)
                         layout: DockLayout {}
                         ImageView {
                             horizontalAlignment: HorizontalAlignment.Center
                             verticalAlignment: VerticalAlignment.Center
-                            preferredWidth: ui.du(5)
-                            preferredHeight: ui.du(5)
+                            preferredWidth: zoom * ui.du(5)
+                            preferredHeight: zoom * ui.du(5)
                             imageSource: page.playing ? "asset:///images/pause.png" : "asset:///images/play.png"
                             filterColor: ui.palette.primary
                         }

@@ -76,9 +76,9 @@ Page {
 
     Container {
         Container {
-            topPadding: ui.du(2)
-            leftPadding: ui.du(2)
-            rightPadding: ui.du(2)
+            topPadding: zoom * ui.du(2)
+            leftPadding: zoom * ui.du(2)
+            rightPadding: zoom * ui.du(2)
             horizontalAlignment: HorizontalAlignment.Fill
             Label {
                 multiline: true
@@ -87,9 +87,9 @@ Page {
         }
         Container {
             horizontalAlignment: HorizontalAlignment.Fill
-            topPadding: ui.du(1)
-            leftPadding: ui.du(2)
-            rightPadding: ui.du(2)
+            topPadding: zoom * ui.du(1)
+            leftPadding: zoom * ui.du(2)
+            rightPadding: zoom * ui.du(2)
             Container {
                 layout: StackLayout {
                     orientation: LayoutOrientation.LeftToRight
@@ -100,9 +100,9 @@ Page {
                     id: countryBox
                     property bool pressed: false
                     verticalAlignment: VerticalAlignment.Fill
-                    minWidth: ui.du(14)
-                    leftPadding: ui.du(1.5)
-                    rightPadding: ui.du(1.5)
+                    minWidth: zoom * ui.du(14)
+                    leftPadding: zoom * ui.du(1.5)
+                    rightPadding: zoom * ui.du(1.5)
                     background: pressed ? ui.palette.primaryBase : settings.theme == 1 ? nav.fieldColor : ui.palette.plain // as the number field beside it
                     layout: DockLayout {}
                     gestureHandlers: TapHandler {
@@ -119,12 +119,12 @@ Page {
                 }
                 // The wrapper carries Bright's field fill (nav.fieldColor); Dark keeps the system box.
                 Container {
-                    leftMargin: ui.du(1)
+                    leftMargin: zoom * ui.du(1)
                     layoutProperties: StackLayoutProperties {
                         spaceQuota: 1
                     }
                     background: nav.fieldColor
-                    leftPadding: settings.theme == 1 ? ui.du(1) : 0
+                    leftPadding: settings.theme == 1 ? zoom * ui.du(1) : 0
                     TextField {
                         id: number
                         horizontalAlignment: HorizontalAlignment.Fill

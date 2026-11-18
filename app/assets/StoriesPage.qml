@@ -117,9 +117,9 @@ Page {
         Container {
             horizontalAlignment: HorizontalAlignment.Fill
             verticalAlignment: VerticalAlignment.Fill
-            leftPadding: ui.px(40)
-            rightPadding: ui.px(40)
-            topPadding: ui.px(20)
+            leftPadding: zoom * ui.px(40)
+            rightPadding: zoom * ui.px(40)
+            topPadding: zoom * ui.px(20)
             ListView {
                 id: grid
                 dataModel: storyList
@@ -130,8 +130,8 @@ Page {
                 layout: GridListLayout {
                     columnCount: 2
                     cellAspectRatio: 310 / 211
-                    horizontalCellSpacing: ui.px(20)
-                    verticalCellSpacing: ui.px(20)
+                    horizontalCellSpacing: zoom * ui.px(20)
+                    verticalCellSpacing: zoom * ui.px(20)
                 }
                 onTriggered: {
                     if (indexPath.length == 1) {

@@ -163,7 +163,7 @@ Container {
             text: qsTr("End call")
             textFormat: TextFormat.Plain
             textStyle.fontSize: FontSize.PercentageValue
-            textStyle.fontSizeValue: 80
+            textStyle.fontSizeValue: 80 * zoom
             textStyle.color: Color.White
         }
         onTouch: panel.pressed = event.isDown() || event.isMove()

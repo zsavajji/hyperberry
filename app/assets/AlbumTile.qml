@@ -30,8 +30,8 @@ Container {
         visible: tile.member.media == "video"
         horizontalAlignment: HorizontalAlignment.Center
         verticalAlignment: VerticalAlignment.Center
-        preferredWidth: ui.du(6)
-        preferredHeight: ui.du(6)
+        preferredWidth: zoom * ui.du(6)
+        preferredHeight: zoom * ui.du(6)
         imageSource: "asset:///images/play.png"
         opacity: 0.85
     }

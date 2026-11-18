@@ -8,10 +8,10 @@ Page {
     }
     ScrollView {
         Container {
-            topPadding: ui.du(2)
-            leftPadding: ui.du(2)
-            rightPadding: ui.du(2)
-            bottomPadding: ui.du(2)
+            topPadding: zoom * ui.du(2)
+            leftPadding: zoom * ui.du(2)
+            rightPadding: zoom * ui.du(2)
+            bottomPadding: zoom * ui.du(2)
             Container {
                 layout: StackLayout {
                     orientation: LayoutOrientation.LeftToRight
@@ -40,7 +40,7 @@ Page {
                 }
             }
             Container {
-                topMargin: ui.du(3)
+                topMargin: zoom * ui.du(3)
                 layout: StackLayout {
                     orientation: LayoutOrientation.LeftToRight
                 }

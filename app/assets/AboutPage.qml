@@ -13,14 +13,14 @@ Page {
             horizontalAlignment: HorizontalAlignment.Fill
             Container {
                 horizontalAlignment: HorizontalAlignment.Fill
-                topPadding: ui.du(3)
-                leftPadding: ui.du(1.5)
-                rightPadding: ui.du(1.5)
+                topPadding: zoom * ui.du(3)
+                leftPadding: zoom * ui.du(1.5)
+                rightPadding: zoom * ui.du(1.5)
                 // 16 du is the icon's own 144 px on the Q10.
                 ImageView {
                     horizontalAlignment: HorizontalAlignment.Center
-                    preferredWidth: ui.du(16)
-                    preferredHeight: ui.du(16)
+                    preferredWidth: zoom * ui.du(16)
+                    preferredHeight: zoom * ui.du(16)
                     scalingMethod: ScalingMethod.AspectFit
                     imageSource: "asset:///images/icon-144.png"
                 }
@@ -48,10 +48,10 @@ Page {
             // Padding, not margins: margins only space siblings, never from the container's edge.
             Container {
                 horizontalAlignment: HorizontalAlignment.Fill
-                topPadding: ui.du(1.5)
-                leftPadding: ui.du(1.5)
-                rightPadding: ui.du(1.5)
-                bottomPadding: ui.du(1.5)
+                topPadding: zoom * ui.du(1.5)
+                leftPadding: zoom * ui.du(1.5)
+                rightPadding: zoom * ui.du(1.5)
+                bottomPadding: zoom * ui.du(1.5)
                 Label {
                     horizontalAlignment: HorizontalAlignment.Fill
                     multiline: true

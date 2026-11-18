@@ -125,16 +125,16 @@ Page {
                 onTouchExit: row.pressed = false
                 Container {
                     horizontalAlignment: HorizontalAlignment.Fill
-                    minHeight: ui.du(9.4)
-                    leftPadding: ui.du(1.5)
-                    rightPadding: ui.du(1.5)
+                    minHeight: zoom * ui.du(9.4)
+                    leftPadding: zoom * ui.du(1.5)
+                    rightPadding: zoom * ui.du(1.5)
                     layout: StackLayout {
                         orientation: LayoutOrientation.LeftToRight
                     }
                     Container {
                         verticalAlignment: VerticalAlignment.Center
-                        preferredWidth: ui.du(7)
-                        preferredHeight: ui.du(7)
+                        preferredWidth: zoom * ui.du(7)
+                        preferredHeight: zoom * ui.du(7)
                         background: row.group ? Color.create(row.group.color) : Color.Transparent
                         layout: DockLayout {}
                         Label {
@@ -144,13 +144,13 @@ Page {
                             textFormat: TextFormat.Plain
                             textStyle.base: nav.emojiStyle
                             textStyle.fontSize: FontSize.PercentageValue
-                            textStyle.fontSizeValue: 118
+                            textStyle.fontSizeValue: 118 * zoom
                             textStyle.color: Color.White
                         }
                     }
                     Label {
                         verticalAlignment: VerticalAlignment.Center
-                        leftMargin: ui.du(1.5)
+                        leftMargin: zoom * ui.du(1.5)
                         layoutProperties: StackLayoutProperties {
                             spaceQuota: 1
                         }
@@ -244,13 +244,13 @@ Page {
             // The tile, name and number; the chat's own until the engine answers.
             Container {
                 horizontalAlignment: HorizontalAlignment.Fill
-                topPadding: ui.du(3)
-                leftPadding: ui.du(1.5)
-                rightPadding: ui.du(1.5)
+                topPadding: zoom * ui.du(3)
+                leftPadding: zoom * ui.du(1.5)
+                rightPadding: zoom * ui.du(1.5)
                 Container {
                     horizontalAlignment: HorizontalAlignment.Center
-                    preferredWidth: ui.du(20)
-                    preferredHeight: ui.du(20)
+                    preferredWidth: zoom * ui.du(20)
+                    preferredHeight: zoom * ui.du(20)
                     background: page.chat ? Color.create(page.chat.color) : Color.Transparent
                     layout: DockLayout {}
                     Label {
@@ -261,7 +261,7 @@ Page {
                         textFormat: TextFormat.Plain
                         textStyle.base: nav.emojiStyle
                         textStyle.fontSize: FontSize.PercentageValue
-                        textStyle.fontSizeValue: 300
+                        textStyle.fontSizeValue: 300 * zoom
                         textStyle.color: Color.White
                     }
                     ImageView {
@@ -304,13 +304,13 @@ Page {
             }
             Busy {
                 running: !page.loaded && !page.failed
-                topPadding: ui.du(4)
+                topPadding: zoom * ui.du(4)
                 text: qsTr("Loading…")
             }
             Label {
                 visible: page.failed
                 horizontalAlignment: HorizontalAlignment.Center
-                topMargin: ui.du(3)
+                topMargin: zoom * ui.du(3)
                 multiline: true
                 textStyle.textAlign: TextAlign.Center
                 textStyle.color: ui.palette.secondaryTextOnPlain
@@ -324,10 +324,10 @@ Page {
             Container {
                 visible: page.loaded && !!page.info.about
                 horizontalAlignment: HorizontalAlignment.Fill
-                topPadding: ui.du(1.5)
-                leftPadding: ui.du(1.5)
-                rightPadding: ui.du(1.5)
-                bottomPadding: ui.du(1.5)
+                topPadding: zoom * ui.du(1.5)
+                leftPadding: zoom * ui.du(1.5)
+                rightPadding: zoom * ui.du(1.5)
+                bottomPadding: zoom * ui.du(1.5)
                 Label {
                     horizontalAlignment: HorizontalAlignment.Fill
                     multiline: true
@@ -341,10 +341,10 @@ Page {
             Container {
                 visible: page.hasChat
                 horizontalAlignment: HorizontalAlignment.Fill
-                topPadding: ui.du(1.5)
-                leftPadding: ui.du(1.5)
-                rightPadding: ui.du(1.5)
-                bottomPadding: ui.du(1.5)
+                topPadding: zoom * ui.du(1.5)
+                leftPadding: zoom * ui.du(1.5)
+                rightPadding: zoom * ui.du(1.5)
+                bottomPadding: zoom * ui.du(1.5)
                 layout: StackLayout {
                     orientation: LayoutOrientation.LeftToRight
                 }

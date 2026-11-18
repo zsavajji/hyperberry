@@ -92,8 +92,8 @@ Container {
                 property alias mine: underline.visible
                 signal tapped(string emoji)
                 verticalAlignment: VerticalAlignment.Center
-                preferredWidth: ui.du(9)
-                preferredHeight: ui.du(9)
+                preferredWidth: zoom * ui.du(9)
+                preferredHeight: zoom * ui.du(9)
                 layout: DockLayout {
                 }
                 gestureHandlers: TapHandler {
@@ -113,8 +113,8 @@ Container {
                     visible: false
                     horizontalAlignment: HorizontalAlignment.Center
                     verticalAlignment: VerticalAlignment.Bottom
-                    bottomMargin: ui.du(1)
-                    preferredWidth: ui.du(5)
+                    bottomMargin: zoom * ui.du(1)
+                    preferredWidth: zoom * ui.du(5)
                     preferredHeight: ui.px(2)
                     background: ui.palette.primary
                 }
@@ -136,15 +136,15 @@ Container {
         horizontalAlignment: HorizontalAlignment.Fill
         background: ui.palette.plain
         // As the reply and search bars': the first tap target sat against the screen's edge.
-        leftPadding: ui.du(1.5)
+        leftPadding: zoom * ui.du(1.5)
         layout: StackLayout {
             orientation: LayoutOrientation.LeftToRight
         }
         // The six emoji are inserted before these two.
         Container {
             verticalAlignment: VerticalAlignment.Center
-            preferredWidth: ui.du(9)
-            preferredHeight: ui.du(9)
+            preferredWidth: zoom * ui.du(9)
+            preferredHeight: zoom * ui.du(9)
             layout: DockLayout {
             }
             gestureHandlers: TapHandler {
@@ -160,8 +160,8 @@ Container {
         }
         Container {
             verticalAlignment: VerticalAlignment.Center
-            preferredWidth: ui.du(9)
-            preferredHeight: ui.du(9)
+            preferredWidth: zoom * ui.du(9)
+            preferredHeight: zoom * ui.du(9)
             layout: DockLayout {
             }
             gestureHandlers: TapHandler {

@@ -13,8 +13,8 @@ Container {
     ActivityIndicator {
         visible: note.loading
         running: note.loading
-        preferredWidth: ui.du(8)
-        preferredHeight: ui.du(8)
+        preferredWidth: zoom * ui.du(8)
+        preferredHeight: zoom * ui.du(8)
     }
     Label {
         visible: !note.loading

@@ -27,9 +27,9 @@ Container {
     horizontalAlignment: HorizontalAlignment.Fill
     background: ui.palette.plain
     // As the reply bar's: the field sat against the screen's edge (Q10, 0.0.1.122).
-    leftPadding: ui.du(1.5)
-    topPadding: ui.du(0.5)
-    bottomPadding: ui.du(0.5)
+    leftPadding: zoom * ui.du(1.5)
+    topPadding: zoom * ui.du(0.5)
+    bottomPadding: zoom * ui.du(0.5)
     layout: StackLayout {
         orientation: LayoutOrientation.LeftToRight
     }
@@ -73,7 +73,7 @@ Container {
             spaceQuota: 1
         }
         background: nav.fieldColor
-        leftPadding: settings.theme == 1 ? ui.du(1) : 0
+        leftPadding: settings.theme == 1 ? zoom * ui.du(1) : 0
         TextField {
             id: field
             horizontalAlignment: HorizontalAlignment.Fill
@@ -95,7 +95,7 @@ Container {
     }
     Label {
         verticalAlignment: VerticalAlignment.Center
-        leftMargin: ui.du(1)
+        leftMargin: zoom * ui.du(1)
         text: !bar.searched ? "" : bar.matches.length == 0 ? "0/0" : (bar.at + 1) + "/" + bar.matches.length
         textFormat: TextFormat.Plain
         textStyle.color: ui.palette.secondaryTextOnPlain
@@ -103,8 +103,8 @@ Container {
     // Each is a touch target the size of an action column (9 du), as the chat list's ✕.
     Container {
         verticalAlignment: VerticalAlignment.Center
-        preferredWidth: ui.du(9)
-        preferredHeight: ui.du(9)
+        preferredWidth: zoom * ui.du(9)
+        preferredHeight: zoom * ui.du(9)
         layout: DockLayout {
         }
         gestureHandlers: TapHandler {
@@ -122,8 +122,8 @@ Container {
     }
     Container {
         verticalAlignment: VerticalAlignment.Center
-        preferredWidth: ui.du(9)
-        preferredHeight: ui.du(9)
+        preferredWidth: zoom * ui.du(9)
+        preferredHeight: zoom * ui.du(9)
         layout: DockLayout {
         }
         gestureHandlers: TapHandler {
@@ -140,8 +140,8 @@ Container {
     }
     Container {
         verticalAlignment: VerticalAlignment.Center
-        preferredWidth: ui.du(9)
-        preferredHeight: ui.du(9)
+        preferredWidth: zoom * ui.du(9)
+        preferredHeight: zoom * ui.du(9)
         layout: DockLayout {
         }
         gestureHandlers: TapHandler {

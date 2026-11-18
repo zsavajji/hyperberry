@@ -88,7 +88,7 @@ MediaBubble::MediaBubble(ListView *list, bool wide)
         m_wide = Card::width(m_ui);
         m_photo->setHorizontalAlignment(HorizontalAlignment::Fill);
     }
-    m_photo->setPreferredWidth(wide ? m_wide : m_ui->du(40));
+    m_photo->setPreferredWidth(wide ? m_wide : Card::du(m_ui, 40));
     m_thumb = new ImageView();
     m_thumb->setHorizontalAlignment(HorizontalAlignment::Fill);
     m_thumb->setVerticalAlignment(VerticalAlignment::Fill);
@@ -104,7 +104,7 @@ MediaBubble::MediaBubble(ListView *list, bool wide)
     m_play = new ImageView();
     m_play->setHorizontalAlignment(HorizontalAlignment::Center);
     m_play->setVerticalAlignment(VerticalAlignment::Center);
-    m_play->setPreferredSize(m_ui->du(12), m_ui->du(12)); // 2x the Stories tiles' (the user, 2026-11-12)
+    m_play->setPreferredSize(Card::du(m_ui, 12), Card::du(m_ui, 12)); // 2x the Stories tiles' (the user, 2026-11-12)
     m_play->setImageSource(Card::url("asset:///images/play.png"));
     m_play->setOpacity(0.85f);
     // At the left in the picture card: the time takes the right, as on Android.
@@ -126,7 +126,7 @@ MediaBubble::MediaBubble(ListView *list, bool wide)
     m_dim->setBackground(Card::color("#99000000"));
     m_dim->setVisible(false);
     m_photoSpin = spinner();
-    m_photoSpin->setPreferredSize(m_ui->du(9), m_ui->du(9));
+    m_photoSpin->setPreferredSize(Card::du(m_ui, 9), Card::du(m_ui, 9));
 
     m_photo->add(m_thumb);
     m_photo->add(m_none);
@@ -138,8 +138,8 @@ MediaBubble::MediaBubble(ListView *list, bool wide)
     m_stamp = new Container();
     m_stamp->setHorizontalAlignment(HorizontalAlignment::Right);
     m_stamp->setVerticalAlignment(VerticalAlignment::Bottom);
-    m_stamp->setRightPadding(m_ui->du(1));
-    m_stamp->setBottomPadding(m_ui->du(1));
+    m_stamp->setRightPadding(Card::du(m_ui, 1));
+    m_stamp->setBottomPadding(Card::du(m_ui, 1));
     m_photo->add(m_stamp);
     m_photo->add(m_photoSpin);
 
@@ -147,8 +147,8 @@ MediaBubble::MediaBubble(ListView *list, bool wide)
     // picture, as for a photo, so a recycled card never keeps the previous row's.
     m_stickerImage = new ImageView();
     m_stickerImage->setTopMargin(0);
-    m_stickerImage->setPreferredWidth(m_ui->du(30));
-    m_stickerImage->setPreferredHeight(m_ui->du(30));
+    m_stickerImage->setPreferredWidth(Card::du(m_ui, 30));
+    m_stickerImage->setPreferredHeight(Card::du(m_ui, 30));
     m_stickerImage->setScalingMethod(ScalingMethod::AspectFit);
     m_stickerImage->setLoadEffect(ImageViewLoadEffect::None);
     // Until it is here: no picture and no thumbnail.
@@ -165,15 +165,15 @@ MediaBubble::MediaBubble(ListView *list, bool wide)
     // The system's icon in the emoji's place, for a contact and a location.
     m_icon = new ImageView();
     m_icon->setVerticalAlignment(VerticalAlignment::Center);
-    m_icon->setPreferredWidth(m_ui->du(5));
-    m_icon->setPreferredHeight(m_ui->du(5));
+    m_icon->setPreferredWidth(Card::du(m_ui, 5));
+    m_icon->setPreferredHeight(Card::du(m_ui, 5));
     m_icon->setScalingMethod(ScalingMethod::AspectFit);
     m_emoji = new Label();
     m_emoji->setVerticalAlignment(VerticalAlignment::Center);
 
     Container *words = new Container();
     words->setVerticalAlignment(VerticalAlignment::Center);
-    words->setLeftMargin(m_ui->du(1));
+    words->setLeftMargin(Card::du(m_ui, 1));
     Card::quota(words, 1);
     m_name = new Label();
     m_name->setBottomMargin(0);
@@ -188,7 +188,7 @@ MediaBubble::MediaBubble(ListView *list, bool wide)
 
     m_fileSpin = new ActivityIndicator();
     m_fileSpin->setVerticalAlignment(VerticalAlignment::Center);
-    m_fileSpin->setLeftMargin(m_ui->du(1));
+    m_fileSpin->setLeftMargin(Card::du(m_ui, 1));
     m_file->add(m_icon);
     m_file->add(m_emoji);
     m_file->add(words);
@@ -246,10 +246,10 @@ void MediaBubble::show(const QVariantMap &msg)
     restyle();
 
     // A caption follows a picture, with no margin of its own.
-    setBottomMargin(str("text").isEmpty() || m_wide ? 0 : m_ui->du(0.5));
+    setBottomMargin(str("text").isEmpty() || m_wide ? 0 : Card::du(m_ui, 0.5));
     // Air above and below a picture, so it doesn't touch the card's name line or caption (user);
     // none in the picture card, where it spans the card.
-    const float air = (m_picture || m_sticker) && !m_wide ? m_ui->du(1) : 0;
+    const float air = (m_picture || m_sticker) && !m_wide ? Card::du(m_ui, 1) : 0;
     m_root->setTopPadding(air);
     m_root->setBottomPadding(air);
 
@@ -258,7 +258,7 @@ void MediaBubble::show(const QVariantMap &msg)
         // A tall photo is cut at 50 du; AspectFill crops it. In the picture card it is square,
         // cropped the same way, and seen whole when opened (the user, 2026-11-08).
         m_photo->setPreferredHeight(m_wide ? m_wide
-                                           : qMin(m_ui->du(50), m_ui->du(40) * float(m_msg.value("ratio").toDouble())));
+                                           : qMin(Card::du(m_ui, 50), Card::du(m_ui, 40) * float(m_msg.value("ratio").toDouble())));
         m_thumb->setVisible(hasThumb);
         m_thumb->setImage(m_msg.value("thumb").value<Image>());
         m_none->setVisible(!hasThumb);

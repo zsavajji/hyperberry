@@ -12,10 +12,10 @@ Container {
     visible: !!info && !!info.name
     horizontalAlignment: HorizontalAlignment.Fill
     background: ui.palette.plain
-    leftPadding: ui.du(1.5)
-    rightPadding: ui.du(1.5)
-    topPadding: ui.du(1)
-    bottomPadding: ui.du(1)
+    leftPadding: zoom * ui.du(1.5)
+    rightPadding: zoom * ui.du(1.5)
+    topPadding: zoom * ui.du(1)
+    bottomPadding: zoom * ui.du(1)
     layout: StackLayout {
         orientation: LayoutOrientation.LeftToRight
     }
@@ -24,11 +24,11 @@ Container {
         id: thumb
         visible: !!info && !!info.image
         verticalAlignment: VerticalAlignment.Center
-        preferredWidth: ui.du(7)
-        preferredHeight: ui.du(7)
-        minWidth: ui.du(7)
-        minHeight: ui.du(7)
-        rightMargin: ui.du(1)
+        preferredWidth: zoom * ui.du(7)
+        preferredHeight: zoom * ui.du(7)
+        minWidth: zoom * ui.du(7)
+        minHeight: zoom * ui.du(7)
+        rightMargin: zoom * ui.du(1)
         scalingMethod: ScalingMethod.AspectFill
         loadEffect: ImageViewLoadEffect.None
     }
@@ -40,13 +40,13 @@ Container {
     Label {
         visible: !thumb.visible
         verticalAlignment: VerticalAlignment.Center
-        rightMargin: ui.du(1)
+        rightMargin: zoom * ui.du(1)
         // U+1F4CE, the paperclip.
         text: "📎"
         textFormat: TextFormat.Plain
         textStyle.base: nav.emojiStyle
         textStyle.fontSize: FontSize.PercentageValue
-        textStyle.fontSizeValue: 150
+        textStyle.fontSizeValue: 150 * zoom
     }
     Container {
         verticalAlignment: VerticalAlignment.Center
@@ -83,10 +83,10 @@ Container {
     // The cross has its own padding so the tap has a finger's size.
     Container {
         verticalAlignment: VerticalAlignment.Center
-        leftPadding: ui.du(1.5)
-        rightPadding: ui.du(0.5)
-        topPadding: ui.du(1)
-        bottomPadding: ui.du(1)
+        leftPadding: zoom * ui.du(1.5)
+        rightPadding: zoom * ui.du(0.5)
+        topPadding: zoom * ui.du(1)
+        bottomPadding: zoom * ui.du(1)
         gestureHandlers: TapHandler {
             onTapped: cancelled()
         }

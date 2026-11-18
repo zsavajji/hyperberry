@@ -43,15 +43,15 @@ Sheet {
                 // Padding, not margins: margins only space siblings, never from the container's edge.
                 Container {
                     horizontalAlignment: HorizontalAlignment.Fill
-                    leftPadding: ui.du(1.5)
-                    rightPadding: ui.du(1.5)
-                    topPadding: ui.du(1.5)
-                    bottomPadding: ui.du(1.5)
+                    leftPadding: zoom * ui.du(1.5)
+                    rightPadding: zoom * ui.du(1.5)
+                    topPadding: zoom * ui.du(1.5)
+                    bottomPadding: zoom * ui.du(1.5)
                     // The wrapper carries Bright's field fill (nav.fieldColor); Dark keeps the system box.
                     Container {
                         horizontalAlignment: HorizontalAlignment.Fill
                         background: nav.fieldColor
-                        leftPadding: settings.theme == 1 ? ui.du(1) : 0
+                        leftPadding: settings.theme == 1 ? zoom * ui.du(1) : 0
                         TextField {
                             id: search
                             horizontalAlignment: HorizontalAlignment.Fill
@@ -70,9 +70,9 @@ Sheet {
                 // Everyone: a row of the contact rows' size and look, ticked while nobody else is.
                 Container {
                     horizontalAlignment: HorizontalAlignment.Fill
-                    minHeight: ui.du(9.4)
-                    leftPadding: ui.du(1.5)
-                    rightPadding: ui.du(1.5)
+                    minHeight: zoom * ui.du(9.4)
+                    leftPadding: zoom * ui.du(1.5)
+                    rightPadding: zoom * ui.du(1.5)
                     layout: StackLayout {
                         orientation: LayoutOrientation.LeftToRight
                     }
@@ -81,22 +81,22 @@ Sheet {
                     }
                     Container {
                         verticalAlignment: VerticalAlignment.Center
-                        preferredWidth: ui.du(7)
-                        preferredHeight: ui.du(7)
+                        preferredWidth: zoom * ui.du(7)
+                        preferredHeight: zoom * ui.du(7)
                         background: ui.palette.primary
                         layout: DockLayout {}
                         ImageView {
                             horizontalAlignment: HorizontalAlignment.Center
                             verticalAlignment: VerticalAlignment.Center
-                            preferredWidth: ui.du(5)
-                            preferredHeight: ui.du(5)
+                            preferredWidth: zoom * ui.du(5)
+                            preferredHeight: zoom * ui.du(5)
                             imageSource: "asset:///images/contacts_action.png"
                             filterColor: Color.White
                         }
                     }
                     Label {
                         verticalAlignment: VerticalAlignment.Center
-                        leftMargin: ui.du(1.5)
+                        leftMargin: zoom * ui.du(1.5)
                         layoutProperties: StackLayoutProperties {
                             spaceQuota: 1
                         }
@@ -109,8 +109,8 @@ Sheet {
                     ImageView {
                         visible: picker.chosenCount == 0
                         verticalAlignment: VerticalAlignment.Center
-                        preferredWidth: ui.du(5)
-                        preferredHeight: ui.du(5)
+                        preferredWidth: zoom * ui.du(5)
+                        preferredHeight: zoom * ui.du(5)
                         imageSource: "asset:///images/tick_action.png"
                         filterColor: ui.palette.primary
                     }

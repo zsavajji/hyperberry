@@ -78,7 +78,7 @@ VoiceBubble::VoiceBubble(ListView *list)
 
     // The waveform over the length.
     Container *right = new Container();
-    right->setLeftMargin(m_ui->du(1.5));
+    right->setLeftMargin(Card::du(m_ui, 1.5));
     right->setVerticalAlignment(VerticalAlignment::Center);
     Container *waves = new Container();
     waves->setLayout(new DockLayout());
@@ -90,7 +90,7 @@ VoiceBubble::VoiceBubble(ListView *list)
 
     // Under it the length at the left and the time's corner at the right, the waveform's width apart.
     Container *under = new Container();
-    under->setTopMargin(m_ui->du(0.5));
+    under->setTopMargin(Card::du(m_ui, 0.5));
     under->setHorizontalAlignment(HorizontalAlignment::Fill);
     under->setLayout(new DockLayout());
     Container *length = new Container();
@@ -101,7 +101,7 @@ VoiceBubble::VoiceBubble(ListView *list)
     m_mic->setImageSource(Card::url("asset:///images/mic.png"));
     m_clock = new Label();
     m_clock->setVerticalAlignment(VerticalAlignment::Center);
-    m_clock->setLeftMargin(m_ui->du(0.5));
+    m_clock->setLeftMargin(Card::du(m_ui, 0.5));
     m_clock->setTextFormat(TextFormat::Plain);
     m_clock->textStyle()->setBase(SystemDefaults::TextStyles::smallText());
     length->add(m_mic);

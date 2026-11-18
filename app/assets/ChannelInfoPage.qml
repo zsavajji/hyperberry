@@ -57,13 +57,13 @@ Page {
             horizontalAlignment: HorizontalAlignment.Fill
             Container {
                 horizontalAlignment: HorizontalAlignment.Fill
-                topPadding: ui.du(3)
-                leftPadding: ui.du(1.5)
-                rightPadding: ui.du(1.5)
+                topPadding: zoom * ui.du(3)
+                leftPadding: zoom * ui.du(1.5)
+                rightPadding: zoom * ui.du(1.5)
                 Container {
                     horizontalAlignment: HorizontalAlignment.Center
-                    preferredWidth: ui.du(20)
-                    preferredHeight: ui.du(20)
+                    preferredWidth: zoom * ui.du(20)
+                    preferredHeight: zoom * ui.du(20)
                     background: page.chat ? Color.create(page.chat.color) : Color.Transparent
                     layout: DockLayout {}
                     Label {
@@ -74,7 +74,7 @@ Page {
                         textFormat: TextFormat.Plain
                         textStyle.base: nav.emojiStyle
                         textStyle.fontSize: FontSize.PercentageValue
-                        textStyle.fontSizeValue: 300
+                        textStyle.fontSizeValue: 300 * zoom
                         textStyle.color: Color.White
                     }
                     ImageView {
@@ -114,13 +114,13 @@ Page {
             }
             Busy {
                 running: !page.loaded && !page.failed
-                topPadding: ui.du(4)
+                topPadding: zoom * ui.du(4)
                 text: qsTr("Loading…")
             }
             Label {
                 visible: page.failed
                 horizontalAlignment: HorizontalAlignment.Center
-                topMargin: ui.du(3)
+                topMargin: zoom * ui.du(3)
                 multiline: true
                 textStyle.textAlign: TextAlign.Center
                 textStyle.color: ui.palette.secondaryTextOnPlain
@@ -134,10 +134,10 @@ Page {
             Container {
                 visible: page.loaded && !!page.info.description
                 horizontalAlignment: HorizontalAlignment.Fill
-                topPadding: ui.du(1.5)
-                leftPadding: ui.du(1.5)
-                rightPadding: ui.du(1.5)
-                bottomPadding: ui.du(1.5)
+                topPadding: zoom * ui.du(1.5)
+                leftPadding: zoom * ui.du(1.5)
+                rightPadding: zoom * ui.du(1.5)
+                bottomPadding: zoom * ui.du(1.5)
                 Label {
                     horizontalAlignment: HorizontalAlignment.Fill
                     multiline: true

@@ -120,8 +120,8 @@ TabbedPane {
             // scaled by the text size setting. body: messages and chat names, the stock Text Messages
             // body's 21 px; small: previews, senders, quotes and service lines. List items reach them
             // through properties on their ListView, as they reach emojiStyle.
-            property int bodySize: Math.round(105 * settings.textScale)
-            property int smallSize: Math.round(85 * settings.textScale)
+            property int bodySize: Math.round(105 * settings.textScale * zoom)
+            property int smallSize: Math.round(85 * settings.textScale * zoom)
             // A pressed row, card or tappable line (the user's ask, 2026-11-02: rows gave no feedback,
             // the action bar does): a step off ui.palette.plain (#323232 dark, #F0F0F0 bright in the
             // 10.3 palette), so it shows on the message cards as well as on the bare page. List items

@@ -12,10 +12,10 @@ Page {
     }
     ScrollView {
         Container {
-            topPadding: ui.du(2)
-            bottomPadding: ui.du(2)
-            leftPadding: ui.du(2)
-            rightPadding: ui.du(2)
+            topPadding: zoom * ui.du(2)
+            bottomPadding: zoom * ui.du(2)
+            leftPadding: zoom * ui.du(2)
+            rightPadding: zoom * ui.du(2)
             horizontalAlignment: HorizontalAlignment.Fill
             Label {
                 text: qsTr("Question")
@@ -24,7 +24,7 @@ Page {
             Container {
                 horizontalAlignment: HorizontalAlignment.Fill
                 background: nav.fieldColor
-                leftPadding: settings.theme == 1 ? ui.du(1) : 0
+                leftPadding: settings.theme == 1 ? zoom * ui.du(1) : 0
                 TextField {
                     id: question
                     horizontalAlignment: HorizontalAlignment.Fill
@@ -36,7 +36,7 @@ Page {
             }
             Label {
                 text: qsTr("Options")
-                topMargin: ui.du(2)
+                topMargin: zoom * ui.du(2)
             }
             Container {
                 id: options
@@ -45,12 +45,12 @@ Page {
             Button {
                 id: addButton
                 text: qsTr("Add option")
-                topMargin: ui.du(1)
+                topMargin: zoom * ui.du(1)
                 horizontalAlignment: HorizontalAlignment.Fill
                 onClicked: page.addOption().requestFocus()
             }
             Container {
-                topMargin: ui.du(2)
+                topMargin: zoom * ui.du(2)
                 layout: StackLayout {
                     orientation: LayoutOrientation.LeftToRight
                 }
@@ -82,10 +82,10 @@ Page {
             Container {
                 // The field inside: addOption and send reach it through this.
                 property alias field: optionField
-                topMargin: ui.du(1)
+                topMargin: zoom * ui.du(1)
                 horizontalAlignment: HorizontalAlignment.Fill
                 background: nav.fieldColor
-                leftPadding: settings.theme == 1 ? ui.du(1) : 0
+                leftPadding: settings.theme == 1 ? zoom * ui.du(1) : 0
                 TextField {
                     id: optionField
                     horizontalAlignment: HorizontalAlignment.Fill

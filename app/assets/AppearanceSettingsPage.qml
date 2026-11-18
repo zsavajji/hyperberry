@@ -8,10 +8,10 @@ Page {
     }
     ScrollView {
         Container {
-            topPadding: ui.du(2)
-            leftPadding: ui.du(2)
-            rightPadding: ui.du(2)
-            bottomPadding: ui.du(2)
+            topPadding: zoom * ui.du(2)
+            leftPadding: zoom * ui.du(2)
+            rightPadding: zoom * ui.du(2)
+            bottomPadding: zoom * ui.du(2)
             DropDown {
                 title: qsTr("Theme")
                 options: [

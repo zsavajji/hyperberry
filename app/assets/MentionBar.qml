@@ -77,7 +77,7 @@ Container {
         property string pressColor: nav.pressColor
         property variant lineColor: nav.lineColor
         // At most four rows (a row and its hairline); the rest scroll.
-        preferredHeight: Math.min(bar.count, 4) * (ui.du(9.4) + ui.px(2))
+        preferredHeight: Math.min(bar.count, 4) * (zoom * ui.du(9.4) + ui.px(2))
         dataModel: matches
         onTriggered: bar.pick(matches.data(indexPath))
         listItemComponents: ListItemComponent {
@@ -88,9 +88,9 @@ Container {
                 background: row.ListItem.active ? Color.create(row.ListItem.view.pressColor) : Color.Transparent
                 Container {
                     horizontalAlignment: HorizontalAlignment.Fill
-                    minHeight: ui.du(9.4)
-                    leftPadding: ui.du(1.5)
-                    rightPadding: ui.du(1.5)
+                    minHeight: zoom * ui.du(9.4)
+                    leftPadding: zoom * ui.du(1.5)
+                    rightPadding: zoom * ui.du(1.5)
                     layout: DockLayout {}
                     Label {
                         verticalAlignment: VerticalAlignment.Center

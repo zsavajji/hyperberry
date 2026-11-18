@@ -70,17 +70,17 @@ Page {
             // Padding, not margins: margins only space siblings, never from the container's edge.
             Container {
                 horizontalAlignment: HorizontalAlignment.Fill
-                leftPadding: ui.du(1.5)
-                rightPadding: ui.du(1.5)
-                topPadding: ui.du(1.5)
-                bottomPadding: ui.du(1.5)
+                leftPadding: zoom * ui.du(1.5)
+                rightPadding: zoom * ui.du(1.5)
+                topPadding: zoom * ui.du(1.5)
+                bottomPadding: zoom * ui.du(1.5)
                 // The wrappers carry Bright's field fill (nav.fieldColor); Dark keeps the system box. On
                 // Bright the two fills would meet, so a gap between them.
                 Container {
                     horizontalAlignment: HorizontalAlignment.Fill
                     background: nav.fieldColor
-                    leftPadding: settings.theme == 1 ? ui.du(1) : 0
-                    bottomMargin: settings.theme == 1 ? ui.du(1) : 0
+                    leftPadding: settings.theme == 1 ? zoom * ui.du(1) : 0
+                    bottomMargin: settings.theme == 1 ? zoom * ui.du(1) : 0
                     TextField {
                         id: name
                         horizontalAlignment: HorizontalAlignment.Fill
@@ -91,7 +91,7 @@ Page {
                 Container {
                     horizontalAlignment: HorizontalAlignment.Fill
                     background: nav.fieldColor
-                    leftPadding: settings.theme == 1 ? ui.du(1) : 0
+                    leftPadding: settings.theme == 1 ? zoom * ui.du(1) : 0
                     TextField {
                         id: search
                         horizontalAlignment: HorizontalAlignment.Fill

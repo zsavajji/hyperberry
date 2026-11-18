@@ -25,13 +25,11 @@ Container {
     // Forwarded: field.text notifies only when committed (as SearchBar's field), this follows the keys.
     signal changing(string text)
     signal menu
-    // On the Passport the row is a quarter bigger, text and icons (the user, 2026-11-14, from a
-    // Passport screenshot: both looked small on its 120 du of width), and on the Classic a fifth:
-    // it is the Q10's 720 x 720 at 8 px a du, not 9, which is how it is told from the Q10 here.
-    // The other phones keep 1.
+    // On the Classic the row is a fifth bigger, text and icons: it is the Q10's 720 x 720 at 8 px a
+    // du, not 9, which is how it is told from the Q10 here. The Passport's quarter (2026-11-14) is
+    // now the app-wide zoom (main.cpp). The other phones keep 1.
     // ponytail: the 72 and 81 px icons are scaled up on the Passport; draw them at 2x if they look soft.
-    property real big: screenWidth >= 1440 ? 1.25
-                       : screenWidth == 720 && screenHeight == 720 && ui.du(1) < 9 ? 1.2 : 1
+    property real big: screenWidth == 720 && screenHeight == 720 && ui.du(1) < 9 ? 1.2 : 1
     horizontalAlignment: HorizontalAlignment.Fill
     // A 1 px grey line on top divides the row from the list (the user, 2026-11-08).
     Container {
@@ -50,8 +48,8 @@ Container {
         // Emoji, or Discard while recording.
         Container {
             verticalAlignment: VerticalAlignment.Center
-            preferredWidth: ui.du(9 * bar.big)
-            minHeight: ui.du(9 * bar.big)
+            preferredWidth: zoom * ui.du(9 * bar.big)
+            minHeight: zoom * ui.du(9 * bar.big)
             opacity: bar.readOnly ? 0.4 : 1
             layout: DockLayout {}
             gestureHandlers: TapHandler {
@@ -60,8 +58,8 @@ Container {
             ImageView {
                 horizontalAlignment: HorizontalAlignment.Center
                 verticalAlignment: VerticalAlignment.Center
-                preferredWidth: ui.du(8 * bar.big)
-                preferredHeight: ui.du(8 * bar.big)
+                preferredWidth: zoom * ui.du(8 * bar.big)
+                preferredHeight: zoom * ui.du(8 * bar.big)
                 scalingMethod: ScalingMethod.AspectFit
                 imageSource: bar.recording ? "file:///usr/share/icons/bb_action_delete.png"
                                            : "asset:///images/emoji.png"
@@ -75,8 +73,8 @@ Container {
             }
             verticalAlignment: VerticalAlignment.Fill
             background: Color.create(settings.theme == 1 ? "#ffffff" : "#000000")
-            topPadding: ui.du(0.5)
-            bottomPadding: ui.du(0.5)
+            topPadding: zoom * ui.du(0.5)
+            bottomPadding: zoom * ui.du(0.5)
             layout: StackLayout {
                 orientation: LayoutOrientation.LeftToRight
             }
@@ -91,7 +89,7 @@ Container {
                 // The point of this row: the system composer couldn't take the emoji style.
                 textStyle.base: nav.emojiStyle
                 textStyle.fontSize: FontSize.PercentageValue
-                textStyle.fontSizeValue: 100 * bar.big
+                textStyle.fontSizeValue: (100 * bar.big) * zoom
                 // Our colour, not the theme's: with no field background the selection blue goes navy
                 // over the black box and the theme drew the selected text dark on it (Q10, 0.0.1.232).
                 // The theme's background fixed that but is grey (0.0.1.233, the user: remove it).
@@ -112,8 +110,8 @@ Container {
             }
             Container {
                 verticalAlignment: VerticalAlignment.Bottom
-                preferredWidth: ui.du(8 * bar.big)
-                minHeight: ui.du(8 * bar.big)
+                preferredWidth: zoom * ui.du(8 * bar.big)
+                minHeight: zoom * ui.du(8 * bar.big)
                 opacity: bar.readOnly ? 0.4 : 1
                 layout: DockLayout {}
                 gestureHandlers: TapHandler {
@@ -122,8 +120,8 @@ Container {
                 ImageView {
                     horizontalAlignment: HorizontalAlignment.Center
                     verticalAlignment: VerticalAlignment.Center
-                    preferredWidth: ui.du(6 * bar.big)
-                    preferredHeight: ui.du(6 * bar.big)
+                    preferredWidth: zoom * ui.du(6 * bar.big)
+                    preferredHeight: zoom * ui.du(6 * bar.big)
                     scalingMethod: ScalingMethod.AspectFit
                     imageSource: "asset:///images/attach_action.png"
                     filterColor: ui.palette.textOnPlain
@@ -131,8 +129,8 @@ Container {
             }
             Container {
                 verticalAlignment: VerticalAlignment.Bottom
-                preferredWidth: ui.du(8 * bar.big)
-                minHeight: ui.du(8 * bar.big)
+                preferredWidth: zoom * ui.du(8 * bar.big)
+                minHeight: zoom * ui.du(8 * bar.big)
                 opacity: bar.readOnly ? 0.4 : 1
                 layout: DockLayout {}
                 gestureHandlers: TapHandler {
@@ -141,8 +139,8 @@ Container {
                 ImageView {
                     horizontalAlignment: HorizontalAlignment.Center
                     verticalAlignment: VerticalAlignment.Center
-                    preferredWidth: ui.du(6 * bar.big)
-                    preferredHeight: ui.du(6 * bar.big)
+                    preferredWidth: zoom * ui.du(6 * bar.big)
+                    preferredHeight: zoom * ui.du(6 * bar.big)
                     scalingMethod: ScalingMethod.AspectFit
                     imageSource: bar.mic ? "asset:///images/record.png"
                                          : "file:///usr/share/icons/bb_action_sendtextmessage.png"
@@ -153,8 +151,8 @@ Container {
         // The action menu (Search, Pinned, info, ...); always live, a channel needs it too.
         Container {
             verticalAlignment: VerticalAlignment.Center
-            preferredWidth: ui.du(9 * bar.big)
-            minHeight: ui.du(9 * bar.big)
+            preferredWidth: zoom * ui.du(9 * bar.big)
+            minHeight: zoom * ui.du(9 * bar.big)
             layout: DockLayout {}
             gestureHandlers: TapHandler {
                 onTapped: bar.menu()
@@ -162,8 +160,8 @@ Container {
             ImageView {
                 horizontalAlignment: HorizontalAlignment.Center
                 verticalAlignment: VerticalAlignment.Center
-                preferredWidth: ui.du(6 * bar.big)
-                preferredHeight: ui.du(6 * bar.big)
+                preferredWidth: zoom * ui.du(6 * bar.big)
+                preferredHeight: zoom * ui.du(6 * bar.big)
                 scalingMethod: ScalingMethod.AspectFit
                 imageSource: "asset:///images/overflow_action.png"
                 filterColor: ui.palette.textOnPlain

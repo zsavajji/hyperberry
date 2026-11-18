@@ -85,7 +85,7 @@ void PollBubble::makeRow(int index, const QVariantMap &option)
     r.mark->setVerticalAlignment(VerticalAlignment::Top);
     r.mark->setTopMargin(0);
     r.mark->setBottomMargin(0);
-    r.mark->setRightMargin(m_ui->du(1));
+    r.mark->setRightMargin(Card::du(m_ui, 1));
     r.mark->setText(markOf(several, r.picked));
     r.mark->setTextFormat(TextFormat::Plain);
 
@@ -109,8 +109,8 @@ void PollBubble::makeRow(int index, const QVariantMap &option)
     r.count->setVerticalAlignment(VerticalAlignment::Top);
     r.count->setTopMargin(0);
     r.count->setBottomMargin(0);
-    r.count->setLeftMargin(m_ui->du(1));
-    r.count->setMinWidth(m_ui->du(5));
+    r.count->setLeftMargin(Card::du(m_ui, 1));
+    r.count->setMinWidth(Card::du(m_ui, 5));
     r.count->setText(QString::number(count));
     TapHandler *who = new TapHandler(r.count);
     who->setProperty("index", index);
@@ -123,10 +123,10 @@ void PollBubble::makeRow(int index, const QVariantMap &option)
     // The share of the voters who chose it: the primary colour for the count, grey for the
     // rest, all grey while nobody voted.
     Container *bar = new Container();
-    bar->setTopMargin(m_ui->du(0.5));
+    bar->setTopMargin(Card::du(m_ui, 0.5));
     bar->setBottomMargin(0);
     bar->setHorizontalAlignment(HorizontalAlignment::Fill);
-    bar->setPreferredHeight(m_ui->du(0.5));
+    bar->setPreferredHeight(Card::du(m_ui, 0.5));
     bar->setLayout(Card::across());
 
     // A part with no share is hidden, not given a quota of 0: Cascades sized a 0 like
@@ -160,12 +160,12 @@ void PollBubble::restyle()
     const UIPalette *palette = m_ui->palette();
     for (int i = 0; i < m_rows.size(); i++) {
         const Row &r = m_rows.at(i);
-        r.row->setTopPadding(m_ui->du(1 * scale));
+        r.row->setTopPadding(Card::du(m_ui, 1 * scale));
 
         TextStyleDefinition *mark = r.mark->textStyle();
         mark->setBase(SystemDefaults::TextStyles::bodyText());
         mark->setFontSize(FontSize::PercentageValue);
-        mark->setFontSizeValue(qRound(100 * scale));
+        mark->setFontSizeValue(qRound(100 * scale * Card::zoom()));
         mark->setColor(r.picked ? palette->primary() : palette->secondaryTextOnPlain());
 
         Card::style(r.name, m_list, body);

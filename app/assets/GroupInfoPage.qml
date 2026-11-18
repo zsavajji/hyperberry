@@ -158,17 +158,17 @@ Page {
             // The group's tile and subject; the chat's name until the engine answers.
             Container {
                 horizontalAlignment: HorizontalAlignment.Fill
-                leftPadding: ui.du(1.5)
-                rightPadding: ui.du(1.5)
-                topPadding: ui.du(1.5)
-                bottomPadding: ui.du(1.5)
+                leftPadding: zoom * ui.du(1.5)
+                rightPadding: zoom * ui.du(1.5)
+                topPadding: zoom * ui.du(1.5)
+                bottomPadding: zoom * ui.du(1.5)
                 layout: StackLayout {
                     orientation: LayoutOrientation.LeftToRight
                 }
                 Container {
                     verticalAlignment: VerticalAlignment.Center
-                    preferredWidth: ui.du(7)
-                    preferredHeight: ui.du(7)
+                    preferredWidth: zoom * ui.du(7)
+                    preferredHeight: zoom * ui.du(7)
                     background: page.chat ? Color.create(page.chat.color) : Color.Transparent
                     layout: DockLayout {}
                     Label {
@@ -179,7 +179,7 @@ Page {
                         textFormat: TextFormat.Plain
                         textStyle.base: nav.emojiStyle
                         textStyle.fontSize: FontSize.PercentageValue
-                        textStyle.fontSizeValue: 118
+                        textStyle.fontSizeValue: 118 * zoom
                         textStyle.color: Color.White
                     }
                     ImageView {
@@ -196,7 +196,7 @@ Page {
                 }
                 Label {
                     verticalAlignment: VerticalAlignment.Center
-                    leftMargin: ui.du(1.5)
+                    leftMargin: zoom * ui.du(1.5)
                     topMargin: 0
                     bottomMargin: 0
                     layoutProperties: StackLayoutProperties {
@@ -214,9 +214,9 @@ Page {
             Container {
                 visible: !!page.info.description
                 horizontalAlignment: HorizontalAlignment.Fill
-                leftPadding: ui.du(1.5)
-                rightPadding: ui.du(1.5)
-                bottomPadding: ui.du(1.5)
+                leftPadding: zoom * ui.du(1.5)
+                rightPadding: zoom * ui.du(1.5)
+                bottomPadding: zoom * ui.du(1.5)
                 Label {
                     horizontalAlignment: HorizontalAlignment.Fill
                     multiline: true
@@ -282,16 +282,16 @@ Page {
                         ]
                         Container {
                             horizontalAlignment: HorizontalAlignment.Fill
-                            minHeight: ui.du(9.4)
-                            leftPadding: ui.du(1.5)
-                            rightPadding: ui.du(1.5)
+                            minHeight: zoom * ui.du(9.4)
+                            leftPadding: zoom * ui.du(1.5)
+                            rightPadding: zoom * ui.du(1.5)
                             layout: StackLayout {
                                 orientation: LayoutOrientation.LeftToRight
                             }
                             Container {
                                 verticalAlignment: VerticalAlignment.Center
-                                preferredWidth: ui.du(7)
-                                preferredHeight: ui.du(7)
+                                preferredWidth: zoom * ui.du(7)
+                                preferredHeight: zoom * ui.du(7)
                                 background: Color.create(ListItemData.color)
                                 layout: DockLayout {}
                                 Label {
@@ -301,7 +301,7 @@ Page {
                                     textFormat: TextFormat.Plain
                                     textStyle.base: row.ListItem.view.emojiStyle
                                     textStyle.fontSize: FontSize.PercentageValue
-                                    textStyle.fontSizeValue: 118
+                                    textStyle.fontSizeValue: 118 * zoom
                                     textStyle.color: Color.White
                                 }
                                 ImageView {
@@ -315,7 +315,7 @@ Page {
                             }
                             Label {
                                 verticalAlignment: VerticalAlignment.Center
-                                leftMargin: ui.du(1.5)
+                                leftMargin: zoom * ui.du(1.5)
                                 layoutProperties: StackLayoutProperties {
                                     spaceQuota: 1
                                 }
@@ -328,7 +328,7 @@ Page {
                             Label {
                                 visible: ListItemData.admin
                                 verticalAlignment: VerticalAlignment.Center
-                                leftMargin: ui.du(1.5)
+                                leftMargin: zoom * ui.du(1.5)
                                 text: qsTr("Admin")
                                 textStyle.base: row.ListItem.view.emojiStyle
                                 textStyle.fontSize: FontSize.PercentageValue

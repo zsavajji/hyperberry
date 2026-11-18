@@ -12,16 +12,16 @@ Container {
     background: row.ListItem.active ? Color.create(row.ListItem.view.pressColor) : Color.Transparent
     Container {
         horizontalAlignment: HorizontalAlignment.Fill
-        minHeight: ui.du(9.4)
-        leftPadding: ui.du(1.5)
-        rightPadding: ui.du(1.5)
+        minHeight: zoom * ui.du(9.4)
+        leftPadding: zoom * ui.du(1.5)
+        rightPadding: zoom * ui.du(1.5)
         layout: StackLayout {
             orientation: LayoutOrientation.LeftToRight
         }
         Container {
             verticalAlignment: VerticalAlignment.Center
-            preferredWidth: ui.du(7)
-            preferredHeight: ui.du(7)
+            preferredWidth: zoom * ui.du(7)
+            preferredHeight: zoom * ui.du(7)
             background: Color.create(row.contact.color)
             layout: DockLayout {}
             Label {
@@ -31,7 +31,7 @@ Container {
                 textFormat: TextFormat.Plain
                 textStyle.base: row.ListItem.view.emojiStyle
                 textStyle.fontSize: FontSize.PercentageValue
-                textStyle.fontSizeValue: 118
+                textStyle.fontSizeValue: 118 * zoom
                 textStyle.color: Color.White
             }
             // The picture over the initials, when the row has one (a group's members do, from
@@ -47,7 +47,7 @@ Container {
         }
         Label {
             verticalAlignment: VerticalAlignment.Center
-            leftMargin: ui.du(1.5)
+            leftMargin: zoom * ui.du(1.5)
             layoutProperties: StackLayoutProperties {
                 spaceQuota: 1
             }
@@ -70,8 +70,8 @@ Container {
         ImageView {
             visible: !!row.contact.chosen
             verticalAlignment: VerticalAlignment.Center
-            preferredWidth: ui.du(5)
-            preferredHeight: ui.du(5)
+            preferredWidth: zoom * ui.du(5)
+            preferredHeight: zoom * ui.du(5)
             imageSource: "asset:///images/tick_action.png"
             filterColor: ui.palette.primary
         }

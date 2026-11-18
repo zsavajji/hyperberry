@@ -21,10 +21,10 @@ Page {
                 title: qsTr("Download automatically")
             }
             Container {
-                topPadding: ui.du(2)
-                leftPadding: ui.du(2)
-                rightPadding: ui.du(2)
-                bottomPadding: ui.du(2)
+                topPadding: zoom * ui.du(2)
+                leftPadding: zoom * ui.du(2)
+                rightPadding: zoom * ui.du(2)
+                bottomPadding: zoom * ui.du(2)
                 // What downloads when it arrives; the rest waits for a tap. Mobile data, below, holds them all.
                 Container {
                     layout: StackLayout {
@@ -46,7 +46,7 @@ Page {
                     }
                 }
                 Container {
-                    topMargin: ui.du(2)
+                    topMargin: zoom * ui.du(2)
                     layout: StackLayout {
                         orientation: LayoutOrientation.LeftToRight
                     }
@@ -74,7 +74,7 @@ Page {
                     }
                 }
                 Container {
-                    topMargin: ui.du(2)
+                    topMargin: zoom * ui.du(2)
                     layout: StackLayout {
                         orientation: LayoutOrientation.LeftToRight
                     }
@@ -94,7 +94,7 @@ Page {
                     }
                 }
                 Container {
-                    topMargin: ui.du(2)
+                    topMargin: zoom * ui.du(2)
                     layout: StackLayout {
                         orientation: LayoutOrientation.LeftToRight
                     }
@@ -114,7 +114,7 @@ Page {
                     }
                 }
                 Container {
-                    topMargin: ui.du(3)
+                    topMargin: zoom * ui.du(3)
                     layout: StackLayout {
                         orientation: LayoutOrientation.LeftToRight
                     }
@@ -146,10 +146,10 @@ Page {
                 title: qsTr("Storage")
             }
             Container {
-                topPadding: ui.du(2)
-                leftPadding: ui.du(2)
-                rightPadding: ui.du(2)
-                bottomPadding: ui.du(2)
+                topPadding: zoom * ui.du(2)
+                leftPadding: zoom * ui.du(2)
+                rightPadding: zoom * ui.du(2)
+                bottomPadding: zoom * ui.du(2)
                 // What data/cache/ may hold. The engine prunes it, the oldest first (step 8.3).
                 DropDown {
                     title: qsTr("Cache limit")
@@ -166,7 +166,7 @@ Page {
                     }
                 }
                 Container {
-                    topMargin: ui.du(2)
+                    topMargin: zoom * ui.du(2)
                     layout: StackLayout {
                         orientation: LayoutOrientation.LeftToRight
                     }
@@ -190,7 +190,7 @@ Page {
                     }
                 }
                 Label {
-                    topMargin: ui.du(1)
+                    topMargin: zoom * ui.du(1)
                     multiline: true
                     text: qsTr("Voice notes' decoded audio and photo previews; they're made again when needed.")
                     textStyle.base: SystemDefaults.TextStyles.SubtitleText

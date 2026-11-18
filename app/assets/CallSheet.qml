@@ -367,7 +367,7 @@ Sheet {
                         textFormat: TextFormat.Plain
                         textStyle.base: nav.emojiStyle
                         textStyle.fontSize: FontSize.PercentageValue
-                        textStyle.fontSizeValue: sheet.ringing ? 200 : 170
+                        textStyle.fontSizeValue: (sheet.ringing ? 200 : 170) * zoom
                         textStyle.color: Color.White
                     }
                     Label {
@@ -392,7 +392,7 @@ Sheet {
                         text: sheet.clock
                         textFormat: TextFormat.Plain
                         textStyle.fontSize: FontSize.PercentageValue
-                        textStyle.fontSizeValue: 95
+                        textStyle.fontSizeValue: 95 * zoom
                         textStyle.textAlign: TextAlign.Right
                         textStyle.color: Color.White
                     }
@@ -451,7 +451,7 @@ Sheet {
                         text: sheet.call.video ? qsTr("WhatsApp: video call") : qsTr("WhatsApp: voice call")
                         textFormat: TextFormat.Plain
                         textStyle.fontSize: FontSize.PercentageValue
-                        textStyle.fontSizeValue: 85
+                        textStyle.fontSizeValue: 85 * zoom
                         textStyle.color: Color.create("#e8e8e8")
                     }
                 }

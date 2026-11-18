@@ -193,7 +193,7 @@ Page {
                     spaceQuota: 1
                 }
                 background: nav.fieldColor
-                leftPadding: settings.theme == 1 ? ui.du(1) : 0
+                leftPadding: settings.theme == 1 ? zoom * ui.du(1) : 0
                 TextField {
                     id: search
                     horizontalAlignment: HorizontalAlignment.Fill
@@ -213,8 +213,8 @@ Page {
             // A touch target the size of an action column (9 du), the ✕ as the reply bar's.
             Container {
                 verticalAlignment: VerticalAlignment.Center
-                preferredWidth: ui.du(9)
-                preferredHeight: ui.du(9)
+                preferredWidth: zoom * ui.du(9)
+                preferredHeight: zoom * ui.du(9)
                 layout: DockLayout {
                 }
                 gestureHandlers: TapHandler {

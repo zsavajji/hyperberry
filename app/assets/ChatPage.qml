@@ -619,7 +619,7 @@ Page {
                         orientation: LayoutOrientation.BottomToTop
                     }
                     // The newest card keeps the cards' gap above the composer.
-                    bottomPadding: ui.du(1.5)
+                    bottomPadding: zoom * ui.du(1.5)
                     // The beginning is the bottom: a new message is followed only when the list was
                     // already there.
                     stickToEdgePolicy: ListViewStickToEdgePolicy.Beginning

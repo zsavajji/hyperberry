@@ -9,13 +9,13 @@ Container {
     visible: running
     horizontalAlignment: HorizontalAlignment.Fill
     verticalAlignment: VerticalAlignment.Center
-    leftPadding: ui.du(4)
-    rightPadding: ui.du(4)
+    leftPadding: zoom * ui.du(4)
+    rightPadding: zoom * ui.du(4)
     ActivityIndicator {
         horizontalAlignment: HorizontalAlignment.Center
         running: busy.running
-        preferredWidth: ui.du(12)
-        preferredHeight: ui.du(12)
+        preferredWidth: zoom * ui.du(12)
+        preferredHeight: zoom * ui.du(12)
     }
     Label {
         id: label

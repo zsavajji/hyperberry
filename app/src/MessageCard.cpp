@@ -92,8 +92,8 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
     setHorizontalAlignment(HorizontalAlignment::Fill);
     m_root = new Container();
     m_root->setHorizontalAlignment(HorizontalAlignment::Fill);
-    m_root->setLeftPadding(m_ui->du(1.5));
-    m_root->setRightPadding(m_ui->du(1.5));
+    m_root->setLeftPadding(Card::du(m_ui, 1.5));
+    m_root->setRightPadding(Card::du(m_ui, 1.5));
 
     // The card: the text column, and the time and ticks where placeTime() puts them, never on a row
     // of their own, so a one-line message is one line tall (Q10, 2026-10-31: a row of its own made
@@ -142,7 +142,7 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
     m_ticks->setVerticalAlignment(VerticalAlignment::Center);
     // Sized by fillFoot() with the time's text; 1 du from it, not the 20 px Cascades puts there.
     m_ticks->setScalingMethod(ScalingMethod::AspectFit);
-    m_ticks->setLeftMargin(m_ui->du(1));
+    m_ticks->setLeftMargin(Card::du(m_ui, 1));
     m_timeBox->add(m_time);
     m_timeBox->add(m_ticks);
 
@@ -158,12 +158,12 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
     m_barL = new ImageView();
     m_barL->setHorizontalAlignment(HorizontalAlignment::Fill);
     m_barL->setVerticalAlignment(VerticalAlignment::Top);
-    m_barL->setPreferredHeight(m_ui->du(1));
+    m_barL->setPreferredHeight(Card::du(m_ui, 1));
     m_barL->setImageSource(Card::url("asset:///images/bar_l.amd"));
     m_barR = new ImageView();
     m_barR->setHorizontalAlignment(HorizontalAlignment::Fill);
     m_barR->setVerticalAlignment(VerticalAlignment::Top);
-    m_barR->setPreferredHeight(m_ui->du(1));
+    m_barR->setPreferredHeight(Card::du(m_ui, 1));
     m_barR->setImageSource(Card::url("asset:///images/bar_r.amd"));
     m_tailL = makeTail("asset:///images/tail_l.png");
     m_tailL->setHorizontalAlignment(HorizontalAlignment::Left);
@@ -244,7 +244,7 @@ ImageView *MessageCard::makeTail(const char *source)
 {
     ImageView *tail = new ImageView();
     tail->setImageSource(Card::url(source));
-    tail->setPreferredSize(m_ui->du(2), m_ui->du(2));
+    tail->setPreferredSize(Card::du(m_ui, 2), Card::du(m_ui, 2));
     tail->setScalingMethod(ScalingMethod::Fill);
     tail->setLeftMargin(0);
     tail->setRightMargin(0);
@@ -345,21 +345,21 @@ void MessageCard::restyle()
     m_barL->setFilterColor(theirs.isEmpty() ? quiet : Card::color(theirs));
     m_barR->setFilterColor(m_ui->palette()->primary());
     const float side = Card::side(m_ui, scale);
-    m_root->setTopPadding(m_ui->du(1.5 * scale));
+    m_root->setTopPadding(Card::du(m_ui, 1.5 * scale));
     m_card->setLeftPadding(side);
     m_card->setRightPadding(side);
-    m_card->setTopPadding(m_ui->du(1 * scale)); // 2 px less: the name and time a little higher (Q10, 0.0.1.212)
-    m_card->setBottomPadding(m_ui->du(1 * scale) + m_ui->px(2));
+    m_card->setTopPadding(Card::du(m_ui, 1 * scale)); // 2 px less: the name and time a little higher (Q10, 0.0.1.212)
+    m_card->setBottomPadding(Card::du(m_ui, 1 * scale) + m_ui->px(2));
     if (m_head) {
         m_head->setLeftPadding(side);
         m_head->setRightPadding(side);
-        m_head->setTopPadding(m_ui->du(1 * scale));
-        m_head->setBottomPadding(m_ui->du(1 * scale) + m_ui->px(2));
+        m_head->setTopPadding(Card::du(m_ui, 1 * scale));
+        m_head->setBottomPadding(Card::du(m_ui, 1 * scale) + m_ui->px(2));
     }
     Card::style(m_text, m_list, body);
     // 72 % of SmallText, about two thirds of the body text (the user, 2026-11-14: the time and ticks
     // smaller; it was 85 % since 2026-11-08). The ticks follow it, so they are sized again.
-    m_time->textStyle()->setFontSizeValue(qRound(72 * scale));
+    m_time->textStyle()->setFontSizeValue(qRound(72 * scale * Card::zoom()));
     m_tick = -1;
     if (m_sender)
         Card::style(m_sender, m_list, small);
@@ -368,7 +368,7 @@ void MessageCard::restyle()
         m_fwdText->textStyle()->setFontStyle(FontStyle::Italic);
         m_fwdText->textStyle()->setColor(quiet);
         m_fwdIcon->setFilterColor(quiet);
-        m_fwdIcon->setPreferredSize(m_ui->du(2.2 * scale), m_ui->du(2.2 * scale));
+        m_fwdIcon->setPreferredSize(Card::du(m_ui, 2.2 * scale), Card::du(m_ui, 2.2 * scale));
     }
     if (m_quote) {
         m_bar->setBackground(m_ui->palette()->primary());
@@ -390,7 +390,7 @@ void MessageCard::restyle()
 void MessageCard::makeSender()
 {
     m_sender = new Label();
-    m_sender->setBottomMargin(m_ui->du(0.5) + m_ui->px(2)); // +2 px (Q10, 0.0.1.212)
+    m_sender->setBottomMargin(Card::du(m_ui, 0.5) + m_ui->px(2)); // +2 px (Q10, 0.0.1.212)
     m_sender->textStyle()->setFontWeight(FontWeight::Bold);
     (m_head ? m_head : m_col)->insert(0, m_sender);
     m_styled = false;
@@ -402,12 +402,12 @@ void MessageCard::makeForwarded()
     m_fwd = new Container();
     m_fwd->setLayout(Card::across());
     m_fwd->setTopMargin(0);
-    m_fwd->setBottomMargin(m_ui->du(0.5));
+    m_fwd->setBottomMargin(Card::du(m_ui, 0.5));
     m_fwdIcon = new ImageView();
     m_fwdIcon->setVerticalAlignment(VerticalAlignment::Center);
     m_fwdIcon->setScalingMethod(ScalingMethod::AspectFit);
     m_fwdIcon->setLoadEffect(ImageViewLoadEffect::None);
-    m_fwdIcon->setRightMargin(m_ui->du(0.5));
+    m_fwdIcon->setRightMargin(Card::du(m_ui, 0.5));
     m_fwdText = new Label();
     m_fwdText->setVerticalAlignment(VerticalAlignment::Center);
     m_fwd->add(m_fwdIcon);
@@ -422,22 +422,22 @@ void MessageCard::makeQuote()
     m_quote = new Container();
     m_quote->setHorizontalAlignment(HorizontalAlignment::Fill);
     m_quote->setTopMargin(0);
-    m_quote->setBottomMargin(m_ui->du(0.5));
+    m_quote->setBottomMargin(Card::du(m_ui, 0.5));
     m_quote->setLayout(Card::across());
 
     m_bar = new Container();
     m_bar->setVerticalAlignment(VerticalAlignment::Fill);
-    m_bar->setMinWidth(m_ui->du(0.5));
-    m_bar->setMaxWidth(m_ui->du(0.5));
+    m_bar->setMinWidth(Card::du(m_ui, 0.5));
+    m_bar->setMaxWidth(Card::du(m_ui, 0.5));
 
     // No quota: it stretched the card to its widest, and the quote is as wide as its words or the
     // card (the user, 2026-11-14). The bar's least width keeps it: a two-line quote squeezed it to
     // nothing while it had only a preferred one (0.0.1.136, Q10).
     Container *words = new Container();
-    words->setLeftMargin(m_ui->du(1));
-    words->setRightPadding(m_ui->du(1));
-    words->setTopPadding(m_ui->du(0.5));
-    words->setBottomPadding(m_ui->du(0.5));
+    words->setLeftMargin(Card::du(m_ui, 1));
+    words->setRightPadding(Card::du(m_ui, 1));
+    words->setTopPadding(Card::du(m_ui, 0.5));
+    words->setBottomPadding(Card::du(m_ui, 0.5));
 
     // Whose message it was, in groups.
     m_quoteName = new Label();
@@ -455,9 +455,9 @@ void MessageCard::makeQuote()
     // A story's picture, when the quote is one (docs/protocol.md, Story quotes): a tap on the quote plays the story.
     m_quoteThumb = new ImageView();
     m_quoteThumb->setVerticalAlignment(VerticalAlignment::Center);
-    m_quoteThumb->setPreferredWidth(m_ui->du(8));
-    m_quoteThumb->setPreferredHeight(m_ui->du(8));
-    m_quoteThumb->setMinWidth(m_ui->du(8));
+    m_quoteThumb->setPreferredWidth(Card::du(m_ui, 8));
+    m_quoteThumb->setPreferredHeight(Card::du(m_ui, 8));
+    m_quoteThumb->setMinWidth(Card::du(m_ui, 8));
     m_quoteThumb->setScalingMethod(ScalingMethod::AspectFill);
     m_quoteThumb->setLoadEffect(ImageViewLoadEffect::None);
     m_quoteThumb->setVisible(false);
@@ -484,7 +484,7 @@ void MessageCard::makeLabel()
 void MessageCard::makeJoin()
 {
     m_join = new Button();
-    m_join->setTopMargin(m_ui->du(1));
+    m_join->setTopMargin(Card::du(m_ui, 1));
     m_join->setHorizontalAlignment(HorizontalAlignment::Fill);
     m_join->setText(Card::tr(kContext, "Join group"));
     connect(m_join, SIGNAL(clicked()), this, SLOT(onJoin()));
@@ -509,10 +509,10 @@ void MessageCard::makeChip()
 {
     m_chip = new Container();
     m_chip->setHorizontalAlignment(HorizontalAlignment::Left);
-    m_chip->setTopMargin(m_ui->du(0.5));
-    m_chip->setRightPadding(m_ui->du(1));
-    m_chip->setTopPadding(m_ui->du(0.5));
-    m_chip->setBottomPadding(m_ui->du(0.5));
+    m_chip->setTopMargin(Card::du(m_ui, 0.5));
+    m_chip->setRightPadding(Card::du(m_ui, 1));
+    m_chip->setTopPadding(Card::du(m_ui, 0.5));
+    m_chip->setBottomPadding(Card::du(m_ui, 0.5));
     TapHandler *tap = new TapHandler(m_chip);
     m_chip->addGestureHandler(tap);
     connect(tap, SIGNAL(tapped(bb::cascades::TapEvent *)), this, SLOT(onWho()));
@@ -589,7 +589,7 @@ void MessageCard::fillColumn()
     // space, so the line keeps it, and the run wraps as a word does. Right-to-left text ends at
     // the left, so there the blanks take a line of their own.
     QString room = text.section('\n', -1).isRightToLeft() ? QString(html.isEmpty() ? "\n" : "<br/>") : QString(" ");
-    room += QString(qCeil((timeWidth() + m_ui->du(0.5)) / m_ui->du(3.1 * m_scale)), QChar(0x2800));
+    room += QString(qCeil((timeWidth() + Card::du(m_ui, 0.5)) / Card::du(m_ui, 3.1 * m_scale)), QChar(0x2800));
     m_text->setTextFormat(html.isEmpty() ? TextFormat::Plain : TextFormat::Html);
     m_text->setText((html.isEmpty() ? Card::noKeycaps(text) : html) + room);
     m_text->content()->setFlags(deleted ? TextContentFlag::Default : TextContentFlag::ActiveText);
@@ -633,7 +633,7 @@ void MessageCard::fillFoot()
     const int place = onPicture ? 2 : m_words->isVisible() ? 1 : m_voice && flag("voice") ? 3 : 0;
     placeTime(place);
     // The top padding is this one's, on a picture too; set only when it changed.
-    const float top = onPicture ? m_ui->du(0.5) : place == 0 ? m_ui->px((small ? 11 : 16) * m_scale) : 0;
+    const float top = onPicture ? Card::du(m_ui, 0.5) : place == 0 ? m_ui->px((small ? 11 : 16) * m_scale * Card::zoom()) : 0;
     if (top != m_timeTop) {
         m_timeTop = top;
         m_timeBox->setTopPadding(top);
@@ -649,7 +649,7 @@ void MessageCard::fillFoot()
         if (tick != m_tick) {
             m_tick = tick;
             // 2.4 du tall at 100 %, 22 px on the Q10, where the images' 27 px were; the two ticks are wider.
-            m_ticks->setPreferredSize(m_ui->du((tick == 2 ? 3.1 : 2.4) * m_scale), m_ui->du(2.4 * m_scale));
+            m_ticks->setPreferredSize(Card::du(m_ui, (tick == 2 ? 3.1 : 2.4) * m_scale), Card::du(m_ui, 2.4 * m_scale));
             m_ticks->setImageSource(Card::url(tick == 0 ? "asset:///images/clock.png"
                                         : tick == 1 ? "asset:///images/tick.png" : "asset:///images/ticks.png"));
         }
@@ -663,7 +663,7 @@ void MessageCard::fillFoot()
     // both, so the time is cut.
     if (!m_head) {
         const float most = Card::width(m_ui) - 2 * Card::side(m_ui, m_scale)
-                           - (place == 0 ? m_ui->du(1) + timeWidth() : 0);
+                           - (place == 0 ? Card::du(m_ui, 1) + timeWidth() : 0);
         if (most != m_colMax) {
             m_colMax = most;
             m_col->setMaxWidth(most);
@@ -696,8 +696,8 @@ float MessageCard::timeWidth() const
     const bool out = flag("out");
     const int state = m_msg.value("state").toInt();
     const int chars = str("time").size() + timeLead().size();
-    return chars * m_ui->du(1.55 * m_scale) + (out && state < 4 ? m_ui->du(1 + 3.1 * m_scale) : 0)
-           + (out && state == 4 ? m_ui->du(4) : 0);
+    return chars * Card::du(m_ui, 1.55 * m_scale) + (out && state < 4 ? Card::du(m_ui, 1 + 3.1 * m_scale) : 0)
+           + (out && state == 4 ? Card::du(m_ui, 4) : 0);
 }
 
 // The time and ticks: at the bottom right of the text, over the blanks that end it; under a voice
@@ -715,13 +715,13 @@ void MessageCard::placeTime(int place)
     m_timePlace = place;
 
     const bool onPicture = place == 2;
-    const float chip = onPicture ? m_ui->du(1) : 0;
+    const float chip = onPicture ? Card::du(m_ui, 1) : 0;
     m_timeBox->setHorizontalAlignment(place == 1 ? HorizontalAlignment::Right : HorizontalAlignment::Left);
     m_timeBox->setVerticalAlignment(place == 1 ? VerticalAlignment::Bottom : VerticalAlignment::Top);
-    m_timeBox->setLeftMargin(place == 0 ? m_ui->du(1) : 0);
+    m_timeBox->setLeftMargin(place == 0 ? Card::du(m_ui, 1) : 0);
     m_timeBox->setLeftPadding(chip);
     m_timeBox->setRightPadding(chip);
-    m_timeBox->setBottomPadding(onPicture ? m_ui->du(0.5) : 0);
+    m_timeBox->setBottomPadding(onPicture ? Card::du(m_ui, 0.5) : 0);
     if (onPicture)
         m_timeBox->setBackground(Card::color("#80000000"));
     else

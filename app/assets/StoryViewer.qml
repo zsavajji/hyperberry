@@ -319,7 +319,7 @@ Page {
                 }
                 leftMargin: ui.px(2)
                 rightMargin: ui.px(2)
-                preferredHeight: ui.px(4)
+                preferredHeight: zoom * ui.px(4)
                 background: Color.create(1.0, 1.0, 1.0, 0.35)
                 layout: StackLayout {
                     orientation: LayoutOrientation.LeftToRight
@@ -365,8 +365,8 @@ Page {
             verticalAlignment: VerticalAlignment.Fill
             background: Color.create(sheet.cur.bg ? sheet.cur.bg : "#000000")
             layout: DockLayout {}
-            leftPadding: ui.du(3)
-            rightPadding: ui.du(3)
+            leftPadding: zoom * ui.du(3)
+            rightPadding: zoom * ui.du(3)
             Label {
                 horizontalAlignment: HorizontalAlignment.Center
                 verticalAlignment: VerticalAlignment.Center
@@ -397,8 +397,8 @@ Page {
         ActivityIndicator {
             horizontalAlignment: HorizontalAlignment.Center
             verticalAlignment: VerticalAlignment.Center
-            preferredWidth: ui.du(9)
-            preferredHeight: ui.du(9)
+            preferredWidth: zoom * ui.du(9)
+            preferredHeight: zoom * ui.du(9)
             running: (sheet.cur.kind == 1 && !sheet.cur.ready) || (sheet.cur.kind == 2 && !sheet.playing)
             visible: running
         }
@@ -451,10 +451,10 @@ Page {
             Container {
                 horizontalAlignment: HorizontalAlignment.Fill
                 background: Color.create(0.0, 0.0, 0.0, 0.55)
-                leftPadding: ui.du(1)
-                rightPadding: ui.du(0.5)
-                topPadding: ui.du(1)
-                bottomPadding: ui.du(1)
+                leftPadding: zoom * ui.du(1)
+                rightPadding: zoom * ui.du(0.5)
+                topPadding: zoom * ui.du(1)
+                bottomPadding: zoom * ui.du(1)
                 layout: StackLayout {
                     orientation: LayoutOrientation.LeftToRight
                 }
@@ -480,14 +480,14 @@ Page {
                 // The emoji button: opens the picker to react with any emoji. A box 10 du square, the touch target.
                 Container {
                     verticalAlignment: VerticalAlignment.Center
-                    preferredWidth: ui.du(10)
-                    preferredHeight: ui.du(10)
+                    preferredWidth: zoom * ui.du(10)
+                    preferredHeight: zoom * ui.du(10)
                     layout: DockLayout {}
                     ImageView {
                         horizontalAlignment: HorizontalAlignment.Center
                         verticalAlignment: VerticalAlignment.Center
-                        preferredWidth: ui.du(5.5)
-                        preferredHeight: ui.du(5.5)
+                        preferredWidth: zoom * ui.du(5.5)
+                        preferredHeight: zoom * ui.du(5.5)
                         imageSource: "asset:///images/emoji.png"
                         filterColor: sheet.picking ? ui.palette.primary : Color.White
                         opacity: sheet.picking ? 1.0 : 0.75
@@ -499,14 +499,14 @@ Page {
                 // The heart: the quick reaction. A box 10 du square, the touch target.
                 Container {
                     verticalAlignment: VerticalAlignment.Center
-                    preferredWidth: ui.du(10)
-                    preferredHeight: ui.du(10)
+                    preferredWidth: zoom * ui.du(10)
+                    preferredHeight: zoom * ui.du(10)
                     layout: DockLayout {}
                     ImageView {
                         horizontalAlignment: HorizontalAlignment.Center
                         verticalAlignment: VerticalAlignment.Center
-                        preferredWidth: ui.du(5.5)
-                        preferredHeight: ui.du(5.5)
+                        preferredWidth: zoom * ui.du(5.5)
+                        preferredHeight: zoom * ui.du(5.5)
                         imageSource: "asset:///images/heart.png"
                         filterColor: sheet.hearted ? Color.create("#E53935") : Color.White
                         opacity: sheet.hearted ? 1.0 : 0.75
@@ -522,7 +522,7 @@ Page {
             visible: sheet.own
             horizontalAlignment: HorizontalAlignment.Fill
             verticalAlignment: VerticalAlignment.Bottom
-            preferredHeight: ui.du(10)
+            preferredHeight: zoom * ui.du(10)
             background: Color.create(0.0, 0.0, 0.0, 0.55)
             layout: DockLayout {}
             Container {
@@ -533,14 +533,14 @@ Page {
                 }
                 ImageView {
                     verticalAlignment: VerticalAlignment.Center
-                    preferredWidth: ui.du(5.5)
-                    preferredHeight: ui.du(5.5)
+                    preferredWidth: zoom * ui.du(5.5)
+                    preferredHeight: zoom * ui.du(5.5)
                     imageSource: "asset:///images/eye.png"
                     filterColor: Color.White
                 }
                 Label {
                     verticalAlignment: VerticalAlignment.Center
-                    leftMargin: ui.du(1)
+                    leftMargin: zoom * ui.du(1)
                     text: "" + sheet.views
                     textFormat: TextFormat.Plain
                     textStyle.fontSize: FontSize.PercentageValue
@@ -557,12 +557,12 @@ Page {
             horizontalAlignment: HorizontalAlignment.Fill
             verticalAlignment: VerticalAlignment.Top
             background: Color.create(0.0, 0.0, 0.0, 0.45)
-            topPadding: ui.du(0.6)
+            topPadding: zoom * ui.du(0.6)
             Container {
                 id: bar
                 horizontalAlignment: HorizontalAlignment.Fill
-                leftPadding: ui.du(0.5)
-                rightPadding: ui.du(0.5)
+                leftPadding: zoom * ui.du(0.5)
+                rightPadding: zoom * ui.du(0.5)
                 layout: StackLayout {
                     orientation: LayoutOrientation.LeftToRight
                 }
@@ -575,14 +575,14 @@ Page {
                 // Back: a box 10 du square, the touch target, with the stock arrow in it.
                 Container {
                     verticalAlignment: VerticalAlignment.Center
-                    preferredWidth: ui.du(10)
-                    preferredHeight: ui.du(10)
+                    preferredWidth: zoom * ui.du(10)
+                    preferredHeight: zoom * ui.du(10)
                     layout: DockLayout {}
                     ImageView {
                         horizontalAlignment: HorizontalAlignment.Center
                         verticalAlignment: VerticalAlignment.Center
-                        preferredWidth: ui.du(5)
-                        preferredHeight: ui.du(5)
+                        preferredWidth: zoom * ui.du(5)
+                        preferredHeight: zoom * ui.du(5)
                         imageSource: "asset:///images/back_action.png"
                         filterColor: Color.White
                     }
@@ -592,8 +592,8 @@ Page {
                 }
                 Container {
                     verticalAlignment: VerticalAlignment.Center
-                    preferredWidth: ui.du(6)
-                    preferredHeight: ui.du(6)
+                    preferredWidth: zoom * ui.du(6)
+                    preferredHeight: zoom * ui.du(6)
                     background: Color.create(sheet.poster.color ? sheet.poster.color : "#087099")
                     layout: DockLayout {}
                     Label {
@@ -603,7 +603,7 @@ Page {
                         textFormat: TextFormat.Plain
                         textStyle.base: nav.emojiStyle
                         textStyle.fontSize: FontSize.PercentageValue
-                        textStyle.fontSizeValue: 100
+                        textStyle.fontSizeValue: 100 * zoom
                         textStyle.color: Color.White
                     }
                     ImageView {
@@ -617,7 +617,7 @@ Page {
                 }
                 Container {
                     verticalAlignment: VerticalAlignment.Center
-                    leftMargin: ui.du(1.2)
+                    leftMargin: zoom * ui.du(1.2)
                     layoutProperties: StackLayoutProperties {
                         spaceQuota: 1
                     }
@@ -643,14 +643,14 @@ Page {
                 Container {
                     visible: sheet.own
                     verticalAlignment: VerticalAlignment.Center
-                    preferredWidth: ui.du(10)
-                    preferredHeight: ui.du(10)
+                    preferredWidth: zoom * ui.du(10)
+                    preferredHeight: zoom * ui.du(10)
                     layout: DockLayout {}
                     ImageView {
                         horizontalAlignment: HorizontalAlignment.Center
                         verticalAlignment: VerticalAlignment.Center
-                        preferredWidth: ui.du(5)
-                        preferredHeight: ui.du(5)
+                        preferredWidth: zoom * ui.du(5)
+                        preferredHeight: zoom * ui.du(5)
                         imageSource: "asset:///images/delete_action.png"
                         filterColor: Color.White
                     }

@@ -37,7 +37,7 @@ Page {
         Container {
             horizontalAlignment: HorizontalAlignment.Fill
             background: nav.fieldColor
-            leftPadding: settings.theme == 1 ? ui.du(1) : 0
+            leftPadding: settings.theme == 1 ? zoom * ui.du(1) : 0
             TextField {
                 id: search
                 horizontalAlignment: HorizontalAlignment.Fill
@@ -68,9 +68,9 @@ Page {
                     background: item.ListItem.active ? Color.create(item.ListItem.view.pressColor) : Color.Transparent
                     Container {
                         horizontalAlignment: HorizontalAlignment.Fill
-                        minHeight: ui.du(9)
-                        leftPadding: ui.du(2)
-                        rightPadding: ui.du(2)
+                        minHeight: zoom * ui.du(9)
+                        leftPadding: zoom * ui.du(2)
+                        rightPadding: zoom * ui.du(2)
                         layout: StackLayout {
                             orientation: LayoutOrientation.LeftToRight
                         }

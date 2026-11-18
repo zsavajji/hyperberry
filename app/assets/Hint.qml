@@ -50,10 +50,10 @@ Container {
         // image; add it if the Q10 shows this one as too hard.
         Container {
             horizontalAlignment: HorizontalAlignment.Fill
-            leftPadding: ui.px(4)
-            rightPadding: ui.px(4)
+            leftPadding: zoom * ui.px(4)
+            rightPadding: zoom * ui.px(4)
             topPadding: ui.px(2)
-            bottomPadding: ui.px(6)
+            bottomPadding: zoom * ui.px(6)
             background: Color.create("#33000000")
             Container {
                 horizontalAlignment: HorizontalAlignment.Fill
@@ -83,7 +83,7 @@ Container {
                     text: hint.text
                     textFormat: TextFormat.Plain
                     textStyle.fontSize: FontSize.PercentageValue
-                    textStyle.fontSizeValue: 110
+                    textStyle.fontSizeValue: 110 * zoom
                     textStyle.color: Color.create("#262626")
                 }
             }

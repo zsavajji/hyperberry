@@ -215,7 +215,7 @@ Container {
                 textFormat: TextFormat.Plain
                 textStyle.base: nav.emojiStyle
                 textStyle.fontSize: FontSize.PercentageValue
-                textStyle.fontSizeValue: 150
+                textStyle.fontSizeValue: 150 * zoom
                 textStyle.textAlign: TextAlign.Center
                 textStyle.color: Color.White
             }

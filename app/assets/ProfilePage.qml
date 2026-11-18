@@ -127,13 +127,13 @@ Page {
             // The picture or the tile, the name and the number.
             Container {
                 horizontalAlignment: HorizontalAlignment.Fill
-                topPadding: ui.du(3)
-                leftPadding: ui.du(1.5)
-                rightPadding: ui.du(1.5)
+                topPadding: zoom * ui.du(3)
+                leftPadding: zoom * ui.du(1.5)
+                rightPadding: zoom * ui.du(1.5)
                 Container {
                     horizontalAlignment: HorizontalAlignment.Center
-                    preferredWidth: ui.du(20)
-                    preferredHeight: ui.du(20)
+                    preferredWidth: zoom * ui.du(20)
+                    preferredHeight: zoom * ui.du(20)
                     background: page.loaded ? Color.create(page.info.color) : ui.palette.plain
                     layout: DockLayout {}
                     Label {
@@ -144,7 +144,7 @@ Page {
                         textFormat: TextFormat.Plain
                         textStyle.base: nav.emojiStyle
                         textStyle.fontSize: FontSize.PercentageValue
-                        textStyle.fontSizeValue: 300
+                        textStyle.fontSizeValue: 300 * zoom
                         textStyle.color: Color.White
                     }
                     ImageView {
@@ -204,13 +204,13 @@ Page {
             }
             Busy {
                 running: !page.loaded && !page.failed
-                topPadding: ui.du(4)
+                topPadding: zoom * ui.du(4)
                 text: qsTr("Loading…")
             }
             Label {
                 visible: page.failed
                 horizontalAlignment: HorizontalAlignment.Center
-                topMargin: ui.du(3)
+                topMargin: zoom * ui.du(3)
                 multiline: true
                 textStyle.textAlign: TextAlign.Center
                 textStyle.color: ui.palette.secondaryTextOnPlain
@@ -228,10 +228,10 @@ Page {
                 visible: page.loaded
                 horizontalAlignment: HorizontalAlignment.Fill
                 background: pressed ? Color.create(nav.pressColor) : Color.Transparent
-                topPadding: ui.du(1.5)
-                leftPadding: ui.du(1.5)
-                rightPadding: ui.du(1.5)
-                bottomPadding: ui.du(1.5)
+                topPadding: zoom * ui.du(1.5)
+                leftPadding: zoom * ui.du(1.5)
+                rightPadding: zoom * ui.du(1.5)
+                bottomPadding: zoom * ui.du(1.5)
                 Label {
                     horizontalAlignment: HorizontalAlignment.Fill
                     bottomMargin: 0
@@ -258,10 +258,10 @@ Page {
             // space from the edge of the page's own container.
             Container {
                 horizontalAlignment: HorizontalAlignment.Fill
-                topMargin: ui.du(4)
-                leftPadding: ui.du(2)
-                rightPadding: ui.du(2)
-                bottomPadding: ui.du(2)
+                topMargin: zoom * ui.du(4)
+                leftPadding: zoom * ui.du(2)
+                rightPadding: zoom * ui.du(2)
+                bottomPadding: zoom * ui.du(2)
                 Button {
                     horizontalAlignment: HorizontalAlignment.Fill
                     text: qsTr("Unlink this device")

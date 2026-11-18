@@ -61,7 +61,7 @@ ServiceCard::ServiceCard(ListView *list)
 
     Container *root = new Container();
     root->setHorizontalAlignment(HorizontalAlignment::Fill);
-    root->setTopPadding(ui->du(1.5));
+    root->setTopPadding(Card::du(ui, 1.5));
     root->setBottomPadding(0);
     root->setLayout(Card::across());
 
@@ -77,10 +77,10 @@ ServiceCard::ServiceCard(ListView *list)
 
     Container *inner = new Container();
     inner->setBackground(ui->palette()->plain());
-    inner->setLeftPadding(ui->du(2));
-    inner->setRightPadding(ui->du(2));
-    inner->setTopPadding(ui->du(1));
-    inner->setBottomPadding(ui->du(1));
+    inner->setLeftPadding(Card::du(ui, 2));
+    inner->setRightPadding(Card::du(ui, 2));
+    inner->setTopPadding(Card::du(ui, 1));
+    inner->setBottomPadding(Card::du(ui, 1));
 
     m_text = new Label();
     m_text->setHorizontalAlignment(HorizontalAlignment::Center);

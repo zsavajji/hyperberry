@@ -55,7 +55,7 @@ public:
         m_play = new ImageView();
         m_play->setHorizontalAlignment(HorizontalAlignment::Center);
         m_play->setVerticalAlignment(VerticalAlignment::Center);
-        m_play->setPreferredSize(m_ui->du(6), m_ui->du(6));
+        m_play->setPreferredSize(Card::du(m_ui, 6), Card::du(m_ui, 6));
         m_play->setImageSource(Card::url("asset:///images/play.png"));
         m_play->setOpacity(0.85f);
 
@@ -122,11 +122,11 @@ AlbumBubble::AlbumBubble(ListView *list)
     // As MediaBubble's picture: no margin above, air above and below.
     setTopMargin(0);
     Container *root = new Container();
-    root->setTopPadding(m_ui->du(1));
-    root->setBottomPadding(m_ui->du(1));
+    root->setTopPadding(Card::du(m_ui, 1));
+    root->setBottomPadding(Card::du(m_ui, 1));
 
     // Two rows of two tiles, a gap apart; show() sizes them.
-    const float gap = m_ui->du(0.5);
+    const float gap = Card::du(m_ui, 0.5);
     for (int row = 0; row < 2; ++row) {
         Container *tiles = new Container();
         tiles->setLayout(Card::across());
@@ -159,7 +159,7 @@ void AlbumBubble::show(const QVariantMap &msg)
 {
     m_msg = msg;
     // Across the card inside its side padding (the user, 2026-11-08), which grows with the text size.
-    const float size = (Card::width(m_ui) - 2 * Card::side(m_ui, Card::textScale(m_list)) - m_ui->du(0.5)) / 2;
+    const float size = (Card::width(m_ui) - 2 * Card::side(m_ui, Card::textScale(m_list)) - Card::du(m_ui, 0.5)) / 2;
     if (size != m_size) {
         m_size = size;
         for (int i = 0; i < 4; ++i) {

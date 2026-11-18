@@ -65,10 +65,10 @@ Page {
                     background: row.ListItem.active ? Color.create(row.ListItem.view.pressColor) : Color.Transparent
                     Container {
                         horizontalAlignment: HorizontalAlignment.Fill
-                        leftPadding: ui.du(1.5)
-                        rightPadding: ui.du(1.5)
-                        topPadding: ui.du(1)
-                        bottomPadding: ui.du(1)
+                        leftPadding: zoom * ui.du(1.5)
+                        rightPadding: zoom * ui.du(1.5)
+                        topPadding: zoom * ui.du(1)
+                        bottomPadding: zoom * ui.du(1)
                         // The chat, and in a group who sent it, with the time at the right.
                         Container {
                             horizontalAlignment: HorizontalAlignment.Fill
@@ -88,7 +88,7 @@ Page {
                             }
                             Label {
                                 verticalAlignment: VerticalAlignment.Center
-                                leftMargin: ui.du(1)
+                                leftMargin: zoom * ui.du(1)
                                 text: ListItemData.time
                                 textFormat: TextFormat.Plain
                                 textStyle.fontSize: FontSize.PercentageValue

@@ -138,12 +138,18 @@ inline int screen()
     return width;
 }
 
+// The Passport draws everything a third bigger: at 12 px a du its 1440 px are 120 du, where the Q10
+// has 80, so a du layout came out small there (a Passport user, 2026-11-18; the user chose a third
+// over a half). A third makes it 90 du, the Classic's. QML gets the same number as "zoom" (main.cpp).
+inline float zoom() { return screen() == 1440 ? 4.0f / 3 : 1.0f; }
+inline float du(bb::cascades::UIConfig *ui, float n) { return ui->du(zoom() * n); }
+
 // A card's width at most, and a picture's: 80 % of the screen. A card is as wide as what it holds,
 // up to this (the user, 2026-11-14: on the Passport a one-letter message spanned the screen).
 inline float width(bb::cascades::UIConfig *) { return 0.8f * screen(); }
 
 // The card's padding at each side, growing with the text size: 2 px over 1.5 du at 100 %.
-inline float side(bb::cascades::UIConfig *ui, float scale) { return ui->du(1.5 * scale) + ui->px(2); }
+inline float side(bb::cascades::UIConfig *ui, float scale) { return du(ui, 1.5 * scale) + ui->px(2); }
 
 }
 
