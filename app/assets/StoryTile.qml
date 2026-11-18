@@ -89,10 +89,10 @@ Container {
         Container {
             horizontalAlignment: HorizontalAlignment.Left
             verticalAlignment: VerticalAlignment.Top
-            leftPadding: zoom * ui.px(3)
-            topPadding: zoom * ui.px(3)
-            rightPadding: zoom * ui.px(3)
-            bottomPadding: zoom * ui.px(3)
+            leftPadding: pxZoom * ui.px(3)
+            topPadding: pxZoom * ui.px(3)
+            rightPadding: pxZoom * ui.px(3)
+            bottomPadding: pxZoom * ui.px(3)
             background: tile.story.unseen > 0 ? ui.palette.primary : Color.create("#7D7D7D")
             Container {
                 preferredWidth: zoom * ui.du(6)

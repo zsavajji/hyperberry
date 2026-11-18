@@ -45,8 +45,8 @@ Container {
         horizontalAlignment: HorizontalAlignment.Left
         verticalAlignment: VerticalAlignment.Bottom
         maxWidth: tile.cell[2]
-        leftPadding: zoom * ui.px(8)
-        rightPadding: zoom * ui.px(8)
+        leftPadding: pxZoom * ui.px(8)
+        rightPadding: pxZoom * ui.px(8)
         background: Color.create("#99000000")
         Label {
             multiline: false

@@ -319,7 +319,7 @@ Page {
                 }
                 leftMargin: ui.px(2)
                 rightMargin: ui.px(2)
-                preferredHeight: zoom * ui.px(4)
+                preferredHeight: pxZoom * ui.px(4)
                 background: Color.create(1.0, 1.0, 1.0, 0.35)
                 layout: StackLayout {
                     orientation: LayoutOrientation.LeftToRight

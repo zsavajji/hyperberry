@@ -107,10 +107,10 @@ Sheet {
                 // A DockLayout, so the colour inside fills the frame: in a StackLayout it got no height and only the frame showed.
                 layout: DockLayout {}
                 background: cell.marked ? Color.White : Color.create(1.0, 1.0, 1.0, 0.45)
-                leftPadding: cell.marked ? zoom * ui.px(5) : ui.px(2)
-                topPadding: cell.marked ? zoom * ui.px(5) : ui.px(2)
-                rightPadding: cell.marked ? zoom * ui.px(5) : ui.px(2)
-                bottomPadding: cell.marked ? zoom * ui.px(5) : ui.px(2)
+                leftPadding: cell.marked ? pxZoom * ui.px(5) : ui.px(2)
+                topPadding: cell.marked ? pxZoom * ui.px(5) : ui.px(2)
+                rightPadding: cell.marked ? pxZoom * ui.px(5) : ui.px(2)
+                bottomPadding: cell.marked ? pxZoom * ui.px(5) : ui.px(2)
                 gestureHandlers: TapHandler {
                     onTapped: cell.tapped(cell.index)
                 }
@@ -232,10 +232,10 @@ Sheet {
                     Container {
                         verticalAlignment: VerticalAlignment.Center
                         background: sheet.picking ? ui.palette.primary : Color.White
-                        leftPadding: zoom * ui.px(3)
-                        topPadding: zoom * ui.px(3)
-                        rightPadding: zoom * ui.px(3)
-                        bottomPadding: zoom * ui.px(3)
+                        leftPadding: pxZoom * ui.px(3)
+                        topPadding: pxZoom * ui.px(3)
+                        rightPadding: pxZoom * ui.px(3)
+                        bottomPadding: pxZoom * ui.px(3)
                         Container {
                             layout: StackLayout {
                                 orientation: LayoutOrientation.LeftToRight

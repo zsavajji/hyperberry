@@ -200,8 +200,10 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     document->documentContext()->setContextProperty("screenWidth", bb::device::DisplayInfo().pixelSize().width());
     // How far a tall screen (the Z10's 1280) runs above that stage: the caller's picture fills it.
     document->documentContext()->setContextProperty("screenHeight", bb::device::DisplayInfo().pixelSize().height());
-    // The Passport's third bigger (CardStyle.h): every ui.du, ui.px and font percentage takes it.
+    // The Passport's fifth bigger (CardStyle.h): every ui.du and font percentage takes zoom, every
+    // ui.px from 3 px pxZoom.
     document->documentContext()->setContextProperty("zoom", Card::zoom());
+    document->documentContext()->setContextProperty("pxZoom", Card::pxZoom());
     document->setContextProperty("proximity", &proximity);
     document->setContextProperty("emojis", &emojis);
     document->setContextProperty("qr", &qr);

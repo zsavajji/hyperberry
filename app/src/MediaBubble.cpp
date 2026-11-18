@@ -226,7 +226,7 @@ void MediaBubble::restyle()
     Card::style(m_stickerText, m_list, body);
     m_stickerText->textStyle()->setFontStyle(FontStyle::Italic);
     m_stickerText->textStyle()->setColor(quiet);
-    Card::style(m_emoji, m_list, 200);
+    Card::style(m_emoji, m_list, qRound(200 * Card::zoom()));
     Card::style(m_name, m_list, body);
     Card::style(m_info, m_list, small);
     m_info->textStyle()->setColor(quiet);

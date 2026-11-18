@@ -248,7 +248,7 @@ Page {
                         verticalAlignment: VerticalAlignment.Center
                         leftMargin: page.side
                         rightMargin: page.side
-                        preferredHeight: zoom * ui.px(6)
+                        preferredHeight: pxZoom * ui.px(6)
                         background: Color.create(1.0, 1.0, 1.0, 0.25)
                     }
                     // The fill, the dot and the rest share the width by quotas: the dot's own width is taken first, so
@@ -266,7 +266,7 @@ Page {
                         }
                         Container {
                             verticalAlignment: VerticalAlignment.Center
-                            preferredHeight: zoom * ui.px(6)
+                            preferredHeight: pxZoom * ui.px(6)
                             implicitLayoutAnimationsEnabled: false
                             layoutProperties: StackLayoutProperties {
                                 spaceQuota: Math.max(page.frac, 0.001)

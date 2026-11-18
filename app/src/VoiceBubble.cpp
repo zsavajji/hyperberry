@@ -25,13 +25,15 @@ using namespace bb::cascades;
 
 namespace {
 
-// One of the two waveforms, the same size, laid over each other.
+// One of the two waveforms, the same size, laid over each other. The image is the Q10's 381 x 45 px,
+// stretched on the Passport (Card::pxZoom).
+// ponytail: stretched bars may look soft there; draw Waveform::image at the view's size if they do.
 ImageView *waveView()
 {
     ImageView *view = new ImageView();
-    view->setPreferredWidth(381);
-    view->setPreferredHeight(45);
-    view->setScalingMethod(ScalingMethod::None);
+    view->setPreferredWidth(381 * Card::pxZoom());
+    view->setPreferredHeight(45 * Card::pxZoom());
+    view->setScalingMethod(ScalingMethod::Fill);
     return view;
 }
 
@@ -56,13 +58,13 @@ VoiceBubble::VoiceBubble(ListView *list)
     // The disc: the icon, or a spinner while the note is fetched. A tap plays it.
     Container *disc = new Container();
     disc->setLayout(new DockLayout());
-    disc->setPreferredWidth(72);
-    disc->setPreferredHeight(72);
+    disc->setPreferredWidth(72 * Card::pxZoom());
+    disc->setPreferredHeight(72 * Card::pxZoom());
     // Its least size too: the disc and the 381 px waveform need 467 px, and beside a 12-hour time
     // ("10:49 PM" and the ticks) the column is 427, which squeezed the disc to 52 px wide (Q10, 0.1.1.316).
     // The waveform gives way instead, and loses its last bars.
-    disc->setMinWidth(72);
-    disc->setMinHeight(72);
+    disc->setMinWidth(72 * Card::pxZoom());
+    disc->setMinHeight(72 * Card::pxZoom());
     disc->setVerticalAlignment(VerticalAlignment::Center);
     m_icon = new ImageView();
     m_icon->setHorizontalAlignment(HorizontalAlignment::Fill);

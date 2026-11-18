@@ -633,7 +633,7 @@ void MessageCard::fillFoot()
     const int place = onPicture ? 2 : m_words->isVisible() ? 1 : m_voice && flag("voice") ? 3 : 0;
     placeTime(place);
     // The top padding is this one's, on a picture too; set only when it changed.
-    const float top = onPicture ? Card::du(m_ui, 0.5) : place == 0 ? m_ui->px((small ? 11 : 16) * m_scale * Card::zoom()) : 0;
+    const float top = onPicture ? Card::du(m_ui, 0.5) : place == 0 ? m_ui->px((small ? 11 : 16) * m_scale * Card::pxZoom()) : 0;
     if (top != m_timeTop) {
         m_timeTop = top;
         m_timeBox->setTopPadding(top);
