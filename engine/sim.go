@@ -89,6 +89,13 @@ func newSim(srv *Server, st *Store, log waLog.Logger) *Sim {
 	srv.Handle("contact.info", s.handleContactInfo)
 	srv.Handle("contacts.list", s.handleContacts)
 	srv.Handle("contacts.book", s.handleBook)
+	srv.Handle("contact.lookup", func(req json.RawMessage) (any, error) {
+		n, err := lookupPhone(req)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]string{"jid": n + "@s.whatsapp.net"}, nil
+	})
 	srv.Handle("chat.close", s.handleLogged)
 	srv.Handle("ui.state", s.handleUIState)
 	return s

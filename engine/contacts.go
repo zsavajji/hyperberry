@@ -34,6 +34,48 @@ func withPhotos(q *photoQueue, out []contact) {
 func registerContacts(srv *Server, s *Session) {
 	srv.Handle("contacts.list", s.handleContacts)
 	srv.Handle("contacts.book", s.handleBook)
+	srv.Handle("contact.lookup", s.handleLookup)
+}
+
+// lookupPhone is contact.lookup's number: its digits, country code first, as wa.me writes it.
+func lookupPhone(req json.RawMessage) (string, error) {
+	var r struct{ Phone string }
+	json.Unmarshal(req, &r)
+	n := strings.Map(func(c rune) rune {
+		if c >= '0' && c <= '9' {
+			return c
+		}
+		return -1
+	}, r.Phone)
+	if len(n) < 6 || len(n) > 15 {
+		return "", &Error{"bad_request", "contact.lookup needs a phone number"}
+	}
+	return n, nil
+}
+
+// handleLookup is contact.lookup, a wa.me link's number: the chat key it has (contactKey, so the
+// LID's chat when one is known), or not_on_whatsapp. IsOnWhatsApp goes through onWhatsApp's cache.
+func (s *Session) handleLookup(req json.RawMessage) (any, error) {
+	n, err := lookupPhone(req)
+	if err != nil {
+		return nil, err
+	}
+	cli := s.client()
+	if cli.Store.ID == nil {
+		return nil, &Error{"unlinked", "link this device first"}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
+	defer cancel()
+	found, err := bookContacts(map[string]string{n: ""}, onWhatsApp, func(phones []string) ([]types.IsOnWhatsAppResponse, error) {
+		return cli.IsOnWhatsApp(ctx, phones)
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(found) == 0 {
+		return nil, &Error{"not_on_whatsapp", "+" + n}
+	}
+	return map[string]string{"jid": contactKey(ctx, cli, found[0].PN)}, nil
 }
 
 // handleBook is contacts.book: the phone's address book, which names people before WhatsApp's
