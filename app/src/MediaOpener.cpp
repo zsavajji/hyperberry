@@ -4,6 +4,7 @@
 #include "sizes.h"
 
 #include <bb/cascades/Image>
+#include <bb/data/JsonDataAccess>
 #include <bb/system/InvokeReplyError>
 #include <bb/system/InvokeRequest>
 #include <bb/system/InvokeTargetReply>
@@ -22,8 +23,11 @@ using namespace bb::system;
 
 MediaOpener::MediaOpener(QObject *parent)
     : QObject(parent)
+    , m_editing(false)
     , m_region(bb::system::LocaleType::Region)
 {
+    connect(&m_invoker, SIGNAL(childCardDone(bb::system::CardDoneMessage)), this,
+            SLOT(onCardDone(bb::system::CardDoneMessage)));
 }
 
 QObject *MediaOpener::link() const
@@ -105,6 +109,35 @@ bool MediaOpener::openFile(const QString &path)
     return true;
 }
 
+// The picture editor's manifest (read on the phone, 10.3.3) takes bb.action.EDIT for image/jpeg, png, gif and bmp
+// with file:// uris, as a card. The video editor's (sys.video_editor.card, read on the phone 2026-11-19) takes
+// bb.action.EDIT for video/* with videoeditor:// uris (its own example: videoeditor:///accounts/1000/shared/camera/
+// VID_00000001.mp4): trim and crop. What either returns is logged by onCardDone.
+void MediaOpener::editPicture(const QString &path)
+{
+    const QString ext = QFileInfo(path).suffix().toLower();
+    QUrl uri = QUrl::fromLocalFile(path);
+    InvokeRequest request;
+    request.setAction("bb.action.EDIT");
+    if (ext == "mp4" || ext == "3gp" || ext == "mov") {
+        request.setTarget("sys.video_editor.card");
+        request.setMimeType(ext == "mp4" ? "video/mp4" : ext == "3gp" ? "video/3gpp" : "video/quicktime");
+        uri.setScheme("videoeditor");
+    } else {
+        request.setTarget("sys.pictureeditor.cardeditor");
+        request.setMimeType(ext == "jpg" || ext == "jpeg" ? "image/jpeg" : "image/" + ext);
+    }
+    request.setUri(uri);
+    InvokeTargetReply *reply = m_invoker.invoke(request);
+    if (!reply) {
+        qWarning() << "media: no reply from the system to EDIT" << path;
+        emit openFailed();
+        return;
+    }
+    m_editing = true;
+    connect(reply, SIGNAL(finished()), this, SLOT(onInvoked()));
+}
+
 // The Contacts app's manifest (read on the Q10) takes bb.action.OPEN with text/vcard as data in the
 // request, and answers with its import screen: the name and every number. Replies like openFile's.
 // ponytail: with several contacts it may import only the first; a list to pick one if it shows.
@@ -135,6 +168,32 @@ void MediaOpener::onInvoked()
         emit openFailed(); // no app for the type, or no access to Downloads
     }
     reply->deleteLater();
+}
+
+// Seen on the phone (2026-11-17): a copy saved comes back as reason "SaveDone" with its path; the original saved over
+// as reason "save" with [{"uri": "file://…"}], the same file now edited. Success is any reason but "cancel" or "closed"
+// with data that names an existing file. Every answer is logged.
+void MediaOpener::onCardDone(const CardDoneMessage &done)
+{
+    qDebug() << "media: card done, reason" << done.reason() << "dataType" << done.dataType() << "data" << done.data();
+    if (!m_editing)
+        return;
+    m_editing = false;
+    const QString reason = done.reason().toLower();
+    if (done.data().isEmpty() || reason == "cancel" || reason == "closed")
+        return;
+    QString path = done.data();
+    if (path.startsWith("[")) {
+        bb::data::JsonDataAccess json;
+        const QVariantList list = json.loadFromBuffer(path.toUtf8()).toList();
+        path = list.isEmpty() ? QString() : list.first().toMap().value("uri").toString();
+    }
+    if (path.contains("://")) // file://, or the video editor's videoeditor://
+        path = QUrl::fromPercentEncoding(path.mid(path.indexOf("://") + 3).toUtf8());
+    if (QFileInfo(path).isFile())
+        emit pictureEdited(path);
+    else
+        qWarning() << "media: the editor returned no file" << done.data();
 }
 
 // A received photo lives in the sandbox (phase6.md, choice 1), where neither Pictures nor File

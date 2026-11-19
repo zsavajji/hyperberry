@@ -1,6 +1,7 @@
 #ifndef MEDIAOPENER_H
 #define MEDIAOPENER_H
 
+#include <bb/system/CardDoneMessage>
 #include <bb/system/InvokeManager>
 #include <bb/system/LocaleHandler>
 #include <QObject>
@@ -32,6 +33,10 @@ public:
     // Hands the file to the system (bb.action.OPEN); false when the system gave no reply. Whether
     // an app opens it is not known.
     Q_INVOKABLE bool openFile(const QString &path);
+    // Opens the system's picture editor card (sys.pictureeditor.cardeditor, bb.action.EDIT) on a .jpg, .png, .gif or
+    // .bmp, its video editor card (sys.video_editor.card: trim, crop) on a .mp4, .3gp or .mov; pictureEdited() follows
+    // when it hands an edited file back, openFailed() when the system gave no reply.
+    Q_INVOKABLE void editPicture(const QString &path);
     // Opens the Contacts app's import screen on a shared contact's vCard text (step 6.5d). A failure
     // is logged, and shows as openFailed().
     Q_INVOKABLE void importContact(const QString &vcard);
@@ -64,11 +69,14 @@ signals:
     void ready(const QString &id, const QString &kind, const QString &path);
     // The system found no app to open a file, or the app refused it.
     void openFailed();
+    // The editor card closed with an edited file, at path.
+    void pictureEdited(const QString &path);
 
 private slots:
     void onReplied(const QString &id, const QString &cmd, const QVariant &result);
     void onFailure();
     void onInvoked();
+    void onCardDone(const bb::system::CardDoneMessage &done);
 
 private:
     void setLoadingId(const QString &id);
@@ -78,6 +86,7 @@ private:
     QString m_loadingId;
     QString m_kind;
     QString m_reqId; // the media.get request we wait for
+    bool m_editing; // the picture editor card is open: its done is ours, not an OPEN's or the contact import's
     bb::system::LocaleHandler m_region; // for the size text, as the chat models have it
 };
 

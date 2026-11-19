@@ -8,6 +8,9 @@ Container {
     // The picture is a PNG made a JPEG: the bar offers to send the PNG as a file instead.
     property bool canFile
     property alias asFile: fileBox.checked
+    // The file is a picture or video the system's editor can open: the bar offers Edit, and the page restages the result.
+    property bool canEdit
+    signal edit()
     signal cancelled()
     visible: !!info && !!info.name
     horizontalAlignment: HorizontalAlignment.Fill
@@ -78,6 +81,27 @@ Container {
             id: fileBox
             visible: canFile
             text: qsTr("Send as file")
+        }
+    }
+    // A button, not a toggle: always grey, as the check box's off.
+    Container {
+        visible: canEdit
+        verticalAlignment: VerticalAlignment.Center
+        leftMargin: zoom * ui.du(1)
+        leftPadding: zoom * ui.du(1.5)
+        rightPadding: zoom * ui.du(1.5)
+        topPadding: zoom * ui.du(1)
+        bottomPadding: zoom * ui.du(1)
+        background: Color.create("#33808080")
+        gestureHandlers: TapHandler {
+            onTapped: edit()
+        }
+        Label {
+            text: qsTr("Edit")
+            textFormat: TextFormat.Plain
+            textStyle.fontSize: FontSize.PercentageValue
+            textStyle.fontSizeValue: nav.smallSize
+            textStyle.color: ui.palette.textOnPlain
         }
     }
     // The cross has its own padding so the tap has a finger's size.

@@ -45,6 +45,7 @@ Page {
         ctl.messages.itemAdded.connect(page.added)
         ctl.messages.loadingChanged.connect(page.loaded)
         media.ready.connect(page.mediaReady)
+        media.pictureEdited.connect(page.stage) // the editor's file is staged in place, the caption (the composer's text) kept
         media.openFailed.connect(mediaFailed.show)
     }
     attachedObjects: [
@@ -147,6 +148,9 @@ Page {
             StagedBar {
                 info: page.stagedInfo
                 canFile: page.stagedPng != ""
+                canEdit: page.stagedPng != "" || /\.(jpe?g|png|gif|bmp|mp4|3gp|mov)$/i.test(page.staged)
+                // The original PNG when the staged JPEG was made from one.
+                onEdit: media.editPicture(page.stagedPng != "" ? page.stagedPng : page.staged)
                 onCancelled: page.unstage()
             }
         },

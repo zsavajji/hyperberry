@@ -2287,7 +2287,12 @@
 <context>
     <name>StagedBar</name>
     <message>
-        <location filename="../assets/StagedBar.qml" line="78"/>
+        <location filename="../assets/StagedBar.qml" line="100"/>
+        <source>Edit</source>
+        <translation>Редагувати</translation>
+    </message>
+    <message>
+        <location filename="../assets/StagedBar.qml" line="83"/>
         <source>Send as file</source>
         <translation>Надіслати як файл</translation>
     </message>
