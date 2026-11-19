@@ -4,6 +4,7 @@
 #include <bb/cascades/Color>
 #include <bb/cascades/ThemeSupport>
 #include <bb/cascades/VisualStyle>
+#include <bb/device/DisplayInfo>
 #include <bb/system/InvokeDateTime>
 #include <bb/system/InvokeManager>
 #include <bb/system/InvokeRecurrenceRule>
@@ -53,7 +54,14 @@ int Settings::cacheLimit() const { return qBound(64, m_file.value("cacheLimit", 
 // Larger (3, 140 %) went at the user's word (2026-11-01); a saved 3 reads as Large.
 int Settings::textSize() const { return qBound(0, m_file.value("textSize", 1).toInt(), 2); }
 bool Settings::compact() const { return m_file.value("compact", false).toBool(); }
-bool Settings::darkGrey() const { return m_file.value("darkGrey", false).toBool(); }
+// Grey by default on an LCD (the Classic, the Passport, the user's ask, 2026-11-19): black only saves power on an OLED,
+// the Q10's. The Passport also by its 1440 px screen, in case it reports no technology.
+bool Settings::darkGrey() const
+{
+    static const bool lcd = bb::device::DisplayInfo().displayTechnology() == bb::device::DisplayTechnology::Lcd
+                            || bb::device::DisplayInfo().pixelSize().width() == 1440;
+    return m_file.value("darkGrey", lcd).toBool();
+}
 int Settings::callHints() const { return qMax(0, m_file.value("callHints", 0).toInt()); }
 
 qreal Settings::textScale() const
