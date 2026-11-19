@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"os"
 	"path/filepath"
 	"sort"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/polymorfa/hypermeow"
 	"github.com/polymorfa/hypermeow/appstate"
+	waBinary "github.com/polymorfa/hypermeow/binary"
 	"github.com/polymorfa/hypermeow/proto/waHistorySync"
 	"github.com/polymorfa/hypermeow/store"
 	"github.com/polymorfa/hypermeow/types"
@@ -204,17 +206,44 @@ func (st *Store) resyncAppState(cli *whatsmeow.Client) {
 // Web we list a group once history or a message brings it (they sat at the bottom, "No messages").
 func (st *Store) syncGroups(cli *whatsmeow.Client) {
 	ctx := context.Background()
-	groups, err := cli.GetJoinedGroups(ctx)
+	names, err := joinedGroupNames(ctx, cli)
 	if err != nil {
 		st.log.Warnf("joined groups: %v", err)
 	}
 	st.ops <- func(t *storeTx) {
-		for _, g := range groups {
-			t.setName(g.JID.String(), g.Name)
+		for jid, name := range names {
+			t.setName(jid, name)
 		}
 		sweep(ctx, t, cli.Store.LIDs)
 		st.renameAll(ctx, t, cli) // the address book a link brings in comes with no event
 	}
+}
+
+// joinedGroupNames is GetJoinedGroups without the members: each group's subject by its JID. A user whose
+// groups held 5,500 members ran the engine out of memory on every connect, and the restart connected
+// again (debug/user-logs/VX, 2026-11-18). The members come per group when a send or the info page needs them.
+func joinedGroupNames(ctx context.Context, cli *whatsmeow.Client) (map[string]string, error) {
+	resp, err := cli.DangerousInternals().SendIQ(ctx, whatsmeow.DangerousInfoQuery{
+		Namespace: "w:g2",
+		Type:      "get",
+		To:        types.GroupServerJID,
+		Content:   []waBinary.Node{{Tag: "participating"}},
+	})
+	if err != nil {
+		return nil, err
+	}
+	groups, ok := resp.GetOptionalChildByTag("groups")
+	if !ok {
+		return nil, errors.New("no groups in the group list")
+	}
+	names := map[string]string{}
+	for _, g := range groups.GetChildren() {
+		ag := g.AttrGetter()
+		if g.Tag == "group" {
+			names[types.NewJID(ag.String("id"), types.GroupServer).String()] = ag.OptionalString("subject")
+		}
+	}
+	return names, nil
 }
 
 func (st *Store) dispatch(t *storeTx, cli *whatsmeow.Client, evt any) {
