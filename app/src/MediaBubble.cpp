@@ -107,10 +107,28 @@ MediaBubble::MediaBubble(ListView *list, bool wide)
     m_play->setPreferredSize(Card::du(m_ui, 12), Card::du(m_ui, 12)); // 2x the Stories tiles' (the user, 2026-11-12)
     m_play->setImageSource(Card::url("asset:///images/play.png"));
     m_play->setOpacity(0.85f);
-    // At the left in the picture card: the time takes the right, as on Android.
-    m_length = docked(wide ? HorizontalAlignment::Left : HorizontalAlignment::Right, VerticalAlignment::Bottom);
+    // The length as the time on a picture (MessageCard::placeTime): a chip of black at 50 %, 1 du in from its corner
+    // (padding: a docked label's margins are ignored), the time's text size (from Tengram). At the left in the picture
+    // card: the time takes the right, as on Android.
+    m_lengthBox = new Container();
+    m_lengthBox->setHorizontalAlignment(wide ? HorizontalAlignment::Left : HorizontalAlignment::Right);
+    m_lengthBox->setVerticalAlignment(VerticalAlignment::Bottom);
+    m_lengthBox->setLeftPadding(Card::du(m_ui, 1));
+    m_lengthBox->setRightPadding(Card::du(m_ui, 1));
+    m_lengthBox->setBottomPadding(Card::du(m_ui, 1));
+    Container *lengthChip = new Container();
+    lengthChip->setBackground(Card::color("#80000000"));
+    lengthChip->setLeftPadding(Card::du(m_ui, 1));
+    lengthChip->setRightPadding(Card::du(m_ui, 1));
+    lengthChip->setTopPadding(0);
+    lengthChip->setBottomPadding(Card::du(m_ui, 0.5));
+    m_length = new Label();
+    m_length->setTextFormat(TextFormat::Plain);
     m_length->textStyle()->setBase(SystemDefaults::TextStyles::smallText());
+    m_length->textStyle()->setFontSize(FontSize::PercentageValue);
     m_length->textStyle()->setColor(Color::White);
+    lengthChip->add(m_length);
+    m_lengthBox->add(lengthChip);
 
     // A spoiler (step 6.6d): the picture under this is blurred (MediaData) until a tap.
     m_cover = cover();
@@ -131,7 +149,6 @@ MediaBubble::MediaBubble(ListView *list, bool wide)
     m_photo->add(m_thumb);
     m_photo->add(m_none);
     m_photo->add(m_play);
-    m_photo->add(m_length);
     m_photo->add(m_cover);
     m_photo->add(m_dim);
     // The time's corner, 1 du in from the edges; empty unless the card puts the time in it.
@@ -140,6 +157,7 @@ MediaBubble::MediaBubble(ListView *list, bool wide)
     m_stamp->setVerticalAlignment(VerticalAlignment::Bottom);
     m_stamp->setRightPadding(Card::du(m_ui, 1));
     m_stamp->setBottomPadding(Card::du(m_ui, 1));
+    m_photo->add(m_lengthBox);
     m_photo->add(m_stamp);
     m_photo->add(m_photoSpin);
 
@@ -218,6 +236,8 @@ void MediaBubble::restyle()
     m_small = small;
     m_plain = plain;
 
+    // 72 % of small text at the list's text size, as the card's time.
+    m_length->textStyle()->setFontSizeValue(qRound(72 * Card::textScale(m_list) * Card::zoom()));
     const Color quiet = m_ui->palette()->secondaryTextOnPlain();
     m_none->setBackground(m_ui->palette()->background());
     Card::style(m_noneText, m_list, body);
@@ -264,7 +284,7 @@ void MediaBubble::show(const QVariantMap &msg)
         m_none->setVisible(!hasThumb);
         m_noneText->setText(video ? Card::tr(kContext, "Video") : Card::tr(kContext, "Photo"));
         m_play->setVisible(video && !spoiler);
-        m_length->setVisible(video && !str("durationText").isEmpty() && !spoiler);
+        m_lengthBox->setVisible(video && !str("durationText").isEmpty() && !spoiler);
         m_length->setText(str("durationText"));
         m_cover->setVisible(spoiler);
     }

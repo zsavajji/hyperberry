@@ -71,6 +71,7 @@ private:
     bb::cascades::Label *m_noneText;
     bb::cascades::ImageView *m_play;
     bb::cascades::Label *m_length;
+    bb::cascades::Container *m_lengthBox; // m_length in a chip, in from the corner
     bb::cascades::Container *m_cover;
     bb::cascades::Container *m_dim;
     bb::cascades::Container *m_stamp;
