@@ -2519,6 +2519,31 @@
         <translation>Terang</translation>
     </message>
     <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="32" />
+        <source>Dark or bright colours for the whole app.</source>
+        <translation>Warna gelap atau terang untuk seluruh aplikasi.</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="42" />
+        <source>Dark background</source>
+        <translation>Latar belakang gelap</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="44" />
+        <source>Black</source>
+        <translation>Hitam</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="45" />
+        <source>Grey</source>
+        <translation>Abu-abu</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="54" />
+        <source>The colour behind chats and lists: pure black, or a softer dark grey.</source>
+        <translation>Warna di belakang chat dan daftar: hitam pekat, atau abu-abu gelap yang lebih lembut.</translation>
+    </message>
+    <message>
         <source>Text size</source>
         <translation>Ukuran teks</translation>
     </message>
@@ -2535,12 +2560,22 @@
         <translation>Besar</translation>
     </message>
     <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="73" />
+        <source>The size of the text in chats and in the chat list.</source>
+        <translation>Ukuran teks di chat dan di daftar chat.</translation>
+    </message>
+    <message>
         <source>Interface</source>
         <translation>Antarmuka</translation>
     </message>
     <message>
         <source>Compact</source>
         <translation>Ringkas</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="91" />
+        <source>Compact fits more chats on the screen, with smaller pictures and rows.</source>
+        <translation>Ringkas menampilkan lebih banyak chat di layar, dengan foto dan baris yang lebih kecil.</translation>
     </message>
 </context>
 <context>

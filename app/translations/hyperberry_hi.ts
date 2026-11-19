@@ -2522,6 +2522,31 @@
         <translation>लाइट</translation>
     </message>
     <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="32" />
+        <source>Dark or bright colours for the whole app.</source>
+        <translation>पूरे ऐप के लिए डार्क या लाइट रंग।</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="42" />
+        <source>Dark background</source>
+        <translation>डार्क बैकग्राउंड</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="44" />
+        <source>Black</source>
+        <translation>काला</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="45" />
+        <source>Grey</source>
+        <translation>ग्रे</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="54" />
+        <source>The colour behind chats and lists: pure black, or a softer dark grey.</source>
+        <translation>चैट और लिस्ट के पीछे का रंग: बिल्कुल काला, या थोड़ा नरम गहरा ग्रे।</translation>
+    </message>
+    <message>
         <source>Text size</source>
         <translation>टेक्स्ट साइज़</translation>
     </message>
@@ -2538,12 +2563,22 @@
         <translation>बड़ा</translation>
     </message>
     <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="73" />
+        <source>The size of the text in chats and in the chat list.</source>
+        <translation>चैट और चैट लिस्ट में टेक्स्ट का साइज़।</translation>
+    </message>
+    <message>
         <source>Interface</source>
         <translation>इंटरफ़ेस</translation>
     </message>
     <message>
         <source>Compact</source>
         <translation>कॉम्पैक्ट</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="91" />
+        <source>Compact fits more chats on the screen, with smaller pictures and rows.</source>
+        <translation>कॉम्पैक्ट में स्क्रीन पर ज़्यादा चैट दिखती हैं, फ़ोटो और पंक्तियाँ छोटी होती हैं।</translation>
     </message>
 </context>
 <context>

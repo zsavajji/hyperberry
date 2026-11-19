@@ -2522,6 +2522,31 @@
         <translation>Clair</translation>
     </message>
     <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="32" />
+        <source>Dark or bright colours for the whole app.</source>
+        <translation>Couleurs sombres ou claires pour toute l'application.</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="42" />
+        <source>Dark background</source>
+        <translation>Fond sombre</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="44" />
+        <source>Black</source>
+        <translation>Noir</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="45" />
+        <source>Grey</source>
+        <translation>Gris</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="54" />
+        <source>The colour behind chats and lists: pure black, or a softer dark grey.</source>
+        <translation>La couleur derrière les discussions et les listes : noir pur ou gris foncé plus doux.</translation>
+    </message>
+    <message>
         <source>Text size</source>
         <translation>Taille du texte</translation>
     </message>
@@ -2538,12 +2563,22 @@
         <translation>Grande</translation>
     </message>
     <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="73" />
+        <source>The size of the text in chats and in the chat list.</source>
+        <translation>La taille du texte dans les discussions et dans la liste des discussions.</translation>
+    </message>
+    <message>
         <source>Interface</source>
         <translation>Interface</translation>
     </message>
     <message>
         <source>Compact</source>
         <translation>Compacte</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="91" />
+        <source>Compact fits more chats on the screen, with smaller pictures and rows.</source>
+        <translation>Compacte affiche plus de discussions à l'écran, avec des photos et des lignes plus petites.</translation>
     </message>
 </context>
 <context>

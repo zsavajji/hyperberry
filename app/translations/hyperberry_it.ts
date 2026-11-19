@@ -2522,6 +2522,31 @@
         <translation>Chiaro</translation>
     </message>
     <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="32" />
+        <source>Dark or bright colours for the whole app.</source>
+        <translation>Colori scuri o chiari per tutta l'app.</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="42" />
+        <source>Dark background</source>
+        <translation>Sfondo scuro</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="44" />
+        <source>Black</source>
+        <translation>Nero</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="45" />
+        <source>Grey</source>
+        <translation>Grigio</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="54" />
+        <source>The colour behind chats and lists: pure black, or a softer dark grey.</source>
+        <translation>Il colore dietro le chat e gli elenchi: nero puro o un grigio scuro più morbido.</translation>
+    </message>
+    <message>
         <source>Text size</source>
         <translation>Dimensione del testo</translation>
     </message>
@@ -2538,12 +2563,22 @@
         <translation>Grande</translation>
     </message>
     <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="73" />
+        <source>The size of the text in chats and in the chat list.</source>
+        <translation>La dimensione del testo nelle chat e nell'elenco delle chat.</translation>
+    </message>
+    <message>
         <source>Interface</source>
         <translation>Interfaccia</translation>
     </message>
     <message>
         <source>Compact</source>
         <translation>Compatta</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="91" />
+        <source>Compact fits more chats on the screen, with smaller pictures and rows.</source>
+        <translation>Compatta mostra più chat sullo schermo, con immagini e righe più piccole.</translation>
     </message>
 </context>
 <context>

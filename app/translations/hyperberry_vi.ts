@@ -2519,6 +2519,31 @@
         <translation>Sáng</translation>
     </message>
     <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="32" />
+        <source>Dark or bright colours for the whole app.</source>
+        <translation>Màu tối hoặc sáng cho toàn bộ ứng dụng.</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="42" />
+        <source>Dark background</source>
+        <translation>Nền tối</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="44" />
+        <source>Black</source>
+        <translation>Đen</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="45" />
+        <source>Grey</source>
+        <translation>Xám</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="54" />
+        <source>The colour behind chats and lists: pure black, or a softer dark grey.</source>
+        <translation>Màu phía sau đoạn chat và danh sách: đen thuần, hoặc xám đậm dịu hơn.</translation>
+    </message>
+    <message>
         <source>Text size</source>
         <translation>Cỡ chữ</translation>
     </message>
@@ -2535,12 +2560,22 @@
         <translation>Lớn</translation>
     </message>
     <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="73" />
+        <source>The size of the text in chats and in the chat list.</source>
+        <translation>Cỡ chữ trong các đoạn chat và trong danh sách đoạn chat.</translation>
+    </message>
+    <message>
         <source>Interface</source>
         <translation>Giao diện</translation>
     </message>
     <message>
         <source>Compact</source>
         <translation>Thu gọn</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="91" />
+        <source>Compact fits more chats on the screen, with smaller pictures and rows.</source>
+        <translation>Thu gọn hiển thị nhiều đoạn chat hơn trên màn hình, với ảnh và hàng nhỏ hơn.</translation>
     </message>
 </context>
 <context>

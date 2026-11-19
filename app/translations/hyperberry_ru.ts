@@ -2525,6 +2525,31 @@
         <translation>Светлая</translation>
     </message>
     <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="32" />
+        <source>Dark or bright colours for the whole app.</source>
+        <translation>Тёмные или светлые цвета для всего приложения.</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="42" />
+        <source>Dark background</source>
+        <translation>Тёмный фон</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="44" />
+        <source>Black</source>
+        <translation>Чёрный</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="45" />
+        <source>Grey</source>
+        <translation>Серый</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="54" />
+        <source>The colour behind chats and lists: pure black, or a softer dark grey.</source>
+        <translation>Цвет позади чатов и списков: чистый чёрный или более мягкий тёмно-серый.</translation>
+    </message>
+    <message>
         <source>Text size</source>
         <translation>Размер текста</translation>
     </message>
@@ -2541,12 +2566,22 @@
         <translation>Крупный</translation>
     </message>
     <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="73" />
+        <source>The size of the text in chats and in the chat list.</source>
+        <translation>Размер текста в чатах и в списке чатов.</translation>
+    </message>
+    <message>
         <source>Interface</source>
         <translation>Интерфейс</translation>
     </message>
     <message>
         <source>Compact</source>
         <translation>Компактный</translation>
+    </message>
+    <message>
+        <location filename="../assets/AppearanceSettingsPage.qml" line="91" />
+        <source>Compact fits more chats on the screen, with smaller pictures and rows.</source>
+        <translation>Компактный вид: на экране помещается больше чатов, фото и строки меньше.</translation>
     </message>
 </context>
 <context>
