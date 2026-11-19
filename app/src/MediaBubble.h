@@ -65,6 +65,7 @@ private:
     int m_body;
     int m_small;
     bb::cascades::Color m_plain;
+    QString m_page;
 
     bb::cascades::Container *m_root;
     bb::cascades::Container *m_photo;

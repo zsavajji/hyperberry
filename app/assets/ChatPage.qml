@@ -474,6 +474,8 @@ Page {
     // At the ear, a voice note playing: the screen goes black and takes no touch, as the call screen does (the
     // user's ask, 2026-11-16); the title bar hides, so the black covers it all. The action bar is hidden already.
     Container {
+        // The page colour the user picked (Settings > Appearance > Dark background).
+        background: nav.pageBackground
         layout: DockLayout {}
         horizontalAlignment: HorizontalAlignment.Fill
         verticalAlignment: VerticalAlignment.Fill
@@ -620,6 +622,9 @@ Page {
                     // Our cards on Bright (the user's, 2026-11-17); on Dark a deep green, more colourful than the theme's grey
                     // (the user, 2026-11-19, as Tengram's blue).
                     property string ownColor: settings.theme == 1 ? "#d9fdd2" : "#1D5C43"
+                    // The page's colour when the user picked Grey (Settings > Appearance > Dark background), "" for the theme's own:
+                    // the C++ cards' empty picture boxes and album tiles take it (CardStyle.h's page).
+                    property string pageColor: nav.pageGrey ? "#181818" : ""
                     // Their cards on Bright, a step darker than the theme's #F0F0F0, which hardly stood off the page (the user, 2026-11-17).
                     property string theirColor: settings.theme == 1 ? "#E4E4E4" : ""
                     // Bright's deep sender colours (colors.h).

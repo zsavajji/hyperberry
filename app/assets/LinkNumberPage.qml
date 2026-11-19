@@ -75,6 +75,10 @@ Page {
     onCreationCompleted: number.requestFocus()
 
     Container {
+        // The page colour the user picked (Settings > Appearance > Dark background).
+        background: nav.pageBackground
+        horizontalAlignment: HorizontalAlignment.Fill
+        verticalAlignment: VerticalAlignment.Fill
         Container {
             topPadding: zoom * ui.du(2)
             leftPadding: zoom * ui.du(2)

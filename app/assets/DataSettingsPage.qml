@@ -15,222 +15,228 @@ Page {
             id: clearedToast
         }
     ]
-    ScrollView {
-        Container {
-            Header {
-                title: qsTr("Download automatically")
-            }
+    Container {
+        // The page colour the user picked (Settings > Appearance > Dark background).
+        background: nav.pageBackground
+        horizontalAlignment: HorizontalAlignment.Fill
+        verticalAlignment: VerticalAlignment.Fill
+        ScrollView {
             Container {
-                topPadding: zoom * ui.du(2)
-                leftPadding: zoom * ui.du(2)
-                rightPadding: zoom * ui.du(2)
-                bottomPadding: zoom * ui.du(2)
-                // What downloads when it arrives; the rest waits for a tap. Mobile data, below, holds them all.
+                Header {
+                    title: qsTr("Download automatically")
+                }
                 Container {
-                    layout: StackLayout {
-                        orientation: LayoutOrientation.LeftToRight
+                    topPadding: zoom * ui.du(2)
+                    leftPadding: zoom * ui.du(2)
+                    rightPadding: zoom * ui.du(2)
+                    bottomPadding: zoom * ui.du(2)
+                    // What downloads when it arrives; the rest waits for a tap. Mobile data, below, holds them all.
+                    Container {
+                        layout: StackLayout {
+                            orientation: LayoutOrientation.LeftToRight
+                        }
+                        Container {
+                            layoutProperties: StackLayoutProperties {
+                                spaceQuota: 1
+                            }
+                            verticalAlignment: VerticalAlignment.Center
+                            Label {
+                                text: qsTr("Photos")
+                            }
+                        }
+                        ToggleButton {
+                            verticalAlignment: VerticalAlignment.Center
+                            checked: settings.autoPhoto
+                            onCheckedChanged: settings.autoPhoto = checked
+                        }
                     }
                     Container {
-                        layoutProperties: StackLayoutProperties {
-                            spaceQuota: 1
+                        topMargin: zoom * ui.du(2)
+                        layout: StackLayout {
+                            orientation: LayoutOrientation.LeftToRight
                         }
-                        verticalAlignment: VerticalAlignment.Center
-                        Label {
-                            text: qsTr("Photos")
+                        Container {
+                            layoutProperties: StackLayoutProperties {
+                                spaceQuota: 1
+                            }
+                            verticalAlignment: VerticalAlignment.Center
+                            Label {
+                                text: qsTr("Audio")
+                                bottomMargin: 0
+                            }
+                            Label {
+                                text: qsTr("Voice notes and audio files")
+                                multiline: true
+                                topMargin: 0
+                                textStyle.base: SystemDefaults.TextStyles.SubtitleText
+                                textStyle.color: ui.palette.secondaryTextOnPlain
+                            }
                         }
-                    }
-                    ToggleButton {
-                        verticalAlignment: VerticalAlignment.Center
-                        checked: settings.autoPhoto
-                        onCheckedChanged: settings.autoPhoto = checked
-                    }
-                }
-                Container {
-                    topMargin: zoom * ui.du(2)
-                    layout: StackLayout {
-                        orientation: LayoutOrientation.LeftToRight
+                        ToggleButton {
+                            verticalAlignment: VerticalAlignment.Center
+                            checked: settings.autoAudio
+                            onCheckedChanged: settings.autoAudio = checked
+                        }
                     }
                     Container {
-                        layoutProperties: StackLayoutProperties {
-                            spaceQuota: 1
+                        topMargin: zoom * ui.du(2)
+                        layout: StackLayout {
+                            orientation: LayoutOrientation.LeftToRight
                         }
-                        verticalAlignment: VerticalAlignment.Center
-                        Label {
-                            text: qsTr("Audio")
-                            bottomMargin: 0
+                        Container {
+                            layoutProperties: StackLayoutProperties {
+                                spaceQuota: 1
+                            }
+                            verticalAlignment: VerticalAlignment.Center
+                            Label {
+                                text: qsTr("Videos")
+                            }
                         }
-                        Label {
-                            text: qsTr("Voice notes and audio files")
-                            multiline: true
-                            topMargin: 0
-                            textStyle.base: SystemDefaults.TextStyles.SubtitleText
-                            textStyle.color: ui.palette.secondaryTextOnPlain
+                        ToggleButton {
+                            verticalAlignment: VerticalAlignment.Center
+                            checked: settings.autoVideo
+                            onCheckedChanged: settings.autoVideo = checked
                         }
-                    }
-                    ToggleButton {
-                        verticalAlignment: VerticalAlignment.Center
-                        checked: settings.autoAudio
-                        onCheckedChanged: settings.autoAudio = checked
-                    }
-                }
-                Container {
-                    topMargin: zoom * ui.du(2)
-                    layout: StackLayout {
-                        orientation: LayoutOrientation.LeftToRight
                     }
                     Container {
-                        layoutProperties: StackLayoutProperties {
-                            spaceQuota: 1
+                        topMargin: zoom * ui.du(2)
+                        layout: StackLayout {
+                            orientation: LayoutOrientation.LeftToRight
                         }
-                        verticalAlignment: VerticalAlignment.Center
-                        Label {
-                            text: qsTr("Videos")
+                        Container {
+                            layoutProperties: StackLayoutProperties {
+                                spaceQuota: 1
+                            }
+                            verticalAlignment: VerticalAlignment.Center
+                            Label {
+                                text: qsTr("Documents")
+                            }
                         }
-                    }
-                    ToggleButton {
-                        verticalAlignment: VerticalAlignment.Center
-                        checked: settings.autoVideo
-                        onCheckedChanged: settings.autoVideo = checked
-                    }
-                }
-                Container {
-                    topMargin: zoom * ui.du(2)
-                    layout: StackLayout {
-                        orientation: LayoutOrientation.LeftToRight
+                        ToggleButton {
+                            verticalAlignment: VerticalAlignment.Center
+                            checked: settings.autoDoc
+                            onCheckedChanged: settings.autoDoc = checked
+                        }
                     }
                     Container {
-                        layoutProperties: StackLayoutProperties {
-                            spaceQuota: 1
+                        topMargin: zoom * ui.du(3)
+                        layout: StackLayout {
+                            orientation: LayoutOrientation.LeftToRight
                         }
-                        verticalAlignment: VerticalAlignment.Center
-                        Label {
-                            text: qsTr("Documents")
+                        Container {
+                            layoutProperties: StackLayoutProperties {
+                                spaceQuota: 1
+                            }
+                            verticalAlignment: VerticalAlignment.Center
+                            Label {
+                                text: qsTr("Download on mobile data")
+                                bottomMargin: 0
+                            }
+                            Label {
+                                text: qsTr("Off, nothing downloads by itself on mobile data; it waits for Wi-Fi or a tap.")
+                                multiline: true
+                                topMargin: 0
+                                textStyle.base: SystemDefaults.TextStyles.SubtitleText
+                                textStyle.color: ui.palette.secondaryTextOnPlain
+                            }
                         }
-                    }
-                    ToggleButton {
-                        verticalAlignment: VerticalAlignment.Center
-                        checked: settings.autoDoc
-                        onCheckedChanged: settings.autoDoc = checked
+                        ToggleButton {
+                            verticalAlignment: VerticalAlignment.Center
+                            checked: settings.mediaOnMobile
+                            onCheckedChanged: settings.mediaOnMobile = checked
+                        }
                     }
                 }
+                Header {
+                    title: qsTr("Network")
+                }
                 Container {
-                    topMargin: zoom * ui.du(3)
-                    layout: StackLayout {
-                        orientation: LayoutOrientation.LeftToRight
+                    topPadding: zoom * ui.du(2)
+                    leftPadding: zoom * ui.du(2)
+                    rightPadding: zoom * ui.du(2)
+                    bottomPadding: zoom * ui.du(2)
+                    Container {
+                        layout: StackLayout {
+                            orientation: LayoutOrientation.LeftToRight
+                        }
+                        Container {
+                            layoutProperties: StackLayoutProperties {
+                                spaceQuota: 1
+                            }
+                            verticalAlignment: VerticalAlignment.Center
+                            Label {
+                                text: qsTr("Cloudflare DNS")
+                                bottomMargin: 0
+                            }
+                            Label {
+                                text: qsTr("Finds WhatsApp's servers through 1.1.1.1 and 1.0.0.1 instead of your network's DNS. Try it if messages or media don't go through.")
+                                multiline: true
+                                topMargin: 0
+                                textStyle.base: SystemDefaults.TextStyles.SubtitleText
+                                textStyle.color: ui.palette.secondaryTextOnPlain
+                            }
+                        }
+                        ToggleButton {
+                            verticalAlignment: VerticalAlignment.Center
+                            checked: settings.cloudflareDns
+                            onCheckedChanged: settings.cloudflareDns = checked
+                        }
+                    }
+                }
+                Header {
+                    title: qsTr("Storage")
+                }
+                Container {
+                    topPadding: zoom * ui.du(2)
+                    leftPadding: zoom * ui.du(2)
+                    rightPadding: zoom * ui.du(2)
+                    bottomPadding: zoom * ui.du(2)
+                    // What data/cache/ may hold. The engine prunes it, the oldest first (step 8.3).
+                    DropDown {
+                        title: qsTr("Cache limit")
+                        options: [
+                            Option { text: "64 MB"; selected: settings.cacheLimit == 64 },
+                            Option { text: "128 MB"; selected: settings.cacheLimit == 128 },
+                            Option { text: "256 MB"; selected: settings.cacheLimit == 256 },
+                            Option { text: "512 MB"; selected: settings.cacheLimit == 512 }
+                        ]
+                        onSelectedIndexChanged: {
+                            if (selectedIndex >= 0) {
+                                settings.cacheLimit = [64, 128, 256, 512][selectedIndex]
+                            }
+                        }
                     }
                     Container {
-                        layoutProperties: StackLayoutProperties {
-                            spaceQuota: 1
-                        }
-                        verticalAlignment: VerticalAlignment.Center
-                        Label {
-                            text: qsTr("Download on mobile data")
-                            bottomMargin: 0
+                        topMargin: zoom * ui.du(2)
+                        layout: StackLayout {
+                            orientation: LayoutOrientation.LeftToRight
                         }
                         Label {
-                            text: qsTr("Off, nothing downloads by itself on mobile data; it waits for Wi-Fi or a tap.")
-                            multiline: true
-                            topMargin: 0
-                            textStyle.base: SystemDefaults.TextStyles.SubtitleText
-                            textStyle.color: ui.palette.secondaryTextOnPlain
+                            layoutProperties: StackLayoutProperties {
+                                spaceQuota: 1
+                            }
+                            verticalAlignment: VerticalAlignment.Center
+                            text: qsTr("Cache: %1").arg(page.cacheText)
                         }
-                    }
-                    ToggleButton {
-                        verticalAlignment: VerticalAlignment.Center
-                        checked: settings.mediaOnMobile
-                        onCheckedChanged: settings.mediaOnMobile = checked
-                    }
-                }
-            }
-            Header {
-                title: qsTr("Network")
-            }
-            Container {
-                topPadding: zoom * ui.du(2)
-                leftPadding: zoom * ui.du(2)
-                rightPadding: zoom * ui.du(2)
-                bottomPadding: zoom * ui.du(2)
-                Container {
-                    layout: StackLayout {
-                        orientation: LayoutOrientation.LeftToRight
-                    }
-                    Container {
-                        layoutProperties: StackLayoutProperties {
-                            spaceQuota: 1
+                        Button {
+                            verticalAlignment: VerticalAlignment.Center
+                            text: qsTr("Clear cache")
+                            onClicked: {
+                                // Nothing in the cache is lost, so no confirmation.
+                                var freed = settings.clearCache()
+                                page.cacheText = settings.cacheSize()
+                                clearedToast.body = qsTr("Cache cleared: %1 freed").arg(freed)
+                                clearedToast.show()
+                            }
                         }
-                        verticalAlignment: VerticalAlignment.Center
-                        Label {
-                            text: qsTr("Cloudflare DNS")
-                            bottomMargin: 0
-                        }
-                        Label {
-                            text: qsTr("Finds WhatsApp's servers through 1.1.1.1 and 1.0.0.1 instead of your network's DNS. Try it if messages or media don't go through.")
-                            multiline: true
-                            topMargin: 0
-                            textStyle.base: SystemDefaults.TextStyles.SubtitleText
-                            textStyle.color: ui.palette.secondaryTextOnPlain
-                        }
-                    }
-                    ToggleButton {
-                        verticalAlignment: VerticalAlignment.Center
-                        checked: settings.cloudflareDns
-                        onCheckedChanged: settings.cloudflareDns = checked
-                    }
-                }
-            }
-            Header {
-                title: qsTr("Storage")
-            }
-            Container {
-                topPadding: zoom * ui.du(2)
-                leftPadding: zoom * ui.du(2)
-                rightPadding: zoom * ui.du(2)
-                bottomPadding: zoom * ui.du(2)
-                // What data/cache/ may hold. The engine prunes it, the oldest first (step 8.3).
-                DropDown {
-                    title: qsTr("Cache limit")
-                    options: [
-                        Option { text: "64 MB"; selected: settings.cacheLimit == 64 },
-                        Option { text: "128 MB"; selected: settings.cacheLimit == 128 },
-                        Option { text: "256 MB"; selected: settings.cacheLimit == 256 },
-                        Option { text: "512 MB"; selected: settings.cacheLimit == 512 }
-                    ]
-                    onSelectedIndexChanged: {
-                        if (selectedIndex >= 0) {
-                            settings.cacheLimit = [64, 128, 256, 512][selectedIndex]
-                        }
-                    }
-                }
-                Container {
-                    topMargin: zoom * ui.du(2)
-                    layout: StackLayout {
-                        orientation: LayoutOrientation.LeftToRight
                     }
                     Label {
-                        layoutProperties: StackLayoutProperties {
-                            spaceQuota: 1
-                        }
-                        verticalAlignment: VerticalAlignment.Center
-                        text: qsTr("Cache: %1").arg(page.cacheText)
+                        topMargin: zoom * ui.du(1)
+                        multiline: true
+                        text: qsTr("Voice notes' decoded audio and photo previews; they're made again when needed.")
+                        textStyle.base: SystemDefaults.TextStyles.SubtitleText
+                        textStyle.color: ui.palette.secondaryTextOnPlain
                     }
-                    Button {
-                        verticalAlignment: VerticalAlignment.Center
-                        text: qsTr("Clear cache")
-                        onClicked: {
-                            // Nothing in the cache is lost, so no confirmation.
-                            var freed = settings.clearCache()
-                            page.cacheText = settings.cacheSize()
-                            clearedToast.body = qsTr("Cache cleared: %1 freed").arg(freed)
-                            clearedToast.show()
-                        }
-                    }
-                }
-                Label {
-                    topMargin: zoom * ui.du(1)
-                    multiline: true
-                    text: qsTr("Voice notes' decoded audio and photo previews; they're made again when needed.")
-                    textStyle.base: SystemDefaults.TextStyles.SubtitleText
-                    textStyle.color: ui.palette.secondaryTextOnPlain
                 }
             }
         }

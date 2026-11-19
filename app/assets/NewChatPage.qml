@@ -22,6 +22,8 @@ Page {
         search.requestFocus()
     }
     Container {
+        // The page colour the user picked (Settings > Appearance > Dark background).
+        background: nav.pageBackground
         layout: DockLayout {}
         horizontalAlignment: HorizontalAlignment.Fill
         verticalAlignment: VerticalAlignment.Fill

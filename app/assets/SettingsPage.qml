@@ -55,6 +55,10 @@ Page {
         }
     }
     Container {
+        // The page colour the user picked (Settings > Appearance > Dark background).
+        background: nav.pageBackground
+        horizontalAlignment: HorizontalAlignment.Fill
+        verticalAlignment: VerticalAlignment.Fill
         ListView {
             layoutProperties: StackLayoutProperties {
                 spaceQuota: 1

@@ -33,6 +33,10 @@ Page {
     }
 
     Container {
+        // The page colour the user picked (Settings > Appearance > Dark background).
+        background: nav.pageBackground
+        horizontalAlignment: HorizontalAlignment.Fill
+        verticalAlignment: VerticalAlignment.Fill
         // The wrapper carries Bright's field fill (nav.fieldColor); Dark keeps the system box.
         Container {
             horizontalAlignment: HorizontalAlignment.Fill

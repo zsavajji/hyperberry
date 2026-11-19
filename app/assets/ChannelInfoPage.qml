@@ -52,102 +52,108 @@ Page {
             }
         }
     ]
-    ScrollView {
-        Container {
-            horizontalAlignment: HorizontalAlignment.Fill
+    Container {
+        // The page colour the user picked (Settings > Appearance > Dark background).
+        background: nav.pageBackground
+        horizontalAlignment: HorizontalAlignment.Fill
+        verticalAlignment: VerticalAlignment.Fill
+        ScrollView {
             Container {
                 horizontalAlignment: HorizontalAlignment.Fill
-                topPadding: zoom * ui.du(3)
-                leftPadding: zoom * ui.du(1.5)
-                rightPadding: zoom * ui.du(1.5)
                 Container {
-                    horizontalAlignment: HorizontalAlignment.Center
-                    preferredWidth: zoom * ui.du(20)
-                    preferredHeight: zoom * ui.du(20)
-                    background: page.chat ? Color.create(page.chat.color) : Color.Transparent
-                    layout: DockLayout {}
-                    Label {
-                        visible: !page.hasPicture
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    topPadding: zoom * ui.du(3)
+                    leftPadding: zoom * ui.du(1.5)
+                    rightPadding: zoom * ui.du(1.5)
+                    Container {
                         horizontalAlignment: HorizontalAlignment.Center
-                        verticalAlignment: VerticalAlignment.Center
-                        text: page.chat ? page.chat.initials : ""
+                        preferredWidth: zoom * ui.du(20)
+                        preferredHeight: zoom * ui.du(20)
+                        background: page.chat ? Color.create(page.chat.color) : Color.Transparent
+                        layout: DockLayout {}
+                        Label {
+                            visible: !page.hasPicture
+                            horizontalAlignment: HorizontalAlignment.Center
+                            verticalAlignment: VerticalAlignment.Center
+                            text: page.chat ? page.chat.initials : ""
+                            textFormat: TextFormat.Plain
+                            textStyle.base: nav.emojiStyle
+                            textStyle.fontSize: FontSize.PercentageValue
+                            textStyle.fontSizeValue: 300 * zoom
+                            textStyle.color: Color.White
+                        }
+                        ImageView {
+                            visible: page.hasPicture
+                            horizontalAlignment: HorizontalAlignment.Fill
+                            verticalAlignment: VerticalAlignment.Fill
+                            imageSource: page.hasPicture ? "file://" + page.picture : ""
+                            scalingMethod: ScalingMethod.AspectFill
+                            loadEffect: ImageViewLoadEffect.None
+                            gestureHandlers: TapHandler {
+                                onTapped: nav.showPhoto(page.picture)
+                            }
+                        }
+                    }
+                    Label {
+                        horizontalAlignment: HorizontalAlignment.Center
+                        multiline: true
+                        textStyle.textAlign: TextAlign.Center
+                        // Saved in the address book while open: the chat keeps the row it opened with.
+                        text: page.chat ? (chats.revision >= 0 && chats.chat(page.chat.jid).name) || page.chat.name : ""
                         textFormat: TextFormat.Plain
                         textStyle.base: nav.emojiStyle
                         textStyle.fontSize: FontSize.PercentageValue
-                        textStyle.fontSizeValue: 300 * zoom
-                        textStyle.color: Color.White
+                        textStyle.fontSizeValue: nav.bodySize * 1.3
                     }
-                    ImageView {
-                        visible: page.hasPicture
-                        horizontalAlignment: HorizontalAlignment.Fill
-                        verticalAlignment: VerticalAlignment.Fill
-                        imageSource: page.hasPicture ? "file://" + page.picture : ""
-                        scalingMethod: ScalingMethod.AspectFill
-                        loadEffect: ImageViewLoadEffect.None
-                        gestureHandlers: TapHandler {
-                            onTapped: nav.showPhoto(page.picture)
-                        }
+                    Label {
+                        visible: page.loaded
+                        horizontalAlignment: HorizontalAlignment.Center
+                        // 0 until channel.info answers: the hidden label is still evaluated, and qsTr's
+                        // count must be a number (undefined logged an error on every open, 0.0.1.178).
+                        text: qsTr("%Ln followers", "", page.info.followers || 0)
+                        textStyle.textAlign: TextAlign.Center
+                        textStyle.fontSize: FontSize.PercentageValue
+                        textStyle.fontSizeValue: nav.bodySize
+                        textStyle.color: ui.palette.secondaryTextOnPlain
                     }
                 }
+                Busy {
+                    running: !page.loaded && !page.failed
+                    topPadding: zoom * ui.du(4)
+                    text: qsTr("Loading…")
+                }
                 Label {
+                    visible: page.failed
                     horizontalAlignment: HorizontalAlignment.Center
+                    topMargin: zoom * ui.du(3)
                     multiline: true
                     textStyle.textAlign: TextAlign.Center
-                    // Saved in the address book while open: the chat keeps the row it opened with.
-                    text: page.chat ? (chats.revision >= 0 && chats.chat(page.chat.jid).name) || page.chat.name : ""
-                    textFormat: TextFormat.Plain
-                    textStyle.base: nav.emojiStyle
-                    textStyle.fontSize: FontSize.PercentageValue
-                    textStyle.fontSizeValue: nav.bodySize * 1.3
-                }
-                Label {
-                    visible: page.loaded
-                    horizontalAlignment: HorizontalAlignment.Center
-                    // 0 until channel.info answers: the hidden label is still evaluated, and qsTr's
-                    // count must be a number (undefined logged an error on every open, 0.0.1.178).
-                    text: qsTr("%Ln followers", "", page.info.followers || 0)
-                    textStyle.textAlign: TextAlign.Center
-                    textStyle.fontSize: FontSize.PercentageValue
-                    textStyle.fontSizeValue: nav.bodySize
                     textStyle.color: ui.palette.secondaryTextOnPlain
+                    text: qsTr("Couldn't load the channel's info. Check the connection and try again.")
                 }
-            }
-            Busy {
-                running: !page.loaded && !page.failed
-                topPadding: zoom * ui.du(4)
-                text: qsTr("Loading…")
-            }
-            Label {
-                visible: page.failed
-                horizontalAlignment: HorizontalAlignment.Center
-                topMargin: zoom * ui.du(3)
-                multiline: true
-                textStyle.textAlign: TextAlign.Center
-                textStyle.color: ui.palette.secondaryTextOnPlain
-                text: qsTr("Couldn't load the channel's info. Check the connection and try again.")
-            }
-            Header {
-                visible: page.loaded && !!page.info.description
-                title: qsTr("Description")
-            }
-            // Padding, not margins: margins only space siblings, never from the container's edge.
-            Container {
-                visible: page.loaded && !!page.info.description
-                horizontalAlignment: HorizontalAlignment.Fill
-                topPadding: zoom * ui.du(1.5)
-                leftPadding: zoom * ui.du(1.5)
-                rightPadding: zoom * ui.du(1.5)
-                bottomPadding: zoom * ui.du(1.5)
-                Label {
+                Header {
+                    visible: page.loaded && !!page.info.description
+                    title: qsTr("Description")
+                }
+                // Padding, not margins: margins only space siblings, never from the container's edge.
+                Container {
+                    visible: page.loaded && !!page.info.description
                     horizontalAlignment: HorizontalAlignment.Fill
-                    multiline: true
-                    text: page.info.description || ""
-                    // Active, so a link in it can be tapped.
-                    content.flags: TextContentFlag.ActiveText
-                    textFormat: TextFormat.Plain
-                    textStyle.base: nav.emojiStyle
-                    textStyle.fontSize: FontSize.PercentageValue
-                    textStyle.fontSizeValue: nav.bodySize
+                    topPadding: zoom * ui.du(1.5)
+                    leftPadding: zoom * ui.du(1.5)
+                    rightPadding: zoom * ui.du(1.5)
+                    bottomPadding: zoom * ui.du(1.5)
+                    Label {
+                        horizontalAlignment: HorizontalAlignment.Fill
+                        multiline: true
+                        text: page.info.description || ""
+                        // Active, so a link in it can be tapped.
+                        content.flags: TextContentFlag.ActiveText
+                        textFormat: TextFormat.Plain
+                        textStyle.base: nav.emojiStyle
+                        textStyle.fontSize: FontSize.PercentageValue
+                        textStyle.fontSizeValue: nav.bodySize
+                    }
                 }
             }
         }

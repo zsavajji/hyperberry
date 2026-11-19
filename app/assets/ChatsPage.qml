@@ -176,6 +176,8 @@ Page {
         scrollBehavior: TitleBarScrollBehavior.Sticky
     }
     Container {
+        // The page colour the user picked (Settings > Appearance > Dark background).
+        background: nav.pageBackground
         horizontalAlignment: HorizontalAlignment.Fill
         verticalAlignment: VerticalAlignment.Fill
         // The field and a ✕ that closes it in one tap: the Q10 has no Escape, and the menu's

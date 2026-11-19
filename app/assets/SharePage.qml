@@ -12,11 +12,17 @@ Page {
         title: page.forward ? qsTr("Forward to") : qsTr("Send to")
         scrollBehavior: TitleBarScrollBehavior.Sticky
     }
-    ChatList {
-        dataModel: chats
-        emojiStyle: nav.emojiStyle
-        bodySize: nav.bodySize
-        smallSize: nav.smallSize
-        onChatTapped: page.forward ? nav.forwardTo(chat, page.forward) : nav.shareTo(chat, page.share)
+    Container {
+        // The page colour the user picked (Settings > Appearance > Dark background).
+        background: nav.pageBackground
+        horizontalAlignment: HorizontalAlignment.Fill
+        verticalAlignment: VerticalAlignment.Fill
+        ChatList {
+            dataModel: chats
+            emojiStyle: nav.emojiStyle
+            bodySize: nav.bodySize
+            smallSize: nav.smallSize
+            onChatTapped: page.forward ? nav.forwardTo(chat, page.forward) : nav.shareTo(chat, page.share)
+        }
     }
 }

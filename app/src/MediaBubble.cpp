@@ -249,17 +249,19 @@ void MediaBubble::restyle()
     const int body = Card::bodySize(m_list);
     const int small = Card::smallSize(m_list);
     const Color plain = m_ui->palette()->plain();
-    if (m_styled && body == m_body && small == m_small && plain == m_plain)
+    const QString page = Card::pageColor(m_list);
+    if (m_styled && body == m_body && small == m_small && plain == m_plain && page == m_page)
         return;
     m_styled = true;
     m_body = body;
     m_small = small;
     m_plain = plain;
+    m_page = page;
 
     // 72 % of small text at the list's text size, as the card's time.
     m_length->textStyle()->setFontSizeValue(qRound(72 * Card::textScale(m_list) * Card::zoom()));
     const Color quiet = m_ui->palette()->secondaryTextOnPlain();
-    m_none->setBackground(m_ui->palette()->background());
+    m_none->setBackground(Card::page(m_list, m_ui));
     Card::style(m_noneText, m_list, body);
     m_noneText->textStyle()->setFontStyle(FontStyle::Italic);
     m_noneText->textStyle()->setColor(quiet);

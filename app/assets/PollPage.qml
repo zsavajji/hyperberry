@@ -10,60 +10,66 @@ Page {
     titleBar: TitleBar {
         title: qsTr("Create poll")
     }
-    ScrollView {
-        Container {
-            topPadding: zoom * ui.du(2)
-            bottomPadding: zoom * ui.du(2)
-            leftPadding: zoom * ui.du(2)
-            rightPadding: zoom * ui.du(2)
-            horizontalAlignment: HorizontalAlignment.Fill
-            Label {
-                text: qsTr("Question")
-            }
-            // The wrapper carries Bright's field fill (nav.fieldColor); Dark keeps the system box.
+    Container {
+        // The page colour the user picked (Settings > Appearance > Dark background).
+        background: nav.pageBackground
+        horizontalAlignment: HorizontalAlignment.Fill
+        verticalAlignment: VerticalAlignment.Fill
+        ScrollView {
             Container {
+                topPadding: zoom * ui.du(2)
+                bottomPadding: zoom * ui.du(2)
+                leftPadding: zoom * ui.du(2)
+                rightPadding: zoom * ui.du(2)
                 horizontalAlignment: HorizontalAlignment.Fill
-                background: nav.fieldColor
-                leftPadding: settings.theme == 1 ? zoom * ui.du(1) : 0
-                TextField {
-                    id: question
-                    horizontalAlignment: HorizontalAlignment.Fill
-                    backgroundVisible: settings.theme != 1
-                    hintText: qsTr("Ask something")
-                    input.submitKey: SubmitKey.Next
-                    input.submitKeyFocusBehavior: SubmitKeyFocusBehavior.Next
-                }
-            }
-            Label {
-                text: qsTr("Options")
-                topMargin: zoom * ui.du(2)
-            }
-            Container {
-                id: options
-                horizontalAlignment: HorizontalAlignment.Fill
-            }
-            Button {
-                id: addButton
-                text: qsTr("Add option")
-                topMargin: zoom * ui.du(1)
-                horizontalAlignment: HorizontalAlignment.Fill
-                onClicked: page.addOption().requestFocus()
-            }
-            Container {
-                topMargin: zoom * ui.du(2)
-                layout: StackLayout {
-                    orientation: LayoutOrientation.LeftToRight
-                }
                 Label {
-                    text: qsTr("Allow several answers")
-                    verticalAlignment: VerticalAlignment.Center
-                    layoutProperties: StackLayoutProperties {
-                        spaceQuota: 1
+                    text: qsTr("Question")
+                }
+                // The wrapper carries Bright's field fill (nav.fieldColor); Dark keeps the system box.
+                Container {
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    background: nav.fieldColor
+                    leftPadding: settings.theme == 1 ? zoom * ui.du(1) : 0
+                    TextField {
+                        id: question
+                        horizontalAlignment: HorizontalAlignment.Fill
+                        backgroundVisible: settings.theme != 1
+                        hintText: qsTr("Ask something")
+                        input.submitKey: SubmitKey.Next
+                        input.submitKeyFocusBehavior: SubmitKeyFocusBehavior.Next
                     }
                 }
-                ToggleButton {
-                    id: several
-                    verticalAlignment: VerticalAlignment.Center
+                Label {
+                    text: qsTr("Options")
+                    topMargin: zoom * ui.du(2)
+                }
+                Container {
+                    id: options
+                    horizontalAlignment: HorizontalAlignment.Fill
+                }
+                Button {
+                    id: addButton
+                    text: qsTr("Add option")
+                    topMargin: zoom * ui.du(1)
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    onClicked: page.addOption().requestFocus()
+                }
+                Container {
+                    topMargin: zoom * ui.du(2)
+                    layout: StackLayout {
+                        orientation: LayoutOrientation.LeftToRight
+                    }
+                    Label {
+                        text: qsTr("Allow several answers")
+                        verticalAlignment: VerticalAlignment.Center
+                        layoutProperties: StackLayoutProperties {
+                            spaceQuota: 1
+                        }
+                    }
+                    ToggleButton {
+                        id: several
+                        verticalAlignment: VerticalAlignment.Center
+                    }
                 }
             }
         }

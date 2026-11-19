@@ -31,6 +31,9 @@ class Settings : public QObject
     Q_PROPERTY(qreal textScale READ textScale NOTIFY textSizeChanged)
     // Interface: Normal (false) has the chat rows' bigger pictures and padding, Compact the old rows (ChatRows.cpp).
     Q_PROPERTY(bool compact READ compact WRITE setCompact NOTIFY compactChanged)
+    // The Dark theme's page background (the user's ask, 2026-11-19): pure black (false, the look so far) or #181818, like Android's.
+    // main.qml's pageBackground reads it; the Bright theme has no such choice.
+    Q_PROPERTY(bool darkGrey READ darkGrey WRITE setDarkGrey NOTIFY darkGreyChanged)
     // How many group calls showed the people drawer's first-time hint (CallDrawer.qml shows it in the first 2).
     Q_PROPERTY(int callHints READ callHints WRITE setCallHints NOTIFY callHintsChanged)
 
@@ -51,6 +54,7 @@ public:
     int textSize() const;
     qreal textScale() const;
     bool compact() const;
+    bool darkGrey() const;
     int callHints() const;
     void setTheme(int theme);
     void setEnterSends(bool on);
@@ -66,6 +70,7 @@ public:
     void setCacheLimit(int mb);
     void setTextSize(int size);
     void setCompact(bool on);
+    void setDarkGrey(bool on);
     void setCallHints(int count);
     Q_INVOKABLE QString cacheSize();
     Q_INVOKABLE QString clearCache();
@@ -82,6 +87,7 @@ signals:
     void cacheLimitChanged();
     void textSizeChanged();
     void compactChanged();
+    void darkGreyChanged();
     void callHintsChanged();
 
 private slots:

@@ -50,6 +50,9 @@ inline bb::cascades::Color quiet(bb::cascades::ListView *list, bb::cascades::UIC
 }
 // Their cards' colour, "" for the page's own (ChatPage.qml's theirColor).
 inline QString theirColor(bb::cascades::ListView *list) { return list->property("theirColor").toString(); }
+// The page's own colour behind the cards, "" for the theme's (ChatPage.qml's pageColor, main.qml's pageGrey: Dark with
+// Settings > Appearance > Dark background on Grey, the user's ask, 2026-11-19).
+inline QString pageColor(bb::cascades::ListView *list) { return list->property("pageColor").toString(); }
 inline QString foundId(bb::cascades::ListView *list) { return list->property("foundId").toString(); }
 inline bb::cascades::TextStyle emojiStyle(bb::cascades::ListView *list)
 {
@@ -66,6 +69,13 @@ inline bb::cascades::Color color(const QString &hex)
     if (hex.size() == 7)
         argb |= 0xFF000000u;
     return bb::cascades::Color::fromARGB(argb);
+}
+
+// What a picture's empty box and an album's tile are painted with: the page's colour as the chat page has it.
+inline bb::cascades::Color page(bb::cascades::ListView *list, bb::cascades::UIConfig *ui)
+{
+    const QString hex = pageColor(list);
+    return hex.isEmpty() ? ui->palette()->background() : color(hex);
 }
 
 // A text in the list's emoji style at a percentage of its size, plain: the card's labels all start so.

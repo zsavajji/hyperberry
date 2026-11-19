@@ -54,6 +54,10 @@ Page {
     }
 
     Container {
+        // The page colour the user picked (Settings > Appearance > Dark background).
+        background: nav.pageBackground
+        horizontalAlignment: HorizontalAlignment.Fill
+        verticalAlignment: VerticalAlignment.Fill
         layout: DockLayout {}
         ScrollView {
             horizontalAlignment: HorizontalAlignment.Fill

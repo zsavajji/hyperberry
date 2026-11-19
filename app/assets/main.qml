@@ -131,6 +131,11 @@ TabbedPane {
             // page (the user, Q20, 2026-11-17); Dark keeps the theme's own.
             property variant lineColor: settings.theme == 1 ? Color.create("#D0D0D0") : ui.palette.plain
             property variant fieldColor: settings.theme == 1 ? Color.create("#E4E4E4") : Color.Transparent
+            // The page's background (the user's ask, 2026-11-19): the theme's own, pure black on Dark and white on Bright, or on
+            // Dark with Settings > Appearance > Dark background on Grey, #181818 like Android's. Every page's content paints
+            // pageBackground; the chat page also hands pageGrey to its list for the C++ cards' empty boxes.
+            property bool pageGrey: settings.theme == 0 && settings.darkGrey
+            property variant pageBackground: pageGrey ? Color.create("#181818") : ui.palette.background
             // The chat a notification tap asked for, until the chat list is up to open it.
             property string pendingChat
             // The Share menu's {path, text}, held like pendingChat until the chat list is up.
