@@ -32,6 +32,8 @@ Page {
                 page.view.openMedia(msg)
             }
             property string loadingId: page.view ? page.view.mediaLoadingId : ""
+            // The page colour for the tiles, which see no nav (Settings > Appearance > Dark background).
+            property variant pageBackground: nav.pageBackground
             dataModel: ArrayDataModel {
                 id: album
             }
@@ -45,6 +47,7 @@ Page {
                         id: cell
                         member: ListItemData
                         loadingId: cell.ListItem.view.loadingId
+                        background: cell.ListItem.view.pageBackground
                         onTapped: cell.ListItem.view.open(cell.member)
                     }
                 }
