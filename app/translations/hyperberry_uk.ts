@@ -2293,8 +2293,8 @@
     </message>
     <message>
         <location filename="../assets/StagedBar.qml" line="83"/>
-        <source>Send as file</source>
-        <translation>Надіслати як файл</translation>
+        <source>As file</source>
+        <translation>Файлом</translation>
     </message>
 </context>
 <context>

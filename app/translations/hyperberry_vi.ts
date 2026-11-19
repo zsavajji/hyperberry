@@ -2287,8 +2287,8 @@
     </message>
     <message>
         <location filename="../assets/StagedBar.qml" line="83"/>
-        <source>Send as file</source>
-        <translation>Gửi dưới dạng tệp</translation>
+        <source>As file</source>
+        <translation>Dạng tệp</translation>
     </message>
 </context>
 <context>

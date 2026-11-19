@@ -71,6 +71,7 @@ func sendKind(path string) (kind int, mimeType string) {
 type mediaSendReq struct {
 	Chat, Path, Quote, Caption string
 	Thumb                      []byte
+	File                       bool // as a document whatever the extension: the staged bar's As file on a JPEG
 	Width, Height              int
 	size                       int64 // from the stat of parseMediaSend
 }
@@ -110,6 +111,9 @@ type mediaOut struct {
 // other kinds ignore them.
 func (st *Store) queueMedia(jid types.JID, r mediaSendReq, id string) *mediaOut {
 	kind, mimeType := sendKind(r.Path)
+	if r.File {
+		kind = msgDoc
+	}
 	o := &mediaOut{mime: mimeType, row: msgRow{Chat: r.Chat, ID: id, TS: time.Now().Unix(), Out: true,
 		State: stateSending, Kind: kind, Size: r.size, Path: r.Path, MediaState: 2}}
 	switch kind {

@@ -22,6 +22,8 @@ Page {
     property variant stagedInfo: ({})
     // The PNG a staged JPEG was made from ("" for none): Send as file sends it instead.
     property string stagedPng: ""
+    // The staged file is a JPEG of the user's own (not one made from a PNG): it can go as a file too.
+    property bool stagedJpeg: stagedPng == "" && /\.jpe?g$/i.test(staged)
     property string failedCmd: engine.failure.cmd || ""
     onFailedCmdChanged: {
         if (failedCmd == "msg.delete") {
@@ -149,7 +151,7 @@ Page {
             id: stagedDef
             StagedBar {
                 info: page.stagedInfo
-                canFile: page.stagedPng != ""
+                canFile: page.stagedPng != "" || page.stagedJpeg
                 canEdit: page.stagedPng != "" || /\.(jpe?g|png|gif|bmp|mp4|3gp|mov)$/i.test(page.staged)
                 // The original PNG when the staged JPEG was made from one.
                 onEdit: media.editPicture(page.stagedPng != "" ? page.stagedPng : page.staged)
@@ -303,10 +305,14 @@ Page {
     }
     // A photo's or a video's caption rides in the message; the other kinds' text follows as a message.
     function sendStaged(text) {
-        // Send as file: the PNG itself, which the engine sends as a document; the text follows it.
-        var asFile = page.stagedBar().asFile && stagedPng != ""
+        // As file: the PNG itself, which the engine sends as a document by its extension, or the JPEG with `file`; the
+        // text follows it.
+        var asFile = page.stagedBar().asFile && (stagedPng != "" || stagedJpeg)
         var picture = stagedInfo.picture && !asFile
-        var args = {"chat": chat.jid, "path": asFile ? stagedPng : staged}
+        var args = {"chat": chat.jid, "path": asFile && stagedPng != "" ? stagedPng : staged}
+        if (asFile && stagedPng == "") {
+            args.file = true
+        }
         if (ctl.quoteId()) {
             args.quote = ctl.quoteId()
         }

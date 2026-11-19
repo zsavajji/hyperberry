@@ -2290,8 +2290,8 @@
     </message>
     <message>
         <location filename="../assets/StagedBar.qml" line="83"/>
-        <source>Send as file</source>
-        <translation>Envoyer comme fichier</translation>
+        <source>As file</source>
+        <translation>En fichier</translation>
     </message>
 </context>
 <context>
