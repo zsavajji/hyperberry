@@ -11,6 +11,7 @@
 
 #include "CardStyle.h"
 #include "Invites.h"
+#include "VoiceBubble.h"
 
 using namespace bb::cascades;
 
@@ -149,7 +150,9 @@ void MessageCard::onTouch(TouchEvent *event)
     const float dy = event->windowY() - m_downY;
     if (event->isMove()) {
         if (m_swipe == 0 && qMax(qAbs(dx), qAbs(dy)) > Card::du(m_ui, 2)) {
-            m_swipe = (dx < 0 && qAbs(dx) > qAbs(dy) && !flag("deleted") && !flag("readOnly")) ? 1 : -1;
+            // A drag along a voice note's waveform is its seek, which has taken the touch already.
+            m_swipe = (dx < 0 && qAbs(dx) > qAbs(dy) && !flag("deleted") && !flag("readOnly")
+                       && !(m_voice && m_voice->scrubbing())) ? 1 : -1;
             if (m_swipe == 1)
                 m_slide = ImplicitAnimationController::create(m_root, "translationX").enabled(false);
         }
