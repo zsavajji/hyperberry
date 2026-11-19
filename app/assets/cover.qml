@@ -16,10 +16,13 @@ SceneCover {
     property variant accent: Color.create(bright ? "#1eaa61" : "#1BD862")
     // The panel lifts the rows off the home screen's wallpaper behind the frame; the idle page is plain.
     property variant panel: bright ? Color.White : Color.create("#2B2B2B")
+    // Dark with Settings > Appearance > Dark background on Grey: the frame is the app's grey #181818, idle or not (the user,
+    // 2026-11-19).
+    property bool grey: !bright && settings.darkGrey
     property variant line: bright ? Color.create("#D0D0D0") : Color.create("#464646")
     property bool idle: chats.unreadTotal == 0 && callList.missedNew == 0
     content: Container {
-        background: idle ? (bright ? Color.White : Color.Black) : panel
+        background: grey ? Color.create("#181818") : idle ? (bright ? Color.White : Color.Black) : panel
         preferredWidth: 310
         preferredHeight: 211
         layout: DockLayout {
