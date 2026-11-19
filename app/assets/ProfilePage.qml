@@ -133,6 +133,8 @@ Page {
                 Container {
                     horizontalAlignment: HorizontalAlignment.Fill
                     topPadding: zoom * ui.du(3)
+                    // Air under the number, which sat on the next header (the user's ask, 2026-11-19, as Tengram's).
+                    bottomPadding: zoom * ui.du(2)
                     leftPadding: zoom * ui.du(1.5)
                     rightPadding: zoom * ui.du(1.5)
                     Container {
