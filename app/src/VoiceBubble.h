@@ -3,6 +3,7 @@
 
 #include <bb/cascades/CustomControl>
 #include <QRectF>
+#include <QElapsedTimer>
 #include <QString>
 #include <QVariantMap>
 
@@ -74,6 +75,7 @@ private:
     float m_downX;
     float m_downY;
     double m_scrubFrac;
+    QElapsedTimer m_downAt; // the down, to tell a tap from the long press
 
     bb::cascades::ImageView *m_icon;
     bb::cascades::ActivityIndicator *m_spinner;

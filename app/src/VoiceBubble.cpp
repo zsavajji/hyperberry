@@ -233,6 +233,7 @@ void VoiceBubble::onWaveTouch(TouchEvent *event)
         m_scrubMoved = false;
         m_settling = false;
         m_scrubFrac = fractionAt(x);
+        m_downAt.start();
         return;
     }
     if (!m_scrubbing)
@@ -255,7 +256,8 @@ void VoiceBubble::onWaveTouch(TouchEvent *event)
         return;
     }
     // Up, or cancel: as the swipe's, a cancel after the drag began is the list taking the touch on a drift, a let-go.
-    const bool seek = event->isUp() || m_scrubMoved;
+    // A press held still past 500 ms is the long press that opens the card's menu, not a tap.
+    const bool seek = m_scrubMoved || (event->isUp() && m_downAt.elapsed() < 500);
     if (event->isUp())
         m_scrubFrac = fractionAt(x);
     m_scrubbing = false;
