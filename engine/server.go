@@ -39,6 +39,7 @@ type Server struct {
 	token    string
 	ln       net.Listener
 	handlers map[string]Handler
+	async    map[string]bool // the cmds in handlers that run in their own goroutine (HandleAsync)
 
 	mu      sync.Mutex
 	clients map[*client]bool
@@ -75,7 +76,7 @@ func NewServer(dataDir string, log waLog.Logger, hello func() any) (*Server, err
 		return nil, err
 	}
 	s := &Server{dir: dataDir, log: log, hello: hello, token: hex.EncodeToString(tok), ln: ln,
-		handlers: map[string]Handler{}, clients: map[*client]bool{}}
+		handlers: map[string]Handler{}, async: map[string]bool{}, clients: map[*client]bool{}}
 	info, _ := json.Marshal(map[string]any{"port": ln.Addr().(*net.TCPAddr).Port, "token": s.token})
 	tmp := filepath.Join(dataDir, "engine.json.tmp")
 	if err := os.WriteFile(tmp, info, 0o600); err == nil {
@@ -90,6 +91,13 @@ func NewServer(dataDir string, log waLog.Logger, hello func() any) (*Server, err
 
 // Handle registers the handler for cmd; do it before Serve.
 func (s *Server) Handle(cmd string, h Handler) { s.handlers[cmd] = h }
+
+// HandleAsync registers a handler that runs in its own goroutine, so a long one (a download) doesn't hold up the
+// connection's later requests (its own cancel); do it before Serve. Its reply goes out when it returns.
+func (s *Server) HandleAsync(cmd string, h Handler) {
+	s.handlers[cmd] = h
+	s.async[cmd] = true
+}
 
 // Call runs the handler of cmd with req as a UI request would, for the engine's own use (the
 // Hub's actions). Like Handle, it is for after the handlers are in.
@@ -320,6 +328,15 @@ func (s *Server) read(c *client) {
 			err = &Error{"bad_request", "need a JSON object with cmd"}
 		} else if h := s.handlers[r.Cmd]; h == nil {
 			err = &Error{"unknown_cmd", "unknown cmd " + r.Cmd}
+		} else if s.async[r.Cmd] {
+			go func(at string) {
+				res, err := h(line)
+				select {
+				case c.out <- reply(at, res, err):
+				case <-c.done:
+				}
+			}(r.At)
+			continue
 		} else {
 			res, err = h(line)
 		}

@@ -26,7 +26,7 @@ const (
 
 func (s *Sim) registerSimMedia() {
 	s.srv.Handle("sim.photo", s.handlePhoto)
-	s.srv.Handle("media.get", s.handleMediaGet)
+	s.srv.HandleAsync("media.get", s.handleMediaGet)
 }
 
 // simAudio turns a generated history row into the incoming audio file.

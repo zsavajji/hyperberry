@@ -51,6 +51,8 @@ type Session struct {
 	photos  *photoQueue                       // the chats' pictures (photos.go)
 	calls   *Calls                            // the live call (calls.go)
 	mc      atomic.Pointer[meowcaller.Client] // meowcaller on the current client
+	// cancels holds the cancel of each media.get in flight, chat + "/" + id -> *context.CancelFunc, for media.cancel.
+	cancels sync.Map
 }
 
 // syncCap ends "syncing" if the phone sends no recent-chats history: an account with no chats.

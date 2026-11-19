@@ -225,7 +225,9 @@ func (st *Store) playVoice(dir string, r voiceReq, fetch, notify func(msgRow) er
 
 func registerMedia(srv *Server, s *Session) {
 	srv.Handle("voice.play", s.handleVoicePlay)
-	srv.Handle("media.get", s.handleMediaGet)
+	// Async: a download takes as long as the file is big, and the media.cancel behind it must be read meanwhile.
+	srv.HandleAsync("media.get", s.handleMediaGet)
+	srv.Handle("media.cancel", s.handleMediaCancel)
 	srv.Handle("story.get", s.handleStoryGet)
 	srv.Handle("story.seen", s.handleStorySeen)
 	srv.Handle("story.reply", s.handleStoryReply)

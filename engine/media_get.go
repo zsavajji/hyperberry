@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"mime"
 	"os"
 	"path/filepath"
@@ -132,6 +133,35 @@ func downloadTo(tmp string, get func(f *os.File) (string, error), target func(mi
 	return path, nil
 }
 
+// progressInterval is how often a download's progress goes to the UI.
+const progressInterval = 200 * time.Millisecond
+
+// progressFile is the file a download writes into, counting the bytes: hypermeow copies the response into it with
+// io.Copy, which would give the embedded *os.File's own ReadFrom the whole copy, so ReadFrom goes through Write here.
+// emit gets the count, at most every progressInterval and never above size (what is written is the encrypted file, a
+// few bytes more than the decrypted one). A retry after a lost connection writes from the start again, and the count
+// goes on from where it was, so the ring jumps to full and waits.
+type progressFile struct {
+	*os.File
+	size, done int64
+	last       time.Time
+	emit       func(done, size int64)
+}
+
+func (p *progressFile) Write(b []byte) (int, error) {
+	n, err := p.File.Write(b)
+	p.done += int64(n)
+	if now := time.Now(); now.Sub(p.last) >= progressInterval {
+		p.last = now
+		p.emit(min(p.done, p.size), p.size)
+	}
+	return n, err
+}
+
+func (p *progressFile) ReadFrom(r io.Reader) (int64, error) {
+	return io.Copy(struct{ io.Writer }{p}, r)
+}
+
 // downloadMedia fetches row's file and moves its media_state to 2 with its path, or to 3 on a
 // failure. A voice note goes through downloadVoice.
 func (st *Store) downloadMedia(ctx context.Context, cli *whatsmeow.Client, dir string, row msgRow) (string, error) {
@@ -148,7 +178,13 @@ func (st *Store) downloadMedia(ctx context.Context, cli *whatsmeow.Client, dir s
 		if err := json.Unmarshal([]byte(row.Media), &info); err != nil {
 			return "", err
 		}
-		return info.Mimetype, cli.DownloadToFile(ctx, info.message(row.Kind), f)
+		var file whatsmeow.File = f
+		if st.srv != nil && info.FileLength > 0 {
+			file = &progressFile{File: f, size: int64(info.FileLength), emit: func(done, size int64) {
+				st.srv.Emit("media.progress", map[string]any{"chat": row.Chat, "id": row.ID, "done": done, "size": size})
+			}}
+		}
+		return info.Mimetype, cli.DownloadToFile(ctx, info.message(row.Kind), file)
 	})
 }
 
@@ -176,6 +212,9 @@ func (st *Store) fetchMedia(dir string, row msgRow, get func(f *os.File) (string
 	t0 := time.Now()
 	tmp := filepath.Join(filepath.Dir(mediaTarget(dir, row, "")), row.ID+".tmp")
 	path, err := downloadTo(tmp, get, func(mimeType string) string { return mediaTarget(dir, row, mimeType) })
+	if errors.Is(err, context.Canceled) {
+		return "", err // the user's cancel, not a failure: the row stays as it was, and a tap fetches it again
+	}
 	state := 2
 	if err != nil {
 		state, path = 3, ""
@@ -210,6 +249,9 @@ func (st *Store) mediaGet(dir string, r mediaReq, fetch func(msgRow) (string, er
 	p := mediaHere(dir, row)
 	if p == "" {
 		if p, err = fetch(row); err != nil {
+			if errors.Is(err, context.Canceled) {
+				return nil, &Error{"cancelled", "download cancelled"}
+			}
 			return nil, &Error{"download_failed", err.Error()}
 		}
 	}
@@ -228,7 +270,26 @@ func (s *Session) handleMediaGet(req json.RawMessage) (any, error) {
 	fetch := func(row msgRow) (string, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), mediaTimeout)
 		defer cancel()
+		// media.cancel finds the cancel here; a newer media.get of the same message replaces it, and this one's end then
+		// leaves the newer one's alone.
+		stop := context.CancelFunc(cancel)
+		key := r.Chat + "/" + r.ID
+		s.cancels.Store(key, &stop)
+		defer s.cancels.CompareAndDelete(key, &stop)
 		return s.store.downloadMedia(ctx, cli, s.srv.dir, row)
 	}
 	return s.store.mediaGet(s.srv.dir, r, fetch)
+}
+
+// handleMediaCancel is media.cancel: the media.get of that message, if one is running, ends with "cancelled". It
+// answers ok either way: a download that just finished is not an error.
+func (s *Session) handleMediaCancel(req json.RawMessage) (any, error) {
+	var r mediaReq
+	if err := json.Unmarshal(req, &r); err != nil || r.Chat == "" || r.ID == "" {
+		return nil, &Error{"bad_request", "media.cancel needs chat and id"}
+	}
+	if stop, ok := s.cancels.Load(r.Chat + "/" + r.ID); ok {
+		(*stop.(*context.CancelFunc))()
+	}
+	return nil, nil
 }
