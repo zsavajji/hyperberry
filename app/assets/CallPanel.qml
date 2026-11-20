@@ -150,8 +150,8 @@ Container {
         ImageView {
             horizontalAlignment: HorizontalAlignment.Center
             verticalAlignment: VerticalAlignment.Center
-            preferredWidth: panel.px(62)
-            preferredHeight: panel.px(22)
+            preferredWidth: panel.px(60)
+            preferredHeight: panel.px(32)
             scalingMethod: ScalingMethod.AspectFit
             imageSource: "asset:///images/call_end.png"
         }

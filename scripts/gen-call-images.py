@@ -207,7 +207,19 @@ def unmute(out):
 
 
 def end(out):
-    save(handset(62, 22, WHITE), out, "call_end")
+    """The stock End call glyph (the user's screenshot, 2026-11-20): a wide, shallow handset, thick on
+    top, its ear and mouth pads ovals tipped outward, and the cradle's short bar between them; 60x32."""
+    w = 60
+    img, d = new(w, 32)
+    d.ellipse(sc(3, 1, w - 3, 35), WHITE)
+    d.ellipse(sc(13, 9.5, w - 13, 39.5), CLEAR)
+    d.rectangle(sc(0, 17, w, 32), CLEAR)
+    pad, pd = new(19, 11)
+    pd.ellipse(sc(0, 0, 19, 11), WHITE)
+    for cx, angle in ((10, -24), (w - 10, 24)):
+        put(img, pad, cx, 17.5, angle)
+    d.rounded_rectangle(sc(w / 2 - 10, 23, w / 2 + 10, 28), 2.5 * S, WHITE)
+    save(img, out, "call_end")
 
 
 def camcorder():
