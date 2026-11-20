@@ -9,6 +9,18 @@ QT += declarative network sql gui
 LIBS += -lbbcascades -lbbdevice -lbbdata -lbbsystem -lbbplatform -lbb -lbbutilityi18n -lslog2 -lbbpim -lbps -lasound -laudio_manager -lscreen -lcamapi
 QMAKE_LFLAGS += -Wl,-rpath-link,$${QNX_DIR}/$${QNX_CPUDIR}/usr/lib/qt4/lib
 QMAKE_CXXFLAGS += -Wno-psabi
+# gcc 4.8.3 and C++11, as Tengram (the user, 2026-11-20). The spec's qcc -Vgcc_ntoarmv7le takes the NDK's default, gcc 4.6.3, whose
+# C++11 is partial. 4.8.3 ships in the same NDK with GNU libstdc++ only, and Qt and Cascades are built against Dinkumware
+# (libcpp.so.4): so C++ is compiled by 4.8.3's _cpp variant (Dinkumware's headers) and linked against 4.6.3's Dinkumware
+# library, the one Qt and Cascades load: one standard library in the process. gnu++11, not c++11: strict ISO hides POSIX calls.
+QMAKE_CC = qcc -V4.8.3,gcc_ntoarmv7le
+QMAKE_CXX = qcc -V4.8.3,gcc_ntoarmv7le_cpp
+QMAKE_LINK = $$QMAKE_CXX
+QMAKE_LINK_SHLIB = $$QMAKE_CXX
+QMAKE_LINK_C = $$QMAKE_CC
+QMAKE_LINK_C_SHLIB = $$QMAKE_CC
+QMAKE_CXXFLAGS += -std=gnu++11
+LIBS += -L$$(QNX_TARGET)/armle-v7/lib/gcc/4.6.3 -lcpp
 
 SOURCES += src/main.cpp src/EngineLink.cpp src/ChatListModel.cpp src/CallsModel.cpp src/StoriesModel.cpp src/EmojiModel.cpp src/MessageModel.cpp src/MessageRows.cpp src/MessageCards.cpp src/ChatRows.cpp src/MessageCard.cpp src/MessageCardActions.cpp src/MessageCardBubbles.cpp src/Albums.cpp src/MessageKinds.cpp src/Polls.cpp src/Pins.cpp src/ChatController.cpp src/ChatControllerGroup.cpp src/ContactBook.cpp src/ContactInfo.cpp src/ContactPicker.cpp src/MapChooser.cpp src/MediaData.cpp src/MediaOpener.cpp src/QrImage.cpp src/Waveform.cpp src/OpenRequests.cpp src/Invites.cpp src/Profile.cpp src/Settings.cpp src/Sticker.cpp src/CallAudio.cpp src/CallVideo.cpp src/LinkIo.cpp src/Proximity.cpp src/VideoDecoder.cpp src/VideoFormat.cpp src/VideoOutput.cpp src/VideoWindow.cpp src/CameraEncoder.cpp $$PWD/../lib/qrcodegen/qrcodegen.c
 HEADERS += src/EngineLink.h src/ChatListModel.h src/CallsModel.h src/StoriesModel.h src/EmojiModel.h src/emojiTable.h src/MessageModel.h src/MessageCards.h src/ChatRows.h src/MessageCard.h src/CardStyle.h src/Albums.h src/MessageKinds.h src/Polls.h src/Pins.h src/ChatController.h src/ContactBook.h src/ContactInfo.h src/ContactPicker.h src/MapChooser.h src/MediaData.h src/MediaOpener.h src/Moves.h src/dates.h src/colors.h src/QrImage.h src/Waveform.h src/OpenRequests.h src/Invites.h src/Profile.h src/Settings.h src/Sticker.h src/sizes.h src/CallAudio.h src/CallVideo.h src/LinkIo.h src/Proximity.h src/VideoDecoder.h src/VideoWindow.h src/Nv12Rotate.h src/CameraEncoder.h
