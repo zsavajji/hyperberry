@@ -17,13 +17,28 @@ type chatSetReq struct {
 	Mute    *int64 // unix seconds until; 0 off; -1 always
 	Archive *bool
 	Unread  *bool
+	// Translate is the language the chat's incoming messages are shown in, "" off. Local only.
+	Translate *string
+}
+
+// validLang: a language code as the UI sends it (it, pt-BR), or empty.
+func validLang(s string) bool {
+	if len(s) > 8 {
+		return false
+	}
+	for _, c := range s {
+		if !(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '-') {
+			return false
+		}
+	}
+	return true
 }
 
 func parseChatSet(req json.RawMessage) (chatSetReq, error) {
 	var r chatSetReq
-	if err := json.Unmarshal(req, &r); err != nil || (r.Pin == nil && r.Mute == nil && r.Archive == nil && r.Unread == nil) ||
-		(r.Mute != nil && *r.Mute < -1) {
-		return r, &Error{"bad_request", "chat.set needs chat and one of pin, mute, archive, unread"}
+	if err := json.Unmarshal(req, &r); err != nil || (r.Pin == nil && r.Mute == nil && r.Archive == nil && r.Unread == nil && r.Translate == nil) ||
+		(r.Mute != nil && *r.Mute < -1) || (r.Translate != nil && !validLang(*r.Translate)) {
+		return r, &Error{"bad_request", "chat.set needs chat and one of pin, mute, archive, unread, translate"}
 	}
 	return r, nil
 }
@@ -54,6 +69,9 @@ func (st *Store) applyChatSet(r chatSetReq) {
 				n = -1
 			}
 			t.setUnread(r.Chat, n)
+		}
+		if r.Translate != nil {
+			t.touch(r.Chat, "UPDATE chats SET translate = ?1 WHERE translate != ?1 AND jid = ?2", *r.Translate)
 		}
 	}
 }

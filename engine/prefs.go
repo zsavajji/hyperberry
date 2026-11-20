@@ -17,6 +17,11 @@ type prefs struct {
 	Language      *string `json:"language,omitempty"`
 	CacheMB       *int    `json:"cacheMB,omitempty"`
 	CloudflareDNS *bool   `json:"cloudflareDNS,omitempty"` // off until set: the network's own DNS
+	// The translation service (translate.go): google, deepl or libre; google until set.
+	TranslateProvider *string `json:"translateProvider,omitempty"`
+	DeeplKey          *string `json:"deeplKey,omitempty"`
+	LibreURL          *string `json:"libreURL,omitempty"`
+	LibreKey          *string `json:"libreKey,omitempty"`
 }
 
 // notifyPreview is whether the Hub shows the message text; on until set otherwise.
@@ -62,16 +67,43 @@ func (n *Notifier) cacheLimit() int64 {
 	return int64(*n.prefs.CacheMB) << 20
 }
 
+// translateSettings is the service the user picked and its keys, with the phone's language as the default target.
+func (n *Notifier) translateSettings() (ts transSettings, lang string) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	ts.provider = "google"
+	if p := n.prefs.TranslateProvider; p != nil {
+		ts.provider = *p
+	}
+	if n.prefs.DeeplKey != nil {
+		ts.deeplKey = *n.prefs.DeeplKey
+	}
+	if n.prefs.LibreURL != nil {
+		ts.libreURL = *n.prefs.LibreURL
+	}
+	if n.prefs.LibreKey != nil {
+		ts.libreKey = *n.prefs.LibreKey
+	}
+	if n.prefs.Language != nil {
+		lang = *n.prefs.Language
+	}
+	return ts, lang
+}
+
 // setPrefs merges the fields prefs.set gives into the stored ones and writes the lot. langChanged
 // is true when the language differs from the stored one, so the previews need wording again.
 func (n *Notifier) setPrefs(req json.RawMessage) (langChanged bool, err error) {
 	var r prefs
 	if json.Unmarshal(req, &r) != nil || r.NotifyPreview == nil && r.MediaOnMobile == nil && r.AutoPhoto == nil && r.AutoAudio == nil &&
-		r.AutoVideo == nil && r.AutoDoc == nil && r.Language == nil && r.CacheMB == nil && r.CloudflareDNS == nil {
-		return false, &Error{"bad_request", "prefs.set needs notifyPreview, mediaOnMobile, autoPhoto, autoAudio, autoVideo, autoDoc, language, cacheMB or cloudflareDNS"}
+		r.AutoVideo == nil && r.AutoDoc == nil && r.Language == nil && r.CacheMB == nil && r.CloudflareDNS == nil &&
+		r.TranslateProvider == nil && r.DeeplKey == nil && r.LibreURL == nil && r.LibreKey == nil {
+		return false, &Error{"bad_request", "prefs.set needs notifyPreview, mediaOnMobile, autoPhoto, autoAudio, autoVideo, autoDoc, language, cacheMB, cloudflareDNS, translateProvider, deeplKey, libreURL or libreKey"}
 	}
 	if r.CacheMB != nil && (*r.CacheMB < cacheDefaultMB || *r.CacheMB > cacheMaxMB) {
 		return false, &Error{"bad_request", "cacheMB is 64 to 512"}
+	}
+	if p := r.TranslateProvider; p != nil && *p != "google" && *p != "deepl" && *p != "libre" {
+		return false, &Error{"bad_request", "translateProvider is google, deepl or libre"}
 	}
 	n.mu.Lock()
 	defer n.mu.Unlock()
@@ -104,6 +136,18 @@ func (n *Notifier) setPrefs(req json.RawMessage) (langChanged bool, err error) {
 	if r.CloudflareDNS != nil {
 		n.prefs.CloudflareDNS = r.CloudflareDNS
 		useCloudflareDNS(*r.CloudflareDNS)
+	}
+	if r.TranslateProvider != nil {
+		n.prefs.TranslateProvider = r.TranslateProvider
+	}
+	if r.DeeplKey != nil {
+		n.prefs.DeeplKey = r.DeeplKey
+	}
+	if r.LibreURL != nil {
+		n.prefs.LibreURL = r.LibreURL
+	}
+	if r.LibreKey != nil {
+		n.prefs.LibreKey = r.LibreKey
 	}
 	b, _ := json.Marshal(n.prefs)
 	return langChanged, writeAtomic(n.path, b)

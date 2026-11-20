@@ -148,6 +148,14 @@ INSERT INTO engine_state SELECT 'appstate_resync', 1 WHERE EXISTS (SELECT 1 FROM
 	// Starred messages (star.go), as the phone's app state has them. ponytail: the Starred page scans messages for
 	// starred = 1, with no index since the UI's SQLite is Qt 4.8's; add one if that gets slow.
 	`ALTER TABLE messages ADD COLUMN starred INTEGER NOT NULL DEFAULT 0;`,
+	// Translation (translate.go). tr is the translation, '' when there is nothing to show (already in that language,
+	// or no letters), NULL when not asked; tr_lang the language it was made for, tr_from the one the service
+	// detected ('' unknown). An edit clears all three. chats.translate is the language a chat's incoming messages
+	// are shown in, '' off.
+	`ALTER TABLE messages ADD COLUMN tr TEXT;
+ALTER TABLE messages ADD COLUMN tr_lang TEXT;
+ALTER TABLE messages ADD COLUMN tr_from TEXT;
+ALTER TABLE chats ADD COLUMN translate TEXT NOT NULL DEFAULT '';`,
 }
 
 // openChats opens chats.db in WAL mode and migrates it to the newest schema.

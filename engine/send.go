@@ -45,6 +45,7 @@ func registerSend(srv *Server, s *Session) {
 	srv.Handle("chat.clear", s.handleChatClear)
 	srv.Handle("chat.delete", s.handleChatDelete)
 	srv.Handle("chat.export", s.store.handleExport)
+	srv.HandleAsync("msg.translate", s.store.handleTranslate) // the services are slow: its own goroutine
 }
 
 func (s *Session) handleSend(req json.RawMessage) (any, error) {
