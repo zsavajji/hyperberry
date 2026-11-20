@@ -326,6 +326,55 @@ func TestVideoLink(t *testing.T) {
 	link3.wantEOF(t, "link at the end of the call")
 }
 
+// The peer's PRST allowance goes to the UI as record type 3, a u32 LE; the log speaks of the first
+// and of a move of 25 % or more.
+func TestVideoAllowance(t *testing.T) {
+	r := newCallRig(t)
+	f := r.fake("V8").videoOffer()
+	r.c.offer(f)
+	r.want(t, "ringing", "")
+	link, m := r.videoHello(t, r.ts.token, "V8")
+	if m["ok"] != true {
+		t.Fatalf("hello: %v", m)
+	}
+	// The hello's reply goes out just before the link is put on the call.
+	for i := 0; i < 200; i++ {
+		r.c.mu.Lock()
+		up := r.c.cur.vid.link.Load() != nil
+		r.c.mu.Unlock()
+		if up {
+			break
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	sink, ok := f.vsink.(meowcaller.VideoAllowanceSink)
+	if !ok {
+		t.Fatal("the video sink doesn't take an allowance")
+	}
+	sink.SetAllowance(850_000)
+	sink.SetAllowance(57_458)
+	a, b := readRec(t, link), readRec(t, link)
+	if a.typ != vTarget || binary.LittleEndian.Uint32(a.payload) != 850_000 || len(a.payload) != 4 {
+		t.Errorf("first allowance %+v", a)
+	}
+	if b.typ != vTarget || binary.LittleEndian.Uint32(b.payload) != 57_458 {
+		t.Errorf("second allowance %+v", b)
+	}
+	// With no link nothing is queued and nothing breaks.
+	link.Close()
+	time.Sleep(100 * time.Millisecond)
+	sink.SetAllowance(1)
+
+	for _, x := range []struct {
+		last, bps uint32
+		want      bool
+	}{{0, 35_000, true}, {100, 124, false}, {100, 125, true}, {100, 75, true}, {100, 76, false}, {100, 100, false}} {
+		if got := allowanceMoved(x.last, x.bps); got != x.want {
+			t.Errorf("allowanceMoved(%d, %d) = %v", x.last, x.bps, got)
+		}
+	}
+}
+
 func TestVideoQueueDropsOldest(t *testing.T) {
 	l := &audioLink{out: make(chan []byte, videoQueue)}
 	for i := 0; i < videoQueue+5; i++ {

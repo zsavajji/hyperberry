@@ -2729,8 +2729,8 @@
         <translation>9:16 (przycięte)</translation>
     </message>
     <message>
-        <source>The largest picture your camera sends; 1280x720 needs about 1 Mbit/s. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.</source>
-        <translation>Największy obraz, jaki wysyła Twój aparat; 1280x720 potrzebuje około 1 Mbit/s. 9:16 wysyła środek obrazu, w pionie, tak by wypełnił ekran drugiego telefonu. Zmiana działa od razu, także w trakcie połączenia.</translation>
+        <source>The largest picture your camera sends: it steps down to 640x480 or 320x240, and back up, as the connection allows. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.</source>
+        <translation>Największy obraz, jaki wysyła Twój aparat: zmniejsza się do 640x480 lub 320x240 i znów rośnie, zależnie od tego, na co pozwala połączenie. 9:16 wysyła środek obrazu, w pionie, tak by wypełnił ekran drugiego telefonu. Zmiana działa od razu, także w trakcie połączenia.</translation>
     </message>
     <message>
         <source>%1 isn&apos;t on WhatsApp</source>

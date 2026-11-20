@@ -44,6 +44,10 @@ public:
     // still encodes width x height.
     bool start(bool front, int width, int height, int fps, int bitrate, int keyframeSeconds,
                const QByteArray &group, const QByteArray &vfId, bool crop);
+    // Changes the bit rate while encoding: whether the camera took it (logged each time, with its answer). The SDK
+    // sets the encoder's parameters before the encoding starts; whether this phone takes a change in the middle of
+    // it is what a call tells us. Like requestKeyframe, only from the thread that starts and stops.
+    bool setBitrate(int bitsPerSecond);
     // Safe to call twice, and when nothing runs. Returns once no callback is running.
     void stop();
     bool isRunning() const { return m_handle != CAMERA_HANDLE_INVALID; }

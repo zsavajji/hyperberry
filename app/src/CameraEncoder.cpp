@@ -273,6 +273,15 @@ void CameraEncoder::stop()
     qDebug("camera: closed");
 }
 
+bool CameraEncoder::setBitrate(int bitsPerSecond)
+{
+    if (!m_encoding)
+        return false;
+    const camera_error_t e = camera_set_videoencoder_parameter(m_handle, CAMERA_H264AVC_BITRATE, bitsPerSecond);
+    qDebug("camera: bit rate %d bit/s while encoding: %s (%d)", bitsPerSecond, errorName(e), int(e));
+    return e == CAMERA_EOK;
+}
+
 void CameraEncoder::requestKeyframe()
 {
     if (m_encoding)

@@ -20,6 +20,7 @@ const (
 	// Record types.
 	vAU     = 1 // an access unit, Annex-B
 	vKeyReq = 2 // a keyframe request
+	vTarget = 3 // engine -> UI: the peer's bandwidth allowance for us, a u32 LE in bit/s (its RTCP PRST)
 	// videoQueue is how many of the peer's records wait for the writer when the UI doesn't read.
 	videoQueue = 30
 	// videoMax is the largest access unit taken from the UI; a bigger one is a broken link.
@@ -42,7 +43,8 @@ type videoState struct {
 	f, sent    vfields
 	voiceOnly  bool // answered a video call with voice only: stop our video once active
 	peerOrient atomic.Int32
-	t0         time.Time // the peer's timestamps count from here
+	allowed    atomic.Uint32 // the allowance last logged, bit/s; 0 before the first
+	t0         time.Time     // the peer's timestamps count from here
 	link       atomic.Pointer[audioLink]
 }
 
@@ -142,8 +144,8 @@ func (c *Calls) acceptPeerVideo(cs *callState) {
 	c.videoChanged(cs)
 }
 
-// videoSink is the call's VideoSink (and VideoOrientationSink): the peer's access units to the
-// UI's video link, if there is one.
+// videoSink is the call's VideoSink (and VideoOrientationSink and VideoAllowanceSink): the peer's
+// access units, and the bandwidth it allows us, to the UI's video link, if there is one.
 type videoSink struct {
 	c  *Calls
 	cs *callState
@@ -166,6 +168,28 @@ func (s videoSink) SetOrientation(o int) {
 	if o >= 0 && o <= 3 && s.cs.vid.peerOrient.Swap(int32(o)) != int32(o) {
 		s.c.videoChanged(s.cs)
 	}
+}
+
+// SetAllowance is meowcaller reading the peer's PRST, about every 5 s: the UI's camera steps its size
+// and bit rate by it. Every one goes on, so a link that opens later has one within seconds. The log
+// has the first of the call and each that moved by a quarter or more from the one logged.
+func (s videoSink) SetAllowance(bps uint32) {
+	if l := s.cs.vid.link.Load(); l != nil {
+		l.sendNewest(vRecord(vTarget, 0, 0, 0, binary.LittleEndian.AppendUint32(nil, bps)))
+	}
+	if last := s.cs.vid.allowed.Load(); allowanceMoved(last, bps) {
+		s.cs.vid.allowed.Store(bps)
+		s.c.log.Infof("call %s: the peer allows %d bit/s", s.cs.id, bps)
+	}
+}
+
+// allowanceMoved is whether bps is the first allowance (last is 0) or 25 % or more from last.
+func allowanceMoved(last, bps uint32) bool {
+	d := int64(bps) - int64(last)
+	if d < 0 {
+		d = -d
+	}
+	return last == 0 || d*4 >= int64(last)
 }
 
 func (s videoSink) Close() error { return nil }

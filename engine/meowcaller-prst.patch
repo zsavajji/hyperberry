@@ -1,0 +1,189 @@
+The peer's bandwidth allowance, ours (not whatsapp-light's); applied by scripts/hypermeow-work.sh after
+meowcaller-group.patch. Android's WhatsApp sends RTCP PSFB FMT 15 "PRST" packets about every 5 s: the
+bit/s it lets us send (rtp.BuildPrst writes the same packet; the engine never read the peer's).
+1. rtp.ParsePrst finds the allowance in a compound RTCP packet, every length checked (rtcp_prst.go,
+   with its test).
+2. VideoAllowanceSink (video.go) is the optional interface a VideoSink may add, as
+   VideoOrientationSink; runMedia calls SetAllowance with each PRST it reads, right after the RTCP
+   census. The engine's video sink passes it to the UI's camera (calls_video.go).
+--- a/engine_media.go
++++ b/engine_media.go
+@@ -1324,6 +1324,12 @@
+ 			}
+ 			// wa-poc patch: which feedback does a real WhatsApp client send?
+ 			rtcpCensus.Add(plain)
++			// hyperberry: the peer's bandwidth allowance goes to the video sink, for the encoder to follow.
++			if bps, ok := rtp.ParsePrst(plain); ok {
++				if sink, ok := callVideoSink(call).(VideoAllowanceSink); ok {
++					sink.SetAllowance(bps)
++				}
++			}
+ 			if now := time.Now(); now.Sub(lastCensusLog) > 10*time.Second {
+ 				lastCensusLog = now
+ 				log.Info().Str("types", rtcpCensus.String()).Msg("peer rtcp census")
+--- a/rtp/rtcp_prst.go
++++ b/rtp/rtcp_prst.go
+@@ -23,3 +23,86 @@
+ 	binary.BigEndian.PutUint16(out[2:4], uint16(len(out)/4-1))
+ 	return out
+ }
++
++// ParsePrst finds the bandwidth allowance (bit/s) in a compound RTCP packet: a PSFB (PT 206) FMT 15
++// packet named "PRST" at offset 12, then a 2-byte length and the protobuf BuildPrst writes,
++// {1: {1: bit/s}, 4: 1}. Android sends one about every 5 s. ok is false when there is none, or
++// when what is there is cut short or not shaped like that.
++func ParsePrst(compound []byte) (uint32, bool) {
++	for off := 0; off+4 <= len(compound); {
++		n := (int(binary.BigEndian.Uint16(compound[off+2:])) + 1) * 4
++		if off+n > len(compound) {
++			break
++		}
++		p := compound[off : off+n]
++		off += n
++		if p[1] != RtcpPtPsfb || p[0]&0x1f != 15 || len(p) < 18 || string(p[12:16]) != "PRST" {
++			continue
++		}
++		body := p[18:]
++		if size := int(binary.BigEndian.Uint16(p[16:])); size <= len(body) {
++			if bps, ok := prstAllowance(body[:size]); ok {
++				return bps, true
++			}
++		}
++	}
++	return 0, false
++}
++
++// prstAllowance reads field 1's field 1 (a varint) out of the protobuf, skipping the fields it
++// doesn't know.
++func prstAllowance(pb []byte) (uint32, bool) {
++	for len(pb) > 0 {
++		num, wire, v, data, rest, ok := pbField(pb)
++		if !ok {
++			return 0, false
++		}
++		pb = rest
++		if num != 1 || wire != 2 {
++			continue
++		}
++		for len(data) > 0 {
++			num, wire, v, _, rest, ok = pbField(data)
++			if !ok {
++				return 0, false
++			}
++			data = rest
++			if num == 1 && wire == 0 && v <= 1<<32-1 {
++				return uint32(v), true
++			}
++		}
++	}
++	return 0, false
++}
++
++// pbField reads the protobuf field at the start of b: its number and wire type, its value (a
++// varint, wire type 0) or its bytes (wire type 2), and what follows. Fixed-size fields (wire types
++// 1 and 5) are stepped over; anything else, or anything cut short, is not ok.
++func pbField(b []byte) (num uint64, wire byte, v uint64, data, rest []byte, ok bool) {
++	key, n := binary.Uvarint(b)
++	if n <= 0 {
++		return
++	}
++	b = b[n:]
++	num, wire = key>>3, byte(key&7)
++	switch wire {
++	case 0:
++		if v, n = binary.Uvarint(b); n > 0 {
++			return num, wire, v, nil, b[n:], true
++		}
++	case 2:
++		size, n := binary.Uvarint(b)
++		if n > 0 && size <= uint64(len(b)-n) {
++			return num, wire, 0, b[n : n+int(size)], b[n+int(size):], true
++		}
++	case 1, 5:
++		size := 8
++		if wire == 5 {
++			size = 4
++		}
++		if size <= len(b) {
++			return num, wire, 0, nil, b[size:], true
++		}
++	}
++	return
++}
+--- a/rtp/rtcp_prst_test.go
++++ b/rtp/rtcp_prst_test.go
+@@ -19,3 +19,58 @@
+ 		t.Errorf("1 Mbit/s: % x", p)
+ 	}
+ }
++
++func TestParsePrst(t *testing.T) {
++	for want, h := range map[uint32]string{
++		35000: "8fce0006618e67cc000000005052535400080a0408b8910220010000",
++		57458: "8fce0006618e67cc000000005052535400080a0408f2c00320010000",
++	} {
++		p, _ := hex.DecodeString(h)
++		if got, ok := ParsePrst(p); !ok || got != want {
++			t.Errorf("Android's %d: %d %v", want, got, ok)
++		}
++	}
++
++	// After a sender report, as it comes in a compound packet; and a PLI first.
++	sr := make([]byte, 28)
++	sr[0], sr[1], sr[3] = 0x80, RtcpPtSr, 6
++	pli := []byte{0x81, RtcpPtPsfb, 0, 2, 0, 0, 0, 1, 0, 0, 0, 2}
++	if got, ok := ParsePrst(append(append(sr, pli...), BuildPrst(1, 12345)...)); !ok || got != 12345 {
++		t.Errorf("compound: %d %v", got, ok)
++	}
++
++	// A round trip, and a protobuf with a field we don't know ahead of the allowance.
++	if got, ok := ParsePrst(BuildPrst(7, 1_000_000)); !ok || got != 1_000_000 {
++		t.Errorf("round trip: %d %v", got, ok)
++	}
++	// {2: fixed32, 1: {3: fixed64, 1: 777}}: 0x15 + 4 bytes, then 0x0a, 12, 0x19 + 8 bytes, 0x08 0x89 0x06.
++	pb := []byte{0x15, 1, 2, 3, 4, 0x0a, 12, 0x19, 1, 2, 3, 4, 5, 6, 7, 8, 0x08, 0x89, 0x06}
++	p := append([]byte{0x8f, RtcpPtPsfb, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 'P', 'R', 'S', 'T', 0, byte(len(pb))}, pb...)
++	for len(p)%4 != 0 {
++		p = append(p, 0)
++	}
++	p[3] = byte(len(p)/4 - 1)
++	if got, ok := ParsePrst(p); !ok || got != 777 {
++		t.Errorf("unknown fields: %d %v", got, ok)
++	}
++
++	// Not ours: nothing, a PLI, another FMT, another name, a bad inner length.
++	other := BuildPrst(1, 5)
++	other[0] = 0x8e
++	named := BuildPrst(1, 5)
++	named[12] = 'X'
++	loose := BuildPrst(1, 5)
++	loose[17] = 200 // longer than the packet
++	for name, b := range map[string][]byte{"none": nil, "pli": pli, "fmt": other, "name": named, "length": loose} {
++		if got, ok := ParsePrst(b); ok {
++			t.Errorf("%s: %d", name, got)
++		}
++	}
++	// Cut anywhere: the length in the header no longer fits, so nothing is read.
++	full := BuildPrst(1, 1_000_000)
++	for i := range full {
++		if got, ok := ParsePrst(full[:i]); ok {
++			t.Errorf("cut at %d: %d", i, got)
++		}
++	}
++}
+--- a/video.go
++++ b/video.go
+@@ -32,6 +32,13 @@
+ 	SetOrientation(orientation int)
+ }
+ 
++// VideoAllowanceSink receives the bandwidth allowance the peer gives us: its RTCP PRST packets
++// (rtp.ParsePrst), about every 5 s, in bit/s. A VideoSink may implement it, as VideoOrientationSink;
++// the video encoder can follow it.
++type VideoAllowanceSink interface {
++	SetAllowance(bps uint32)
++}
++
+ // VideoSinkFunc adapts a plain function to a VideoSink (Close is a no-op).
+ type VideoSinkFunc func(accessUnit []byte)
+ 

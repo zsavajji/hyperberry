@@ -15,22 +15,18 @@
 #include <unistd.h>
 #include <QCoreApplication>
 #include <QDebug>
+#include <QElapsedTimer>
 #include <QEvent>
 #include <QMetaObject>
 #include <QMutexLocker>
 
 // The picture both ways. Each is a knob. A size or frame rate the decoder isn't told right costs a
-// 270 ms output reconfiguration. Our camera's size is the user's choice (Settings' videoQuality,
-// CameraSize); the decoder's numbers stay the peer's (their camera is another Q10, or a phone whose
-// encoder meowcaller negotiated down to 640x480).
+// 270 ms output reconfiguration. Width and Height are the decoder's and the window's, and stay: the
+// decoder follows the peer's size by itself (their camera is another Q10, or a phone whose encoder
+// meowcaller negotiated down to 640x480). Our camera's size is the step's (Steps), at the same frame
+// rate and keyframe interval.
 static const int Width = 640, Height = 480;
 static const int Fps = 15;
-struct CameraSize { int width, height, bitrate; }; // bitrate in bit/s, CBR
-static const CameraSize CameraSizes[] = {
-    { 1280, 720, 1000000 },
-    { 640, 480, 400000 },
-    { 320, 240, 200000 }
-};
 static const int KeyframeSeconds = 2;   // our IDR interval; also the longest a lost frame shows
 static const int MaxUnit = 256 * 1024;  // sizes the decoder's input buffers: a 640x480 IDR is a few tens of KB
 
@@ -41,6 +37,30 @@ static const quint32 MaxRecord = 1 << 20;
 static const int PollMs = 20;           // how often the camera thread looks at what is wanted
 static const int RetryMs = 3000;        // a camera that would not open is not tried again sooner
 static const int TickMs = 500;          // picture size check
+
+// Our camera follows the bandwidth the peer allows us (the engine's type-3 record, WhatsApp's RTCP PRST
+// about every 5 s), in steps of size. floorBps: below it for StepDownMs, the camera goes down a step.
+// enterBps: the allowance it needs, for StepUpMs, to come up into this step from the one below it.
+// capBps: the most the camera is set to at this step. Settings' videoQuality caps the size: the step
+// never has a lower index than it. The numbers are Tengram's (its Gate V3), where they follow Telegram's estimate.
+struct Step
+{
+    int width, height;
+    int capBps, floorBps, enterBps;
+};
+static const Step Steps[] = {
+    { 1280, 720, 1000000, 700000, 850000 },
+    { 640, 480, 600000, 250000, 400000 },
+    { 320, 240, 300000, 0, 0 },
+};
+static const int StepCount = 3;
+static const int StartStep = 1;         // the camera starts at 640x480 (or at the cap, if that is smaller)
+static const int StepDownMs = 2000;     // the allowance below the floor this long
+static const int StepUpMs = 8000;       // the allowance at the entry this long
+static const int StepHoldMs = 8000;     // at most one change of size in this time
+static const int MinBitrate = 100000;
+static const int RateEveryMs = 2000;    // the camera's bit rate is changed at most this often,
+static const int RatePercent = 15;      // and only when the allowance moved it this much
 static const int SummaryTicks = 20;     // one `call video:` line per 10 s
 
 static void putLe(char *p, quint64 v, int bytes)
@@ -75,6 +95,9 @@ CallVideo::CallVideo(EngineLink *engine, QObject *parent)
 {
     m_front = 1;
     m_quality = 1;
+    m_target = 0;
+    m_step = StartStep;
+    m_cameraBps = 0;
     m_crop = 0;
     m_timer.setInterval(TickMs);
     connect(&m_timer, SIGNAL(timeout()), SLOT(tick()));
@@ -111,12 +134,16 @@ void CallVideo::setFront(bool on)
 
 void CallVideo::setQuality(int quality)
 {
-    quality = qBound(0, quality, 2);
-    m_quality = quality;
-    const bool wide = quality == 0;
-    if (m_wide == wide)
+    m_quality = qBound(0, quality, 2);
+}
+
+// Queued from the camera thread each time a camera starts: the self-view's shape is the running step's,
+// not the setting's (the step is below the cap while the allowance is low).
+void CallVideo::setWide(bool on)
+{
+    if (m_wide == on)
         return;
-    m_wide = wide;
+    m_wide = on;
     emit wideChanged();
 }
 
@@ -171,6 +198,8 @@ void CallVideo::start(const QString &callId, const QStringList &remoteWindowIds,
     m_stopping = 0;
     m_linked = 0;
     m_keyframeWanted = 0;
+    m_target = 0; // none yet in this call
+    setWide(false); // a call's camera starts at 640x480 or 320x240, never 16:9
     m_reader.start();
     m_camera.start();
 }
@@ -282,10 +311,12 @@ void CallVideo::summarize()
             d = decoder.stats();
             decoder.resetStats();
         }
-        qDebug("call video: encoder %.1f fps %.0f kbit/s %d keyframes | link in %d records | tile %d decoder in %d out %d "
+        qDebug("call video: encoder %.1f fps %.0f kbit/s %d keyframes (step %d, target %d kbit/s, camera set %d kbit/s) "
+               "| link in %d records | tile %d decoder in %d out %d "
                "(%d refused), latency mean %.1f max %.1f ms | cpu %.0f%% of a core (whole process)",
                e.wallMs > 0 ? e.frames * 1000.0 / e.wallMs : 0, e.wallMs > 0 ? e.bytes * 8 / e.wallMs : 0, e.keyframes,
-               int(m_recordsIn), i, d.framesIn, d.framesOut, int(m_tile[i].refused), d.latencyMeanMs, d.latencyMaxMs,
+               int(m_step), int(m_target) / 1000, int(m_cameraBps) / 1000, int(m_recordsIn), i, d.framesIn, d.framesOut,
+               int(m_tile[i].refused), d.latencyMeanMs, d.latencyMaxMs,
                d.wallMs > 0 ? 100 * d.cpuMs / d.wallMs : 0);
         m_tile[i].refused = 0;
     }
@@ -396,6 +427,11 @@ void CallVideo::readLoop()
                     t.refused.ref(); // no free input buffer: this picture is lost, the next IDR mends it
             } else if (type == 2) {
                 m_keyframeWanted = 1; // passed to the encoder by the camera thread, which owns its handle
+            } else if (type == 3 && length >= 4) {
+                // The peer's allowance for our video (u32, bit/s), for the camera thread. 0 means "none yet"
+                // there, so an allowance of 0 is 1: below every floor.
+                const quint32 bps = quint32(getLe(payload.constData(), 4));
+                m_target = int(qBound<quint32>(1, bps, 100000000));
             }
         }
     }
@@ -405,31 +441,102 @@ void CallVideo::readLoop()
     QMetaObject::invokeMethod(this, "setRunning", Qt::QueuedConnection, Q_ARG(bool, false));
 }
 
+// The bit rate the camera is set to at a step: the allowance, capped by the step; before any, 2/3 of the cap.
+static int bitrateFor(int step, int target)
+{
+    const int cap = Steps[step].capBps;
+    if (target <= 0)
+        return cap * 2 / 3;
+    return qMax(MinBitrate, qMin(target, cap));
+}
+
 // The camera thread: the camera is open while we send and the link is up, and only then. Opening it
 // takes seconds, so it can't happen on the UI thread; the encoder's callbacks come on its own.
+// It also chooses the step (the size) and the bit rate from the peer's allowance: the step goes down
+// when the allowance stays below its floor and up when it stays at the next step's entry, never above
+// the cap (m_quality; a cap that is now below the step brings it down at once). A step change restarts
+// the camera, as the front/rear switch and the crop do. The bit rate is applied at each start and,
+// while encoding, when the allowance has moved it by RatePercent, if the phone takes that
+// (CameraEncoder::setBitrate).
 void CallVideo::cameraLoop()
 {
+    QElapsedTimer clock;
+    clock.start();
     bool front = true;
-    int quality = 1;  // the size the running camera was started with
-    bool crop = false; // likewise the crop
+    bool crop = false;                  // the crop the running camera was started with
+    int step = qMax(StartStep, int(m_quality)); // the step the camera runs at, or ran at last
+    int startedStep = step;             // the step of the last start: another one is a change of size
+    int cameraBps = 0;                  // what the camera is set to
+    bool midEncodeRefused = false;      // the phone won't take a bit rate while encoding: not tried again this call
+    qint64 lowSince = -1, highSince = -1; // since when the allowance is below the floor / at the entry; -1: it isn't
+    qint64 changedAt = -StepHoldMs, rateAt = 0;
     int cooldown = 0; // polls left before another try, after a failure
     while (!m_stopping) {
+        const qint64 now = clock.elapsed();
         const bool want = m_sending && m_linked;
         const bool wantFront = m_front;
-        const int wantQuality = m_quality;
         const bool wantCrop = m_crop != 0;
-        if (m_encoder.isRunning() && (!want || wantFront != front || wantQuality != quality || wantCrop != crop))
+        const int target = m_target;    // 0: none yet
+        const int cap = m_quality;
+        int wantStep = step;
+        if (m_encoder.isRunning() && target > 0) {
+            const bool low = step < StepCount - 1 && target < Steps[step].floorBps;
+            const bool high = step > cap && target >= Steps[step - 1].enterBps;
+            lowSince = low ? (lowSince < 0 ? now : lowSince) : -1;
+            highSince = high ? (highSince < 0 ? now : highSince) : -1;
+            if (now - changedAt >= StepHoldMs) {
+                if (lowSince >= 0 && now - lowSince >= StepDownMs)
+                    wantStep = step + 1;
+                else if (highSince >= 0 && now - highSince >= StepUpMs)
+                    wantStep = step - 1;
+            }
+        } else {
+            lowSince = highSince = -1;
+        }
+        wantStep = qMax(wantStep, cap);
+        if (m_encoder.isRunning() && (!want || wantFront != front || wantCrop != crop || wantStep != step)) {
+            if (wantStep != step)
+                qDebug("call video: step %d -> %d (%dx%d), target %d kbit/s", step, wantStep, Steps[wantStep].width,
+                       Steps[wantStep].height, target / 1000);
             m_encoder.stop();
+        }
         if (!m_encoder.isRunning() && want && cooldown == 0) {
             front = wantFront;
-            quality = wantQuality;
             crop = wantCrop;
-            const CameraSize &size = CameraSizes[quality];
-            if (!m_encoder.start(front, size.width, size.height, Fps, size.bitrate, KeyframeSeconds, m_group, m_viewfinderId, crop))
+            step = wantStep;
+            const int bps = bitrateFor(step, target);
+            if (m_encoder.start(front, Steps[step].width, Steps[step].height, Fps, bps, KeyframeSeconds, m_group,
+                                m_viewfinderId, crop)) {
+                cameraBps = bps;
+                m_cameraBps = bps;
+                m_step = step;
+                QMetaObject::invokeMethod(this, "setWide", Qt::QueuedConnection,
+                                          Q_ARG(bool, Steps[step].width * 3 != Steps[step].height * 4));
+                rateAt = clock.elapsed(); // the start took seconds
+                if (step != startedStep) {
+                    changedAt = rateAt;
+                    startedStep = step;
+                }
+            } else {
                 cooldown = RetryMs / PollMs;
+            }
         }
         if (cooldown > 0)
             cooldown--;
+        if (m_encoder.isRunning() && !midEncodeRefused && now - rateAt >= RateEveryMs) {
+            const int bps = bitrateFor(step, target);
+            if (qAbs(bps - cameraBps) * 100 >= RatePercent * cameraBps) {
+                rateAt = now;
+                if (m_encoder.setBitrate(bps)) {
+                    cameraBps = bps;
+                    m_cameraBps = bps;
+                } else {
+                    midEncodeRefused = true;
+                    qWarning("call video: the camera won't change its bit rate while encoding; it follows the allowance "
+                             "at the next start");
+                }
+            }
+        }
         if (m_keyframeWanted.fetchAndStoreOrdered(0) && m_encoder.isRunning())
             m_encoder.requestKeyframe();
         usleep(PollMs * 1000);

@@ -35,7 +35,7 @@ class CallVideo : public QObject, private CameraEncoder::Sink
     Q_PROPERTY(bool sending READ sending WRITE setSending NOTIFY sendingChanged)
     // The front camera; false is the rear. Changing it while sending reopens the camera.
     Q_PROPERTY(bool front READ front WRITE setFront NOTIFY frontChanged)
-    // Our camera runs 16:9 (1280x720, Settings' High); the self-view control follows it, the others are 4:3.
+    // Our camera runs 16:9 (the step at 1280x720); the self-view control follows the step it runs at, the others are 4:3.
     Q_PROPERTY(bool wide READ wide NOTIFY wideChanged)
     // Our camera is cropped to 9:16 (Settings' cameraCrop): the peer's picture and the self-view
     // show the centre of what the camera encodes. The self-view control follows it (CallVideoView.qml).
@@ -89,8 +89,9 @@ signals:
     void pictureChanged();
 
 public slots:
-    // Our camera's size, Settings' videoQuality: 0 is 1280x720, 1 is 640x480, 2 is 320x240. A change
-    // while sending reopens the camera at the camera thread's next look. UI thread.
+    // The largest size our camera goes to, Settings' videoQuality: 0 is 1280x720, 1 is 640x480, 2 is
+    // 320x240. The camera steps between sizes under it by the peer's allowance; a cap that is now
+    // below the running size reopens the camera at the camera thread's next look. UI thread.
     void setQuality(int quality);
     // Settings' cameraCrop: our camera's picture goes out and shows as 9:16. A change while sending
     // reopens the camera, as the quality's does. UI thread.
@@ -98,6 +99,7 @@ public slots:
 
 private slots:
     void setRunning(bool on);
+    void setWide(bool on);
     void tick();
 
 private:
@@ -151,7 +153,9 @@ private:
     QAtomicInt m_linked;       // the link is up; only set and cleared with m_sendLock held
     QAtomicInt m_stopping;
     QAtomicInt m_sending, m_front;
-    QAtomicInt m_quality;      // 0 to 2, an index into the camera's sizes
+    QAtomicInt m_quality;      // 0 to 2, an index into the steps: the camera never runs a step before it
+    QAtomicInt m_target;       // the peer's allowance for our video, from the engine's type-3 record; 0 until it comes
+    QAtomicInt m_step, m_cameraBps; // the camera thread's: the step it runs at and the bit rate it set, for the summary
     QAtomicInt m_crop;         // the 9:16 crop is on
     QAtomicInt m_keyframeWanted;   // the peer asked; the camera thread passes it on
     QAtomicInt m_recordsIn;
