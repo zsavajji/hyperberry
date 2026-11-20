@@ -179,7 +179,7 @@ func TestTranslateLibre(t *testing.T) {
 	}
 }
 
-// No letter: nothing is sent. Already in the target: the translation is ''.
+// No letter: nothing is sent. Already in the target: the translation is empty.
 func TestTranslateNoLetterAndSameLanguage(t *testing.T) {
 	s := newStub(t, 200, `[[["Hello"]],null,"EN-us"]`)
 	defer func(u string) { googleURL = u }(googleURL)

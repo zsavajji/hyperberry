@@ -47,8 +47,8 @@ const (
 // transSettings is what the user picked in Settings > Translation.
 type transSettings struct{ provider, deeplKey, libreURL, libreKey string }
 
-// translateText translates one text into to. Its result is '' when there is nothing to show: the text has no
-// letter (it is never sent) or the service found it already in to. from is the detected language, '' unknown.
+// translateText translates one text into to. Its result is empty when there is nothing to show: the text has no
+// letter (it is never sent) or the service found it already in to. from is the detected language, empty when unknown.
 func translateText(ctx context.Context, ts transSettings, text, to string) (out, from string, err error) {
 	if strings.IndexFunc(text, unicode.IsLetter) < 0 {
 		return "", "", nil
