@@ -2703,6 +2703,30 @@
         <translation>Mencari server WhatsApp lewat 1.1.1.1 dan 1.0.0.1, bukan lewat DNS jaringan. Coba aktifkan jika pesan atau media tidak terkirim.</translation>
     </message>
     <message>
+        <source>Calls</source>
+        <translation>Panggilan</translation>
+    </message>
+    <message>
+        <source>Video calls</source>
+        <translation>Panggilan video</translation>
+    </message>
+    <message>
+        <source>High (1280x720)</source>
+        <translation>Tinggi (1280x720)</translation>
+    </message>
+    <message>
+        <source>Medium (640x480)</source>
+        <translation>Sedang (640x480)</translation>
+    </message>
+    <message>
+        <source>Low (320x240)</source>
+        <translation>Rendah (320x240)</translation>
+    </message>
+    <message>
+        <source>What your camera sends. High is sharper and needs about 1 Mbit/s; a change takes effect at once, also during a call.</source>
+        <translation>Yang dikirim kamera Anda. Tinggi lebih tajam dan butuh sekitar 1 Mbit/s; perubahan langsung berlaku, termasuk saat panggilan berlangsung.</translation>
+    </message>
+    <message>
         <source>%1 isn&apos;t on WhatsApp</source>
         <translation>%1 tidak ada di WhatsApp</translation>
     </message>

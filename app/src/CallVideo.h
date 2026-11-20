@@ -35,6 +35,8 @@ class CallVideo : public QObject, private CameraEncoder::Sink
     Q_PROPERTY(bool sending READ sending WRITE setSending NOTIFY sendingChanged)
     // The front camera; false is the rear. Changing it while sending reopens the camera.
     Q_PROPERTY(bool front READ front WRITE setFront NOTIFY frontChanged)
+    // Our camera runs 16:9 (1280x720, Settings' High); the self-view control follows it, the others are 4:3.
+    Q_PROPERTY(bool wide READ wide NOTIFY wideChanged)
     // The peer's picture as it is shown, after turning: 0 x 0 until the first frame.
     Q_PROPERTY(int pictureWidth READ pictureWidth NOTIFY pictureChanged)
     Q_PROPERTY(int pictureHeight READ pictureHeight NOTIFY pictureChanged)
@@ -47,6 +49,7 @@ public:
     bool running() const { return m_running; }
     bool sending() const { return m_sending != 0; }
     bool front() const { return m_front != 0; }
+    bool wide() const { return m_wide; }
     int pictureWidth() const { return m_picW; }
     int pictureHeight() const { return m_picH; }
     int tileMask() const { return m_tileMask; }
@@ -73,7 +76,13 @@ signals:
     void runningChanged();
     void sendingChanged();
     void frontChanged();
+    void wideChanged();
     void pictureChanged();
+
+public slots:
+    // Our camera's size, Settings' videoQuality: 0 is 1280x720, 1 is 640x480, 2 is 320x240. A change
+    // while sending reopens the camera at the camera thread's next look. UI thread.
+    void setQuality(int quality);
 
 private slots:
     void setRunning(bool on);
@@ -130,9 +139,11 @@ private:
     QAtomicInt m_linked;       // the link is up; only set and cleared with m_sendLock held
     QAtomicInt m_stopping;
     QAtomicInt m_sending, m_front;
+    QAtomicInt m_quality;      // 0 to 2, an index into the camera's sizes
     QAtomicInt m_keyframeWanted;   // the peer asked; the camera thread passes it on
     QAtomicInt m_recordsIn;
     bool m_running;
+    bool m_wide;
     int m_picW, m_picH, m_tileMask;
     int m_ticks;
 };

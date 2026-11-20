@@ -36,6 +36,8 @@ class Settings : public QObject
     Q_PROPERTY(bool darkGrey READ darkGrey WRITE setDarkGrey NOTIFY darkGreyChanged)
     // How many group calls showed the people drawer's first-time hint (CallDrawer.qml shows it in the first 2).
     Q_PROPERTY(int callHints READ callHints WRITE setCallHints NOTIFY callHintsChanged)
+    // Video calls, our camera: 0 is 1280x720, 1 is 640x480 (default), 2 is 320x240 (CallVideo's quality).
+    Q_PROPERTY(int videoQuality READ videoQuality WRITE setVideoQuality NOTIFY videoQualityChanged)
 
 public:
     explicit Settings(EngineLink *engine, QObject *parent = 0);
@@ -56,6 +58,7 @@ public:
     bool compact() const;
     bool darkGrey() const;
     int callHints() const;
+    int videoQuality() const;
     void setTheme(int theme);
     void setEnterSends(bool on);
     void setNotifyPreview(bool on);
@@ -72,6 +75,7 @@ public:
     void setCompact(bool on);
     void setDarkGrey(bool on);
     void setCallHints(int count);
+    void setVideoQuality(int quality);
     Q_INVOKABLE QString cacheSize();
     Q_INVOKABLE QString clearCache();
 
@@ -89,6 +93,7 @@ signals:
     void compactChanged();
     void darkGreyChanged();
     void callHintsChanged();
+    void videoQualityChanged(int quality);
 
 private slots:
     void bootTimerReplied();

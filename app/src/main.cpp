@@ -162,6 +162,9 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     EmojiModel emojis(&app);
     QrImage qr(&app);
     Settings settings(&engine, &app);
+    // Our camera's size follows Settings > Data and storage > Video calls, also during a call.
+    callVideo.setQuality(settings.videoQuality());
+    QObject::connect(&settings, SIGNAL(videoQualityChanged(int)), &callVideo, SLOT(setQuality(int)));
     // With a Hub account (step 5.7) instant previews become possible, but BB10 starts them off,
     // and 5.6's try left the LED off: both on by default, as BBTelega does. apply() leaves alone
     // what the user has changed in Settings -> Notifications (Q10, 0.0.1.100).

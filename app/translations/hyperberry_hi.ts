@@ -2706,6 +2706,30 @@
         <translation>WhatsApp के सर्वर आपके नेटवर्क के DNS की जगह 1.1.1.1 और 1.0.0.1 से खोजे जाते हैं। मैसेज या मीडिया न जा रहे हों तो इसे आज़माएँ।</translation>
     </message>
     <message>
+        <source>Calls</source>
+        <translation>कॉल</translation>
+    </message>
+    <message>
+        <source>Video calls</source>
+        <translation>वीडियो कॉल</translation>
+    </message>
+    <message>
+        <source>High (1280x720)</source>
+        <translation>उच्च (1280x720)</translation>
+    </message>
+    <message>
+        <source>Medium (640x480)</source>
+        <translation>मध्यम (640x480)</translation>
+    </message>
+    <message>
+        <source>Low (320x240)</source>
+        <translation>निम्न (320x240)</translation>
+    </message>
+    <message>
+        <source>What your camera sends. High is sharper and needs about 1 Mbit/s; a change takes effect at once, also during a call.</source>
+        <translation>आपका कैमरा क्या भेजता है। उच्च ज़्यादा साफ़ है और इसे लगभग 1 Mbit/s चाहिए; बदलाव तुरंत लागू होता है, कॉल के दौरान भी।</translation>
+    </message>
+    <message>
         <source>%1 isn&apos;t on WhatsApp</source>
         <translation>%1 WhatsApp पर नहीं है</translation>
     </message>

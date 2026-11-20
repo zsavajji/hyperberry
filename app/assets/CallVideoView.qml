@@ -261,7 +261,8 @@ Container {
                 positionY: sheet.controlsShown ? sheet.px(248) : sheet.px(552)
             }
             preferredWidth: sheet.px(200)
-            preferredHeight: sheet.px(150)
+            // 4:3, or 16:9 while our camera runs 1280x720 (the window takes the control's size: a wrong shape squashes us).
+            preferredHeight: callVideo.wide ? sheet.px(113) : sheet.px(150)
         }
     }
 }

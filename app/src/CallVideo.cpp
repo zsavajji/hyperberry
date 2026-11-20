@@ -17,11 +17,17 @@
 #include <QMutexLocker>
 
 // The picture both ways. Each is a knob. A size or frame rate the decoder isn't told right costs a
-// 270 ms output reconfiguration, so the same numbers go to the camera and to the decoder: the peer's
-// (their camera is another Q10, or a phone whose encoder meowcaller negotiated down to this).
+// 270 ms output reconfiguration. Our camera's size is the user's choice (Settings' videoQuality,
+// CameraSize); the decoder's numbers stay the peer's (their camera is another Q10, or a phone whose
+// encoder meowcaller negotiated down to 640x480).
 static const int Width = 640, Height = 480;
 static const int Fps = 15;
-static const int Bitrate = 400000;      // bit/s, CBR
+struct CameraSize { int width, height, bitrate; }; // bitrate in bit/s, CBR
+static const CameraSize CameraSizes[] = {
+    { 1280, 720, 1000000 },
+    { 640, 480, 400000 },
+    { 320, 240, 200000 }
+};
 static const int KeyframeSeconds = 2;   // our IDR interval; also the longest a lost frame shows
 static const int MaxUnit = 256 * 1024;  // sizes the decoder's input buffers: a 640x480 IDR is a few tens of KB
 
@@ -57,12 +63,14 @@ CallVideo::CallVideo(EngineLink *engine, QObject *parent)
     , m_timer(this)
     , m_fd(-1)
     , m_running(false)
+    , m_wide(false)
     , m_picW(0)
     , m_picH(0)
     , m_tileMask(0)
     , m_ticks(0)
 {
     m_front = 1;
+    m_quality = 1;
     m_timer.setInterval(TickMs);
     connect(&m_timer, SIGNAL(timeout()), SLOT(tick()));
 }
@@ -94,6 +102,17 @@ void CallVideo::setFront(bool on)
         return;
     m_front = on ? 1 : 0;
     emit frontChanged();
+}
+
+void CallVideo::setQuality(int quality)
+{
+    quality = qBound(0, quality, 2);
+    m_quality = quality;
+    const bool wide = quality == 0;
+    if (m_wide == wide)
+        return;
+    m_wide = wide;
+    emit wideChanged();
 }
 
 void CallVideo::setRunning(bool on)
@@ -349,15 +368,19 @@ void CallVideo::readLoop()
 void CallVideo::cameraLoop()
 {
     bool front = true;
+    int quality = 1;  // the size the running camera was started with
     int cooldown = 0; // polls left before another try, after a failure
     while (!m_stopping) {
         const bool want = m_sending && m_linked;
         const bool wantFront = m_front;
-        if (m_encoder.isRunning() && (!want || wantFront != front))
+        const int wantQuality = m_quality;
+        if (m_encoder.isRunning() && (!want || wantFront != front || wantQuality != quality))
             m_encoder.stop();
         if (!m_encoder.isRunning() && want && cooldown == 0) {
             front = wantFront;
-            if (!m_encoder.start(front, Width, Height, Fps, Bitrate, KeyframeSeconds, m_group, m_viewfinderId))
+            quality = wantQuality;
+            const CameraSize &size = CameraSizes[quality];
+            if (!m_encoder.start(front, size.width, size.height, Fps, size.bitrate, KeyframeSeconds, m_group, m_viewfinderId))
                 cooldown = RetryMs / PollMs;
         }
         if (cooldown > 0)

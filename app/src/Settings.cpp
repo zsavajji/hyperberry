@@ -63,6 +63,7 @@ bool Settings::darkGrey() const
     return m_file.value("darkGrey", lcd).toBool();
 }
 int Settings::callHints() const { return qMax(0, m_file.value("callHints", 0).toInt()); }
+int Settings::videoQuality() const { return qBound(0, m_file.value("videoQuality", 1).toInt(), 2); }
 
 qreal Settings::textScale() const
 {
@@ -287,6 +288,15 @@ void Settings::setCallHints(int count)
         return;
     store("callHints", count);
     emit callHintsChanged();
+}
+
+void Settings::setVideoQuality(int quality)
+{
+    quality = qBound(0, quality, 2);
+    if (quality == videoQuality())
+        return;
+    store("videoQuality", quality);
+    emit videoQualityChanged(quality);
 }
 
 // The cache is data/cache/ except upload/, which holds an upload in progress. Everything else in

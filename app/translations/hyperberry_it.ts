@@ -2706,6 +2706,30 @@
         <translation>Trova i server di WhatsApp tramite 1.1.1.1 e 1.0.0.1 invece del DNS della tua rete. Provalo se messaggi o media non passano.</translation>
     </message>
     <message>
+        <source>Calls</source>
+        <translation>Chiamate</translation>
+    </message>
+    <message>
+        <source>Video calls</source>
+        <translation>Videochiamate</translation>
+    </message>
+    <message>
+        <source>High (1280x720)</source>
+        <translation>Alta (1280x720)</translation>
+    </message>
+    <message>
+        <source>Medium (640x480)</source>
+        <translation>Media (640x480)</translation>
+    </message>
+    <message>
+        <source>Low (320x240)</source>
+        <translation>Bassa (320x240)</translation>
+    </message>
+    <message>
+        <source>What your camera sends. High is sharper and needs about 1 Mbit/s; a change takes effect at once, also during a call.</source>
+        <translation>Ciò che invia la tua fotocamera. Alta è più nitida e richiede circa 1 Mbit/s; la modifica ha effetto subito, anche durante una chiamata.</translation>
+    </message>
+    <message>
         <source>%1 isn&apos;t on WhatsApp</source>
         <translation>%1 non è su WhatsApp</translation>
     </message>

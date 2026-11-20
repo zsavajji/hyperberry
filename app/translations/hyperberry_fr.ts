@@ -2706,6 +2706,30 @@
         <translation>Les serveurs de WhatsApp sont trouvés via 1.1.1.1 et 1.0.0.1 plutôt que par le DNS de votre réseau. À essayer si les messages ou les médias ne passent pas.</translation>
     </message>
     <message>
+        <source>Calls</source>
+        <translation>Appels</translation>
+    </message>
+    <message>
+        <source>Video calls</source>
+        <translation>Appels vidéo</translation>
+    </message>
+    <message>
+        <source>High (1280x720)</source>
+        <translation>Élevée (1280x720)</translation>
+    </message>
+    <message>
+        <source>Medium (640x480)</source>
+        <translation>Moyenne (640x480)</translation>
+    </message>
+    <message>
+        <source>Low (320x240)</source>
+        <translation>Faible (320x240)</translation>
+    </message>
+    <message>
+        <source>What your camera sends. High is sharper and needs about 1 Mbit/s; a change takes effect at once, also during a call.</source>
+        <translation>Ce que votre caméra envoie. Élevée est plus nette et demande environ 1 Mbit/s ; un changement s'applique tout de suite, même pendant un appel.</translation>
+    </message>
+    <message>
         <source>%1 isn&apos;t on WhatsApp</source>
         <translation>%1 n&apos;est pas sur WhatsApp</translation>
     </message>

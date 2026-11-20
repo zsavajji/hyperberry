@@ -184,6 +184,36 @@ Page {
                     }
                 }
                 Header {
+                    title: qsTr("Calls")
+                }
+                Container {
+                    topPadding: zoom * ui.du(2)
+                    leftPadding: zoom * ui.du(2)
+                    rightPadding: zoom * ui.du(2)
+                    bottomPadding: zoom * ui.du(2)
+                    // What our camera sends in a video call; CallVideo reopens the camera when it changes.
+                    DropDown {
+                        title: qsTr("Video calls")
+                        options: [
+                            Option { text: qsTr("High (1280x720)"); selected: settings.videoQuality == 0 },
+                            Option { text: qsTr("Medium (640x480)"); selected: settings.videoQuality == 1 },
+                            Option { text: qsTr("Low (320x240)"); selected: settings.videoQuality == 2 }
+                        ]
+                        onSelectedIndexChanged: {
+                            if (selectedIndex >= 0) {
+                                settings.videoQuality = selectedIndex
+                            }
+                        }
+                    }
+                    Label {
+                        topMargin: zoom * ui.du(1)
+                        multiline: true
+                        text: qsTr("What your camera sends. High is sharper and needs about 1 Mbit/s; a change takes effect at once, also during a call.")
+                        textStyle.base: SystemDefaults.TextStyles.SubtitleText
+                        textStyle.color: ui.palette.secondaryTextOnPlain
+                    }
+                }
+                Header {
                     title: qsTr("Storage")
                 }
                 Container {

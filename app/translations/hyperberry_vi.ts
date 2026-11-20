@@ -2703,6 +2703,30 @@
         <translation>Tìm máy chủ của WhatsApp qua 1.1.1.1 và 1.0.0.1 thay vì DNS của mạng. Hãy thử nếu tin nhắn hoặc tệp đa phương tiện không gửi được.</translation>
     </message>
     <message>
+        <source>Calls</source>
+        <translation>Cuộc gọi</translation>
+    </message>
+    <message>
+        <source>Video calls</source>
+        <translation>Cuộc gọi video</translation>
+    </message>
+    <message>
+        <source>High (1280x720)</source>
+        <translation>Cao (1280x720)</translation>
+    </message>
+    <message>
+        <source>Medium (640x480)</source>
+        <translation>Trung bình (640x480)</translation>
+    </message>
+    <message>
+        <source>Low (320x240)</source>
+        <translation>Thấp (320x240)</translation>
+    </message>
+    <message>
+        <source>What your camera sends. High is sharper and needs about 1 Mbit/s; a change takes effect at once, also during a call.</source>
+        <translation>Những gì camera của bạn gửi đi. Cao nét hơn và cần khoảng 1 Mbit/s; thay đổi có hiệu lực ngay, cả khi đang gọi.</translation>
+    </message>
+    <message>
         <source>%1 isn&apos;t on WhatsApp</source>
         <translation>%1 không dùng WhatsApp</translation>
     </message>

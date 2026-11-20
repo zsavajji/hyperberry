@@ -2709,6 +2709,30 @@
         <translation>Находит серверы WhatsApp через 1.1.1.1 и 1.0.0.1, а не через DNS сети. Попробуйте, если сообщения или медиафайлы не отправляются.</translation>
     </message>
     <message>
+        <source>Calls</source>
+        <translation>Звонки</translation>
+    </message>
+    <message>
+        <source>Video calls</source>
+        <translation>Видеозвонки</translation>
+    </message>
+    <message>
+        <source>High (1280x720)</source>
+        <translation>Высокое (1280x720)</translation>
+    </message>
+    <message>
+        <source>Medium (640x480)</source>
+        <translation>Среднее (640x480)</translation>
+    </message>
+    <message>
+        <source>Low (320x240)</source>
+        <translation>Низкое (320x240)</translation>
+    </message>
+    <message>
+        <source>What your camera sends. High is sharper and needs about 1 Mbit/s; a change takes effect at once, also during a call.</source>
+        <translation>Что отправляет ваша камера. Высокое качество чётче и требует около 1 Mbit/s; изменение вступает в силу сразу, в том числе во время звонка.</translation>
+    </message>
+    <message>
         <source>%1 isn&apos;t on WhatsApp</source>
         <translation>%1 нет в WhatsApp</translation>
     </message>
