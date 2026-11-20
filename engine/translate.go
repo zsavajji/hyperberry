@@ -9,9 +9,13 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
+
+	waLog "github.com/polymorfa/hypermeow/util/log"
 )
 
 // Message translation (docs/plan/translate.md): one function per service, each translating one text.
@@ -20,6 +24,7 @@ import (
 // Variables so the tests point them at httptest servers.
 var (
 	googleURL    = "https://translate.googleapis.com/translate_a/single"
+	googleAPIURL = "https://translation.googleapis.com/language/translate/v2" // with a key: the official API
 	deeplFreeURL = "https://api-free.deepl.com"
 	deeplProURL  = "https://api.deepl.com"
 )
@@ -45,7 +50,7 @@ const (
 )
 
 // transSettings is what the user picked in Settings > Translation.
-type transSettings struct{ provider, deeplKey, libreURL, libreKey string }
+type transSettings struct{ provider, deeplKey, libreURL, libreKey, googleKey string }
 
 // translateText translates one text into to. Its result is empty when there is nothing to show: the text has no
 // letter (it is never sent) or the service found it already in to. from is the detected language, empty when unknown.
@@ -53,11 +58,20 @@ func translateText(ctx context.Context, ts transSettings, text, to string) (out,
 	if strings.IndexFunc(text, unicode.IsLetter) < 0 {
 		return "", "", nil
 	}
+	if err := transPaused(ts.variant()); err != nil {
+		return "", "", err
+	}
 	switch ts.provider {
 	case "deepl":
 		out, from, err = translateDeepL(ctx, ts, text, to)
 	case "libre":
 		out, from, err = translateLibre(ctx, ts, text, to)
+	case "google":
+		if ts.googleKey != "" {
+			out, from, err = translateGoogleAPI(ctx, ts, text, to)
+			break
+		}
+		fallthrough
 	default:
 		out, from, err = translateGoogle(ctx, text, to)
 	}
@@ -67,6 +81,74 @@ func translateText(ctx context.Context, ts transSettings, text, to string) (out,
 	return out, from, err
 }
 
+// variant names the service for the cooldown: a key, or another service, is not held back by the other's pause.
+func (ts transSettings) variant() string {
+	switch {
+	case ts.provider == "deepl", ts.provider == "libre":
+		return ts.provider
+	case ts.googleKey != "":
+		return "google+key"
+	}
+	return "google"
+}
+
+// The cooldown: a service that said too many requests is left alone, not asked again by every request. The pause is
+// the answer's Retry-After, else a wait of 60 s that doubles at each consecutive refusal up to 15 minutes; a success
+// clears it.
+const (
+	coolStart = 60 * time.Second
+	coolMax   = 15 * time.Minute
+)
+
+type cool struct {
+	until time.Time
+	next  time.Duration
+}
+
+var (
+	transNow              = time.Now // tests move time
+	transLog waLog.Logger = waLog.Noop
+	coolMu   sync.Mutex
+	cools    = map[string]*cool{}
+)
+
+func transPaused(variant string) error {
+	coolMu.Lock()
+	defer coolMu.Unlock()
+	if c := cools[variant]; c != nil && transNow().Before(c.until) {
+		return &Error{"rate_limited", "translate: waiting, the service said too many requests"}
+	}
+	return nil
+}
+
+// transLimited starts a pause after a rate_limited answer. One that comes while a pause runs (a request that was
+// already in flight) changes nothing, so four at once don't count as four refusals.
+func transLimited(variant string, retryAfter time.Duration) {
+	coolMu.Lock()
+	defer coolMu.Unlock()
+	c := cools[variant]
+	if c == nil {
+		c = &cool{}
+		cools[variant] = c
+	}
+	if transNow().Before(c.until) {
+		return
+	}
+	wait := retryAfter
+	if wait <= 0 {
+		wait = max(c.next, coolStart)
+		c.next = min(wait*2, coolMax)
+	}
+	c.until = transNow().Add(wait)
+	transLog.Infof("translate: %s paused for %d s", variant, int(wait.Seconds()))
+}
+
+func transOK(variant string) {
+	coolMu.Lock()
+	delete(cools, variant)
+	coolMu.Unlock()
+}
+
 // langBase is the language of a code, without its region: "pt-BR" is "pt".
 func langBase(s string) string {
 	b, _, _ := strings.Cut(s, "-")
@@ -74,9 +156,15 @@ func langBase(s string) string {
 	return strings.ToLower(b)
 }
 
+// byStatus is a mapper of failures that goes by the HTTP status alone.
+func byStatus(m map[int]string) func(int, []byte) string {
+	return func(status int, _ []byte) string { return m[status] }
+}
+
 // postTrans posts one request and returns the body of a 200. No answer is offline; a status that is not 200 is the
-// code in codes for it, else translate_failed with the status.
-func postTrans(ctx context.Context, cli *http.Client, u, ctype string, hdr map[string]string, body []byte, codes map[int]string) ([]byte, error) {
+// code the mapper gives for its status and body, else translate_failed with the status. A rate_limited answer starts
+// the variant's pause, a 200 clears it.
+func postTrans(ctx context.Context, cli *http.Client, variant, u, ctype string, hdr map[string]string, body []byte, codes func(int, []byte) string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(ctx, transTimeout)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, bytes.NewReader(body))
@@ -97,12 +185,17 @@ func postTrans(ctx context.Context, cli *http.Client, u, ctype string, hdr map[s
 		return nil, &Error{"offline", "translate: the answer broke off"}
 	}
 	if resp.StatusCode != http.StatusOK {
-		c := codes[resp.StatusCode]
+		c := codes(resp.StatusCode, b)
 		if c == "" {
 			c = "translate_failed"
 		}
+		if c == "rate_limited" {
+			secs, _ := strconv.Atoi(resp.Header.Get("Retry-After")) // an HTTP date is ignored
+			transLimited(variant, time.Duration(secs)*time.Second)
+		}
 		return nil, &Error{c, fmt.Sprintf("translate: HTTP %d", resp.StatusCode)}
 	}
+	transOK(variant)
 	return b, nil
 }
 
@@ -153,9 +246,9 @@ func translateGoogle(ctx context.Context, text, to string) (out, from string, er
 
 func googleOnce(ctx context.Context, text, to string) (out, from string, err error) {
 	q := url.Values{"client": {"gtx"}, "sl": {"auto"}, "tl": {to}, "dt": {"t"}}
-	b, err := postTrans(ctx, googleClient, googleURL+"?"+q.Encode(), "application/x-www-form-urlencoded",
+	b, err := postTrans(ctx, googleClient, "google", googleURL+"?"+q.Encode(), "application/x-www-form-urlencoded",
 		map[string]string{"User-Agent": "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36"},
-		[]byte(url.Values{"q": {text}}.Encode()), map[int]string{429: "rate_limited"})
+		[]byte(url.Values{"q": {text}}.Encode()), byStatus(map[int]string{429: "rate_limited"}))
 	if err != nil {
 		return "", "", err
 	}
@@ -177,6 +270,65 @@ func googleOnce(ctx context.Context, text, to string) (out, from string, err err
 	return sb.String(), from, nil
 }
 
+// googleReasons are the error reasons and statuses of the official API that mean a limit was reached.
+var googleReasons = map[string]bool{"rateLimitExceeded": true, "userRateLimitExceeded": true, "dailyLimitExceeded": true,
+	"quotaExceeded": true, "RESOURCE_EXHAUSTED": true, "RATE_LIMIT_EXCEEDED": true}
+
+// googleAPIFail maps the official API's failures: a limit is rate_limited; a bad key, or any other 403 (the API is
+// not enabled for the key, or the key is restricted), is no_key; any other 400 is unsupported.
+func googleAPIFail(status int, body []byte) string {
+	var e struct {
+		Error struct {
+			Status  string
+			Errors  []struct{ Reason string }
+			Details []struct{ Reason string }
+		}
+	}
+	json.Unmarshal(body, &e)
+	limited, badKey := status == 429 || googleReasons[e.Error.Status], false
+	for _, r := range e.Error.Errors {
+		limited = limited || googleReasons[r.Reason]
+	}
+	for _, r := range e.Error.Details {
+		limited = limited || googleReasons[r.Reason]
+		badKey = badKey || r.Reason == "API_KEY_INVALID"
+	}
+	switch {
+	case limited:
+		return "rate_limited"
+	case badKey, status == 403:
+		return "no_key"
+	case status == 400:
+		return "unsupported"
+	}
+	return ""
+}
+
+// translateGoogleAPI is Google with the user's key: Cloud Translation v2. The key goes in a header, never in the
+// address, so no error or log can carry it. format is text: the default, HTML, would escape the text. No chunking:
+// the official API takes long texts.
+func translateGoogleAPI(ctx context.Context, ts transSettings, text, to string) (out, from string, err error) {
+	body, _ := json.Marshal(map[string]any{"q": []string{text}, "target": to, "format": "text"})
+	b, err := postTrans(ctx, http.DefaultClient, "google+key", googleAPIURL, "application/json",
+		map[string]string{"X-Goog-Api-Key": ts.googleKey}, body, googleAPIFail)
+	if err != nil {
+		return "", "", err
+	}
+	type tr struct{ TranslatedText, DetectedSourceLanguage string }
+	var r struct {
+		Data         struct{ Translations []tr }
+		Translations []tr // the discovery document shows it unwrapped
+	}
+	if json.Unmarshal(b, &r) != nil {
+		return "", "", badAnswer
+	}
+	list := append(r.Data.Translations, r.Translations...)
+	if len(list) == 0 {
+		return "", "", badAnswer
+	}
+	return list[0].TranslatedText, list[0].DetectedSourceLanguage, nil
+}
+
 func translateDeepL(ctx context.Context, ts transSettings, text, to string) (out, from string, err error) {
 	if ts.deeplKey == "" {
 		return "", "", &Error{"no_key", "translate: DeepL needs a key"}
@@ -195,8 +347,8 @@ func translateDeepL(ctx context.Context, ts transSettings, text, to string) (out
 		base = deeplFreeURL
 	}
 	body, _ := json.Marshal(map[string]any{"text": []string{text}, "target_lang": target})
-	b, err := postTrans(ctx, http.DefaultClient, base+"/v2/translate", "application/json", map[string]string{"Authorization": "DeepL-Auth-Key " + ts.deeplKey},
-		body, map[int]string{403: "no_key", 429: "rate_limited", 456: "rate_limited", 400: "unsupported"})
+	b, err := postTrans(ctx, http.DefaultClient, "deepl", base+"/v2/translate", "application/json", map[string]string{"Authorization": "DeepL-Auth-Key " + ts.deeplKey},
+		body, byStatus(map[int]string{403: "no_key", 429: "rate_limited", 456: "rate_limited", 400: "unsupported"}))
 	if err != nil {
 		return "", "", err
 	}
@@ -221,8 +373,8 @@ func translateLibre(ctx context.Context, ts transSettings, text, to string) (out
 		req["api_key"] = ts.libreKey
 	}
 	body, _ := json.Marshal(req)
-	b, err := postTrans(ctx, http.DefaultClient, strings.TrimSuffix(ts.libreURL, "/")+"/translate", "application/json", nil,
-		body, map[int]string{400: "unsupported", 403: "no_key", 429: "rate_limited"})
+	b, err := postTrans(ctx, http.DefaultClient, "libre", strings.TrimSuffix(ts.libreURL, "/")+"/translate", "application/json", nil,
+		body, byStatus(map[int]string{400: "unsupported", 403: "no_key", 429: "rate_limited"}))
 	if err != nil {
 		return "", "", err
 	}

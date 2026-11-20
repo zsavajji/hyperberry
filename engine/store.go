@@ -58,6 +58,7 @@ type Store struct {
 func newStore(db *sql.DB, srv *Server, log waLog.Logger) *Store {
 	st := &Store{db: db, srv: srv, log: log, ops: make(chan func(*storeTx), 1024), done: make(chan struct{})}
 	st.nt = newNotifier(srv.dir, log)
+	transLog = log
 	st.hist = newHistoryQueue(st)
 	srv.Handle("prefs.set", st.handlePrefs)
 	go st.run()

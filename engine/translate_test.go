@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	waLog "github.com/polymorfa/hypermeow/util/log"
 	"testing"
@@ -17,16 +18,26 @@ import (
 // stub answers every request with status and body, and keeps the last request's shape.
 type stub struct {
 	*httptest.Server
-	method, path, query, ctype, auth, ua, body string
-	n                                          atomic.Int32
+	method, path, query, ctype, auth, key, ua, body string
+	n                                               atomic.Int32
+}
+
+// resetCool forgets every service's pause: a test that provokes a 429 must not hold back the next one.
+func resetCool() {
+	coolMu.Lock()
+	cools = map[string]*cool{}
+	coolMu.Unlock()
+	transNow = time.Now
 }
 
 func newStub(t *testing.T, status int, reply string) *stub {
+	resetCool()
+	t.Cleanup(resetCool)
 	s := &stub{}
 	s.Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b, _ := io.ReadAll(r.Body)
 		s.method, s.path, s.query, s.ctype = r.Method, r.URL.Path, r.URL.RawQuery, r.Header.Get("Content-Type")
-		s.auth, s.ua, s.body = r.Header.Get("Authorization"), r.Header.Get("User-Agent"), string(b)
+		s.auth, s.key, s.ua, s.body = r.Header.Get("Authorization"), r.Header.Get("X-Goog-Api-Key"), r.Header.Get("User-Agent"), string(b)
 		s.n.Add(1)
 		w.WriteHeader(status)
 		io.WriteString(w, reply)
@@ -218,6 +229,8 @@ func trRow(st *Store, chat, id string) (tr, lang, from *string) {
 }
 
 func TestMsgTranslate(t *testing.T) {
+	resetCool()
+	t.Cleanup(resetCool)
 	_, st, c := newTestSim(t)
 	var mu sync.Mutex
 	var seen []string
@@ -385,7 +398,7 @@ func TestPrefsTranslate(t *testing.T) {
 	if ts, _ := n.translateSettings(); ts.provider != "google" {
 		t.Errorf("default provider %q", ts.provider)
 	}
-	if _, err := n.setPrefs([]byte(`{"translateProvider":"deepl","deeplKey":"k:fx","libreURL":"http://l","libreKey":"lk"}`)); err != nil {
+	if _, err := n.setPrefs([]byte(`{"translateProvider":"deepl","deeplKey":"k:fx","googleKey":"g","libreURL":"http://l","libreKey":"lk"}`)); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := n.setPrefs([]byte(`{"translateProvider":"bing"}`)); code(err) != "bad_request" {
@@ -394,7 +407,7 @@ func TestPrefsTranslate(t *testing.T) {
 	n.close()
 	n = newNotifier(dir, waLog.Noop) // stored
 	defer n.close()
-	if ts, _ := n.translateSettings(); ts != (transSettings{"deepl", "k:fx", "http://l", "lk"}) {
+	if ts, _ := n.translateSettings(); ts != (transSettings{provider: "deepl", deeplKey: "k:fx", libreURL: "http://l", libreKey: "lk", googleKey: "g"}) {
 		t.Errorf("reloaded %+v", ts)
 	}
 	if _, err := n.setPrefs([]byte(`{"libreKey":""}`)); err != nil {

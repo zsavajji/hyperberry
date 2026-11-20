@@ -20,6 +20,7 @@ type prefs struct {
 	// The translation service (translate.go): google, deepl or libre; google until set.
 	TranslateProvider *string `json:"translateProvider,omitempty"`
 	DeeplKey          *string `json:"deeplKey,omitempty"`
+	GoogleKey         *string `json:"googleKey,omitempty"` // Google with a key is the official Cloud Translation API
 	LibreURL          *string `json:"libreURL,omitempty"`
 	LibreKey          *string `json:"libreKey,omitempty"`
 }
@@ -78,6 +79,9 @@ func (n *Notifier) translateSettings() (ts transSettings, lang string) {
 	if n.prefs.DeeplKey != nil {
 		ts.deeplKey = *n.prefs.DeeplKey
 	}
+	if n.prefs.GoogleKey != nil {
+		ts.googleKey = *n.prefs.GoogleKey
+	}
 	if n.prefs.LibreURL != nil {
 		ts.libreURL = *n.prefs.LibreURL
 	}
@@ -96,8 +100,8 @@ func (n *Notifier) setPrefs(req json.RawMessage) (langChanged bool, err error) {
 	var r prefs
 	if json.Unmarshal(req, &r) != nil || r.NotifyPreview == nil && r.MediaOnMobile == nil && r.AutoPhoto == nil && r.AutoAudio == nil &&
 		r.AutoVideo == nil && r.AutoDoc == nil && r.Language == nil && r.CacheMB == nil && r.CloudflareDNS == nil &&
-		r.TranslateProvider == nil && r.DeeplKey == nil && r.LibreURL == nil && r.LibreKey == nil {
-		return false, &Error{"bad_request", "prefs.set needs notifyPreview, mediaOnMobile, autoPhoto, autoAudio, autoVideo, autoDoc, language, cacheMB, cloudflareDNS, translateProvider, deeplKey, libreURL or libreKey"}
+		r.TranslateProvider == nil && r.DeeplKey == nil && r.GoogleKey == nil && r.LibreURL == nil && r.LibreKey == nil {
+		return false, &Error{"bad_request", "prefs.set needs notifyPreview, mediaOnMobile, autoPhoto, autoAudio, autoVideo, autoDoc, language, cacheMB, cloudflareDNS, translateProvider, deeplKey, googleKey, libreURL or libreKey"}
 	}
 	if r.CacheMB != nil && (*r.CacheMB < cacheDefaultMB || *r.CacheMB > cacheMaxMB) {
 		return false, &Error{"bad_request", "cacheMB is 64 to 512"}
@@ -142,6 +146,9 @@ func (n *Notifier) setPrefs(req json.RawMessage) (langChanged bool, err error) {
 	}
 	if r.DeeplKey != nil {
 		n.prefs.DeeplKey = r.DeeplKey
+	}
+	if r.GoogleKey != nil {
+		n.prefs.GoogleKey = r.GoogleKey
 	}
 	if r.LibreURL != nil {
 		n.prefs.LibreURL = r.LibreURL
