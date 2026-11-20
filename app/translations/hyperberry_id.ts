@@ -2707,24 +2707,24 @@
         <translation>Panggilan</translation>
     </message>
     <message>
-        <source>Video calls</source>
-        <translation>Panggilan video</translation>
+        <source>Max camera resolution</source>
+        <translation>Resolusi kamera maksimum</translation>
     </message>
     <message>
-        <source>High (1280x720)</source>
-        <translation>Tinggi (1280x720)</translation>
+        <source>Camera aspect ratio</source>
+        <translation>Rasio aspek kamera</translation>
     </message>
     <message>
-        <source>Medium (640x480)</source>
-        <translation>Sedang (640x480)</translation>
+        <source>Native</source>
+        <translation>Asli</translation>
     </message>
     <message>
-        <source>Low (320x240)</source>
-        <translation>Rendah (320x240)</translation>
+        <source>9:16 (cropped)</source>
+        <translation>9:16 (dipotong)</translation>
     </message>
     <message>
-        <source>What your camera sends. High is sharper and needs about 1 Mbit/s; a change takes effect at once, also during a call.</source>
-        <translation>Yang dikirim kamera Anda. Tinggi lebih tajam dan butuh sekitar 1 Mbit/s; perubahan langsung berlaku, termasuk saat panggilan berlangsung.</translation>
+        <source>The largest picture your camera sends; 1280x720 needs about 1 Mbit/s. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.</source>
+        <translation>Gambar terbesar yang dikirim kamera Anda; 1280x720 butuh sekitar 1 Mbit/s. 9:16 mengirim bagian tengah gambar, dalam posisi tegak, agar memenuhi layar ponsel lawan bicara. Perubahan langsung berlaku, termasuk saat panggilan berlangsung.</translation>
     </message>
     <message>
         <source>%1 isn&apos;t on WhatsApp</source>

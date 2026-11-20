@@ -191,13 +191,13 @@ Page {
                     leftPadding: zoom * ui.du(2)
                     rightPadding: zoom * ui.du(2)
                     bottomPadding: zoom * ui.du(2)
-                    // What our camera sends in a video call; CallVideo reopens the camera when it changes.
+                    // What our camera sends in a video call; CallVideo reopens the camera when either changes.
                     DropDown {
-                        title: qsTr("Video calls")
+                        title: qsTr("Max camera resolution")
                         options: [
-                            Option { text: qsTr("High (1280x720)"); selected: settings.videoQuality == 0 },
-                            Option { text: qsTr("Medium (640x480)"); selected: settings.videoQuality == 1 },
-                            Option { text: qsTr("Low (320x240)"); selected: settings.videoQuality == 2 }
+                            Option { text: "1280x720"; selected: settings.videoQuality == 0 },
+                            Option { text: "640x480"; selected: settings.videoQuality == 1 },
+                            Option { text: "320x240"; selected: settings.videoQuality == 2 }
                         ]
                         onSelectedIndexChanged: {
                             if (selectedIndex >= 0) {
@@ -205,10 +205,23 @@ Page {
                             }
                         }
                     }
+                    DropDown {
+                        topMargin: zoom * ui.du(2)
+                        title: qsTr("Camera aspect ratio")
+                        options: [
+                            Option { text: qsTr("Native"); selected: !settings.cameraCrop },
+                            Option { text: qsTr("9:16 (cropped)"); selected: settings.cameraCrop }
+                        ]
+                        onSelectedIndexChanged: {
+                            if (selectedIndex >= 0) {
+                                settings.cameraCrop = selectedIndex == 1
+                            }
+                        }
+                    }
                     Label {
                         topMargin: zoom * ui.du(1)
                         multiline: true
-                        text: qsTr("What your camera sends. High is sharper and needs about 1 Mbit/s; a change takes effect at once, also during a call.")
+                        text: qsTr("The largest picture your camera sends; 1280x720 needs about 1 Mbit/s. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.")
                         textStyle.base: SystemDefaults.TextStyles.SubtitleText
                         textStyle.color: ui.palette.secondaryTextOnPlain
                     }

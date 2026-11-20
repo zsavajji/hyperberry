@@ -37,6 +37,9 @@ class CallVideo : public QObject, private CameraEncoder::Sink
     Q_PROPERTY(bool front READ front WRITE setFront NOTIFY frontChanged)
     // Our camera runs 16:9 (1280x720, Settings' High); the self-view control follows it, the others are 4:3.
     Q_PROPERTY(bool wide READ wide NOTIFY wideChanged)
+    // Our camera is cropped to 9:16 (Settings' cameraCrop): the peer's picture and the self-view
+    // show the centre of what the camera encodes. The self-view control follows it (CallVideoView.qml).
+    Q_PROPERTY(bool cropped READ cropped NOTIFY croppedChanged)
     // The peer's picture as it is shown, after turning: 0 x 0 until the first frame.
     Q_PROPERTY(int pictureWidth READ pictureWidth NOTIFY pictureChanged)
     Q_PROPERTY(int pictureHeight READ pictureHeight NOTIFY pictureChanged)
@@ -50,6 +53,7 @@ public:
     bool sending() const { return m_sending != 0; }
     bool front() const { return m_front != 0; }
     bool wide() const { return m_wide; }
+    bool cropped() const { return m_cropped; }
     int pictureWidth() const { return m_picW; }
     int pictureHeight() const { return m_picH; }
     int tileMask() const { return m_tileMask; }
@@ -71,18 +75,26 @@ public:
     // Logs where each tile's window is, as the people drawer settles: whether native windows follow
     // the page's slide (7e; they hid in 0.0.1.264).
     Q_INVOKABLE void logWindows(const QString &why);
+    // Shows the centre 9:16 of our camera's viewfinder window in the self-view control (a
+    // ForeignWindowControl), when the crop is on: call it from the control's onWindowAttached, each
+    // time the camera opens a window. UI thread.
+    Q_INVOKABLE void cropFinder(QObject *finder);
 
 signals:
     void runningChanged();
     void sendingChanged();
     void frontChanged();
     void wideChanged();
+    void croppedChanged();
     void pictureChanged();
 
 public slots:
     // Our camera's size, Settings' videoQuality: 0 is 1280x720, 1 is 640x480, 2 is 320x240. A change
     // while sending reopens the camera at the camera thread's next look. UI thread.
     void setQuality(int quality);
+    // Settings' cameraCrop: our camera's picture goes out and shows as 9:16. A change while sending
+    // reopens the camera, as the quality's does. UI thread.
+    void setCrop(bool on);
 
 private slots:
     void setRunning(bool on);
@@ -140,10 +152,12 @@ private:
     QAtomicInt m_stopping;
     QAtomicInt m_sending, m_front;
     QAtomicInt m_quality;      // 0 to 2, an index into the camera's sizes
+    QAtomicInt m_crop;         // the 9:16 crop is on
     QAtomicInt m_keyframeWanted;   // the peer asked; the camera thread passes it on
     QAtomicInt m_recordsIn;
     bool m_running;
     bool m_wide;
+    bool m_cropped;            // m_crop for the UI thread
     int m_picW, m_picH, m_tileMask;
     int m_ticks;
 };

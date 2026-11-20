@@ -36,8 +36,10 @@ class Settings : public QObject
     Q_PROPERTY(bool darkGrey READ darkGrey WRITE setDarkGrey NOTIFY darkGreyChanged)
     // How many group calls showed the people drawer's first-time hint (CallDrawer.qml shows it in the first 2).
     Q_PROPERTY(int callHints READ callHints WRITE setCallHints NOTIFY callHintsChanged)
-    // Video calls, our camera: 0 is 1280x720, 1 is 640x480 (default), 2 is 320x240 (CallVideo's quality).
+    // Video calls, the max camera resolution: 0 is 1280x720, 1 is 640x480 (default), 2 is 320x240 (CallVideo's quality).
     Q_PROPERTY(int videoQuality READ videoQuality WRITE setVideoQuality NOTIFY videoQualityChanged)
+    // Video calls, the camera's aspect ratio: false is the camera's own, true crops it to 9:16 (CallVideo's crop).
+    Q_PROPERTY(bool cameraCrop READ cameraCrop WRITE setCameraCrop NOTIFY cameraCropChanged)
 
 public:
     explicit Settings(EngineLink *engine, QObject *parent = 0);
@@ -59,6 +61,7 @@ public:
     bool darkGrey() const;
     int callHints() const;
     int videoQuality() const;
+    bool cameraCrop() const;
     void setTheme(int theme);
     void setEnterSends(bool on);
     void setNotifyPreview(bool on);
@@ -76,6 +79,7 @@ public:
     void setDarkGrey(bool on);
     void setCallHints(int count);
     void setVideoQuality(int quality);
+    void setCameraCrop(bool on);
     Q_INVOKABLE QString cacheSize();
     Q_INVOKABLE QString clearCache();
 
@@ -94,6 +98,7 @@ signals:
     void darkGreyChanged();
     void callHintsChanged();
     void videoQualityChanged(int quality);
+    void cameraCropChanged(bool on);
 
 private slots:
     void bootTimerReplied();

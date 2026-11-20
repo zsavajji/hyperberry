@@ -2713,24 +2713,24 @@
         <translation>Połączenia</translation>
     </message>
     <message>
-        <source>Video calls</source>
-        <translation>Połączenia wideo</translation>
+        <source>Max camera resolution</source>
+        <translation>Maksymalna rozdzielczość aparatu</translation>
     </message>
     <message>
-        <source>High (1280x720)</source>
-        <translation>Wysoka (1280x720)</translation>
+        <source>Camera aspect ratio</source>
+        <translation>Proporcje obrazu z aparatu</translation>
     </message>
     <message>
-        <source>Medium (640x480)</source>
-        <translation>Średnia (640x480)</translation>
+        <source>Native</source>
+        <translation>Oryginalne</translation>
     </message>
     <message>
-        <source>Low (320x240)</source>
-        <translation>Niska (320x240)</translation>
+        <source>9:16 (cropped)</source>
+        <translation>9:16 (przycięte)</translation>
     </message>
     <message>
-        <source>What your camera sends. High is sharper and needs about 1 Mbit/s; a change takes effect at once, also during a call.</source>
-        <translation>Co wysyła Twój aparat. Wysoka jest ostrzejsza i potrzebuje około 1 Mbit/s; zmiana działa od razu, także w trakcie połączenia.</translation>
+        <source>The largest picture your camera sends; 1280x720 needs about 1 Mbit/s. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.</source>
+        <translation>Największy obraz, jaki wysyła Twój aparat; 1280x720 potrzebuje około 1 Mbit/s. 9:16 wysyła środek obrazu, w pionie, tak by wypełnił ekran drugiego telefonu. Zmiana działa od razu, także w trakcie połączenia.</translation>
     </message>
     <message>
         <source>%1 isn&apos;t on WhatsApp</source>

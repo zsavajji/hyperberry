@@ -2710,24 +2710,24 @@
         <translation>Appels</translation>
     </message>
     <message>
-        <source>Video calls</source>
-        <translation>Appels vidéo</translation>
+        <source>Max camera resolution</source>
+        <translation>Résolution maximale de la caméra</translation>
     </message>
     <message>
-        <source>High (1280x720)</source>
-        <translation>Élevée (1280x720)</translation>
+        <source>Camera aspect ratio</source>
+        <translation>Format de la caméra</translation>
     </message>
     <message>
-        <source>Medium (640x480)</source>
-        <translation>Moyenne (640x480)</translation>
+        <source>Native</source>
+        <translation>Natif</translation>
     </message>
     <message>
-        <source>Low (320x240)</source>
-        <translation>Faible (320x240)</translation>
+        <source>9:16 (cropped)</source>
+        <translation>9:16 (recadré)</translation>
     </message>
     <message>
-        <source>What your camera sends. High is sharper and needs about 1 Mbit/s; a change takes effect at once, also during a call.</source>
-        <translation>Ce que votre caméra envoie. Élevée est plus nette et demande environ 1 Mbit/s ; un changement s'applique tout de suite, même pendant un appel.</translation>
+        <source>The largest picture your camera sends; 1280x720 needs about 1 Mbit/s. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.</source>
+        <translation>La plus grande image que votre caméra envoie ; 1280x720 demande environ 1 Mbit/s. Le 9:16 envoie le centre de l'image, à la verticale, pour remplir l'écran de l'autre téléphone. Un changement s'applique tout de suite, même pendant un appel.</translation>
     </message>
     <message>
         <source>%1 isn&apos;t on WhatsApp</source>

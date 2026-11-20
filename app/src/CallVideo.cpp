@@ -2,10 +2,13 @@
 
 #include "EngineLink.h"
 #include "LinkIo.h"
+#include "Nv12Rotate.h"
 
 #include <bb/cascades/Application>
+#include <bb/cascades/ForeignWindowControl>
 #include <bb/cascades/Window>
 #include <errno.h>
+#include <screen/screen.h>
 #include <signal.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -64,6 +67,7 @@ CallVideo::CallVideo(EngineLink *engine, QObject *parent)
     , m_fd(-1)
     , m_running(false)
     , m_wide(false)
+    , m_cropped(false)
     , m_picW(0)
     , m_picH(0)
     , m_tileMask(0)
@@ -71,6 +75,7 @@ CallVideo::CallVideo(EngineLink *engine, QObject *parent)
 {
     m_front = 1;
     m_quality = 1;
+    m_crop = 0;
     m_timer.setInterval(TickMs);
     connect(&m_timer, SIGNAL(timeout()), SLOT(tick()));
 }
@@ -113,6 +118,15 @@ void CallVideo::setQuality(int quality)
         return;
     m_wide = wide;
     emit wideChanged();
+}
+
+void CallVideo::setCrop(bool on)
+{
+    m_crop = on ? 1 : 0;
+    if (m_cropped == on)
+        return;
+    m_cropped = on;
+    emit croppedChanged();
 }
 
 void CallVideo::setRunning(bool on)
@@ -192,6 +206,34 @@ void CallVideo::logWindows(const QString &why)
         if (m_tile[i].hasWindow)
             m_tile[i].window.logPosition(qPrintable(QString("tile %1, %2").arg(i).arg(why)));
     }
+}
+
+// The camera library made the viewfinder window as big as the video (1280x720, say); the control
+// shows all of it, squeezed into the control's shape, unless the source viewport is the centre part
+// with the control's aspect (9:16), which is what the peer sees too.
+void CallVideo::cropFinder(QObject *finder)
+{
+    bb::cascades::ForeignWindowControl *control = qobject_cast<bb::cascades::ForeignWindowControl *>(finder);
+    if (!m_cropped || !control)
+        return;
+    screen_window_t win = control->windowHandle();
+    if (!win)
+        return;
+    int buffer[2], pos[2], size[2];
+    screen_context_t context = 0;
+    if (screen_get_window_property_iv(win, SCREEN_PROPERTY_BUFFER_SIZE, buffer)) {
+        qWarning("call video: finder buffer size unknown: %s", strerror(errno));
+        return;
+    }
+    centreCrop(buffer[0], buffer[1], 9, 16, &pos[0], &pos[1], &size[0], &size[1]);
+    if (screen_set_window_property_iv(win, SCREEN_PROPERTY_SOURCE_POSITION, pos)
+        || screen_set_window_property_iv(win, SCREEN_PROPERTY_SOURCE_SIZE, size)
+        || screen_get_window_property_pv(win, SCREEN_PROPERTY_CONTEXT, reinterpret_cast<void **>(&context))
+        || screen_flush_context(context, 0)) {
+        qWarning("call video: finder viewport %dx%d at %d,%d refused: %s", size[0], size[1], pos[0], pos[1], strerror(errno));
+        return;
+    }
+    qDebug("call video: finder shows %dx%d at %d,%d of %dx%d", size[0], size[1], pos[0], pos[1], buffer[0], buffer[1]);
 }
 
 void CallVideo::setTileViewSize(int tile, int w, int h)
@@ -369,18 +411,21 @@ void CallVideo::cameraLoop()
 {
     bool front = true;
     int quality = 1;  // the size the running camera was started with
+    bool crop = false; // likewise the crop
     int cooldown = 0; // polls left before another try, after a failure
     while (!m_stopping) {
         const bool want = m_sending && m_linked;
         const bool wantFront = m_front;
         const int wantQuality = m_quality;
-        if (m_encoder.isRunning() && (!want || wantFront != front || wantQuality != quality))
+        const bool wantCrop = m_crop != 0;
+        if (m_encoder.isRunning() && (!want || wantFront != front || wantQuality != quality || wantCrop != crop))
             m_encoder.stop();
         if (!m_encoder.isRunning() && want && cooldown == 0) {
             front = wantFront;
             quality = wantQuality;
+            crop = wantCrop;
             const CameraSize &size = CameraSizes[quality];
-            if (!m_encoder.start(front, size.width, size.height, Fps, size.bitrate, KeyframeSeconds, m_group, m_viewfinderId))
+            if (!m_encoder.start(front, size.width, size.height, Fps, size.bitrate, KeyframeSeconds, m_group, m_viewfinderId, crop))
                 cooldown = RetryMs / PollMs;
         }
         if (cooldown > 0)

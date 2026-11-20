@@ -2710,24 +2710,24 @@
         <translation>कॉल</translation>
     </message>
     <message>
-        <source>Video calls</source>
-        <translation>वीडियो कॉल</translation>
+        <source>Max camera resolution</source>
+        <translation>कैमरे का अधिकतम रिज़ॉल्यूशन</translation>
     </message>
     <message>
-        <source>High (1280x720)</source>
-        <translation>उच्च (1280x720)</translation>
+        <source>Camera aspect ratio</source>
+        <translation>कैमरे का आस्पेक्ट रेशियो</translation>
     </message>
     <message>
-        <source>Medium (640x480)</source>
-        <translation>मध्यम (640x480)</translation>
+        <source>Native</source>
+        <translation>मूल</translation>
     </message>
     <message>
-        <source>Low (320x240)</source>
-        <translation>निम्न (320x240)</translation>
+        <source>9:16 (cropped)</source>
+        <translation>9:16 (क्रॉप किया हुआ)</translation>
     </message>
     <message>
-        <source>What your camera sends. High is sharper and needs about 1 Mbit/s; a change takes effect at once, also during a call.</source>
-        <translation>आपका कैमरा क्या भेजता है। उच्च ज़्यादा साफ़ है और इसे लगभग 1 Mbit/s चाहिए; बदलाव तुरंत लागू होता है, कॉल के दौरान भी।</translation>
+        <source>The largest picture your camera sends; 1280x720 needs about 1 Mbit/s. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.</source>
+        <translation>आपका कैमरा जो सबसे बड़ी तस्वीर भेजता है; 1280x720 को लगभग 1 Mbit/s चाहिए। 9:16 तस्वीर का बीच का हिस्सा सीधा भेजता है, ताकि दूसरे फ़ोन की स्क्रीन भर जाए। बदलाव तुरंत लागू होता है, कॉल के दौरान भी।</translation>
     </message>
     <message>
         <source>%1 isn&apos;t on WhatsApp</source>

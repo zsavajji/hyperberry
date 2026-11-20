@@ -2713,24 +2713,24 @@
         <translation>Дзвінки</translation>
     </message>
     <message>
-        <source>Video calls</source>
-        <translation>Відеодзвінки</translation>
+        <source>Max camera resolution</source>
+        <translation>Максимальна роздільна здатність камери</translation>
     </message>
     <message>
-        <source>High (1280x720)</source>
-        <translation>Високе (1280x720)</translation>
+        <source>Camera aspect ratio</source>
+        <translation>Співвідношення сторін камери</translation>
     </message>
     <message>
-        <source>Medium (640x480)</source>
-        <translation>Середнє (640x480)</translation>
+        <source>Native</source>
+        <translation>Початкове</translation>
     </message>
     <message>
-        <source>Low (320x240)</source>
-        <translation>Низьке (320x240)</translation>
+        <source>9:16 (cropped)</source>
+        <translation>9:16 (з обрізанням)</translation>
     </message>
     <message>
-        <source>What your camera sends. High is sharper and needs about 1 Mbit/s; a change takes effect at once, also during a call.</source>
-        <translation>Що надсилає ваша камера. Високе чіткіше й потребує близько 1 Mbit/s; зміна діє одразу, також під час дзвінка.</translation>
+        <source>The largest picture your camera sends; 1280x720 needs about 1 Mbit/s. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.</source>
+        <translation>Найбільше зображення, яке надсилає ваша камера; 1280x720 потребує близько 1 Mbit/s. 9:16 надсилає середину кадру у вертикальному положенні, щоб заповнити екран іншого телефона. Зміна діє одразу, також під час дзвінка.</translation>
     </message>
     <message>
         <source>%1 isn&apos;t on WhatsApp</source>

@@ -251,18 +251,25 @@ Container {
         layout: AbsoluteLayout {}
         ForeignWindowControl {
             id: finder
+            // Our camera's shape, in the stage's px: 9:16 when the crop is on (Settings' camera aspect
+            // ratio), 16:9 while the camera runs 1280x720, else 4:3. The window takes the control's size,
+            // so a wrong shape squashes us. It keeps its right edge at 702 and its bottom at 398
+            // (just above the grid's panel while the controls show) or 702 (the foot, when they hide).
+            readonly property real shownWidth: sheet.px(callVideo.cropped ? 90 : 200)
+            readonly property real shownHeight: sheet.px(callVideo.cropped ? 160 : (callVideo.wide ? 113 : 150))
             windowId: "hyperberryCallFinder"
             updatedProperties: WindowProperty.Size | WindowProperty.Position | WindowProperty.Visible
             // Shown while the people drawer is out, as the tiles' (CallVideoTile).
             // Hidden at the ear: the window is above Cascades, so the sheet's black can't cover it.
             visible: sheet.isVideo && !!sheet.call.videoOurs && !sheet.atEar && !sheet.previewHidden
             layoutProperties: AbsoluteLayoutProperties {
-                positionX: sheet.px(502)
-                positionY: sheet.controlsShown ? sheet.px(248) : sheet.px(552)
+                positionX: sheet.px(702) - finder.shownWidth
+                positionY: (sheet.controlsShown ? sheet.px(398) : sheet.px(702)) - finder.shownHeight
             }
-            preferredWidth: sheet.px(200)
-            // 4:3, or 16:9 while our camera runs 1280x720 (the window takes the control's size: a wrong shape squashes us).
-            preferredHeight: callVideo.wide ? sheet.px(113) : sheet.px(150)
+            preferredWidth: finder.shownWidth
+            preferredHeight: finder.shownHeight
+            // The camera library makes a new window each time the camera opens: show the middle 9:16 of it.
+            onWindowAttached: callVideo.cropFinder(finder)
         }
     }
 }
