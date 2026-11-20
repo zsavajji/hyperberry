@@ -146,7 +146,8 @@ def track(out):
     green, red = hexa("#1bd862"), hexa("#e83838")  # answer in the primary colour (the user's ask)
     d.arc(sc(1.5, 1.5, 146.5, 146.5), 90, 270, green, 4 * S)
     d.arc(sc(W - 146.5, 1.5, W - 1.5, 146.5), 270, 90, red, 4 * S)
-    put(img, handset(85, 32, hexa("#f83030")), 583, 74)
+    # The stock End call glyph, as wide as the answer handset is tall (the user, 2026-11-20: the arch was the wrong one, and bigger).
+    put(img, hangup(hexa("#f83030"), 0.8), 588, 74)
     # Brighter toward the middle on the green side, dimmer away from it on the red.
     chevrons(d, 168, ["#0b5627", "#10823b", "#16b351"], True)  # the primary at 40, 60 and 83 %, as the stock's
     chevrons(d, 413, ["#983e3d", "#753132", "#592527"], False)
@@ -206,20 +207,25 @@ def unmute(out):
     save(mic()[0], out, "call_unmute")
 
 
-def end(out):
+def hangup(color, k=1.0):
     """The stock End call glyph (the user's screenshot, 2026-11-20): a wide, shallow handset, thick on
-    top, its ear and mouth pads ovals tipped outward, and the cradle's short bar between them; 60x32."""
+    top, its ear and mouth pads ovals tipped outward, and the cradle's short bar between them; 60x32
+    at k = 1, returned at 8x."""
     w = 60
-    img, d = new(w, 32)
-    d.ellipse(sc(3, 1, w - 3, 35), WHITE)
-    d.ellipse(sc(13, 9.5, w - 13, 39.5), CLEAR)
-    d.rectangle(sc(0, 17, w, 32), CLEAR)
-    pad, pd = new(19, 11)
-    pd.ellipse(sc(0, 0, 19, 11), WHITE)
+    img, d = new(w * k, 32 * k)
+    d.ellipse(sc(3 * k, 1 * k, (w - 3) * k, 35 * k), color)
+    d.ellipse(sc(13 * k, 9.5 * k, (w - 13) * k, 39.5 * k), CLEAR)
+    d.rectangle(sc(0, 17 * k, w * k, 32 * k), CLEAR)
+    pad, pd = new(19 * k, 11 * k)
+    pd.ellipse(sc(0, 0, 19 * k, 11 * k), color)
     for cx, angle in ((10, -24), (w - 10, 24)):
-        put(img, pad, cx, 17.5, angle)
-    d.rounded_rectangle(sc(w / 2 - 10, 23, w / 2 + 10, 28), 2.5 * S, WHITE)
-    save(img, out, "call_end")
+        put(img, pad, cx * k, 17.5 * k, angle)
+    d.rounded_rectangle(sc((w / 2 - 10) * k, 23 * k, (w / 2 + 10) * k, 28 * k), 2.5 * k * S, color)
+    return img
+
+
+def end(out):
+    save(hangup(WHITE), out, "call_end")
 
 
 def camcorder():
