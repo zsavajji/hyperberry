@@ -333,6 +333,8 @@ void MessageModel::refresh(const QStringList &old, const QSet<QString> &updated)
             kept << k;
     }
     if (isSubsequence(kept, now)) {
+        if (!now.isEmpty() && !QSet<QString>::fromList(old).contains(now[0]))
+            emit newestComing();
         for (int j = old.size() - 1; j >= 0; --j) {
             if (!there.contains(old[j]))
                 emit itemRemoved(QVariantList() << j); // descending: the others keep their places

@@ -74,6 +74,9 @@ signals:
     // A merge added a message that isn't ours and wasn't there before (not a first load or an
     // older page): the controller decides whether it was seen.
     void incoming();
+    // A new row is about to go in at the bottom (index 0), before itemAdded tells the list: the page pins the list there, so
+    // the row goes in below the screen and slides in (ChatPage's coming).
+    void newestComing();
 
 private slots:
     void loadFirst();

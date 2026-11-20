@@ -7,6 +7,7 @@
 #include <bb/cascades/ImplicitAnimationController>
 #include <bb/cascades/ListItemListener>
 #include <QList>
+#include <QRectF>
 #include <QString>
 #include <QVariantMap>
 
@@ -53,6 +54,8 @@ public:
 
     // msg is a "text", "msg" or "picture" row of MessageModel.
     void show(const QVariantMap &msg);
+    // Reports this card's last laid-out height to the page when it shows row id (ChatPage's slide; MessageCards::slideRow).
+    void reportSlide(const QString &id);
 
     // ListItemListener: a press tints the card; selection isn't used.
     void select(bool selected);
@@ -77,6 +80,7 @@ private slots:
     void onWho();
     void onJoin();
     void onQuote();
+    void onLaidOut(const QRectF &frame);
 
 private:
     QString str(const char *key) const { return m_msg.value(key).toString(); }
@@ -178,6 +182,7 @@ private:
 
     QString m_edited; // "edited ", translated
     QString m_starMark; // the star (U+2605) and a space, before the time of a starred message
+    float m_laidHeight;  // the height of the last layout (onLaidOut), 0 before the first: the slide's distance
     bb::cascades::ActionSet *m_menu;
     bb::cascades::ActionItem *m_reply;
     bb::cascades::ActionItem *m_react;

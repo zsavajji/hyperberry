@@ -44,9 +44,12 @@ Page {
     }
     onChatChanged: {
         ctl.open(chat)
+        // The list starts hidden (listHidden): the guard shows it whatever happens, from the open on.
+        revealGuard.start()
         if (chat.kind != 2) addAction(infoAction, ActionBarPlacement.InOverflow)
         if (chat.kind <= 1) addAction(pollAction, ActionBarPlacement.InOverflow)
         ctl.messages.itemAdded.connect(page.added)
+        ctl.messages.newestComing.connect(page.coming)
         ctl.messages.loadingChanged.connect(page.loaded)
         media.ready.connect(page.mediaReady)
         media.pictureEdited.connect(page.stage) // the editor's file is staged in place, the caption (the composer's text) kept
@@ -387,12 +390,48 @@ Page {
     // Our own message is followed even when the list was scrolled up. Scrolling once the row is in:
     // a scroll before it, at send, left the new card below the screen, while an incoming one at the
     // bottom was followed by the stick-to-edge policy (Q10, 2026-10-31).
+    // A new message, ours or theirs, while the list was at the bottom slides in instead of popping in (the user, 2026-11-20).
+    // Before it goes in (coming, MessageModel's newestComing) the list stops sticking to the bottom (slidePin), so the row
+    // lands below the screen and nothing on it moves; its card, once laid out, gives its exact height (slideIn, from
+    // MessageCard::onLaidOut). A guess moved the rows before the list had the row in: they jumped down, then up. Ours while
+    // scrolled up jumps to it, as before.
+    property bool slidePin: false
+    function coming() {
+        if (!page.listHidden && scrollState.atBeginning) {
+            slideAnim.stop()
+            list.translationY = 0
+            slidePin = true
+            slideGuard.start()
+        }
+    }
     function added(indexPath) {
-        if (followOwn && indexPath[0] == 0) {
+        if (indexPath[0] != 0) {
+            return
+        }
+        if (slidePin) {
+            followOwn = false
+            var row = ctl.messages.data(indexPath)
+            list.slideId = row && row.id ? row.id : ""
+            cardsProvider.slideRow(list.slideId) // a card already showing it reports now (MessageCards::slideRow)
+        } else if (followOwn) {
             followOwn = false
             list.scrollToPosition(ScrollPosition.Beginning, ScrollAnimation.None)
         }
     }
+    // The list is placed out of sight, in every chat (the user, 2026-11-20): a chat opening drew its first page, then faded,
+    // then drew it again, since the list was hidden only once the page was in. So the list starts hidden (opacity 0 below)
+    // and is shown, fading in, once the first page is in (loaded), or after 1.5 s whatever happened (revealGuard, started by
+    // onChatChanged). A later load of the same chat finds the list showing.
+    property bool listHidden: true // EmptyNote's spinner stays on meanwhile
+    function revealList() {
+        revealGuard.stop()
+        listHidden = false
+        if (list.opacity < 1 && !revealing) {
+            revealing = true
+            revealAnim.play()
+        }
+    }
+    property bool revealing: false
     // A search match (step 5.10): its day is loaded if it wasn't, then it's scrolled to and tinted.
     function jump(id) {
         list.foundId = id
@@ -408,11 +447,15 @@ Page {
     }
     property string jumpPending: ""
     function loaded() {
-        if (!ctl.messages.loading && page.jumpPending != "") {
+        if (ctl.messages.loading) {
+            return
+        }
+        if (page.jumpPending != "") {
             var id = page.jumpPending
             page.jumpPending = ""
             page.jump(id)
         }
+        revealList()
     }
     // The shape and kind of the video being fetched (openMedia sets them): a newer get replaces an older, so these are
     // the ones that land.
@@ -639,6 +682,8 @@ Page {
                     // step darker than the quiet grey (the user, 2026-11-19).
                     property string theirBar: settings.theme == 1 ? "#C8C8C8" : "#6E6E6E"
                     dataModel: ctl.messages
+                    // Out of sight until the first page is in (page.listHidden); revealList fades it in.
+                    opacity: 0
                     // Bottom to top: the model is newest first, so the list opens at the newest message
                     // with no scroll call, and an older page is appended at the visual top without
                     // moving the rows on screen.
@@ -649,9 +694,91 @@ Page {
                     bottomPadding: zoom * ui.du(1.5)
                     // The beginning is the bottom: a new message is followed only when the list was
                     // already there.
-                    stickToEdgePolicy: ListViewStickToEdgePolicy.Beginning
+                    stickToEdgePolicy: page.slidePin ? ListViewStickToEdgePolicy.None : ListViewStickToEdgePolicy.Beginning
+                    // The new message's slide (page.coming): the row whose card measures itself. In one go the list jumps to
+                    // the bottom (the rows move up by the row's height and the gap between cards) and is moved down as far,
+                    // so nothing moves on screen; then it comes back up in 110 ms. The composer, after the list, covers what is
+                    // moved below it.
+                    property string slideId: ""
+                    // The row's latest height: the slide starts when it has held for 30 ms (slideSettle): a reused card reports
+                    // its old height, and its new layout comes within 17 ms.
+                    property real slideH: 0
+                    function slideMeasured(h) {
+                        slideGuard.stop() // the card is there: the slide waits for its height to hold
+                        slideH = h
+                        slideSettle.start()
+                        return true
+                    }
+                    function slideIn(h) {
+                        slideGuard.stop()
+                        list.scrollToPosition(ScrollPosition.Beginning, ScrollAnimation.None)
+                        list.translationY = h + zoom * ui.du(1)
+                        slideAnim.fromY = list.translationY
+                        slideAnim.play()
+                        return true
+                    }
                     attachedObjects: [
+                        FadeTransition {
+                            id: revealAnim
+                            target: list
+                            fromOpacity: 0
+                            toOpacity: 1
+                            duration: 120
+                            onEnded: page.revealing = false
+                        },
+                        Timer {
+                            id: revealGuard
+                            interval: 1500
+                            singleShot: true
+                            // A model still loading has no rows: the spinner is up and the list stays hidden, so a slow first
+                            // page isn't seen before it is placed.
+                            onTimeout: {
+                                if (ctl.messages && ctl.messages.loading) {
+                                    revealGuard.start()
+                                } else {
+                                    page.revealList()
+                                }
+                            }
+                        },
+                        TranslateTransition {
+                            id: slideAnim
+                            target: list
+                            toY: 0
+                            duration: 110 // 150 felt slow (the user)
+                            easingCurve: StockCurve.CubicOut
+                            // The list sticks to the bottom again, put back at it first: a card that grew while the list was
+                            // pinned left it a few pixels off, and the next message then found it not at the bottom.
+                            onEnded: {
+                                list.scrollToPosition(ScrollPosition.Beginning, ScrollAnimation.None)
+                                page.slidePin = false
+                            }
+                        },
+                        Timer {
+                            id: slideSettle
+                            interval: 30
+                            singleShot: true
+                            onTimeout: {
+                                if (list.slideId == "") {
+                                    return
+                                }
+                                list.slideId = ""
+                                list.slideIn(list.slideH)
+                            }
+                        },
+                        // A new row no card measured (a day's header, a card not made): the list goes to it at once. 1 s: the
+                        // first card a chat makes after opening can come in after 650 ms.
+                        Timer {
+                            id: slideGuard
+                            interval: 1000
+                            singleShot: true
+                            onTimeout: {
+                                list.slideId = ""
+                                list.scrollToPosition(ScrollPosition.Beginning, ScrollAnimation.None)
+                                page.slidePin = false
+                            }
+                        },
                         ListScrollStateHandler {
+                            id: scrollState
                             // Older pages are appends, so asking on every change can't cascade.
                             onFirstVisibleItemChanged: ctl.nearTop(firstVisibleItem)
                             // The list runs bottom to top, so its beginning is the bottom.
@@ -659,11 +786,14 @@ Page {
                         }
                     ]
                     // The cards are C++ (MessageCards.cpp, step 8.6): they reach the page through these functions and properties.
-                    listItemProvider: MessageCards {}
+                    listItemProvider: MessageCards {
+                        id: cardsProvider
+                    }
                 }
                 // ctl.messages is null until the page opens the chat, hence the first test.
                 EmptyNote {
                     model: ctl.messages
+                    placing: page.listHidden
                 }
             }
             Container {

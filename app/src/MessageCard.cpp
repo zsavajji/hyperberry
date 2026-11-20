@@ -15,6 +15,7 @@
 #include <bb/cascades/ImageView>
 #include <bb/cascades/Label>
 #include <bb/cascades/LabelAutoSizeProperties>
+#include <bb/cascades/LayoutUpdateHandler>
 #include <bb/cascades/ListView>
 #include <bb/cascades/ScalingMethod>
 #include <bb/cascades/SystemDefaults>
@@ -238,6 +239,12 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
     // The search match is tinted: the page sets foundId.
     if (!connect(list, SIGNAL(foundIdChanged()), this, SLOT(paintBackground())))
         qWarning("cards: the list has no foundIdChanged");
+
+    // The new message's slide (ChatPage's added and slideIn): the card of the row the list's slideId names tells the page how
+    // tall it came out, which is how far the list slides.
+    m_laidHeight = 0;
+    LayoutUpdateHandler *laid = new LayoutUpdateHandler(this);
+    connect(laid, SIGNAL(layoutFrameChanged(QRectF)), this, SLOT(onLaidOut(QRectF)));
 }
 
 ImageView *MessageCard::makeTail(const char *source)
@@ -254,6 +261,7 @@ ImageView *MessageCard::makeTail(const char *source)
 void MessageCard::show(const QVariantMap &msg)
 {
     m_msg = msg;
+    reportSlide(m_list->property("slideId").toString()); // a reused card that won't be laid out again (reportSlide)
     const bool out = flag("out");
     const bool deleted = flag("deleted");
 
@@ -730,4 +738,24 @@ void MessageCard::placeTime(int place)
         m_timeBox->setBackground(Card::color("#80000000"));
     else
         m_timeBox->resetBackground();
+}
+
+// A new message at the bottom (the user, 2026-11-20): the page names its row in slideId when it goes in, and the card that
+// shows it reports each height it is laid out at (slideMeasured): a text's first layout can come before its lines wrap, so
+// the page slides once the height has held. Read here rather than in show(): the list may make the card before the page has
+// named the row, and it lays it out after. Every card's layout passes through; most stop at the empty slideId.
+void MessageCard::onLaidOut(const QRectF &frame)
+{
+    m_laidHeight = frame.height();
+    reportSlide(m_list->property("slideId").toString());
+}
+
+// Also from show() and MessageCards::slideRow: a card reused at the same size and place isn't laid out again, so it says its
+// last height itself; a layout that follows with another height reports again, and the page slides by the latest. Lists
+// without a slideId (Starred's) stop at the empty one.
+void MessageCard::reportSlide(const QString &id)
+{
+    if (id.isEmpty() || id != str("id") || m_laidHeight <= 0)
+        return;
+    Card::call(m_list, "slideMeasured", m_laidHeight);
 }
