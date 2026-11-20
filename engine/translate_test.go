@@ -278,6 +278,27 @@ func TestMsgTranslate(t *testing.T) {
 		t.Errorf("another language: %v, requests %v", err, seen)
 	}
 
+	// A chat with a language keeps its rows in it: the dialog's other language is answered, not written.
+	done0 := make(chan bool)
+	st.ops <- func(tx *storeTx) {
+		tx.exec("INSERT OR IGNORE INTO chats(jid, kind) VALUES(?, 0)", chat)
+		tx.exec("UPDATE chats SET translate = 'it' WHERE jid = ?", chat)
+		done0 <- true
+	}
+	<-done0
+	if _, err := ask(`"2"`); err != nil {
+		t.Fatal(err)
+	}
+	r2, err := st.handleTranslate([]byte(`{"chat":"` + chat + `","ids":["2"],"to":"de"}`))
+	if b, _ := json.Marshal(r2); err != nil || !strings.Contains(string(b), `"IT:two"`) {
+		t.Errorf("the dialog's language: %s, %v", b, err)
+	}
+	if _, lang, _ := trRow(st, chat, "2"); lang == nil || *lang != "it" {
+		t.Errorf("the chat's language lost its row: %v", lang)
+	}
+	st.ops <- func(tx *storeTx) { tx.exec("UPDATE chats SET translate = '' WHERE jid = ?", chat); done0 <- true }
+	<-done0
+
 	// The first failure is the error; rows already written stay.
 	if _, err := ask(`"6","5"`); code(err) != "rate_limited" {
 		t.Errorf("failure: %v", err)

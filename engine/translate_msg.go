@@ -103,9 +103,12 @@ func (st *Store) handleTranslate(req json.RawMessage) (any, error) {
 				return
 			}
 			items[i].Text, items[i].From = out, from
-			// AND text: an edit that landed meanwhile keeps its cleared columns, and the UI asks again.
+			// AND text: an edit that landed meanwhile keeps its cleared columns, and the UI asks again. The chat's own
+			// language keeps the row: the dialog's translation into another one (the user picks it per message) is
+			// only the reply, or the card would lose its translation in place.
 			st.ops <- func(t *storeTx) {
-				if t.exec("UPDATE messages SET tr = ?, tr_lang = ?, tr_from = ? WHERE chat = ? AND id = ? AND text = ?", out, to, from, r.Chat, x.id, x.text) > 0 {
+				if t.exec(`UPDATE messages SET tr = ?, tr_lang = ?, tr_from = ? WHERE chat = ? AND id = ? AND text = ?
+AND COALESCE((SELECT translate FROM chats WHERE jid = ?), '') IN ('', ?)`, out, to, from, r.Chat, x.id, x.text, r.Chat, to) > 0 {
 					t.changed(r.Chat, x.id)
 				}
 			}
