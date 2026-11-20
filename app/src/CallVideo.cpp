@@ -23,8 +23,13 @@
 // meowcaller negotiated down to 640x480). Our camera's size is the step's (Steps), at the same frame
 // rate and keyframe interval.
 static const int Width = 640, Height = 480;
-static const int Fps = 15;
-static const int KeyframeSeconds = 2;   // our IDR interval; also the longest a lost frame shows
+static const int Fps = 15;               // the peer's, for the decoder
+// Our camera: 30 fps while the allowance holds 640x480 or more, 15 at the low step, where 30 would halve
+// each frame's bits (the user found 15 choppy, 2026-11-20; the camera lists 30 down to 5).
+static const int CameraFps = 30, LowStepFps = 15;
+// Our IDR interval; also the longest a lost frame shows when the peer doesn't ask for one. 4 s, not 2:
+// at 128 kbit/s an IDR every 2 s took most of the budget (2026-11-20).
+static const int KeyframeSeconds = 4;
 static const int MaxUnit = 256 * 1024;  // sizes the decoder's input buffers: a 640x480 IDR is a few tens of KB
 
 // A record is a 16-byte little-endian header and the payload (docs/protocol2.md); a longer one ends the link.
@@ -430,6 +435,7 @@ static int bitrateFor(int step, int target)
 // The size our camera runs at in a step: the step's, or the camera's own portrait size with the crop on.
 static int widthFor(int step, bool crop) { return crop ? PortraitWidth : Steps[step].width; }
 static int heightFor(int step, bool crop) { return crop ? PortraitHeight : Steps[step].height; }
+static int fpsFor(int step) { return step == StepCount - 1 ? LowStepFps : CameraFps; }
 
 // The camera thread: the camera is open while we send and the link is up, and only then. Opening it
 // takes seconds, so it can't happen on the UI thread; the encoder's callbacks come on its own.
@@ -447,7 +453,7 @@ void CallVideo::cameraLoop()
     bool front = true;
     bool crop = false;                  // the crop the running camera was started with
     int step = qMax(StartStep, int(m_quality)); // the step the camera runs at, or ran at last
-    int runW = 0, runH = 0;             // the size of the last start: another one is a change of size; 0 before the first
+    int runW = 0, runH = 0, runFps = 0; // the size and rate of the last start: another one restarts the camera; 0 before the first
     int cameraBps = 0;                  // what the camera is set to
     bool midEncodeRefused = false;      // the phone won't take a bit rate while encoding: not tried again this call
     qint64 lowSince = -1, highSince = -1; // since when the allowance is below the floor / at the entry; -1: it isn't
@@ -483,9 +489,9 @@ void CallVideo::cameraLoop()
         }
         wantStep = qMax(wantStep, cap);
         const int wantW = widthFor(wantStep, wantCrop), wantH = heightFor(wantStep, wantCrop);
-        const bool sameSize = wantW == runW && wantH == runH;
+        const bool sameSize = wantW == runW && wantH == runH && fpsFor(wantStep) == runFps; // the same camera mode
         if (m_encoder.isRunning() && wantStep != step) {
-            qDebug("call video: step %d -> %d (%dx%d)%s, target %d kbit/s", step, wantStep, wantW, wantH,
+            qDebug("call video: step %d -> %d (%dx%d@%d)%s, target %d kbit/s", step, wantStep, wantW, wantH, fpsFor(wantStep),
                    sameSize ? " (bit rate only)" : "", target / 1000);
             if (sameSize) { // the camera runs on; the bit rate below follows the new step's cap
                 step = wantStep;
@@ -500,15 +506,17 @@ void CallVideo::cameraLoop()
             step = wantStep;
             const int w = widthFor(step, crop), h = heightFor(step, crop);
             const int bps = bitrateFor(step, target);
-            if (m_encoder.start(front, w, h, Fps, bps, KeyframeSeconds, m_group, m_viewfinderId)) {
+            const int fps = fpsFor(step);
+            if (m_encoder.start(front, w, h, fps, bps, KeyframeSeconds, m_group, m_viewfinderId)) {
                 cameraBps = bps;
                 m_cameraBps = bps;
                 m_step = step;
                 QMetaObject::invokeMethod(this, "setWide", Qt::QueuedConnection, Q_ARG(bool, w * 9 == h * 16));
                 rateAt = clock.elapsed(); // the start took seconds
-                if (runW != 0 && (w != runW || h != runH))
+                if (runW != 0 && (w != runW || h != runH || fps != runFps))
                     changedAt = rateAt;
                 runW = w;
+                runFps = fps;
                 runH = h;
             } else {
                 cooldown = RetryMs / PollMs;
