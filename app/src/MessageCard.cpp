@@ -648,12 +648,16 @@ void MessageCard::fillFoot()
         const int tick = state == 0 ? 0 : state == 1 ? 1 : 2;
         if (tick != m_tick) {
             m_tick = tick;
-            // 2.4 du tall at 100 %, 22 px on the Q10, where the images' 27 px were; the two ticks are wider.
-            m_ticks->setPreferredSize(Card::du(m_ui, (tick == 2 ? 3.1 : 2.4) * m_scale), Card::du(m_ui, 2.4 * m_scale));
+            // 2.8 du tall at 100 %, 25 px on the Q10, under the images' 27 px so they aren't blown up (Tengram's size,
+            // the user's ask, 2026-11-20; 2.4 before); the two ticks are wider.
+            m_ticks->setPreferredSize(Card::du(m_ui, (tick == 2 ? 3.6 : 2.8) * m_scale), Card::du(m_ui, 2.8 * m_scale));
             m_ticks->setImageSource(Card::url(tick == 0 ? "asset:///images/clock.png"
                                         : tick == 1 ? "asset:///images/tick.png" : "asset:///images/ticks.png"));
         }
-        m_ticks->setFilterColor(state == 3 ? m_ui->palette()->primary() : quiet);
+        // Read: a green that stands out on our green card (the user, 2026-11-20: the accent was faint there):
+        // #007a33 on Bright's #d9fdd2 (4.9:1), #3df07f on Dark's #1D5C43 (5.2:1) and on a picture's dark chip.
+        const Color read = Color::fromARGB(Card::bright(m_list) && !onPicture ? 0xff007a33 : 0xff3df07f);
+        m_ticks->setFilterColor(state == 3 ? read : quiet);
     }
     if (m_bang)
         m_bang->setVisible(out && state == 4);
@@ -688,7 +692,7 @@ void MessageCard::fillFoot()
 
 
 // The time and ticks' width, which can't be asked, reckoned a little over: 1.55 du a character at
-// 100 % ("11:16 PM" was 117 px on the Q10 at 85 %, so 1.37 du each at 72 %), the ticks' 3.1 du and
+// 100 % ("11:16 PM" was 117 px on the Q10 at 85 %, so 1.37 du each at 72 %), the two ticks' 3.6 du and
 // their 1 du margin, and the "!" with the 2.5 du before it.
 // ponytail: a reckoning; a time wider than it (a script with wide digits) touches the text's end.
 float MessageCard::timeWidth() const
@@ -696,7 +700,7 @@ float MessageCard::timeWidth() const
     const bool out = flag("out");
     const int state = m_msg.value("state").toInt();
     const int chars = str("time").size() + timeLead().size();
-    return chars * Card::du(m_ui, 1.55 * m_scale) + (out && state < 4 ? Card::du(m_ui, 1 + 3.1 * m_scale) : 0)
+    return chars * Card::du(m_ui, 1.55 * m_scale) + (out && state < 4 ? Card::du(m_ui, 1 + 3.6 * m_scale) : 0)
            + (out && state == 4 ? Card::du(m_ui, 4) : 0);
 }
 
