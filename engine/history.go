@@ -7,6 +7,7 @@ import (
 
 	"github.com/polymorfa/hypermeow"
 	"github.com/polymorfa/hypermeow/proto/waE2E"
+	"github.com/polymorfa/hypermeow/proto/waWeb"
 	"github.com/polymorfa/hypermeow/types"
 	"github.com/polymorfa/hypermeow/types/events"
 )
@@ -67,6 +68,10 @@ func (st *Store) history(ctx context.Context, t *storeTx, cli *whatsmeow.Client,
 				continue
 			}
 			st.apply(ctx, t, cli, key, ev, false)
+			// Our messages: their ticks as the phone had them (history carries no receipts; a live one moves them on).
+			if ev.Info.IsFromMe {
+				t.setState(key, ev.Info.ID, historyState(ev.SourceWebMsg.GetStatus()))
+			}
 			if ev.SourceWebMsg.GetStarred() {
 				t.setStarred(key, ev.Info.ID, true)
 			}
@@ -233,4 +238,16 @@ func (st *Store) apply(ctx context.Context, t *storeTx, cli *whatsmeow.Client, k
 			go st.liveVideoThumb(cli, row)
 		}
 	}
+}
+
+// historyState is the state of our message from its history status: delivered or read on the phone,
+// else sent (setState only moves a state forward, so sent changes nothing).
+func historyState(s waWeb.WebMessageInfo_Status) int {
+	switch s {
+	case waWeb.WebMessageInfo_READ, waWeb.WebMessageInfo_PLAYED:
+		return stateRead
+	case waWeb.WebMessageInfo_DELIVERY_ACK:
+		return stateDelivered
+	}
+	return stateSent
 }

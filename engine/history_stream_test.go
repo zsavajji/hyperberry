@@ -339,6 +339,9 @@ func TestHistoryChunk(t *testing.T) {
 		c.Messages = c.Messages[:5]
 		hs.Conversations = append(hs.Conversations, c)
 	}
+	// Ours (j % 3 == 0) carry the phone's ticks: read, delivered.
+	hs.Conversations[0].Messages[0].Message.Status = waWeb.WebMessageInfo_READ.Enum()
+	hs.Conversations[0].Messages[3].Message.Status = waWeb.WebMessageInfo_DELIVERY_ACK.Enum()
 	b, err := proto.Marshal(hs)
 	if err != nil {
 		t.Fatal(err)
@@ -358,6 +361,11 @@ func TestHistoryChunk(t *testing.T) {
 	st.hist.quiet(t)
 	for i := 0; i < 3; i++ {
 		eventually(t, st, 5, "SELECT count(*) FROM messages WHERE chat = ?", testConvID(i))
+	}
+	for j, want := range map[int]int{0: stateRead, 3: stateDelivered} {
+		if got := rows(st, "SELECT state FROM messages WHERE chat = ? AND id = ?", testConvID(0), testMsgID(0, j)); got != want {
+			t.Errorf("message %d: state %d, want %d", j, got, want)
+		}
 	}
 	if f := st.hist.files(t); f != "[]" {
 		t.Errorf("files left: %s", f)
