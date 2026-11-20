@@ -42,6 +42,7 @@ class Settings : public QObject
     Q_PROPERTY(bool cameraCrop READ cameraCrop WRITE setCameraCrop NOTIFY cameraCropChanged)
     // Translation (the engine's prefs): the service ("google", "deepl", "libre") and what it needs. One signal for the four.
     Q_PROPERTY(QString translateProvider READ translateProvider WRITE setTranslateProvider NOTIFY translateChanged)
+    Q_PROPERTY(QString googleKey READ googleKey WRITE setGoogleKey NOTIFY translateChanged)
     Q_PROPERTY(QString deeplKey READ deeplKey WRITE setDeeplKey NOTIFY translateChanged)
     Q_PROPERTY(QString libreURL READ libreURL WRITE setLibreURL NOTIFY translateChanged)
     Q_PROPERTY(QString libreKey READ libreKey WRITE setLibreKey NOTIFY translateChanged)
@@ -68,6 +69,7 @@ public:
     int videoQuality() const;
     bool cameraCrop() const;
     QString translateProvider() const;
+    QString googleKey() const;
     QString deeplKey() const;
     QString libreURL() const;
     QString libreKey() const;
@@ -90,6 +92,7 @@ public:
     void setVideoQuality(int quality);
     void setCameraCrop(bool on);
     void setTranslateProvider(const QString &value);
+    void setGoogleKey(const QString &value);
     void setDeeplKey(const QString &value);
     void setLibreURL(const QString &value);
     void setLibreKey(const QString &value);

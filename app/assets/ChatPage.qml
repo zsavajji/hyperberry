@@ -51,6 +51,7 @@ Page {
         ctl.messages.itemAdded.connect(page.added)
         ctl.messages.newestComing.connect(page.coming)
         ctl.messages.loadingChanged.connect(page.loaded)
+        ctl.messages.translateStalled.connect(page.translateStalled)
         media.ready.connect(page.mediaReady)
         media.pictureEdited.connect(page.stage) // the editor's file is staged in place, the caption (the composer's text) kept
         media.openFailed.connect(mediaFailed.show)
@@ -171,6 +172,9 @@ Page {
             }
         },
         SystemToast {
+            id: translateWarning
+        },
+        SystemToast {
             id: mediaFailed
             body: qsTr("Couldn't open this file")
         },
@@ -258,6 +262,22 @@ Page {
     property variant reactObj
     property variant stagedObj
     property variant translateObj
+    // The codes already warned about in this opening of the chat, "|" before each: the warning shows once for each.
+    // A string: an object in a variant property is copied at each read, so a key set on it is lost.
+    property string warned: ""
+    // In-place translation failed (MessageModel retries the ones that may pass, itself). The other codes, offline above all, are
+    // not worth a toast.
+    function translateStalled(code) {
+        var words = code == "rate_limited" ? qsTr("The translation service is busy. The messages will be translated when it answers again.")
+                  : code == "no_key" ? qsTr("Set up the translation service in Settings")
+                  : code == "unsupported" ? qsTr("This service can't translate into this language") : ""
+        if (words == "" || warned.indexOf("|" + code) >= 0) {
+            return
+        }
+        warned += "|" + code
+        translateWarning.body = words
+        translateWarning.show()
+    }
     function player() {
         if (!playerObj) {
             var holder = playerDef.createObject()

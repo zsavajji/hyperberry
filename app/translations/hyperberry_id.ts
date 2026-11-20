@@ -376,6 +376,18 @@
         <source>Translate…</source>
         <translation>Terjemahkan…</translation>
     </message>
+    <message>
+        <source>The translation service is busy. The messages will be translated when it answers again.</source>
+        <translation>Layanan terjemahan sedang sibuk. Pesan akan diterjemahkan saat layanan merespons lagi.</translation>
+    </message>
+    <message>
+        <source>Set up the translation service in Settings</source>
+        <translation>Atur layanan terjemahan di Pengaturan</translation>
+    </message>
+    <message>
+        <source>This service can&apos;t translate into this language</source>
+        <translation>Layanan ini tidak dapat menerjemahkan ke bahasa ini</translation>
+    </message>
 </context>
 <context>
     <name>ChatRow</name>
@@ -2883,6 +2895,14 @@ Setelah pemasangan, HyperBerry menutup sekali: buka lagi.</translation>
     <message>
         <source>The messages you translate are sent to this service.</source>
         <translation>Pesan yang Anda terjemahkan dikirim ke layanan ini.</translation>
+    </message>
+    <message>
+        <source>Google API key (optional)</source>
+        <translation>Kunci API Google (opsional)</translation>
+    </message>
+    <message>
+        <source>Without a key, Google&apos;s free service is used: it may stop answering for a while after many translations.</source>
+        <translation>Tanpa kunci, layanan gratis Google digunakan: setelah banyak terjemahan, layanan ini bisa berhenti merespons untuk sementara.</translation>
     </message>
 </context>
 <context>

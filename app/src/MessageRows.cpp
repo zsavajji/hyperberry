@@ -206,7 +206,7 @@ QString MessageModel::readTranslate() const
 
 // What read() queued goes to the engine in requests of at most 200 ids, newest first. The engine
 // writes each translation as it lands and says so with a msgs event, which reads the row again,
-// now with its tr_lang: nothing is queued twice. No retry after a failure (m_askedTr).
+// now with its tr_lang: nothing is queued twice. A failure forgets the ids (onFailed); one timer retries.
 void MessageModel::askTranslate()
 {
     QStringList ids = m_toTranslate;
@@ -221,8 +221,10 @@ void MessageModel::askTranslate()
             list << id;
         args["ids"] = list;
         args["to"] = m_translate;
-        if (m_engine->requestQuiet("msg.translate", args).isEmpty())
+        const QString request = m_engine->requestQuiet("msg.translate", args);
+        if (request.isEmpty())
             return; // not connected: the link coming back reads the rows again
+        m_translating.insert(request, part);
         foreach (const QString &id, part)
             m_askedTr.insert(id);
     }

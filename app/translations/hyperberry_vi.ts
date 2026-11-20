@@ -376,6 +376,18 @@
         <source>Translate…</source>
         <translation>Dịch…</translation>
     </message>
+    <message>
+        <source>The translation service is busy. The messages will be translated when it answers again.</source>
+        <translation>Dịch vụ dịch đang bận. Các tin nhắn sẽ được dịch khi dịch vụ phản hồi lại.</translation>
+    </message>
+    <message>
+        <source>Set up the translation service in Settings</source>
+        <translation>Thiết lập dịch vụ dịch trong Cài đặt</translation>
+    </message>
+    <message>
+        <source>This service can&apos;t translate into this language</source>
+        <translation>Dịch vụ này không dịch được sang ngôn ngữ này</translation>
+    </message>
 </context>
 <context>
     <name>ChatRow</name>
@@ -2883,6 +2895,14 @@ Sau khi cài, HyperBerry sẽ đóng một lần: hãy mở lại.</translation>
     <message>
         <source>The messages you translate are sent to this service.</source>
         <translation>Các tin nhắn bạn dịch được gửi đến dịch vụ này.</translation>
+    </message>
+    <message>
+        <source>Google API key (optional)</source>
+        <translation>Khóa API Google (tùy chọn)</translation>
+    </message>
+    <message>
+        <source>Without a key, Google&apos;s free service is used: it may stop answering for a while after many translations.</source>
+        <translation>Không có khóa thì dùng dịch vụ miễn phí của Google: sau nhiều lượt dịch, dịch vụ có thể tạm ngừng phản hồi một lúc.</translation>
     </message>
 </context>
 <context>

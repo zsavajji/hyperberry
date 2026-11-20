@@ -378,6 +378,18 @@
         <source>Translate…</source>
         <translation>Перевод…</translation>
     </message>
+    <message>
+        <source>The translation service is busy. The messages will be translated when it answers again.</source>
+        <translation>Сервис перевода занят. Сообщения будут переведены, когда он снова ответит.</translation>
+    </message>
+    <message>
+        <source>Set up the translation service in Settings</source>
+        <translation>Настройте сервис перевода в Настройках</translation>
+    </message>
+    <message>
+        <source>This service can&apos;t translate into this language</source>
+        <translation>Этот сервис не умеет переводить на этот язык</translation>
+    </message>
 </context>
 <context>
     <name>ChatRow</name>
@@ -2889,6 +2901,14 @@ After the install, HyperBerry closes once: open it again.</source>
     <message>
         <source>The messages you translate are sent to this service.</source>
         <translation>Сообщения, которые вы переводите, отправляются в этот сервис.</translation>
+    </message>
+    <message>
+        <source>Google API key (optional)</source>
+        <translation>Ключ API Google (необязательно)</translation>
+    </message>
+    <message>
+        <source>Without a key, Google&apos;s free service is used: it may stop answering for a while after many translations.</source>
+        <translation>Без ключа используется бесплатный сервис Google: после множества переводов он может на время перестать отвечать.</translation>
     </message>
 </context>
 <context>

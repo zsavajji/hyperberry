@@ -12,6 +12,7 @@
 #include <QSet>
 #include <QSqlQuery>
 #include <QString>
+#include <QTimer>
 #include <QStringList>
 #include <QVariantMap>
 
@@ -75,6 +76,8 @@ signals:
     void emptyChanged();
     void loadingChanged();
     void translateChanged();
+    // A msg.translate of this model's failed (the engine's error code, or no_engine): the page warns the user.
+    void translateStalled(const QString &code);
     // A merge added a message that isn't ours and wasn't there before (not a first load or an
     // older page): the controller decides whether it was seen.
     void incoming();
@@ -87,6 +90,9 @@ private slots:
     void onMsgs(const QString &chat, const QStringList &ids);
     void onConnected();
     void onChats(const QStringList &jids);
+    void onReplied(const QString &id, const QString &cmd, const QVariant &result);
+    void onFailed(const QString &id, const QString &cmd, const QString &code);
+    void retryTranslate();
 
 private:
     struct Msg
@@ -137,6 +143,9 @@ private:
     QSet<QString> m_asked; // the sticker ids asked for from the engine (Sticker::fetch)
     QString m_translate; // the language this chat's incoming messages are shown in (chats.translate), "" for off
     QSet<QString> m_askedTr; // the ids asked to be translated: never twice until the chat is reopened (or the link comes back)
+    QHash<QString, QStringList> m_translating; // the msg.translate requests in flight: request id and the message ids it asked for
+    QTimer m_retry; // single shot: the one retry armed after a failure that may pass (rate_limited, offline, no_engine)
+    int m_retries; // the retries run in a row; a reply, a new language or a reconnect starts the count again
     QStringList m_toTranslate; // read() queues, select() sends: newest first
     QList<Entry> m_entries;
     bb::system::LocaleHandler m_region;

@@ -6,12 +6,14 @@ import hyperberry 1.0
 // the focus or Enter is pressed, so the engine isn't told once per letter.
 Page {
     id: page
+    property bool google: !deepl && !libre
     property bool deepl: settings.translateProvider == "deepl"
     property bool libre: settings.translateProvider == "libre"
     titleBar: TitleBar {
         title: qsTr("Translation")
     }
     function save() {
+        settings.googleKey = googleField.text.trim()
         settings.deeplKey = deeplField.text.trim()
         settings.libreURL = urlField.text.trim()
         settings.libreKey = libreKeyField.text.trim()
@@ -47,6 +49,29 @@ Page {
                             settings.translateProvider = selectedIndex == 1 ? "deepl" : selectedIndex == 2 ? "libre" : "google"
                         }
                     }
+                }
+                TextField {
+                    id: googleField
+                    visible: page.google
+                    topMargin: zoom * ui.du(2)
+                    hintText: qsTr("Google API key (optional)")
+                    text: settings.googleKey
+                    input.flags: TextInputFlag.AutoCapitalizationOff | TextInputFlag.AutoCorrectionOff | TextInputFlag.PredictionOff | TextInputFlag.SpellCheckOff
+                    input.onSubmitted: page.save()
+                    onTextChanging: saveTimer.start()
+                    onFocusedChanged: {
+                        if (!focused) {
+                            page.save()
+                        }
+                    }
+                }
+                Label {
+                    visible: page.google
+                    topMargin: zoom * ui.du(1)
+                    multiline: true
+                    text: qsTr("Without a key, Google's free service is used: it may stop answering for a while after many translations.")
+                    textStyle.base: SystemDefaults.TextStyles.SubtitleText
+                    textStyle.color: ui.palette.secondaryTextOnPlain
                 }
                 TextField {
                     id: deeplField
