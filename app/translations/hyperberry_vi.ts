@@ -1768,6 +1768,14 @@
         <source>Unlink this device</source>
         <translation>Hủy liên kết thiết bị này</translation>
     </message>
+    <message>
+        <source>Chats and Calls</source>
+        <translation>Đoạn chat và cuộc gọi</translation>
+    </message>
+    <message>
+        <source>Enter key, proximity sensor, video calls</source>
+        <translation>Phím Enter, cảm biến tiệm cận, cuộc gọi video</translation>
+    </message>
 </context>
 <context>
     <name>CallsModel</name>
@@ -2600,6 +2608,34 @@
         <source>Off, voice notes stay on the speaker and the screen stays on in calls. For a faulty sensor.</source>
         <translation>Khi tắt, tin nhắn thoại vẫn phát qua loa và màn hình vẫn sáng khi gọi. Dành cho cảm biến bị hỏng.</translation>
     </message>
+    <message>
+        <source>Calls</source>
+        <translation>Cuộc gọi</translation>
+    </message>
+    <message>
+        <source>Max camera resolution</source>
+        <translation>Độ phân giải camera tối đa</translation>
+    </message>
+    <message>
+        <source>Camera aspect ratio</source>
+        <translation>Tỷ lệ khung hình camera</translation>
+    </message>
+    <message>
+        <source>Native</source>
+        <translation>Gốc</translation>
+    </message>
+    <message>
+        <source>9:16 (cropped)</source>
+        <translation>9:16 (đã cắt)</translation>
+    </message>
+    <message>
+        <source>The largest picture your camera sends: it steps down to 640x480 or 320x240, and back up, as the connection allows. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.</source>
+        <translation>Ảnh lớn nhất mà camera của bạn gửi đi: ảnh giảm xuống 640x480 hoặc 320x240, rồi tăng lại, tùy theo kết nối. 9:16 gửi phần giữa của ảnh, theo chiều thẳng đứng, để lấp đầy màn hình của điện thoại bên kia. Thay đổi có hiệu lực ngay, cả khi đang gọi.</translation>
+    </message>
+    <message>
+        <source>Chats and Calls</source>
+        <translation>Đoạn chat và cuộc gọi</translation>
+    </message>
 </context>
 <context>
     <name>NotificationSettingsPage</name>
@@ -2701,30 +2737,6 @@
     <message>
         <source>Finds WhatsApp's servers through 1.1.1.1 and 1.0.0.1 instead of your network's DNS. Try it if messages or media don't go through.</source>
         <translation>Tìm máy chủ của WhatsApp qua 1.1.1.1 và 1.0.0.1 thay vì DNS của mạng. Hãy thử nếu tin nhắn hoặc tệp đa phương tiện không gửi được.</translation>
-    </message>
-    <message>
-        <source>Calls</source>
-        <translation>Cuộc gọi</translation>
-    </message>
-    <message>
-        <source>Max camera resolution</source>
-        <translation>Độ phân giải camera tối đa</translation>
-    </message>
-    <message>
-        <source>Camera aspect ratio</source>
-        <translation>Tỷ lệ khung hình camera</translation>
-    </message>
-    <message>
-        <source>Native</source>
-        <translation>Gốc</translation>
-    </message>
-    <message>
-        <source>9:16 (cropped)</source>
-        <translation>9:16 (đã cắt)</translation>
-    </message>
-    <message>
-        <source>The largest picture your camera sends: it steps down to 640x480 or 320x240, and back up, as the connection allows. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.</source>
-        <translation>Ảnh lớn nhất mà camera của bạn gửi đi: ảnh giảm xuống 640x480 hoặc 320x240, rồi tăng lại, tùy theo kết nối. 9:16 gửi phần giữa của ảnh, theo chiều thẳng đứng, để lấp đầy màn hình của điện thoại bên kia. Thay đổi có hiệu lực ngay, cả khi đang gọi.</translation>
     </message>
     <message>
         <source>%1 isn&apos;t on WhatsApp</source>

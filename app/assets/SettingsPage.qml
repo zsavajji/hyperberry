@@ -36,7 +36,7 @@ Page {
             items.push({ title: qsTr("Account"), description: qsTr("Name, about, picture, unlink"), target: "account" })
         }
         items.push({ title: qsTr("Appearance"), description: qsTr("Theme, text size, interface"), target: "appearance" })
-        items.push({ title: qsTr("Chats"), description: qsTr("Enter key, proximity sensor"), target: "chats" })
+        items.push({ title: qsTr("Chats and Calls"), description: qsTr("Enter key, proximity sensor, video calls"), target: "chats" })
         items.push({ title: qsTr("Notifications"), description: qsTr("Preview, start at boot"), target: "notifications" })
         items.push({ title: qsTr("Data and storage"), description: qsTr("Automatic downloads, mobile data, cache"), target: "data" })
         rows.append(items)

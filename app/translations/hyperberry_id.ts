@@ -1768,6 +1768,14 @@
         <source>Unlink this device</source>
         <translation>Putuskan tautan perangkat ini</translation>
     </message>
+    <message>
+        <source>Chats and Calls</source>
+        <translation>Chat dan Panggilan</translation>
+    </message>
+    <message>
+        <source>Enter key, proximity sensor, video calls</source>
+        <translation>Tombol Enter, sensor jarak, panggilan video</translation>
+    </message>
 </context>
 <context>
     <name>CallsModel</name>
@@ -2600,6 +2608,34 @@
         <source>Off, voice notes stay on the speaker and the screen stays on in calls. For a faulty sensor.</source>
         <translation>Jika nonaktif, pesan suara tetap di speaker dan layar tetap menyala saat panggilan. Untuk sensor yang rusak.</translation>
     </message>
+    <message>
+        <source>Calls</source>
+        <translation>Panggilan</translation>
+    </message>
+    <message>
+        <source>Max camera resolution</source>
+        <translation>Resolusi kamera maksimum</translation>
+    </message>
+    <message>
+        <source>Camera aspect ratio</source>
+        <translation>Rasio aspek kamera</translation>
+    </message>
+    <message>
+        <source>Native</source>
+        <translation>Asli</translation>
+    </message>
+    <message>
+        <source>9:16 (cropped)</source>
+        <translation>9:16 (dipotong)</translation>
+    </message>
+    <message>
+        <source>The largest picture your camera sends: it steps down to 640x480 or 320x240, and back up, as the connection allows. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.</source>
+        <translation>Gambar terbesar yang dikirim kamera Anda: gambar mengecil ke 640x480 atau 320x240, lalu naik lagi, sesuai kemampuan koneksi. 9:16 mengirim bagian tengah gambar, dalam posisi tegak, agar memenuhi layar ponsel lawan bicara. Perubahan langsung berlaku, termasuk saat panggilan berlangsung.</translation>
+    </message>
+    <message>
+        <source>Chats and Calls</source>
+        <translation>Chat dan Panggilan</translation>
+    </message>
 </context>
 <context>
     <name>NotificationSettingsPage</name>
@@ -2701,30 +2737,6 @@
     <message>
         <source>Finds WhatsApp's servers through 1.1.1.1 and 1.0.0.1 instead of your network's DNS. Try it if messages or media don't go through.</source>
         <translation>Mencari server WhatsApp lewat 1.1.1.1 dan 1.0.0.1, bukan lewat DNS jaringan. Coba aktifkan jika pesan atau media tidak terkirim.</translation>
-    </message>
-    <message>
-        <source>Calls</source>
-        <translation>Panggilan</translation>
-    </message>
-    <message>
-        <source>Max camera resolution</source>
-        <translation>Resolusi kamera maksimum</translation>
-    </message>
-    <message>
-        <source>Camera aspect ratio</source>
-        <translation>Rasio aspek kamera</translation>
-    </message>
-    <message>
-        <source>Native</source>
-        <translation>Asli</translation>
-    </message>
-    <message>
-        <source>9:16 (cropped)</source>
-        <translation>9:16 (dipotong)</translation>
-    </message>
-    <message>
-        <source>The largest picture your camera sends: it steps down to 640x480 or 320x240, and back up, as the connection allows. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.</source>
-        <translation>Gambar terbesar yang dikirim kamera Anda: gambar mengecil ke 640x480 atau 320x240, lalu naik lagi, sesuai kemampuan koneksi. 9:16 mengirim bagian tengah gambar, dalam posisi tegak, agar memenuhi layar ponsel lawan bicara. Perubahan langsung berlaku, termasuk saat panggilan berlangsung.</translation>
     </message>
     <message>
         <source>%1 isn&apos;t on WhatsApp</source>

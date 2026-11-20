@@ -1771,6 +1771,14 @@
         <source>Unlink this device</source>
         <translation>Dieses Gerät abmelden</translation>
     </message>
+    <message>
+        <source>Chats and Calls</source>
+        <translation>Chats und Anrufe</translation>
+    </message>
+    <message>
+        <source>Enter key, proximity sensor, video calls</source>
+        <translation>Eingabetaste, Näherungssensor, Videoanrufe</translation>
+    </message>
 </context>
 <context>
     <name>CallsModel</name>
@@ -2603,6 +2611,34 @@
         <source>Off, voice notes stay on the speaker and the screen stays on in calls. For a faulty sensor.</source>
         <translation>Wenn aus, bleiben Sprachnachrichten auf dem Lautsprecher und der Bildschirm bleibt bei Anrufen an. Für einen defekten Sensor.</translation>
     </message>
+    <message>
+        <source>Calls</source>
+        <translation>Anrufe</translation>
+    </message>
+    <message>
+        <source>Max camera resolution</source>
+        <translation>Maximale Kameraauflösung</translation>
+    </message>
+    <message>
+        <source>Camera aspect ratio</source>
+        <translation>Seitenverhältnis der Kamera</translation>
+    </message>
+    <message>
+        <source>Native</source>
+        <translation>Original</translation>
+    </message>
+    <message>
+        <source>9:16 (cropped)</source>
+        <translation>9:16 (zugeschnitten)</translation>
+    </message>
+    <message>
+        <source>The largest picture your camera sends: it steps down to 640x480 or 320x240, and back up, as the connection allows. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.</source>
+        <translation>Das größte Bild, das deine Kamera sendet: Es sinkt auf 640x480 oder 320x240 und steigt wieder, soweit die Verbindung es zulässt. Bei 9:16 wird die Bildmitte aufrecht gesendet, damit sie den Bildschirm des anderen Telefons füllt. Eine Änderung gilt sofort, auch während eines Anrufs.</translation>
+    </message>
+    <message>
+        <source>Chats and Calls</source>
+        <translation>Chats und Anrufe</translation>
+    </message>
 </context>
 <context>
     <name>NotificationSettingsPage</name>
@@ -2704,30 +2740,6 @@
     <message>
         <source>Finds WhatsApp's servers through 1.1.1.1 and 1.0.0.1 instead of your network's DNS. Try it if messages or media don't go through.</source>
         <translation>Findet die Server von WhatsApp über 1.1.1.1 und 1.0.0.1 statt über das DNS deines Netzwerks. Probier es aus, wenn Nachrichten oder Medien nicht ankommen.</translation>
-    </message>
-    <message>
-        <source>Calls</source>
-        <translation>Anrufe</translation>
-    </message>
-    <message>
-        <source>Max camera resolution</source>
-        <translation>Maximale Kameraauflösung</translation>
-    </message>
-    <message>
-        <source>Camera aspect ratio</source>
-        <translation>Seitenverhältnis der Kamera</translation>
-    </message>
-    <message>
-        <source>Native</source>
-        <translation>Original</translation>
-    </message>
-    <message>
-        <source>9:16 (cropped)</source>
-        <translation>9:16 (zugeschnitten)</translation>
-    </message>
-    <message>
-        <source>The largest picture your camera sends: it steps down to 640x480 or 320x240, and back up, as the connection allows. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.</source>
-        <translation>Das größte Bild, das deine Kamera sendet: Es sinkt auf 640x480 oder 320x240 und steigt wieder, soweit die Verbindung es zulässt. Bei 9:16 wird die Bildmitte aufrecht gesendet, damit sie den Bildschirm des anderen Telefons füllt. Eine Änderung gilt sofort, auch während eines Anrufs.</translation>
     </message>
     <message>
         <source>%1 isn&apos;t on WhatsApp</source>

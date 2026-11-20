@@ -1774,6 +1774,14 @@
         <source>Unlink this device</source>
         <translation>Від’єднати цей пристрій</translation>
     </message>
+    <message>
+        <source>Chats and Calls</source>
+        <translation>Чати та дзвінки</translation>
+    </message>
+    <message>
+        <source>Enter key, proximity sensor, video calls</source>
+        <translation>Клавіша Enter, датчик наближення, відеодзвінки</translation>
+    </message>
 </context>
 <context>
     <name>CallsModel</name>
@@ -2606,6 +2614,34 @@
         <source>Off, voice notes stay on the speaker and the screen stays on in calls. For a faulty sensor.</source>
         <translation>Якщо вимкнено, голосові повідомлення грають через динамік, а екран не гасне під час дзвінків. Для несправного датчика.</translation>
     </message>
+    <message>
+        <source>Calls</source>
+        <translation>Дзвінки</translation>
+    </message>
+    <message>
+        <source>Max camera resolution</source>
+        <translation>Максимальна роздільна здатність камери</translation>
+    </message>
+    <message>
+        <source>Camera aspect ratio</source>
+        <translation>Співвідношення сторін камери</translation>
+    </message>
+    <message>
+        <source>Native</source>
+        <translation>Початкове</translation>
+    </message>
+    <message>
+        <source>9:16 (cropped)</source>
+        <translation>9:16 (з обрізанням)</translation>
+    </message>
+    <message>
+        <source>The largest picture your camera sends: it steps down to 640x480 or 320x240, and back up, as the connection allows. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.</source>
+        <translation>Найбільше зображення, яке надсилає ваша камера: воно зменшується до 640x480 або 320x240 і знову збільшується залежно від можливостей з'єднання. 9:16 надсилає середину кадру у вертикальному положенні, щоб заповнити екран іншого телефона. Зміна діє одразу, також під час дзвінка.</translation>
+    </message>
+    <message>
+        <source>Chats and Calls</source>
+        <translation>Чати та дзвінки</translation>
+    </message>
 </context>
 <context>
     <name>NotificationSettingsPage</name>
@@ -2707,30 +2743,6 @@
     <message>
         <source>Finds WhatsApp's servers through 1.1.1.1 and 1.0.0.1 instead of your network's DNS. Try it if messages or media don't go through.</source>
         <translation>Знаходить сервери WhatsApp через 1.1.1.1 та 1.0.0.1, а не через DNS мережі. Спробуйте, якщо повідомлення або медіафайли не надсилаються.</translation>
-    </message>
-    <message>
-        <source>Calls</source>
-        <translation>Дзвінки</translation>
-    </message>
-    <message>
-        <source>Max camera resolution</source>
-        <translation>Максимальна роздільна здатність камери</translation>
-    </message>
-    <message>
-        <source>Camera aspect ratio</source>
-        <translation>Співвідношення сторін камери</translation>
-    </message>
-    <message>
-        <source>Native</source>
-        <translation>Початкове</translation>
-    </message>
-    <message>
-        <source>9:16 (cropped)</source>
-        <translation>9:16 (з обрізанням)</translation>
-    </message>
-    <message>
-        <source>The largest picture your camera sends: it steps down to 640x480 or 320x240, and back up, as the connection allows. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.</source>
-        <translation>Найбільше зображення, яке надсилає ваша камера: воно зменшується до 640x480 або 320x240 і знову збільшується залежно від можливостей з'єднання. 9:16 надсилає середину кадру у вертикальному положенні, щоб заповнити екран іншого телефона. Зміна діє одразу, також під час дзвінка.</translation>
     </message>
     <message>
         <source>%1 isn&apos;t on WhatsApp</source>

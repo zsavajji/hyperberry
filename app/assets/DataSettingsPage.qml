@@ -184,49 +184,6 @@ Page {
                     }
                 }
                 Header {
-                    title: qsTr("Calls")
-                }
-                Container {
-                    topPadding: zoom * ui.du(2)
-                    leftPadding: zoom * ui.du(2)
-                    rightPadding: zoom * ui.du(2)
-                    bottomPadding: zoom * ui.du(2)
-                    // What our camera sends in a video call; CallVideo reopens the camera when either changes.
-                    DropDown {
-                        title: qsTr("Max camera resolution")
-                        options: [
-                            Option { text: "1280x720"; selected: settings.videoQuality == 0 },
-                            Option { text: "640x480"; selected: settings.videoQuality == 1 },
-                            Option { text: "320x240"; selected: settings.videoQuality == 2 }
-                        ]
-                        onSelectedIndexChanged: {
-                            if (selectedIndex >= 0) {
-                                settings.videoQuality = selectedIndex
-                            }
-                        }
-                    }
-                    DropDown {
-                        topMargin: zoom * ui.du(2)
-                        title: qsTr("Camera aspect ratio")
-                        options: [
-                            Option { text: qsTr("Native"); selected: !settings.cameraCrop },
-                            Option { text: qsTr("9:16 (cropped)"); selected: settings.cameraCrop }
-                        ]
-                        onSelectedIndexChanged: {
-                            if (selectedIndex >= 0) {
-                                settings.cameraCrop = selectedIndex == 1
-                            }
-                        }
-                    }
-                    Label {
-                        topMargin: zoom * ui.du(1)
-                        multiline: true
-                        text: qsTr("The largest picture your camera sends: it steps down to 640x480 or 320x240, and back up, as the connection allows. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.")
-                        textStyle.base: SystemDefaults.TextStyles.SubtitleText
-                        textStyle.color: ui.palette.secondaryTextOnPlain
-                    }
-                }
-                Header {
                     title: qsTr("Storage")
                 }
                 Container {

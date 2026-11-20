@@ -1771,6 +1771,14 @@
         <source>Unlink this device</source>
         <translation>इस डिवाइस को अनलिंक करें</translation>
     </message>
+    <message>
+        <source>Chats and Calls</source>
+        <translation>चैट और कॉल</translation>
+    </message>
+    <message>
+        <source>Enter key, proximity sensor, video calls</source>
+        <translation>Enter कुंजी, निकटता सेंसर, वीडियो कॉल</translation>
+    </message>
 </context>
 <context>
     <name>CallsModel</name>
@@ -2603,6 +2611,34 @@
         <source>Off, voice notes stay on the speaker and the screen stays on in calls. For a faulty sensor.</source>
         <translation>बंद होने पर वॉइस नोट स्पीकर पर ही रहते हैं और कॉल में स्क्रीन चालू रहती है। खराब सेंसर के लिए।</translation>
     </message>
+    <message>
+        <source>Calls</source>
+        <translation>कॉल</translation>
+    </message>
+    <message>
+        <source>Max camera resolution</source>
+        <translation>कैमरे का अधिकतम रिज़ॉल्यूशन</translation>
+    </message>
+    <message>
+        <source>Camera aspect ratio</source>
+        <translation>कैमरे का आस्पेक्ट रेशियो</translation>
+    </message>
+    <message>
+        <source>Native</source>
+        <translation>मूल</translation>
+    </message>
+    <message>
+        <source>9:16 (cropped)</source>
+        <translation>9:16 (क्रॉप किया हुआ)</translation>
+    </message>
+    <message>
+        <source>The largest picture your camera sends: it steps down to 640x480 or 320x240, and back up, as the connection allows. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.</source>
+        <translation>आपका कैमरा जो सबसे बड़ी तस्वीर भेजता है: कनेक्शन जितना अनुमति दे, उसके अनुसार वह 640x480 या 320x240 तक घटती है और फिर बढ़ती है। 9:16 तस्वीर का बीच का हिस्सा सीधा भेजता है, ताकि दूसरे फ़ोन की स्क्रीन भर जाए। बदलाव तुरंत लागू होता है, कॉल के दौरान भी।</translation>
+    </message>
+    <message>
+        <source>Chats and Calls</source>
+        <translation>चैट और कॉल</translation>
+    </message>
 </context>
 <context>
     <name>NotificationSettingsPage</name>
@@ -2704,30 +2740,6 @@
     <message>
         <source>Finds WhatsApp's servers through 1.1.1.1 and 1.0.0.1 instead of your network's DNS. Try it if messages or media don't go through.</source>
         <translation>WhatsApp के सर्वर आपके नेटवर्क के DNS की जगह 1.1.1.1 और 1.0.0.1 से खोजे जाते हैं। मैसेज या मीडिया न जा रहे हों तो इसे आज़माएँ।</translation>
-    </message>
-    <message>
-        <source>Calls</source>
-        <translation>कॉल</translation>
-    </message>
-    <message>
-        <source>Max camera resolution</source>
-        <translation>कैमरे का अधिकतम रिज़ॉल्यूशन</translation>
-    </message>
-    <message>
-        <source>Camera aspect ratio</source>
-        <translation>कैमरे का आस्पेक्ट रेशियो</translation>
-    </message>
-    <message>
-        <source>Native</source>
-        <translation>मूल</translation>
-    </message>
-    <message>
-        <source>9:16 (cropped)</source>
-        <translation>9:16 (क्रॉप किया हुआ)</translation>
-    </message>
-    <message>
-        <source>The largest picture your camera sends: it steps down to 640x480 or 320x240, and back up, as the connection allows. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.</source>
-        <translation>आपका कैमरा जो सबसे बड़ी तस्वीर भेजता है: कनेक्शन जितना अनुमति दे, उसके अनुसार वह 640x480 या 320x240 तक घटती है और फिर बढ़ती है। 9:16 तस्वीर का बीच का हिस्सा सीधा भेजता है, ताकि दूसरे फ़ोन की स्क्रीन भर जाए। बदलाव तुरंत लागू होता है, कॉल के दौरान भी।</translation>
     </message>
     <message>
         <source>%1 isn&apos;t on WhatsApp</source>
