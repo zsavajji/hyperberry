@@ -2635,8 +2635,8 @@
         <translation>9:16 (przycięte)</translation>
     </message>
     <message>
-        <source>The largest picture your camera sends: it steps down to 640x480 or 320x240, and back up, as the connection allows. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.</source>
-        <translation>Największy obraz, jaki wysyła Twój aparat: zmniejsza się do 640x480 lub 320x240 i znów rośnie, zależnie od tego, na co pozwala połączenie. 9:16 wysyła środek obrazu, w pionie, tak by wypełnił ekran drugiego telefonu. Zmiana działa od razu, także w trakcie połączenia.</translation>
+        <source>The largest picture your camera sends: it steps down to 640x480 or 320x240, and back up, as the connection allows. 9:16 uses the camera's portrait mode (352x640) to fill the other phone's screen. A change applies at once, also during a call.</source>
+        <translation>Największy obraz, jaki wysyła Twój aparat: zmniejsza się do 640x480 lub 320x240 i znów rośnie, zależnie od tego, na co pozwala połączenie. 9:16 używa trybu pionowego aparatu (352x640), aby wypełnić ekran drugiego telefonu. Zmiana działa od razu, także w trakcie połączenia.</translation>
     </message>
     <message>
         <source>Chats and Calls</source>

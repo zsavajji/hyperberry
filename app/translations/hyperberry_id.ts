@@ -2629,8 +2629,8 @@
         <translation>9:16 (dipotong)</translation>
     </message>
     <message>
-        <source>The largest picture your camera sends: it steps down to 640x480 or 320x240, and back up, as the connection allows. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.</source>
-        <translation>Gambar terbesar yang dikirim kamera Anda: gambar mengecil ke 640x480 atau 320x240, lalu naik lagi, sesuai kemampuan koneksi. 9:16 mengirim bagian tengah gambar, dalam posisi tegak, agar memenuhi layar ponsel lawan bicara. Perubahan langsung berlaku, termasuk saat panggilan berlangsung.</translation>
+        <source>The largest picture your camera sends: it steps down to 640x480 or 320x240, and back up, as the connection allows. 9:16 uses the camera's portrait mode (352x640) to fill the other phone's screen. A change applies at once, also during a call.</source>
+        <translation>Gambar terbesar yang dikirim kamera Anda: gambar mengecil ke 640x480 atau 320x240, lalu naik lagi, sesuai kemampuan koneksi. 9:16 memakai mode potret kamera (352x640) agar memenuhi layar ponsel lawan bicara. Perubahan langsung berlaku, termasuk saat panggilan berlangsung.</translation>
     </message>
     <message>
         <source>Chats and Calls</source>

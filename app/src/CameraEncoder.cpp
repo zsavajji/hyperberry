@@ -1,7 +1,5 @@
 #include "CameraEncoder.h"
 
-#include "SpsCrop.h"
-
 #include <camera/camera_encoder.h>
 #include <string.h>
 #include <time.h>
@@ -9,7 +7,6 @@
 #include <QMutexLocker>
 #include <QString>
 #include <QVector>
-#include <vector>
 
 static double nowMs()
 {
@@ -97,8 +94,6 @@ CameraEncoder::CameraEncoder(Sink *sink)
     , m_viewfinder(false)
     , m_encoding(false)
     , m_orientation(0)
-    , m_crop(false)
-    , m_cropLogged(false)
     , m_firstUs(-1)
     , m_logged(0)
     , m_lastMs(0)
@@ -157,7 +152,7 @@ void CameraEncoder::logCapabilities()
 }
 
 bool CameraEncoder::start(bool front, int width, int height, int fps, int bitrate, int keyframeSeconds,
-                          const QByteArray &group, const QByteArray &vfId, bool crop)
+                          const QByteArray &group, const QByteArray &vfId)
 {
     stop();
     camera_error_t e = camera_open(front ? CAMERA_UNIT_FRONT : CAMERA_UNIT_REAR, CAMERA_MODE_RW, &m_handle);
@@ -180,8 +175,6 @@ bool CameraEncoder::start(bool front, int width, int height, int fps, int bitrat
     }
     m_firstUs = -1;
     m_logged = 0;
-    m_crop = crop;
-    m_cropLogged = false;
     m_sps.clear();
     m_pps.clear();
     resetStats();
@@ -342,8 +335,6 @@ void CameraEncoder::video(camera_buffer_t *buf)
     // Which NAL units are in it: 7 SPS, 8 PPS, 5 IDR slice, 1 other slice, 6 SEI, 9 delimiter.
     bool hasSlice = false, hasIdr = false, hasSps = false, hasPps = false;
     QString types;
-    QByteArray cropped; // data with the SPS replaced by its cropped form, when m_crop did that
-    int copied = 0;     // how much of data is in `cropped`
     const QList<int> starts = nalStarts(data);
     for (int k = 0; k < starts.size(); k++) {
         const int i = starts[k];
@@ -354,28 +345,9 @@ void CameraEncoder::video(camera_buffer_t *buf)
         int stop = end;
         while (stop > i && data[stop - 1] == 0)
             stop--;
-        QByteArray nal = QByteArray("\0\0\0\1", 4) + data.mid(i, stop - i);
+        const QByteArray nal = QByteArray("\0\0\0\1", 4) + data.mid(i, stop - i);
         if (type == 7) {
             hasSps = true;
-            if (m_crop) {
-                std::vector<unsigned char> patched;
-                int w = 0, h = 0;
-                const bool ok = spsCropToAspect(reinterpret_cast<const unsigned char *>(data.constData()) + i,
-                                                stop - i, 9, 16, &patched, &w, &h);
-                if (ok) {
-                    const QByteArray sps(reinterpret_cast<const char *>(&patched[0]), int(patched.size()));
-                    nal = QByteArray("\0\0\0\1", 4) + sps;
-                    cropped += data.mid(copied, i - copied) + sps; // the bytes outside the SPS stay as they came
-                    copied = stop;
-                }
-                if (!m_cropLogged) {
-                    m_cropLogged = true;
-                    if (ok)
-                        qDebug("camera: SPS cropped to %dx%d (9:16)", w, h);
-                    else
-                        qWarning("camera: SPS not cropped");
-                }
-            }
             m_sps = nal;
         } else if (type == 8) {
             hasPps = true;
@@ -396,15 +368,12 @@ void CameraEncoder::video(camera_buffer_t *buf)
         return;
 
     const bool key = hasIdr || cv.keyframe;
-    if (copied > 0)
-        cropped += data.mid(copied);
-    const QByteArray &frame = copied > 0 ? cropped : data;
-    QByteArray unit = frame;
+    QByteArray unit = data;
     if (key && !(hasSps && hasPps)) {
         if (m_sps.isEmpty() || m_pps.isEmpty())
             qWarning("camera: a keyframe with no SPS/PPS seen yet");
         else
-            unit = m_sps + m_pps + frame;
+            unit = m_sps + m_pps + data;
     }
     const qint64 us = buf->frametimestamp / 1000;
     if (m_firstUs < 0)

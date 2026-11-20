@@ -115,7 +115,7 @@ Page {
                     Label {
                         topMargin: zoom * ui.du(1)
                         multiline: true
-                        text: qsTr("The largest picture your camera sends: it steps down to 640x480 or 320x240, and back up, as the connection allows. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.")
+                        text: qsTr("The largest picture your camera sends: it steps down to 640x480 or 320x240, and back up, as the connection allows. 9:16 uses the camera's portrait mode (352x640) to fill the other phone's screen. A change applies at once, also during a call.")
                         textStyle.base: SystemDefaults.TextStyles.SubtitleText
                         textStyle.color: ui.palette.secondaryTextOnPlain
                     }

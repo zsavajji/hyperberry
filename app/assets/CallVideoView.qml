@@ -251,11 +251,12 @@ Container {
         layout: AbsoluteLayout {}
         ForeignWindowControl {
             id: finder
-            // Our camera's shape, in the stage's px: 9:16 when the crop is on (Settings' camera aspect
-            // ratio), 16:9 while the camera runs 1280x720, else 4:3. The window takes the control's size,
-            // so a wrong shape squashes us. It keeps its right edge at 702 and its bottom at 398
+            // Our camera's shape, in the stage's px: 352:640 when the crop is on (Settings' camera aspect
+            // ratio: the camera's own portrait size, its window is already 9:16, so no viewport is
+            // needed), 16:9 while the camera runs 1280x720, else 4:3. The window takes the control's
+            // size, so a wrong shape squashes us. It keeps its right edge at 702 and its bottom at 398
             // (just above the grid's panel while the controls show) or 702 (the foot, when they hide).
-            property real shownWidth: sheet.px(callVideo.cropped ? 90 : 200)
+            property real shownWidth: sheet.px(callVideo.cropped ? 88 : 200)
             property real shownHeight: sheet.px(callVideo.cropped ? 160 : (callVideo.wide ? 113 : 150))
             windowId: "hyperberryCallFinder"
             updatedProperties: WindowProperty.Size | WindowProperty.Position | WindowProperty.Visible
@@ -268,8 +269,6 @@ Container {
             }
             preferredWidth: finder.shownWidth
             preferredHeight: finder.shownHeight
-            // The camera library makes a new window each time the camera opens: show the middle 9:16 of it.
-            onWindowAttached: callVideo.cropFinder(finder)
         }
     }
 }

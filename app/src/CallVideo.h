@@ -37,8 +37,8 @@ class CallVideo : public QObject, private CameraEncoder::Sink
     Q_PROPERTY(bool front READ front WRITE setFront NOTIFY frontChanged)
     // Our camera runs 16:9 (the step at 1280x720); the self-view control follows the step it runs at, the others are 4:3.
     Q_PROPERTY(bool wide READ wide NOTIFY wideChanged)
-    // Our camera is cropped to 9:16 (Settings' cameraCrop): the peer's picture and the self-view
-    // show the centre of what the camera encodes. The self-view control follows it (CallVideoView.qml).
+    // Our camera runs in its own portrait size, 352x640 (Settings' cameraCrop, 9:16): the peer's picture and
+    // the self-view are 9:16. The self-view control follows it (CallVideoView.qml).
     Q_PROPERTY(bool cropped READ cropped NOTIFY croppedChanged)
     // The peer's picture as it is shown, after turning: 0 x 0 until the first frame.
     Q_PROPERTY(int pictureWidth READ pictureWidth NOTIFY pictureChanged)
@@ -75,10 +75,6 @@ public:
     // Logs where each tile's window is, as the people drawer settles: whether native windows follow
     // the page's slide (7e; they hid in 0.0.1.264).
     Q_INVOKABLE void logWindows(const QString &why);
-    // Shows the centre 9:16 of our camera's viewfinder window in the self-view control (a
-    // ForeignWindowControl), when the crop is on: call it from the control's onWindowAttached, each
-    // time the camera opens a window. UI thread.
-    Q_INVOKABLE void cropFinder(QObject *finder);
 
 signals:
     void runningChanged();
@@ -93,8 +89,8 @@ public slots:
     // 320x240. The camera steps between sizes under it by the peer's allowance; a cap that is now
     // below the running size reopens the camera at the camera thread's next look. UI thread.
     void setQuality(int quality);
-    // Settings' cameraCrop: our camera's picture goes out and shows as 9:16. A change while sending
-    // reopens the camera, as the quality's does. UI thread.
+    // Settings' cameraCrop: our camera runs 352x640, at every step. A change while sending reopens the
+    // camera at the camera thread's next look. UI thread.
     void setCrop(bool on);
 
 private slots:

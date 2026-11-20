@@ -2635,8 +2635,8 @@
         <translation>9:16 (з обрізанням)</translation>
     </message>
     <message>
-        <source>The largest picture your camera sends: it steps down to 640x480 or 320x240, and back up, as the connection allows. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.</source>
-        <translation>Найбільше зображення, яке надсилає ваша камера: воно зменшується до 640x480 або 320x240 і знову збільшується залежно від можливостей з'єднання. 9:16 надсилає середину кадру у вертикальному положенні, щоб заповнити екран іншого телефона. Зміна діє одразу, також під час дзвінка.</translation>
+        <source>The largest picture your camera sends: it steps down to 640x480 or 320x240, and back up, as the connection allows. 9:16 uses the camera's portrait mode (352x640) to fill the other phone's screen. A change applies at once, also during a call.</source>
+        <translation>Найбільше зображення, яке надсилає ваша камера: воно зменшується до 640x480 або 320x240 і знову збільшується залежно від можливостей з'єднання. 9:16 використовує портретний режим камери (352x640), щоб заповнити екран іншого телефона. Зміна діє одразу, також під час дзвінка.</translation>
     </message>
     <message>
         <source>Chats and Calls</source>

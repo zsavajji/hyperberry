@@ -2632,8 +2632,8 @@
         <translation>9:16 (क्रॉप किया हुआ)</translation>
     </message>
     <message>
-        <source>The largest picture your camera sends: it steps down to 640x480 or 320x240, and back up, as the connection allows. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.</source>
-        <translation>आपका कैमरा जो सबसे बड़ी तस्वीर भेजता है: कनेक्शन जितना अनुमति दे, उसके अनुसार वह 640x480 या 320x240 तक घटती है और फिर बढ़ती है। 9:16 तस्वीर का बीच का हिस्सा सीधा भेजता है, ताकि दूसरे फ़ोन की स्क्रीन भर जाए। बदलाव तुरंत लागू होता है, कॉल के दौरान भी।</translation>
+        <source>The largest picture your camera sends: it steps down to 640x480 or 320x240, and back up, as the connection allows. 9:16 uses the camera's portrait mode (352x640) to fill the other phone's screen. A change applies at once, also during a call.</source>
+        <translation>आपका कैमरा जो सबसे बड़ी तस्वीर भेजता है: कनेक्शन जितना अनुमति दे, उसके अनुसार वह 640x480 या 320x240 तक घटती है और फिर बढ़ती है। 9:16 कैमरे के पोर्ट्रेट मोड (352x640) का उपयोग करता है, ताकि दूसरे फ़ोन की स्क्रीन भर जाए। बदलाव तुरंत लागू होता है, कॉल के दौरान भी।</translation>
     </message>
     <message>
         <source>Chats and Calls</source>

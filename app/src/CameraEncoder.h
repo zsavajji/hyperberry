@@ -39,11 +39,9 @@ public:
 
     // Blocks (the camera can take seconds to open): never the UI thread. The viewfinder window
     // is made by the camera library in `group` with id `vfId`, for a ForeignWindowControl with that
-    // id to adopt. False after logging why, with the camera closed again. crop: our outgoing SPS
-    // declares the centre 9:16 of the picture (SpsCrop.h), so the peer shows it cropped; the camera
-    // still encodes width x height.
+    // id to adopt. False after logging why, with the camera closed again.
     bool start(bool front, int width, int height, int fps, int bitrate, int keyframeSeconds,
-               const QByteArray &group, const QByteArray &vfId, bool crop);
+               const QByteArray &group, const QByteArray &vfId);
     // Changes the bit rate while encoding: whether the camera took it (logged each time, with its answer). The SDK
     // sets the encoder's parameters before the encoding starts; whether this phone takes a change in the middle of
     // it is what a call tells us. Like requestKeyframe, only from the thread that starts and stops.
@@ -69,10 +67,8 @@ private:
     camera_handle_t m_handle;
     bool m_viewfinder, m_encoding;
     int m_orientation;                      // set by start() before the first callback
-    bool m_crop;                            // likewise
     // Callback thread only.
     QByteArray m_sps, m_pps;
-    bool m_cropLogged;                      // the first SPS of a run said whether it was cropped
     qint64 m_firstUs;
     int m_logged;
     double m_lastMs;

@@ -2629,8 +2629,8 @@
         <translation>9:16 (đã cắt)</translation>
     </message>
     <message>
-        <source>The largest picture your camera sends: it steps down to 640x480 or 320x240, and back up, as the connection allows. 9:16 sends the middle of the picture, upright, to fill the other phone's screen. A change applies at once, also during a call.</source>
-        <translation>Ảnh lớn nhất mà camera của bạn gửi đi: ảnh giảm xuống 640x480 hoặc 320x240, rồi tăng lại, tùy theo kết nối. 9:16 gửi phần giữa của ảnh, theo chiều thẳng đứng, để lấp đầy màn hình của điện thoại bên kia. Thay đổi có hiệu lực ngay, cả khi đang gọi.</translation>
+        <source>The largest picture your camera sends: it steps down to 640x480 or 320x240, and back up, as the connection allows. 9:16 uses the camera's portrait mode (352x640) to fill the other phone's screen. A change applies at once, also during a call.</source>
+        <translation>Ảnh lớn nhất mà camera của bạn gửi đi: ảnh giảm xuống 640x480 hoặc 320x240, rồi tăng lại, tùy theo kết nối. 9:16 dùng chế độ chân dung của camera (352x640) để lấp đầy màn hình của điện thoại bên kia. Thay đổi có hiệu lực ngay, cả khi đang gọi.</translation>
     </message>
     <message>
         <source>Chats and Calls</source>
