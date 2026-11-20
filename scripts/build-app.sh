@@ -21,6 +21,12 @@ docker run --rm -v "$ROOT:/src" -w /src "$IMAGE" bash -c '
 		echo "build-app.sh: QML that Qt 4.8 cannot parse" >&2
 		exit 1
 	fi
+	# lupdate takes `readonly property`, the phone refuses the page ("Readonly not yet supported": the
+	# call screen never opened in 0.3.1.371-373).
+	if grep -n "readonly property" app/assets/*.qml; then
+		echo "build-app.sh: readonly properties fail on the phone" >&2
+		exit 1
+	fi
 	for ts in app/translations/hyperberry_*.ts; do
 		lrelease "$ts" -qm "app/assets/translations/$(basename "$ts" .ts).qm" >/dev/null
 	done

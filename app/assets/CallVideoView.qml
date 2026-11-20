@@ -255,8 +255,8 @@ Container {
             // ratio), 16:9 while the camera runs 1280x720, else 4:3. The window takes the control's size,
             // so a wrong shape squashes us. It keeps its right edge at 702 and its bottom at 398
             // (just above the grid's panel while the controls show) or 702 (the foot, when they hide).
-            readonly property real shownWidth: sheet.px(callVideo.cropped ? 90 : 200)
-            readonly property real shownHeight: sheet.px(callVideo.cropped ? 160 : (callVideo.wide ? 113 : 150))
+            property real shownWidth: sheet.px(callVideo.cropped ? 90 : 200)
+            property real shownHeight: sheet.px(callVideo.cropped ? 160 : (callVideo.wide ? 113 : 150))
             windowId: "hyperberryCallFinder"
             updatedProperties: WindowProperty.Size | WindowProperty.Position | WindowProperty.Visible
             // Shown while the people drawer is out, as the tiles' (CallVideoTile).
