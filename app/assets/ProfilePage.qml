@@ -137,10 +137,15 @@ Page {
                     bottomPadding: zoom * ui.du(2)
                     leftPadding: zoom * ui.du(1.5)
                     rightPadding: zoom * ui.du(1.5)
+                    // The Classic's trackpad reaches the picture, the name and the about: each takes the focus, lit as while pressed
+                    // (the picture dims), and a click (Enter) does what a tap does (the user, 2026-11-20).
                     Container {
+                        id: bigPhoto
                         horizontalAlignment: HorizontalAlignment.Center
                         preferredWidth: zoom * ui.du(20)
                         preferredHeight: zoom * ui.du(20)
+                        focusPolicy: FocusPolicy.KeyAndTouch
+                        opacity: bigPhoto.focused ? 0.6 : 1
                         background: page.loaded ? Color.create(page.info.color) : ui.palette.plain
                         layout: DockLayout {}
                         Label {
@@ -165,6 +170,13 @@ Page {
                         gestureHandlers: TapHandler {
                             onTapped: page.changePhoto()
                         }
+                        keyListeners: KeyListener {
+                            onKeyReleased: {
+                                if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                                    page.changePhoto()
+                                }
+                            }
+                        }
                     }
                     // The name and its hint are one target.
                     Container {
@@ -172,7 +184,8 @@ Page {
                         property bool pressed: false
                         visible: page.loaded
                         horizontalAlignment: HorizontalAlignment.Fill
-                        background: pressed ? Color.create(nav.pressColor) : Color.Transparent
+                        focusPolicy: FocusPolicy.KeyAndTouch
+                        background: pressed || focused ? Color.create(nav.pressColor) : Color.Transparent
                         Label {
                             horizontalAlignment: HorizontalAlignment.Center
                             bottomMargin: 0
@@ -193,6 +206,13 @@ Page {
                         }
                         gestureHandlers: TapHandler {
                             onTapped: page.editName()
+                        }
+                        keyListeners: KeyListener {
+                            onKeyReleased: {
+                                if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                                    page.editName()
+                                }
+                            }
                         }
                         onTouch: nameBox.pressed = event.isDown() || event.isMove()
                         onTouchExit: nameBox.pressed = false
@@ -234,7 +254,8 @@ Page {
                     property bool pressed: false
                     visible: page.loaded
                     horizontalAlignment: HorizontalAlignment.Fill
-                    background: pressed ? Color.create(nav.pressColor) : Color.Transparent
+                    focusPolicy: FocusPolicy.KeyAndTouch
+                    background: pressed || focused ? Color.create(nav.pressColor) : Color.Transparent
                     topPadding: zoom * ui.du(1.5)
                     leftPadding: zoom * ui.du(1.5)
                     rightPadding: zoom * ui.du(1.5)
@@ -257,6 +278,13 @@ Page {
                     }
                     gestureHandlers: TapHandler {
                         onTapped: page.editAbout()
+                    }
+                    keyListeners: KeyListener {
+                        onKeyReleased: {
+                            if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                                page.editAbout()
+                            }
+                        }
                     }
                     onTouch: aboutBox.pressed = event.isDown() || event.isMove()
                     onTouchExit: aboutBox.pressed = false

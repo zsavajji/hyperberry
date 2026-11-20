@@ -4,7 +4,8 @@ import bb.cascades 1.4
 // 2026-11-07): 222 x 90 px, a white icon and its label, on the grey #565656 while pressed or on.
 // iconOn and textOn, when given, replace them while on (Mute shows the mic and "Unmute").
 // Stacked, it is the stock Z10's cell (240 x 140 px): the icon over its label, both centred.
-// Sizes in the Q10's px, scaled by px().
+// Sizes in the Q10's px, scaled by px(). The Classic's trackpad reaches it: it takes the focus, lit as while pressed, and a
+// click (Enter) taps it (the user, 2026-11-20).
 Container {
     id: toggle
     property string icon
@@ -20,7 +21,8 @@ Container {
     preferredHeight: stacked ? px(140) : px(90)
     leftPadding: stacked ? 0 : px(18)
     topPadding: stacked ? px(14) : 0
-    background: toggle.on || toggle.pressed ? Color.create("#565656") : Color.Transparent
+    focusPolicy: FocusPolicy.KeyAndTouch
+    background: toggle.on || toggle.pressed || toggle.focused ? Color.create("#565656") : Color.Transparent
     layout: StackLayout {
         orientation: toggle.stacked ? LayoutOrientation.TopToBottom : LayoutOrientation.LeftToRight
     }
@@ -53,5 +55,12 @@ Container {
     onTouchExit: toggle.pressed = false
     gestureHandlers: TapHandler {
         onTapped: toggle.tapped()
+    }
+    keyListeners: KeyListener {
+        onKeyReleased: {
+            if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                toggle.tapped()
+            }
+        }
     }
 }

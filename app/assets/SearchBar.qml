@@ -100,15 +100,27 @@ Container {
         textFormat: TextFormat.Plain
         textStyle.color: ui.palette.secondaryTextOnPlain
     }
-    // Each is a touch target the size of an action column (9 du), as the chat list's ✕.
+    // Each is a touch target the size of an action column (9 du), as the chat list's ✕. The Classic's trackpad reaches them
+    // (the user, 2026-11-20): FocusPolicy.Key, not KeyAndTouch, so a touch leaves the focus, and the keyboard, in the field; one
+    // with the focus is lit as the pressed colour, and a click (Enter) does what a tap does.
     Container {
+        id: olderBtn
         verticalAlignment: VerticalAlignment.Center
         preferredWidth: zoom * ui.du(9)
         preferredHeight: zoom * ui.du(9)
         layout: DockLayout {
         }
+        focusPolicy: FocusPolicy.Key
+        background: olderBtn.focused ? Color.create(nav.pressColor) : Color.Transparent
         gestureHandlers: TapHandler {
             onTapped: bar.older()
+        }
+        keyListeners: KeyListener {
+            onKeyReleased: {
+                if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                    bar.older()
+                }
+            }
         }
         Label {
             horizontalAlignment: HorizontalAlignment.Center
@@ -121,13 +133,23 @@ Container {
         }
     }
     Container {
+        id: newerBtn
         verticalAlignment: VerticalAlignment.Center
         preferredWidth: zoom * ui.du(9)
         preferredHeight: zoom * ui.du(9)
         layout: DockLayout {
         }
+        focusPolicy: FocusPolicy.Key
+        background: newerBtn.focused ? Color.create(nav.pressColor) : Color.Transparent
         gestureHandlers: TapHandler {
             onTapped: bar.newer()
+        }
+        keyListeners: KeyListener {
+            onKeyReleased: {
+                if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                    bar.newer()
+                }
+            }
         }
         Label {
             horizontalAlignment: HorizontalAlignment.Center
@@ -139,13 +161,23 @@ Container {
         }
     }
     Container {
+        id: closeBtn
         verticalAlignment: VerticalAlignment.Center
         preferredWidth: zoom * ui.du(9)
         preferredHeight: zoom * ui.du(9)
         layout: DockLayout {
         }
+        focusPolicy: FocusPolicy.Key
+        background: closeBtn.focused ? Color.create(nav.pressColor) : Color.Transparent
         gestureHandlers: TapHandler {
             onTapped: bar.close()
+        }
+        keyListeners: KeyListener {
+            onKeyReleased: {
+                if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                    bar.close()
+                }
+            }
         }
         Label {
             horizontalAlignment: HorizontalAlignment.Center

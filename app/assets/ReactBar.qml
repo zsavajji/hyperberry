@@ -85,7 +85,10 @@ Container {
     attachedObjects: [
         ComponentDefinition {
             id: cellDef
-            // A touch target the size of an action column (9 du), as the search bar's.
+            // A touch target the size of an action column (9 du), as the search bar's. This and the bar's two buttons below are
+            // reached by the Classic's trackpad (the user, 2026-11-20): FocusPolicy.Key, not KeyAndTouch, so a touch leaves the
+            // focus (the composer's keyboard) where it is; the one with the focus is lit as the pressed colour, and a click
+            // (Enter) does what a tap does.
             Container {
                 id: cell
                 property string emoji
@@ -96,8 +99,17 @@ Container {
                 preferredHeight: zoom * ui.du(9)
                 layout: DockLayout {
                 }
+                focusPolicy: FocusPolicy.Key
+                background: cell.focused ? Color.create(nav.pressColor) : Color.Transparent
                 gestureHandlers: TapHandler {
                     onTapped: cell.tapped(cell.emoji)
+                }
+                keyListeners: KeyListener {
+                    onKeyReleased: {
+                        if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                            cell.tapped(cell.emoji)
+                        }
+                    }
                 }
                 Label {
                     horizontalAlignment: HorizontalAlignment.Center
@@ -142,13 +154,23 @@ Container {
         }
         // The six emoji are inserted before these two.
         Container {
+            id: plusBtn
             verticalAlignment: VerticalAlignment.Center
             preferredWidth: zoom * ui.du(9)
             preferredHeight: zoom * ui.du(9)
             layout: DockLayout {
             }
+            focusPolicy: FocusPolicy.Key
+            background: plusBtn.focused ? Color.create(nav.pressColor) : Color.Transparent
             gestureHandlers: TapHandler {
                 onTapped: bar.picking = !bar.picking
+            }
+            keyListeners: KeyListener {
+                onKeyReleased: {
+                    if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                        bar.picking = !bar.picking
+                    }
+                }
             }
             Label {
                 horizontalAlignment: HorizontalAlignment.Center
@@ -159,13 +181,23 @@ Container {
             }
         }
         Container {
+            id: closeBtn
             verticalAlignment: VerticalAlignment.Center
             preferredWidth: zoom * ui.du(9)
             preferredHeight: zoom * ui.du(9)
             layout: DockLayout {
             }
+            focusPolicy: FocusPolicy.Key
+            background: closeBtn.focused ? Color.create(nav.pressColor) : Color.Transparent
             gestureHandlers: TapHandler {
                 onTapped: bar.close()
+            }
+            keyListeners: KeyListener {
+                onKeyReleased: {
+                    if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                        bar.close()
+                    }
+                }
             }
             Label {
                 horizontalAlignment: HorizontalAlignment.Center

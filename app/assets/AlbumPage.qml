@@ -41,6 +41,8 @@ Page {
                 columnCount: 2
                 cellAspectRatio: 1
             }
+            // A tap, or the Classic's trackpad click, opens the member (the user, 2026-11-20).
+            onTriggered: grid.open(album.data(indexPath))
             listItemComponents: [
                 ListItemComponent {
                     AlbumTile {
@@ -48,7 +50,6 @@ Page {
                         member: ListItemData
                         loadingId: cell.ListItem.view.loadingId
                         background: cell.ListItem.view.pageBackground
-                        onTapped: cell.ListItem.view.open(cell.member)
                     }
                 }
             ]

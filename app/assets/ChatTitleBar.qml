@@ -39,12 +39,24 @@ TitleBar {
                 orientation: LayoutOrientation.LeftToRight
             }
             // Back: the stock arrow's thin "<", in a box the bar's height that carries the margin.
+            // The bar's four controls take the Classic's trackpad focus, lit with a pale veil (the picture dims), and a click
+            // (Enter) does what a tap does (the user, 2026-11-20).
             Container {
+                id: backBtn
                 verticalAlignment: VerticalAlignment.Fill
                 preferredWidth: ui.du(7)
                 layout: DockLayout {}
+                focusPolicy: FocusPolicy.KeyAndTouch
+                background: backBtn.focused ? Color.create("#33ffffff") : Color.Transparent
                 gestureHandlers: TapHandler {
                     onTapped: bar.back()
+                }
+                keyListeners: KeyListener {
+                    onKeyReleased: {
+                        if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                            bar.back()
+                        }
+                    }
                 }
                 ImageView {
                     horizontalAlignment: HorizontalAlignment.Center
@@ -60,12 +72,22 @@ TitleBar {
             // the call button reached the bar's handler too, and the contact page came up before
             // every call (Q10, 0.0.1.188). A TapEvent has no target to tell them apart by.
             Container {
+                id: nameBtn
                 verticalAlignment: VerticalAlignment.Center
                 layoutProperties: StackLayoutProperties {
                     spaceQuota: 1
                 }
+                focusPolicy: FocusPolicy.KeyAndTouch
+                background: nameBtn.focused ? Color.create("#33ffffff") : Color.Transparent
                 gestureHandlers: TapHandler {
                     onTapped: bar.tapped()
+                }
+                keyListeners: KeyListener {
+                    onKeyReleased: {
+                        if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                            bar.tapped()
+                        }
+                    }
                 }
                 // Two lines fit 85 px only without the labels' default margins (about 20 px),
                 // and below the stock title's 25 px capitals (125 %; 100 % draws 20 px):
@@ -94,18 +116,32 @@ TitleBar {
             // or video in a dialog of buttons (the user's ask, 2026-11-11); on a group it emits
             // groupCall (audio only). call.start's failure is worded by main.qml's toast.
             Container {
+                id: callBtn
                 visible: bar.canCall
                 verticalAlignment: VerticalAlignment.Center
                 leftPadding: ui.du(1.5)
                 rightPadding: ui.du(1.5)
                 minHeight: ui.px(81)
                 layout: DockLayout {}
+                focusPolicy: FocusPolicy.KeyAndTouch
+                background: callBtn.focused ? Color.create("#33ffffff") : Color.Transparent
                 gestureHandlers: TapHandler {
                     onTapped: {
                         if (bar.chat.kind == 1) {
                             bar.groupCall()
                         } else {
                             callKind.show()
+                        }
+                    }
+                }
+                keyListeners: KeyListener {
+                    onKeyReleased: {
+                        if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                            if (bar.chat.kind == 1) {
+                                bar.groupCall()
+                            } else {
+                                callKind.show()
+                            }
                         }
                     }
                 }
@@ -137,14 +173,24 @@ TitleBar {
             // The chat's picture (chat.photo, the engine's preview file) where the stock app has
             // it, over the initials tile.
             Container {
+                id: barTile
                 verticalAlignment: VerticalAlignment.Center
                 leftMargin: ui.du(1.5)
                 preferredWidth: ui.px(81)
                 preferredHeight: ui.px(81)
                 background: bar.chat ? Color.create(bar.chat.color) : Color.Transparent
                 layout: DockLayout {}
+                focusPolicy: FocusPolicy.KeyAndTouch
+                opacity: barTile.focused ? 0.6 : 1
                 gestureHandlers: TapHandler {
                     onTapped: bar.tapped()
+                }
+                keyListeners: KeyListener {
+                    onKeyReleased: {
+                        if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                            bar.tapped()
+                        }
+                    }
                 }
                 ImageView {
                     visible: bar.hasPhoto

@@ -82,15 +82,26 @@ Page {
                             textStyle.fontSizeValue: 300 * zoom
                             textStyle.color: Color.White
                         }
+                        // The picture opens full size on a tap, and on the Classic's trackpad: it takes the focus, dimmed (the user, 2026-11-20).
                         ImageView {
+                            id: bigPhoto
                             visible: page.hasPicture
                             horizontalAlignment: HorizontalAlignment.Fill
                             verticalAlignment: VerticalAlignment.Fill
                             imageSource: page.hasPicture ? "file://" + page.picture : ""
                             scalingMethod: ScalingMethod.AspectFill
                             loadEffect: ImageViewLoadEffect.None
+                            focusPolicy: FocusPolicy.KeyAndTouch
+                            opacity: bigPhoto.focused ? 0.6 : 1
                             gestureHandlers: TapHandler {
                                 onTapped: nav.showPhoto(page.picture)
+                            }
+                            keyListeners: KeyListener {
+                                onKeyReleased: {
+                                    if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                                        nav.showPhoto(page.picture)
+                                    }
+                                }
                             }
                         }
                     }

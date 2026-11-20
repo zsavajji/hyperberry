@@ -37,7 +37,9 @@ Container {
     attachedObjects: ComponentDefinition {
         id: cellDef
         // 72 px, ten across the Q10's 720: the icon 54 px, the group under the list's first item
-        // underlined in the primary colour.
+        // underlined in the primary colour. These cells are reached by the Classic's trackpad (the user, 2026-11-20):
+        // FocusPolicy.Key, not KeyAndTouch, so a touch leaves the focus (the composer's keyboard) where it is; the one with the
+        // focus is lit as the pressed colour, and a click (Enter) does what a tap does. The grid's cells are the list's own.
         Container {
             id: cell
             property int index
@@ -47,8 +49,17 @@ Container {
             preferredWidth: pxZoom * ui.px(72)
             preferredHeight: pxZoom * ui.px(72)
             layout: DockLayout {}
+            focusPolicy: FocusPolicy.Key
+            background: cell.focused ? Color.create(nav.pressColor) : Color.Transparent
             gestureHandlers: TapHandler {
                 onTapped: cell.tapped(cell.index)
+            }
+            keyListeners: KeyListener {
+                onKeyReleased: {
+                    if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                        cell.tapped(cell.index)
+                    }
+                }
             }
             ImageView {
                 id: icon

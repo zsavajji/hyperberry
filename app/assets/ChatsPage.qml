@@ -212,15 +212,26 @@ Page {
                     }
                 }
             }
-            // A touch target the size of an action column (9 du), the ✕ as the reply bar's.
+            // A touch target the size of an action column (9 du), the ✕ as the reply bar's. The Classic's trackpad reaches it:
+            // it takes the focus, lit as the pressed colour, and a click (Enter) closes the search (the user, 2026-11-20).
             Container {
+                id: closeBtn
                 verticalAlignment: VerticalAlignment.Center
                 preferredWidth: zoom * ui.du(9)
                 preferredHeight: zoom * ui.du(9)
                 layout: DockLayout {
                 }
+                focusPolicy: FocusPolicy.KeyAndTouch
+                background: closeBtn.focused ? Color.create(nav.pressColor) : Color.Transparent
                 gestureHandlers: TapHandler {
                     onTapped: page.closeSearch()
+                }
+                keyListeners: KeyListener {
+                    onKeyReleased: {
+                        if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                            page.closeSearch()
+                        }
+                    }
                 }
                 Label {
                     horizontalAlignment: HorizontalAlignment.Center

@@ -458,8 +458,10 @@ Sheet {
                 // The People button of a group call (CallDrawer): a 72 px touch target at the top left
                 // (in a voice call over the header band, in a video call with the controls). The icon
                 // sits in the band's height. CallDrawer's edge strip lies over its left 30 px and passes
-                // a tap there on.
+                // a tap there on. The Classic's trackpad reaches it: it takes the focus, under a pale veil, and a click (Enter) opens
+                // or closes the drawer (the user, 2026-11-20).
                 Container {
+                    id: contactsBtn
                     visible: drawer.buttonShown
                     horizontalAlignment: HorizontalAlignment.Left
                     verticalAlignment: VerticalAlignment.Top
@@ -467,6 +469,8 @@ Sheet {
                     preferredHeight: sheet.px(72)
                     topPadding: sheet.px(3)
                     layout: DockLayout {}
+                    focusPolicy: FocusPolicy.KeyAndTouch
+                    background: contactsBtn.focused ? Color.create("#33ffffff") : Color.Transparent
                     ImageView {
                         horizontalAlignment: HorizontalAlignment.Center
                         verticalAlignment: VerticalAlignment.Top
@@ -479,6 +483,13 @@ Sheet {
                     }
                     gestureHandlers: TapHandler {
                         onTapped: drawer.toggle()
+                    }
+                    keyListeners: KeyListener {
+                        onKeyReleased: {
+                            if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                                drawer.toggle()
+                            }
+                        }
                     }
                 }
                 // The shadow the page casts on the sidebar: the sidebar's last 12 px, from clear to black

@@ -91,7 +91,11 @@ Sheet {
         sheet.colour = i
     }
     attachedObjects: [
-        // One colour of the strip: the colour in a frame that is white and thick for the one in use.
+        // One colour of the strip: the colour in a frame that is white and thick for the one in use. The three tappables of this
+        // page (these cells, the colour bar's icon, the Share with bar) are reached by the Classic's trackpad (the user,
+        // 2026-11-20): FocusPolicy.KeyAndTouch, as a touch on none of them needs the story field's keyboard (the strip shows only
+        // while the field is unfocused, the icon drops its focus itself, the bar opens a sheet). A focused cell takes the frame
+        // of the one in use, the icon and the bar a pale veil, and a click (Enter) does what a tap does.
         ComponentDefinition {
             id: swatchDef
             Container {
@@ -99,6 +103,7 @@ Sheet {
                 property int index
                 property string tint
                 property bool marked: sheet.colour == cell.index
+                property bool lit: cell.marked || cell.focused
                 signal tapped(int index)
                 leftMargin: zoom * ui.du(0.7)
                 rightMargin: zoom * ui.du(0.7)
@@ -106,13 +111,21 @@ Sheet {
                 preferredHeight: zoom * ui.du(8)
                 // A DockLayout, so the colour inside fills the frame: in a StackLayout it got no height and only the frame showed.
                 layout: DockLayout {}
-                background: cell.marked ? Color.White : Color.create(1.0, 1.0, 1.0, 0.45)
-                leftPadding: cell.marked ? pxZoom * ui.px(5) : ui.px(2)
-                topPadding: cell.marked ? pxZoom * ui.px(5) : ui.px(2)
-                rightPadding: cell.marked ? pxZoom * ui.px(5) : ui.px(2)
-                bottomPadding: cell.marked ? pxZoom * ui.px(5) : ui.px(2)
+                focusPolicy: FocusPolicy.KeyAndTouch
+                background: cell.lit ? Color.White : Color.create(1.0, 1.0, 1.0, 0.45)
+                leftPadding: cell.lit ? pxZoom * ui.px(5) : ui.px(2)
+                topPadding: cell.lit ? pxZoom * ui.px(5) : ui.px(2)
+                rightPadding: cell.lit ? pxZoom * ui.px(5) : ui.px(2)
+                bottomPadding: cell.lit ? pxZoom * ui.px(5) : ui.px(2)
                 gestureHandlers: TapHandler {
                     onTapped: cell.tapped(cell.index)
+                }
+                keyListeners: KeyListener {
+                    onKeyReleased: {
+                        if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                            cell.tapped(cell.index)
+                        }
+                    }
                 }
                 Container {
                     horizontalAlignment: HorizontalAlignment.Fill
@@ -226,9 +239,12 @@ Sheet {
                 // The icon, in a box 10 du high that is the touch target: a mosaic of the palette in a frame that
                 // takes the primary colour while the strip is open.
                 Container {
+                    id: pickBtn
                     leftPadding: zoom * ui.du(1)
                     layout: DockLayout {}
                     preferredHeight: zoom * ui.du(10)
+                    focusPolicy: FocusPolicy.KeyAndTouch
+                    background: pickBtn.focused ? Color.create("#33ffffff") : Color.Transparent
                     Container {
                         verticalAlignment: VerticalAlignment.Center
                         background: sheet.picking ? ui.palette.primary : Color.White
@@ -283,6 +299,14 @@ Sheet {
                             story.loseFocus()
                         }
                     }
+                    keyListeners: KeyListener {
+                        onKeyReleased: {
+                            if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                                sheet.picking = !sheet.picking
+                                story.loseFocus()
+                            }
+                        }
+                    }
                 }
             }
             // The caption of a photo or a video, along the bottom.
@@ -303,17 +327,27 @@ Sheet {
             }
             // Who sees it: a bar along the top that opens the audience sheet.
             Container {
+                id: audienceBar
                 horizontalAlignment: HorizontalAlignment.Fill
                 verticalAlignment: VerticalAlignment.Top
-                background: Color.create(0.0, 0.0, 0.0, 0.55)
+                // Focused: the band lighter, the veil over its black.
+                background: audienceBar.focused ? Color.create("#80555555") : Color.create(0.0, 0.0, 0.0, 0.55)
                 minHeight: zoom * ui.du(8)
                 leftPadding: zoom * ui.du(1.5)
                 rightPadding: zoom * ui.du(1.5)
+                focusPolicy: FocusPolicy.KeyAndTouch
                 layout: StackLayout {
                     orientation: LayoutOrientation.LeftToRight
                 }
                 gestureHandlers: TapHandler {
                     onTapped: audienceSheet.open()
+                }
+                keyListeners: KeyListener {
+                    onKeyReleased: {
+                        if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                            audienceSheet.open()
+                        }
+                    }
                 }
                 Label {
                     verticalAlignment: VerticalAlignment.Center

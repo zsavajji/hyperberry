@@ -478,11 +478,18 @@ Page {
                     }
                 }
                 // The emoji button: opens the picker to react with any emoji. A box 10 du square, the touch target.
+                // The five buttons here and in the header (emoji, heart, viewers, Back, delete) are reached by the Classic's
+                // trackpad (the user, 2026-11-20): lit with a pale veil, and a click (Enter) does what a tap does. The emoji and
+                // the heart sit beside the Reply field, so they are FocusPolicy.Key: a touch leaves the focus (and the keyboard)
+                // in the field; the other three take touch too.
                 Container {
+                    id: emojiBtn
                     verticalAlignment: VerticalAlignment.Center
                     preferredWidth: zoom * ui.du(10)
                     preferredHeight: zoom * ui.du(10)
                     layout: DockLayout {}
+                    focusPolicy: FocusPolicy.Key
+                    background: emojiBtn.focused ? Color.create("#33ffffff") : Color.Transparent
                     ImageView {
                         horizontalAlignment: HorizontalAlignment.Center
                         verticalAlignment: VerticalAlignment.Center
@@ -495,13 +502,23 @@ Page {
                     gestureHandlers: TapHandler {
                         onTapped: sheet.togglePicker()
                     }
+                    keyListeners: KeyListener {
+                        onKeyReleased: {
+                            if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                                sheet.togglePicker()
+                            }
+                        }
+                    }
                 }
                 // The heart: the quick reaction. A box 10 du square, the touch target.
                 Container {
+                    id: heartBtn
                     verticalAlignment: VerticalAlignment.Center
                     preferredWidth: zoom * ui.du(10)
                     preferredHeight: zoom * ui.du(10)
                     layout: DockLayout {}
+                    focusPolicy: FocusPolicy.Key
+                    background: heartBtn.focused ? Color.create("#33ffffff") : Color.Transparent
                     ImageView {
                         horizontalAlignment: HorizontalAlignment.Center
                         verticalAlignment: VerticalAlignment.Center
@@ -514,16 +531,26 @@ Page {
                     gestureHandlers: TapHandler {
                         onTapped: sheet.heart()
                     }
+                    keyListeners: KeyListener {
+                        onKeyReleased: {
+                            if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                                sheet.heart()
+                            }
+                        }
+                    }
                 }
             }
         }
         // Ours: who viewed it. An eye and the count over a band, where the others' reply bar is; a tap slides the list in.
         Container {
+            id: viewersBtn
             visible: sheet.own
             horizontalAlignment: HorizontalAlignment.Fill
             verticalAlignment: VerticalAlignment.Bottom
             preferredHeight: zoom * ui.du(10)
-            background: Color.create(0.0, 0.0, 0.0, 0.55)
+            // Focused: the band lighter, the veil over its black.
+            background: viewersBtn.focused ? Color.create("#80555555") : Color.create(0.0, 0.0, 0.0, 0.55)
+            focusPolicy: FocusPolicy.KeyAndTouch
             layout: DockLayout {}
             Container {
                 horizontalAlignment: HorizontalAlignment.Center
@@ -551,6 +578,13 @@ Page {
             gestureHandlers: TapHandler {
                 onTapped: sheet.showViewers()
             }
+            keyListeners: KeyListener {
+                onKeyReleased: {
+                    if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                        sheet.showViewers()
+                    }
+                }
+            }
         }
         // The segments, and under them Back, the poster and the time, over a band so white reads on any picture.
         Container {
@@ -574,10 +608,13 @@ Page {
                 }
                 // Back: a box 10 du square, the touch target, with the stock arrow in it.
                 Container {
+                    id: backBtn
                     verticalAlignment: VerticalAlignment.Center
                     preferredWidth: zoom * ui.du(10)
                     preferredHeight: zoom * ui.du(10)
                     layout: DockLayout {}
+                    focusPolicy: FocusPolicy.KeyAndTouch
+                    background: backBtn.focused ? Color.create("#33ffffff") : Color.Transparent
                     ImageView {
                         horizontalAlignment: HorizontalAlignment.Center
                         verticalAlignment: VerticalAlignment.Center
@@ -588,6 +625,13 @@ Page {
                     }
                     gestureHandlers: TapHandler {
                         onTapped: sheet.close()
+                    }
+                    keyListeners: KeyListener {
+                        onKeyReleased: {
+                            if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                                sheet.close()
+                            }
+                        }
                     }
                 }
                 Container {
@@ -641,11 +685,14 @@ Page {
                 }
                 // Delete, ours only: a box 10 du square, the touch target.
                 Container {
+                    id: deleteBtn
                     visible: sheet.own
                     verticalAlignment: VerticalAlignment.Center
                     preferredWidth: zoom * ui.du(10)
                     preferredHeight: zoom * ui.du(10)
                     layout: DockLayout {}
+                    focusPolicy: FocusPolicy.KeyAndTouch
+                    background: deleteBtn.focused ? Color.create("#33ffffff") : Color.Transparent
                     ImageView {
                         horizontalAlignment: HorizontalAlignment.Center
                         verticalAlignment: VerticalAlignment.Center
@@ -659,6 +706,15 @@ Page {
                             sheet.paused = true
                             confirmDelete.storyId = sheet.cur.id
                             confirmDelete.show()
+                        }
+                    }
+                    keyListeners: KeyListener {
+                        onKeyReleased: {
+                            if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                                sheet.paused = true
+                                confirmDelete.storyId = sheet.cur.id
+                                confirmDelete.show()
+                            }
                         }
                     }
                 }

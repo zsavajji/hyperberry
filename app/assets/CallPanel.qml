@@ -129,7 +129,10 @@ Container {
             panel.touched()
         }
     }
+    // The End call bar. The Classic's trackpad reaches it: it takes the focus, dark red as while pressed, and a click (Enter)
+    // ends the call (the user, 2026-11-20).
     Container {
+        id: endBar
         layoutProperties: AbsoluteLayoutProperties {
             positionX: panel.tall ? panel.px(12) : panel.px(18)
             positionY: panel.tall ? panel.px(530) : panel.px(610)
@@ -138,7 +141,8 @@ Container {
         preferredHeight: panel.tall ? panel.px(181) : panel.px(93)
         enabled: !panel.ended
         opacity: panel.ended ? 0.5 : 1
-        background: panel.pressed ? Color.create("#b3181a") : Color.create("#ff3334")
+        focusPolicy: FocusPolicy.KeyAndTouch
+        background: panel.pressed || endBar.focused ? Color.create("#b3181a") : Color.create("#ff3334")
         // Padding and a row, not margins in a DockLayout: margins only space siblings, never from
         // the container's edge (pitfalls.md), which left icon and label on top of each other at the
         // bar's edge on the Q10 (0.0.1.187). The stock handset at x 32 and the label at x 114.
@@ -172,6 +176,14 @@ Container {
             onTapped: {
                 panel.hangup()
                 panel.touched()
+            }
+        }
+        keyListeners: KeyListener {
+            onKeyReleased: {
+                if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                    panel.hangup()
+                    panel.touched()
+                }
             }
         }
     }

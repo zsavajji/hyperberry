@@ -69,17 +69,29 @@ Sheet {
                         text: qsTr("%1 chosen").arg(picker.chosenCount)
                     }
                 }
-                // Everyone: a row of the contact rows' size and look, ticked while nobody else is.
+                // Everyone: a row of the contact rows' size and look, ticked while nobody else is. The Classic's trackpad reaches
+                // it: it takes the focus, lit as the contact rows are pressed, and a click (Enter) does what a tap does (the user,
+                // 2026-11-20).
                 Container {
+                    id: everyoneRow
                     horizontalAlignment: HorizontalAlignment.Fill
                     minHeight: zoom * ui.du(9.4)
                     leftPadding: zoom * ui.du(1.5)
                     rightPadding: zoom * ui.du(1.5)
+                    focusPolicy: FocusPolicy.KeyAndTouch
+                    background: everyoneRow.focused ? Color.create(nav.pressColor) : Color.Transparent
                     layout: StackLayout {
                         orientation: LayoutOrientation.LeftToRight
                     }
                     gestureHandlers: TapHandler {
                         onTapped: picker.clearChosen()
+                    }
+                    keyListeners: KeyListener {
+                        onKeyReleased: {
+                            if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                                picker.clearChosen()
+                            }
+                        }
                     }
                     Container {
                         verticalAlignment: VerticalAlignment.Center
