@@ -111,7 +111,7 @@ You need Docker and the local images `bb10-cxx20` and `yamsergey/bb10-ndk:0.6`.
 
 `build-app.sh` also needs [authman-rlimit](https://github.com/zsavajji/authman-rlimit) cloned beside this
 repo as `../rlimit-patch`: the app bundles its `headless-mem` addon, which raises BB10's 30 MB memory cap for
-background services to 128 MB, and offers to install it.
+background services to 128 MB, and can install it from Settings > Data and storage.
 
 `build-app.sh` fetches the pieces that aren't committed (Google's emoji font, qrcodegen, libwebp,
 the OpenMAX headers) and compiles the translations. The resulting `.bar` is unsigned: install it on
