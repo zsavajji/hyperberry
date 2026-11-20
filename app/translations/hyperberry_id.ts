@@ -2274,20 +2274,16 @@
 
 This patch raises that limit to 128 MB. Each time the phone starts, a few minutes in, it changes that one number in the system&apos;s memory. No system file is changed, and it only affects apps that ask for the largest background size. Only the patch runs as root.
 
-After the install, HyperBerry closes once: open it again. You can also install it later, from Settings &gt; Data and storage.</source>
+After the install, HyperBerry closes once: open it again.</source>
         <translation>BlackBerry 10 memberi layanan latar belakang sebuah aplikasi paling banyak 30 MB memori. Layanan HyperBerry, yang menjaga obrolan Anda tetap sinkron dan membawa notifikasi, berjalan dalam batas itu, dengan sedikit ruang tersisa.
 
 Patch ini menaikkan batas tersebut menjadi 128 MB. Setiap kali ponsel menyala, beberapa menit kemudian, patch mengubah satu angka itu di memori sistem. Tidak ada berkas sistem yang diubah, dan hanya memengaruhi aplikasi yang meminta ukuran latar belakang terbesar. Hanya patch yang berjalan sebagai root.
 
-Setelah pemasangan, HyperBerry menutup sekali: buka lagi. Anda juga bisa memasangnya nanti, dari Pengaturan &gt; Data dan penyimpanan.</translation>
+Setelah pemasangan, HyperBerry menutup sekali: buka lagi.</translation>
     </message>
     <message>
         <source>Install</source>
         <translation>Pasang</translation>
-    </message>
-    <message>
-        <source>Not now</source>
-        <translation>Nanti saja</translation>
     </message>
     <message>
         <source>Installing the memory addon…</source>

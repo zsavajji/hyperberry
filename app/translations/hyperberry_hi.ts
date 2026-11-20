@@ -2277,20 +2277,16 @@
 
 This patch raises that limit to 128 MB. Each time the phone starts, a few minutes in, it changes that one number in the system&apos;s memory. No system file is changed, and it only affects apps that ask for the largest background size. Only the patch runs as root.
 
-After the install, HyperBerry closes once: open it again. You can also install it later, from Settings &gt; Data and storage.</source>
+After the install, HyperBerry closes once: open it again.</source>
         <translation>BlackBerry 10 किसी ऐप की बैकग्राउंड सेवा को अधिकतम 30 MB मेमोरी देता है। HyperBerry की सेवा, जो आपकी चैट सिंक रखती है और सूचनाएँ लाती है, इसी सीमा में चलती है, पर गुंजाइश बहुत कम है।
 
 यह पैच उस सीमा को 128 MB कर देता है। फ़ोन हर बार चालू होने के कुछ मिनट बाद यह सिस्टम की मेमोरी में सिर्फ़ यही एक संख्या बदलता है। कोई सिस्टम फ़ाइल नहीं बदली जाती, और यह केवल उन ऐप्स पर असर डालता है जो सबसे बड़ा बैकग्राउंड आकार माँगते हैं। केवल पैच root के रूप में चलता है।
 
-इंस्टॉल के बाद HyperBerry एक बार बंद होगा: इसे फिर से खोलें। आप इसे बाद में सेटिंग्स &gt; डेटा और स्टोरेज से भी इंस्टॉल कर सकते हैं।</translation>
+इंस्टॉल के बाद HyperBerry एक बार बंद होगा: इसे फिर से खोलें।</translation>
     </message>
     <message>
         <source>Install</source>
         <translation>इंस्टॉल करें</translation>
-    </message>
-    <message>
-        <source>Not now</source>
-        <translation>अभी नहीं</translation>
     </message>
     <message>
         <source>Installing the memory addon…</source>

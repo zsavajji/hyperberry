@@ -2280,20 +2280,16 @@
 
 This patch raises that limit to 128 MB. Each time the phone starts, a few minutes in, it changes that one number in the system&apos;s memory. No system file is changed, and it only affects apps that ask for the largest background size. Only the patch runs as root.
 
-After the install, HyperBerry closes once: open it again. You can also install it later, from Settings &gt; Data and storage.</source>
+After the install, HyperBerry closes once: open it again.</source>
         <translation>BlackBerry 10 выделяет фоновой службе приложения не более 30 МБ памяти. Служба HyperBerry, которая синхронизирует ваши чаты и присылает уведомления, укладывается в этот предел, но запаса почти нет.
 
 Этот патч поднимает предел до 128 МБ. При каждом запуске телефона, через несколько минут, он меняет это единственное число в памяти системы. Системные файлы не изменяются, и это касается только приложений, запрашивающих наибольший размер фоновой памяти. От имени root работает только патч.
 
-После установки HyperBerry один раз закроется: откройте его снова. Установить патч можно и позже: Настройки &gt; Данные и хранилище.</translation>
+После установки HyperBerry один раз закроется: откройте его снова.</translation>
     </message>
     <message>
         <source>Install</source>
         <translation>Установить</translation>
-    </message>
-    <message>
-        <source>Not now</source>
-        <translation>Не сейчас</translation>
     </message>
     <message>
         <source>Installing the memory addon…</source>

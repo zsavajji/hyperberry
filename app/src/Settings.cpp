@@ -65,7 +65,6 @@ bool Settings::darkGrey() const
 int Settings::callHints() const { return qMax(0, m_file.value("callHints", 0).toInt()); }
 int Settings::videoQuality() const { return qBound(0, m_file.value("videoQuality", 1).toInt(), 2); }
 bool Settings::cameraCrop() const { return m_file.value("cameraCrop", false).toBool(); }
-bool Settings::memDeclined() const { return m_file.value("memDeclined", false).toBool(); }
 QString Settings::translateProvider() const { return m_file.value("translateProvider", "google").toString(); }
 QString Settings::deeplKey() const { return m_file.value("deeplKey").toString(); }
 QString Settings::libreURL() const { return m_file.value("libreURL").toString(); }
@@ -197,14 +196,6 @@ void Settings::storePref(const char *key, const QVariant &value)
         prefs[key] = value;
         m_engine->request("prefs.set", prefs);
     }
-}
-
-void Settings::setMemDeclined(bool on)
-{
-    if (on == memDeclined())
-        return;
-    store("memDeclined", on);
-    emit memDeclinedChanged();
 }
 
 void Settings::setTranslate(const char *key, const QString &value)

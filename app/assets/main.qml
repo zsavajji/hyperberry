@@ -206,23 +206,22 @@ TabbedPane {
                 SystemToast {
                     id: inviteFailed
                 },
-                // The engine runs under the stock 30 MB headless cap (memMB in the link body): offer the headless-mem
-                // addon (MemoryPatch.cpp). It works at 30, so unlike Tengram's this has a "Not now", remembered
-                // (settings.memDeclined); Settings > Data and storage offers it again. Back leaves it for the next launch.
+                // The headless-mem addon (MemoryPatch.cpp) is offered only in Settings > Data and storage (the user's
+                // decision, 2026-11-20). Nothing shows it is needed today: the two times the engine ran out of the stock
+                // 30 MB were bugs fixed at the source (a voice note decoded whole, e44d8a5; the group list with its
+                // members, c46e82c). It is room for the next one. This dialog explains it before the root install.
                 SystemDialog {
                     id: memDialog
                     title: qsTr("More memory for HyperBerry")
-                    body: qsTr("BlackBerry 10 gives an app's background service at most 30 MB of memory. HyperBerry's service, which keeps your chats in sync and brings your notifications, works within it, with little room to spare.\n\nThis patch raises that limit to 128 MB. Each time the phone starts, a few minutes in, it changes that one number in the system's memory. No system file is changed, and it only affects apps that ask for the largest background size. Only the patch runs as root.\n\nAfter the install, HyperBerry closes once: open it again. You can also install it later, from Settings > Data and storage.")
+                    body: qsTr("BlackBerry 10 gives an app's background service at most 30 MB of memory. HyperBerry's service, which keeps your chats in sync and brings your notifications, works within it, with little room to spare.\n\nThis patch raises that limit to 128 MB. Each time the phone starts, a few minutes in, it changes that one number in the system's memory. No system file is changed, and it only affects apps that ask for the largest background size. Only the patch runs as root.\n\nAfter the install, HyperBerry closes once: open it again.")
                     confirmButton.label: qsTr("Install")
-                    cancelButton.label: qsTr("Not now")
+                    cancelButton.label: qsTr("Cancel")
                     onFinished: {
                         if (value == SystemUiResult.ConfirmButtonSelection) {
                             // Nothing else shows while the root shell works (about 5 s, up to 25).
                             memToast.body = qsTr("Installing the memory addon…")
                             memToast.show()
                             memPatch.install()
-                        } else if (value == SystemUiResult.CancelButtonSelection) {
-                            settings.memDeclined = true
                         }
                     }
                 },
@@ -261,31 +260,13 @@ TabbedPane {
                 invites.joined.connect(nav.openRequested)
                 invites.chatLinked.connect(nav.numberRequested)
                 openRequests.link.connect(nav.linkRequested)
-                engine.linkChanged.connect(nav.checkMemory)
                 memPatch.finished.connect(nav.memFinished)
                 // setCover, as the skills have it: cover belongs to Application, not to a page.
                 Application.setCover(coverDef.createObject())
                 show()
-                checkMemory()
             }
 
-            // Asked once per run (memAsked stays true after Back: the next launch asks again).
-            property bool memAsked: false
-            // Every link event carries memMB, the engine's RLIMIT_DATA at its start: 30 is the stock headless cap. Nothing for
-            // 0 (no limit, or unread), for 128 and up, or while the addon is installed: after a reboot it patches authman
-            // about 4 minutes in, and an engine started before then reports 30 with the addon already there.
-            function checkMemory() {
-                var mb = engine.link.memMB
-                // No root helper, no offer: HyperBerry works without the patch (Settings' button says why it can't).
-                if (!engine.linked || settings.memDeclined || !engine.connected || !(mb > 0 && mb < 128) || memPatch.installed || memPatch.busy
-                        || !memPatch.rootAvailable || memAsked) {
-                    return
-                }
-                memAsked = true
-                memDialog.show()
-            }
-
-            // Settings > Data and storage's button: whatever memDeclined says.
+            // Settings > Data and storage's button: the explanation, or why there is no install without root.
             function askMemory() {
                 if (memPatch.rootAvailable) {
                     memDialog.show()
@@ -301,7 +282,6 @@ TabbedPane {
                 }
                 memToast.body = memPatch.headline
                 memToast.show()
-                memAsked = false
             }
 
             property string failedCmd: engine.failure.cmd || ""

@@ -2274,20 +2274,16 @@
 
 This patch raises that limit to 128 MB. Each time the phone starts, a few minutes in, it changes that one number in the system&apos;s memory. No system file is changed, and it only affects apps that ask for the largest background size. Only the patch runs as root.
 
-After the install, HyperBerry closes once: open it again. You can also install it later, from Settings &gt; Data and storage.</source>
+After the install, HyperBerry closes once: open it again.</source>
         <translation>BlackBerry 10 cấp cho dịch vụ nền của một ứng dụng tối đa 30 MB bộ nhớ. Dịch vụ của HyperBerry, giữ cho các cuộc trò chuyện được đồng bộ và mang thông báo đến, hoạt động trong giới hạn đó, nhưng còn rất ít dư địa.
 
 Bản vá này nâng giới hạn lên 128 MB. Mỗi lần điện thoại khởi động, vài phút sau, nó thay đúng con số đó trong bộ nhớ của hệ thống. Không có tệp hệ thống nào bị thay đổi, và nó chỉ ảnh hưởng đến các ứng dụng yêu cầu kích thước nền lớn nhất. Chỉ bản vá chạy với quyền root.
 
-Sau khi cài, HyperBerry sẽ đóng một lần: hãy mở lại. Bạn cũng có thể cài sau, trong Cài đặt &gt; Dữ liệu và lưu trữ.</translation>
+Sau khi cài, HyperBerry sẽ đóng một lần: hãy mở lại.</translation>
     </message>
     <message>
         <source>Install</source>
         <translation>Cài đặt</translation>
-    </message>
-    <message>
-        <source>Not now</source>
-        <translation>Không phải bây giờ</translation>
     </message>
     <message>
         <source>Installing the memory addon…</source>

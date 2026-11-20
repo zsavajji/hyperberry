@@ -41,8 +41,6 @@ class Settings : public QObject
     // Video calls, the camera's aspect ratio: false is the camera's own, true crops it to 9:16 (CallVideo's crop).
     Q_PROPERTY(bool cameraCrop READ cameraCrop WRITE setCameraCrop NOTIFY cameraCropChanged)
     // Translation (the engine's prefs): the service ("google", "deepl", "libre") and what it needs. One signal for the four.
-    // The user said "Not now" to the memory patch (MemoryPatch.h): main.qml asks no more, Settings > Data and storage still offers it.
-    Q_PROPERTY(bool memDeclined READ memDeclined WRITE setMemDeclined NOTIFY memDeclinedChanged)
     Q_PROPERTY(QString translateProvider READ translateProvider WRITE setTranslateProvider NOTIFY translateChanged)
     Q_PROPERTY(QString deeplKey READ deeplKey WRITE setDeeplKey NOTIFY translateChanged)
     Q_PROPERTY(QString libreURL READ libreURL WRITE setLibreURL NOTIFY translateChanged)
@@ -69,7 +67,6 @@ public:
     int callHints() const;
     int videoQuality() const;
     bool cameraCrop() const;
-    bool memDeclined() const;
     QString translateProvider() const;
     QString deeplKey() const;
     QString libreURL() const;
@@ -92,7 +89,6 @@ public:
     void setCallHints(int count);
     void setVideoQuality(int quality);
     void setCameraCrop(bool on);
-    void setMemDeclined(bool on);
     void setTranslateProvider(const QString &value);
     void setDeeplKey(const QString &value);
     void setLibreURL(const QString &value);
@@ -117,7 +113,6 @@ signals:
     void videoQualityChanged(int quality);
     void cameraCropChanged(bool on);
     void translateChanged();
-    void memDeclinedChanged();
 
 private slots:
     void bootTimerReplied();

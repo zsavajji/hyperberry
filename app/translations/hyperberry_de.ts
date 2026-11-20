@@ -2277,20 +2277,16 @@
 
 This patch raises that limit to 128 MB. Each time the phone starts, a few minutes in, it changes that one number in the system&apos;s memory. No system file is changed, and it only affects apps that ask for the largest background size. Only the patch runs as root.
 
-After the install, HyperBerry closes once: open it again. You can also install it later, from Settings &gt; Data and storage.</source>
+After the install, HyperBerry closes once: open it again.</source>
         <translation>BlackBerry 10 gibt dem Hintergrunddienst einer App höchstens 30 MB Speicher. Der Dienst von HyperBerry, der deine Chats synchron hält und deine Benachrichtigungen bringt, kommt damit aus, hat aber wenig Spielraum.
 
 Dieser Patch hebt die Grenze auf 128 MB an. Bei jedem Start des Telefons ändert er einige Minuten später diese eine Zahl im Speicher des Systems. Es wird keine Systemdatei verändert, und es betrifft nur Apps, die die größte Hintergrundgröße anfordern. Nur der Patch läuft als Root.
 
-Nach der Installation schließt sich HyperBerry einmal: Öffne es erneut. Du kannst den Patch auch später installieren, unter Einstellungen &gt; Daten und Speicher.</translation>
+Nach der Installation schließt sich HyperBerry einmal: Öffne es erneut.</translation>
     </message>
     <message>
         <source>Install</source>
         <translation>Installieren</translation>
-    </message>
-    <message>
-        <source>Not now</source>
-        <translation>Nicht jetzt</translation>
     </message>
     <message>
         <source>Installing the memory addon…</source>
