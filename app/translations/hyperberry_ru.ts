@@ -2875,6 +2875,10 @@ After the install, HyperBerry closes once: open it again. You can also install i
         <source>Close</source>
         <translation>Закрыть</translation>
     </message>
+    <message>
+        <source>Translate to</source>
+        <translation>Перевести на</translation>
+    </message>
 </context>
 <context>
     <name>TranslationSettingsPage</name>

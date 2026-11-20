@@ -1,6 +1,7 @@
 import bb.cascades 1.4
 import bb.system 1.2
 import hyperberry 1.0
+import "languages.js" as Languages
 
 // The rows of a chat list, for ChatsPage and ArchivedPage: the model is set by the page, which
 // takes chatTapped. The rows are C++ (ChatRows.cpp): they reach the work through the list's
@@ -63,19 +64,12 @@ ListView {
             muteDialog.show()
         }
     }
-    // The languages a chat's incoming messages can be translated into: the code, then its name in its own language
-    // (never translated). Off is the empty code. A function, not a variant property: the list stays a JS array.
-    function languages() {
-        return [["en", "English"], ["it", "Italiano"], ["de", "Deutsch"], ["es", "Español"],
-            ["fr", "Français"], ["pl", "Polski"], ["ru", "Русский"], ["uk", "Українська"], ["hi", "हिन्दी"],
-            ["id", "Bahasa Indonesia"], ["vi", "Tiếng Việt"]]
-    }
     function pickTranslate(chat) {
         translateDialog.jid = chat.jid
         // Rebuilt at each show, with the chat's language selected (filled here for the reason toggleMute says).
         translateDialog.clearList()
         translateDialog.appendItem(qsTr("Off"), true, !chat.translate)
-        var langs = languages()
+        var langs = Languages.list()
         for (var i = 0; i < langs.length; i++) {
             translateDialog.appendItem(langs[i][1], true, chat.translate == langs[i][0])
         }
@@ -94,7 +88,7 @@ ListView {
                     return
                 }
                 var i = selectedIndices[0]
-                list.set(jid, {"translate": i > 0 ? list.languages()[i - 1][0] : ""})
+                list.set(jid, {"translate": i > 0 ? Languages.list()[i - 1][0] : ""})
             }
         },
         SystemDialog {

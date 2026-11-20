@@ -2872,6 +2872,10 @@ Après l&apos;installation, HyperBerry se ferme une fois : rouvrez-le. Vous pouv
         <source>Close</source>
         <translation>Fermer</translation>
     </message>
+    <message>
+        <source>Translate to</source>
+        <translation>Traduire en</translation>
+    </message>
 </context>
 <context>
     <name>TranslationSettingsPage</name>

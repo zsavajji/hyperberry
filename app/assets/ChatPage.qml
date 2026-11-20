@@ -148,7 +148,7 @@ Page {
             id: translateDef
             TranslateDialog {
                 chatCtl: ctl
-                lang: page.chat && page.chat.translate ? page.chat.translate : phoneLocale.language
+                defaultLang: page.chat && page.chat.translate ? page.chat.translate : phoneLocale.language
             }
         },
         ComponentDefinition {

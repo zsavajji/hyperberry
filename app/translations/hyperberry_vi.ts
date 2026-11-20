@@ -2869,6 +2869,10 @@ Sau khi cài, HyperBerry sẽ đóng một lần: hãy mở lại. Bạn cũng c
         <source>Close</source>
         <translation>Đóng</translation>
     </message>
+    <message>
+        <source>Translate to</source>
+        <translation>Dịch sang</translation>
+    </message>
 </context>
 <context>
     <name>TranslationSettingsPage</name>

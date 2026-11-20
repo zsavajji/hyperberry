@@ -1,17 +1,24 @@
 import bb.cascades 1.4
+import "languages.js" as Languages
 
 // A message's translation (long-press > Translate), or its original when the card shows the translation: a dimmed
-// page with a card that scrolls, over the chat. chatCtl is the page's ChatController and lang the language to
-// translate into; the page connects the controller's translated and translateFailed to got and failed.
+// page with a card that scrolls, over the chat. chatCtl is the page's ChatController and defaultLang the language
+// to translate into at first (the chat's, else the phone's); a select in the card picks another, per message, and lang
+// is the one now showing. The page connects the controller's translated and translateFailed to got and failed.
 Dialog {
     id: dlg
     property variant chatCtl
+    property string defaultLang
     property string lang
+    // True while the code sets the select, whose change is then not the user's pick.
+    property bool setting: false
     // wait: the spinner, text: the message, fail: a line
     property string mode: "wait"
     property string msgId: ""
     property string heading: ""
     property string body: ""
+    // The message as it was sent: what the select's first option, Original, shows.
+    property string original: ""
     // The screen's height, from the dim layer that fills it: the card takes at most 80 % of it.
     property real screenH: 0
     function show(title, text, how) {
@@ -23,15 +30,53 @@ Dialog {
     // The card shows the translation already: the dialog tells what was sent, with no request.
     function showOriginal(msg) {
         msgId = msg.id
-        show(qsTr("Original"), msg.original, "text")
+        original = msg.original
+        lang = ""
+        select("")
+        show(qsTr("Original"), original, "text")
     }
     function ask(msg) {
         msgId = msg.id
+        original = msg.text
+        lang = defaultLang
+        select(lang)
         show(chatCtl.languageName(lang), "", "wait")
         chatCtl.translate(msg.id, lang)
     }
+    // The select shows code: "" is its first option, Original (the select can't be left empty with certainty on 10.3).
+    function option(text, value) {
+        var o = optionDef.createObject()
+        o.text = text
+        o.value = value
+        return o
+    }
+    function select(code) {
+        setting = true
+        for (var i = 0; i < langs.count(); i++) {
+            if (langs.at(i).value == code) {
+                langs.selectedIndex = i
+            }
+        }
+        setting = false
+    }
+    // The user picked a language: the same message again, in it. Original is the text as sent, with no request
+    // (lang "" also drops a reply still on its way).
+    function pick(code) {
+        lang = code
+        if (code == "") {
+            heading = qsTr("Original")
+            body = original
+            mode = "text"
+            return
+        }
+        heading = chatCtl.languageName(code)
+        body = ""
+        mode = "wait"
+        chatCtl.translate(msgId, code)
+    }
+    // A reply for a language picked before this one is not the dialog's.
     function got(id, text, from, to) {
-        if (id != msgId || mode != "wait") {
+        if (id != msgId || mode != "wait" || to != lang) {
             return
         }
         var name = chatCtl.languageName(to)
@@ -56,6 +101,10 @@ Dialog {
         mode = "fail"
     }
     onOpened: closeButton.requestFocus()
+    attachedObjects: ComponentDefinition {
+        id: optionDef
+        Option {}
+    }
     Container {
         layout: DockLayout {}
         horizontalAlignment: HorizontalAlignment.Fill
@@ -91,20 +140,46 @@ Dialog {
                 textStyle.fontSizeValue: nav.bodySize * 1.1
                 textStyle.fontWeight: FontWeight.W500
             }
-            // The wait, or the text with room to scroll.
-            Busy {
-                visible: dlg.mode == "wait"
-                running: dlg.mode == "wait"
-                topMargin: zoom * ui.du(4)
-                bottomMargin: zoom * ui.du(4)
-            }
+            // The select is the scrolling content's first child: its open list (eleven options, taller than the card on
+            // a Q10) scrolls with the text, and is never outside the ScrollView.
             ScrollView {
-                visible: dlg.mode != "wait"
                 layoutProperties: StackLayoutProperties {
                     spaceQuota: 1
                 }
                 Container {
+                    DropDown {
+                        id: langs
+                        title: qsTr("Translate to")
+                        // Made once. The phone's language comes first when the list has no such language.
+                        onCreationCompleted: {
+                            var all = Languages.list()
+                            var found = false
+                            for (var i = 0; i < all.length; i++) {
+                                found = found || all[i][0] == dlg.defaultLang
+                            }
+                            add(dlg.option(qsTr("Original"), ""))
+                            if (dlg.defaultLang != "" && !found) {
+                                add(dlg.option(dlg.chatCtl.languageName(dlg.defaultLang), dlg.defaultLang))
+                            }
+                            for (var j = 0; j < all.length; j++) {
+                                add(dlg.option(all[j][1], all[j][0]))
+                            }
+                        }
+                        onSelectedIndexChanged: {
+                            if (dlg.setting || selectedIndex < 0) {
+                                return
+                            }
+                            dlg.pick(at(selectedIndex).value)
+                        }
+                    }
+                    Busy {
+                        visible: dlg.mode == "wait"
+                        running: dlg.mode == "wait"
+                        topMargin: zoom * ui.du(4)
+                        bottomMargin: zoom * ui.du(4)
+                    }
                     Label {
+                        visible: dlg.mode != "wait"
                         multiline: true
                         text: dlg.body
                         textFormat: TextFormat.Plain

@@ -2872,6 +2872,10 @@ Dopo l&apos;installazione HyperBerry si chiude una volta: riaprilo. Puoi anche i
         <source>Close</source>
         <translation>Chiudi</translation>
     </message>
+    <message>
+        <source>Translate to</source>
+        <translation>Traduci in</translation>
+    </message>
 </context>
 <context>
     <name>TranslationSettingsPage</name>

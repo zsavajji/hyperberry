@@ -2869,6 +2869,10 @@ Setelah pemasangan, HyperBerry menutup sekali: buka lagi. Anda juga bisa memasan
         <source>Close</source>
         <translation>Tutup</translation>
     </message>
+    <message>
+        <source>Translate to</source>
+        <translation>Terjemahkan ke</translation>
+    </message>
 </context>
 <context>
     <name>TranslationSettingsPage</name>
