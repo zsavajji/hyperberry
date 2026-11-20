@@ -249,6 +249,22 @@
         <source>Unfollow</source>
         <translation>Отписаться</translation>
     </message>
+    <message>
+        <source>Off</source>
+        <translation>Выкл.</translation>
+    </message>
+    <message>
+        <source>Translate incoming messages</source>
+        <translation>Переводить входящие сообщения</translation>
+    </message>
+    <message>
+        <source>The messages you read in this chat are sent to the translation service.</source>
+        <translation>Сообщения, которые вы читаете в этом чате, отправляются в сервис перевода.</translation>
+    </message>
+    <message>
+        <source>OK</source>
+        <translation>OK</translation>
+    </message>
 </context>
 <context>
     <name>ChatListModel</name>
@@ -426,6 +442,10 @@
         <location filename="../assets/ChatRow.qml" line="1" />
         <source>Call</source>
         <translation>Позвонить</translation>
+    </message>
+    <message>
+        <source>Translate…</source>
+        <translation>Перевод…</translation>
     </message>
 </context>
 <context>
@@ -1082,6 +1102,14 @@
     <message>
         <source>Unstar</source>
         <translation>Убрать из избранного</translation>
+    </message>
+    <message>
+        <source>Translate</source>
+        <translation>Перевести</translation>
+    </message>
+    <message>
+        <source>Show original</source>
+        <translation>Показать оригинал</translation>
     </message>
 </context>
 <context>
@@ -1781,6 +1809,14 @@
     <message>
         <source>Enter key, proximity sensor, video calls</source>
         <translation>Клавиша Enter, датчик приближения, видеозвонки</translation>
+    </message>
+    <message>
+        <source>Translation</source>
+        <translation>Перевод</translation>
+    </message>
+    <message>
+        <source>Service, API key</source>
+        <translation>Сервис, ключ API</translation>
     </message>
 </context>
 <context>
@@ -2751,6 +2787,72 @@
     <message>
         <source>Couldn&apos;t open this link. Try again in a moment.</source>
         <translation>Не удалось открыть эту ссылку. Попробуйте ещё раз чуть позже.</translation>
+    </message>
+</context>
+<context>
+    <name>TranslateDialog</name>
+    <message>
+        <source>Original</source>
+        <translation>Оригинал</translation>
+    </message>
+    <message>
+        <source>Already in %1</source>
+        <translation>Уже на языке: %1</translation>
+    </message>
+    <message>
+        <source>Set up the translation service in Settings</source>
+        <translation>Настройте сервис перевода в Настройках</translation>
+    </message>
+    <message>
+        <source>This service can&apos;t translate into this language</source>
+        <translation>Этот сервис не умеет переводить на этот язык</translation>
+    </message>
+    <message>
+        <source>The translation service is busy. Try again later.</source>
+        <translation>Сервис перевода занят. Попробуйте позже.</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t reach the translation service</source>
+        <translation>Не удалось связаться с сервисом перевода</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t translate this message</source>
+        <translation>Не удалось перевести это сообщение</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Копировать</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Закрыть</translation>
+    </message>
+</context>
+<context>
+    <name>TranslationSettingsPage</name>
+    <message>
+        <source>Translation</source>
+        <translation>Перевод</translation>
+    </message>
+    <message>
+        <source>Service</source>
+        <translation>Сервис</translation>
+    </message>
+    <message>
+        <source>DeepL API key</source>
+        <translation>Ключ API DeepL</translation>
+    </message>
+    <message>
+        <source>Server address</source>
+        <translation>Адрес сервера</translation>
+    </message>
+    <message>
+        <source>API key (optional)</source>
+        <translation>Ключ API (необязательно)</translation>
+    </message>
+    <message>
+        <source>The messages you translate are sent to this service.</source>
+        <translation>Сообщения, которые вы переводите, отправляются в этот сервис.</translation>
     </message>
 </context>
 </TS>

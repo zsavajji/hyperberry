@@ -248,6 +248,22 @@
         <source>Unfollow</source>
         <translation>Nicht mehr folgen</translation>
     </message>
+    <message>
+        <source>Off</source>
+        <translation>Aus</translation>
+    </message>
+    <message>
+        <source>Translate incoming messages</source>
+        <translation>Eingehende Nachrichten übersetzen</translation>
+    </message>
+    <message>
+        <source>The messages you read in this chat are sent to the translation service.</source>
+        <translation>Die Nachrichten, die du in diesem Chat liest, werden an den Übersetzungsdienst gesendet.</translation>
+    </message>
+    <message>
+        <source>OK</source>
+        <translation>OK</translation>
+    </message>
 </context>
 <context>
     <name>ChatListModel</name>
@@ -425,6 +441,10 @@
         <location filename="../assets/ChatRow.qml" line="1" />
         <source>Call</source>
         <translation>Anrufen</translation>
+    </message>
+    <message>
+        <source>Translate…</source>
+        <translation>Übersetzen…</translation>
     </message>
 </context>
 <context>
@@ -1080,6 +1100,14 @@
     <message>
         <source>Unstar</source>
         <translation>Stern entfernen</translation>
+    </message>
+    <message>
+        <source>Translate</source>
+        <translation>Übersetzen</translation>
+    </message>
+    <message>
+        <source>Show original</source>
+        <translation>Original anzeigen</translation>
     </message>
 </context>
 <context>
@@ -1778,6 +1806,14 @@
     <message>
         <source>Enter key, proximity sensor, video calls</source>
         <translation>Eingabetaste, Näherungssensor, Videoanrufe</translation>
+    </message>
+    <message>
+        <source>Translation</source>
+        <translation>Übersetzung</translation>
+    </message>
+    <message>
+        <source>Service, API key</source>
+        <translation>Dienst, API-Schlüssel</translation>
     </message>
 </context>
 <context>
@@ -2748,6 +2784,72 @@
     <message>
         <source>Couldn&apos;t open this link. Try again in a moment.</source>
         <translation>Dieser Link konnte nicht geöffnet werden. Versuche es gleich noch einmal.</translation>
+    </message>
+</context>
+<context>
+    <name>TranslateDialog</name>
+    <message>
+        <source>Original</source>
+        <translation>Original</translation>
+    </message>
+    <message>
+        <source>Already in %1</source>
+        <translation>Bereits auf %1</translation>
+    </message>
+    <message>
+        <source>Set up the translation service in Settings</source>
+        <translation>Richte den Übersetzungsdienst in den Einstellungen ein</translation>
+    </message>
+    <message>
+        <source>This service can&apos;t translate into this language</source>
+        <translation>Dieser Dienst kann nicht in diese Sprache übersetzen</translation>
+    </message>
+    <message>
+        <source>The translation service is busy. Try again later.</source>
+        <translation>Der Übersetzungsdienst ist ausgelastet. Versuche es später erneut.</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t reach the translation service</source>
+        <translation>Der Übersetzungsdienst ist nicht erreichbar</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t translate this message</source>
+        <translation>Diese Nachricht konnte nicht übersetzt werden</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopieren</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Schließen</translation>
+    </message>
+</context>
+<context>
+    <name>TranslationSettingsPage</name>
+    <message>
+        <source>Translation</source>
+        <translation>Übersetzung</translation>
+    </message>
+    <message>
+        <source>Service</source>
+        <translation>Dienst</translation>
+    </message>
+    <message>
+        <source>DeepL API key</source>
+        <translation>DeepL-API-Schlüssel</translation>
+    </message>
+    <message>
+        <source>Server address</source>
+        <translation>Serveradresse</translation>
+    </message>
+    <message>
+        <source>API key (optional)</source>
+        <translation>API-Schlüssel (optional)</translation>
+    </message>
+    <message>
+        <source>The messages you translate are sent to this service.</source>
+        <translation>Die Nachrichten, die du übersetzt, werden an diesen Dienst gesendet.</translation>
     </message>
 </context>
 </TS>

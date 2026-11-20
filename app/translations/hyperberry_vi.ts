@@ -247,6 +247,22 @@
         <source>Unfollow</source>
         <translation>Bỏ theo dõi</translation>
     </message>
+    <message>
+        <source>Off</source>
+        <translation>Tắt</translation>
+    </message>
+    <message>
+        <source>Translate incoming messages</source>
+        <translation>Dịch tin nhắn đến</translation>
+    </message>
+    <message>
+        <source>The messages you read in this chat are sent to the translation service.</source>
+        <translation>Các tin nhắn bạn đọc trong cuộc trò chuyện này được gửi đến dịch vụ dịch.</translation>
+    </message>
+    <message>
+        <source>OK</source>
+        <translation>OK</translation>
+    </message>
 </context>
 <context>
     <name>ChatListModel</name>
@@ -424,6 +440,10 @@
         <location filename="../assets/ChatRow.qml" line="1" />
         <source>Call</source>
         <translation>Gọi</translation>
+    </message>
+    <message>
+        <source>Translate…</source>
+        <translation>Dịch…</translation>
     </message>
 </context>
 <context>
@@ -1078,6 +1098,14 @@
     <message>
         <source>Unstar</source>
         <translation>Bỏ dấu sao</translation>
+    </message>
+    <message>
+        <source>Translate</source>
+        <translation>Dịch</translation>
+    </message>
+    <message>
+        <source>Show original</source>
+        <translation>Hiện bản gốc</translation>
     </message>
 </context>
 <context>
@@ -1775,6 +1803,14 @@
     <message>
         <source>Enter key, proximity sensor, video calls</source>
         <translation>Phím Enter, cảm biến tiệm cận, cuộc gọi video</translation>
+    </message>
+    <message>
+        <source>Translation</source>
+        <translation>Dịch thuật</translation>
+    </message>
+    <message>
+        <source>Service, API key</source>
+        <translation>Dịch vụ, khóa API</translation>
     </message>
 </context>
 <context>
@@ -2745,6 +2781,72 @@
     <message>
         <source>Couldn&apos;t open this link. Try again in a moment.</source>
         <translation>Không thể mở liên kết này. Hãy thử lại sau giây lát.</translation>
+    </message>
+</context>
+<context>
+    <name>TranslateDialog</name>
+    <message>
+        <source>Original</source>
+        <translation>Bản gốc</translation>
+    </message>
+    <message>
+        <source>Already in %1</source>
+        <translation>Đã bằng %1</translation>
+    </message>
+    <message>
+        <source>Set up the translation service in Settings</source>
+        <translation>Thiết lập dịch vụ dịch trong Cài đặt</translation>
+    </message>
+    <message>
+        <source>This service can&apos;t translate into this language</source>
+        <translation>Dịch vụ này không dịch được sang ngôn ngữ này</translation>
+    </message>
+    <message>
+        <source>The translation service is busy. Try again later.</source>
+        <translation>Dịch vụ dịch đang bận. Hãy thử lại sau.</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t reach the translation service</source>
+        <translation>Không thể kết nối đến dịch vụ dịch</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t translate this message</source>
+        <translation>Không thể dịch tin nhắn này</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Sao chép</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Đóng</translation>
+    </message>
+</context>
+<context>
+    <name>TranslationSettingsPage</name>
+    <message>
+        <source>Translation</source>
+        <translation>Dịch thuật</translation>
+    </message>
+    <message>
+        <source>Service</source>
+        <translation>Dịch vụ</translation>
+    </message>
+    <message>
+        <source>DeepL API key</source>
+        <translation>Khóa API DeepL</translation>
+    </message>
+    <message>
+        <source>Server address</source>
+        <translation>Địa chỉ máy chủ</translation>
+    </message>
+    <message>
+        <source>API key (optional)</source>
+        <translation>Khóa API (tùy chọn)</translation>
+    </message>
+    <message>
+        <source>The messages you translate are sent to this service.</source>
+        <translation>Các tin nhắn bạn dịch được gửi đến dịch vụ này.</translation>
     </message>
 </context>
 </TS>

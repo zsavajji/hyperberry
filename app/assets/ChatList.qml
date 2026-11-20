@@ -63,7 +63,40 @@ ListView {
             muteDialog.show()
         }
     }
+    // The languages a chat's incoming messages can be translated into: the code, then its name in its own language
+    // (never translated). Off is the empty code. A function, not a variant property: the list stays a JS array.
+    function languages() {
+        return [["en", "English"], ["it", "Italiano"], ["de", "Deutsch"], ["es", "Español"],
+            ["fr", "Français"], ["pl", "Polski"], ["ru", "Русский"], ["uk", "Українська"], ["hi", "हिन्दी"],
+            ["id", "Bahasa Indonesia"], ["vi", "Tiếng Việt"]]
+    }
+    function pickTranslate(chat) {
+        translateDialog.jid = chat.jid
+        // Rebuilt at each show, with the chat's language selected (filled here for the reason toggleMute says).
+        translateDialog.clearList()
+        translateDialog.appendItem(qsTr("Off"), true, !chat.translate)
+        var langs = languages()
+        for (var i = 0; i < langs.length; i++) {
+            translateDialog.appendItem(langs[i][1], true, chat.translate == langs[i][0])
+        }
+        translateDialog.show()
+    }
     attachedObjects: [
+        SystemListDialog {
+            id: translateDialog
+            property string jid
+            title: qsTr("Translate incoming messages")
+            body: qsTr("The messages you read in this chat are sent to the translation service.")
+            confirmButton.label: qsTr("OK")
+            cancelButton.label: qsTr("Cancel")
+            onFinished: {
+                if (value != SystemUiResult.ConfirmButtonSelection) {
+                    return
+                }
+                var i = selectedIndices[0]
+                list.set(jid, {"translate": i > 0 ? list.languages()[i - 1][0] : ""})
+            }
+        },
         SystemDialog {
             id: unfollowDialog
             property string jid

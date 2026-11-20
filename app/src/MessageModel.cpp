@@ -39,6 +39,7 @@ MessageModel::MessageModel(EngineLink *engine, const QString &chat, bool group, 
     , m_group(group)
     , m_atStart(false)
     , m_loading(true)
+    , m_translate(readTranslate())
     , m_region(bb::system::LocaleType::Region)
     , m_now(0)
     , m_titlesDay(0)
@@ -46,6 +47,7 @@ MessageModel::MessageModel(EngineLink *engine, const QString &chat, bool group, 
     connect(engine, SIGNAL(msgsChanged(QString, QStringList)), this,
             SLOT(onMsgs(QString, QStringList)));
     connect(engine, SIGNAL(connectedChanged()), this, SLOT(onConnected()));
+    connect(engine, SIGNAL(chatsChanged(QStringList)), this, SLOT(onChats(QStringList)));
     QTimer::singleShot(kFirstLoadMs, this, SLOT(loadFirst()));
 }
 
@@ -225,6 +227,26 @@ void MessageModel::onConnected()
     if (!m_engine || !m_engine->connected() || m_loading)
         return;
     m_asked.clear(); // a fetch the engine lost with its restart is asked again
+    m_askedTr.clear(); // and a translation
+    reload();
+}
+
+// The chat's row changed: when its language did, the rows are read again, in the new one.
+void MessageModel::onChats(const QStringList &jids)
+{
+    if (m_loading || !jids.contains(m_chat))
+        return;
+    const QString now = readTranslate();
+    if (now == m_translate)
+        return;
+    m_translate = now;
+    m_askedTr.clear();
+    reload();
+}
+
+// Every loaded row again, or the first page when none is.
+void MessageModel::reload()
+{
     if (m_all.isEmpty()) {
         loadPage();
         return;

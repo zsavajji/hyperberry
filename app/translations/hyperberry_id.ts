@@ -247,6 +247,22 @@
         <source>Unfollow</source>
         <translation>Berhenti mengikuti</translation>
     </message>
+    <message>
+        <source>Off</source>
+        <translation>Mati</translation>
+    </message>
+    <message>
+        <source>Translate incoming messages</source>
+        <translation>Terjemahkan pesan masuk</translation>
+    </message>
+    <message>
+        <source>The messages you read in this chat are sent to the translation service.</source>
+        <translation>Pesan yang Anda baca di obrolan ini dikirim ke layanan terjemahan.</translation>
+    </message>
+    <message>
+        <source>OK</source>
+        <translation>OK</translation>
+    </message>
 </context>
 <context>
     <name>ChatListModel</name>
@@ -424,6 +440,10 @@
         <location filename="../assets/ChatRow.qml" line="1" />
         <source>Call</source>
         <translation>Telepon</translation>
+    </message>
+    <message>
+        <source>Translate…</source>
+        <translation>Terjemahkan…</translation>
     </message>
 </context>
 <context>
@@ -1078,6 +1098,14 @@
     <message>
         <source>Unstar</source>
         <translation>Hapus bintang</translation>
+    </message>
+    <message>
+        <source>Translate</source>
+        <translation>Terjemahkan</translation>
+    </message>
+    <message>
+        <source>Show original</source>
+        <translation>Tampilkan asli</translation>
     </message>
 </context>
 <context>
@@ -1775,6 +1803,14 @@
     <message>
         <source>Enter key, proximity sensor, video calls</source>
         <translation>Tombol Enter, sensor jarak, panggilan video</translation>
+    </message>
+    <message>
+        <source>Translation</source>
+        <translation>Terjemahan</translation>
+    </message>
+    <message>
+        <source>Service, API key</source>
+        <translation>Layanan, kunci API</translation>
     </message>
 </context>
 <context>
@@ -2745,6 +2781,72 @@
     <message>
         <source>Couldn&apos;t open this link. Try again in a moment.</source>
         <translation>Tidak dapat membuka tautan ini. Coba lagi sebentar lagi.</translation>
+    </message>
+</context>
+<context>
+    <name>TranslateDialog</name>
+    <message>
+        <source>Original</source>
+        <translation>Asli</translation>
+    </message>
+    <message>
+        <source>Already in %1</source>
+        <translation>Sudah dalam %1</translation>
+    </message>
+    <message>
+        <source>Set up the translation service in Settings</source>
+        <translation>Atur layanan terjemahan di Pengaturan</translation>
+    </message>
+    <message>
+        <source>This service can&apos;t translate into this language</source>
+        <translation>Layanan ini tidak dapat menerjemahkan ke bahasa ini</translation>
+    </message>
+    <message>
+        <source>The translation service is busy. Try again later.</source>
+        <translation>Layanan terjemahan sedang sibuk. Coba lagi nanti.</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t reach the translation service</source>
+        <translation>Tidak dapat menjangkau layanan terjemahan</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t translate this message</source>
+        <translation>Tidak dapat menerjemahkan pesan ini</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Salin</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Tutup</translation>
+    </message>
+</context>
+<context>
+    <name>TranslationSettingsPage</name>
+    <message>
+        <source>Translation</source>
+        <translation>Terjemahan</translation>
+    </message>
+    <message>
+        <source>Service</source>
+        <translation>Layanan</translation>
+    </message>
+    <message>
+        <source>DeepL API key</source>
+        <translation>Kunci API DeepL</translation>
+    </message>
+    <message>
+        <source>Server address</source>
+        <translation>Alamat server</translation>
+    </message>
+    <message>
+        <source>API key (optional)</source>
+        <translation>Kunci API (opsional)</translation>
+    </message>
+    <message>
+        <source>The messages you translate are sent to this service.</source>
+        <translation>Pesan yang Anda terjemahkan dikirim ke layanan ini.</translation>
     </message>
 </context>
 </TS>

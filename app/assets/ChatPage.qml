@@ -145,6 +145,13 @@ Page {
             }
         },
         ComponentDefinition {
+            id: translateDef
+            TranslateDialog {
+                chatCtl: ctl
+                lang: page.chat && page.chat.translate ? page.chat.translate : phoneLocale.language
+            }
+        },
+        ComponentDefinition {
             id: reactDef
             ReactBar {
                 jid: page.chat ? page.chat.jid : ""
@@ -241,6 +248,7 @@ Page {
     property variant searchObj
     property variant reactObj
     property variant stagedObj
+    property variant translateObj
     function player() {
         if (!playerObj) {
             var holder = playerDef.createObject()
@@ -276,6 +284,16 @@ Page {
             reactObj = b
         }
         return reactObj
+    }
+    // The translation dialog, made at its first use; its parent is the page, which it goes with.
+    function translateDialog() {
+        if (!translateObj) {
+            var d = translateDef.createObject(page)
+            ctl.translated.connect(d.got)
+            ctl.translateFailed.connect(d.failed)
+            translateObj = d
+        }
+        return translateObj
     }
     function stagedBar() {
         if (!stagedObj) {
@@ -564,6 +582,14 @@ Page {
                     }
                     function copy(text) {
                         ctl.copy(text)
+                    }
+                    // Translate: a message already shown translated gives its original, any other its translation.
+                    function translate(msg) {
+                        if (msg.translated) {
+                            page.translateDialog().showOriginal(msg)
+                        } else {
+                            page.translateDialog().ask(msg)
+                        }
                     }
                     // Star, or take the star off one that has it: the engine tells the phone, and the card redraws.
                     function star(msg) {

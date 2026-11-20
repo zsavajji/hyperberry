@@ -248,6 +248,22 @@
         <source>Unfollow</source>
         <translation>अनफ़ॉलो करें</translation>
     </message>
+    <message>
+        <source>Off</source>
+        <translation>बंद</translation>
+    </message>
+    <message>
+        <source>Translate incoming messages</source>
+        <translation>आने वाले संदेशों का अनुवाद करें</translation>
+    </message>
+    <message>
+        <source>The messages you read in this chat are sent to the translation service.</source>
+        <translation>इस चैट में आप जो संदेश पढ़ते हैं, वे अनुवाद सेवा को भेजे जाते हैं।</translation>
+    </message>
+    <message>
+        <source>OK</source>
+        <translation>ठीक है</translation>
+    </message>
 </context>
 <context>
     <name>ChatListModel</name>
@@ -425,6 +441,10 @@
         <location filename="../assets/ChatRow.qml" line="1" />
         <source>Call</source>
         <translation>कॉल करें</translation>
+    </message>
+    <message>
+        <source>Translate…</source>
+        <translation>अनुवाद…</translation>
     </message>
 </context>
 <context>
@@ -1080,6 +1100,14 @@
     <message>
         <source>Unstar</source>
         <translation>स्टार हटाएं</translation>
+    </message>
+    <message>
+        <source>Translate</source>
+        <translation>अनुवाद करें</translation>
+    </message>
+    <message>
+        <source>Show original</source>
+        <translation>मूल दिखाएँ</translation>
     </message>
 </context>
 <context>
@@ -1778,6 +1806,14 @@
     <message>
         <source>Enter key, proximity sensor, video calls</source>
         <translation>Enter कुंजी, निकटता सेंसर, वीडियो कॉल</translation>
+    </message>
+    <message>
+        <source>Translation</source>
+        <translation>अनुवाद</translation>
+    </message>
+    <message>
+        <source>Service, API key</source>
+        <translation>सेवा, API कुंजी</translation>
     </message>
 </context>
 <context>
@@ -2748,6 +2784,72 @@
     <message>
         <source>Couldn&apos;t open this link. Try again in a moment.</source>
         <translation>यह लिंक नहीं खुल सका। थोड़ी देर में फिर से कोशिश करें।</translation>
+    </message>
+</context>
+<context>
+    <name>TranslateDialog</name>
+    <message>
+        <source>Original</source>
+        <translation>मूल</translation>
+    </message>
+    <message>
+        <source>Already in %1</source>
+        <translation>पहले से %1 में</translation>
+    </message>
+    <message>
+        <source>Set up the translation service in Settings</source>
+        <translation>सेटिंग्स में अनुवाद सेवा सेट करें</translation>
+    </message>
+    <message>
+        <source>This service can&apos;t translate into this language</source>
+        <translation>यह सेवा इस भाषा में अनुवाद नहीं कर सकती</translation>
+    </message>
+    <message>
+        <source>The translation service is busy. Try again later.</source>
+        <translation>अनुवाद सेवा व्यस्त है। बाद में फिर कोशिश करें।</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t reach the translation service</source>
+        <translation>अनुवाद सेवा तक नहीं पहुँच सके</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t translate this message</source>
+        <translation>इस संदेश का अनुवाद नहीं हो सका</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>कॉपी करें</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>बंद करें</translation>
+    </message>
+</context>
+<context>
+    <name>TranslationSettingsPage</name>
+    <message>
+        <source>Translation</source>
+        <translation>अनुवाद</translation>
+    </message>
+    <message>
+        <source>Service</source>
+        <translation>सेवा</translation>
+    </message>
+    <message>
+        <source>DeepL API key</source>
+        <translation>DeepL API कुंजी</translation>
+    </message>
+    <message>
+        <source>Server address</source>
+        <translation>सर्वर का पता</translation>
+    </message>
+    <message>
+        <source>API key (optional)</source>
+        <translation>API कुंजी (वैकल्पिक)</translation>
+    </message>
+    <message>
+        <source>The messages you translate are sent to this service.</source>
+        <translation>आप जिन संदेशों का अनुवाद करते हैं, वे इस सेवा को भेजे जाते हैं।</translation>
     </message>
 </context>
 </TS>

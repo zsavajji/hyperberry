@@ -82,6 +82,7 @@ private slots:
     void loadFirst();
     void onMsgs(const QString &chat, const QStringList &ids);
     void onConnected();
+    void onChats(const QStringList &jids);
 
 private:
     struct Msg
@@ -117,6 +118,9 @@ private:
     void refresh(const QStringList &old, const QSet<QString> &updated);
     QString longDay(const QDate &date, const QLocale &locale);
     QString dayTitle(const Msg &m);
+    QString readTranslate() const;
+    void reload();
+    void askTranslate();
 
     QPointer<EngineLink> m_engine;
     QString m_chat;
@@ -127,6 +131,9 @@ private:
     QSet<QString> m_hidden;
     QSet<QString> m_revealed; // the spoilers tapped open (unspoil)
     QSet<QString> m_asked; // the sticker ids asked for from the engine (Sticker::fetch)
+    QString m_translate; // the language this chat's incoming messages are shown in (chats.translate), "" for off
+    QSet<QString> m_askedTr; // the ids asked to be translated: never twice until the chat is reopened (or the link comes back)
+    QStringList m_toTranslate; // read() queues, select() sends: newest first
     QList<Entry> m_entries;
     bb::system::LocaleHandler m_region;
     QLocale m_locale; // the region's locale, read once per select()

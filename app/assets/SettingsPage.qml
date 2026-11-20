@@ -27,6 +27,10 @@ Page {
         ComponentDefinition {
             id: dataDef
             source: "DataSettingsPage.qml"
+        },
+        ComponentDefinition {
+            id: translationDef
+            source: "TranslationSettingsPage.qml"
         }
     ]
     onCreationCompleted: {
@@ -39,6 +43,7 @@ Page {
         items.push({ title: qsTr("Chats and Calls"), description: qsTr("Enter key, proximity sensor, video calls"), target: "chats" })
         items.push({ title: qsTr("Notifications"), description: qsTr("Preview, start at boot"), target: "notifications" })
         items.push({ title: qsTr("Data and storage"), description: qsTr("Automatic downloads, mobile data, cache"), target: "data" })
+        items.push({ title: qsTr("Translation"), description: qsTr("Service, API key"), target: "translation" })
         rows.append(items)
     }
     function openPage(target) {
@@ -52,6 +57,8 @@ Page {
             nav.push(notificationDef.createObject())
         } else if (target == "data") {
             nav.push(dataDef.createObject())
+        } else if (target == "translation") {
+            nav.push(translationDef.createObject())
         }
     }
     Container {

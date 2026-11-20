@@ -249,6 +249,22 @@
         <source>Unfollow</source>
         <translation>Відписатися</translation>
     </message>
+    <message>
+        <source>Off</source>
+        <translation>Вимк.</translation>
+    </message>
+    <message>
+        <source>Translate incoming messages</source>
+        <translation>Перекладати вхідні повідомлення</translation>
+    </message>
+    <message>
+        <source>The messages you read in this chat are sent to the translation service.</source>
+        <translation>Повідомлення, які ви читаєте в цьому чаті, надсилаються до сервісу перекладу.</translation>
+    </message>
+    <message>
+        <source>OK</source>
+        <translation>OK</translation>
+    </message>
 </context>
 <context>
     <name>ChatListModel</name>
@@ -426,6 +442,10 @@
         <location filename="../assets/ChatRow.qml" line="1" />
         <source>Call</source>
         <translation>Зателефонувати</translation>
+    </message>
+    <message>
+        <source>Translate…</source>
+        <translation>Переклад…</translation>
     </message>
 </context>
 <context>
@@ -1082,6 +1102,14 @@
     <message>
         <source>Unstar</source>
         <translation>Прибрати з обраного</translation>
+    </message>
+    <message>
+        <source>Translate</source>
+        <translation>Перекласти</translation>
+    </message>
+    <message>
+        <source>Show original</source>
+        <translation>Показати оригінал</translation>
     </message>
 </context>
 <context>
@@ -1781,6 +1809,14 @@
     <message>
         <source>Enter key, proximity sensor, video calls</source>
         <translation>Клавіша Enter, датчик наближення, відеодзвінки</translation>
+    </message>
+    <message>
+        <source>Translation</source>
+        <translation>Переклад</translation>
+    </message>
+    <message>
+        <source>Service, API key</source>
+        <translation>Сервіс, ключ API</translation>
     </message>
 </context>
 <context>
@@ -2751,6 +2787,72 @@
     <message>
         <source>Couldn&apos;t open this link. Try again in a moment.</source>
         <translation>Не вдалося відкрити це посилання. Спробуйте ще раз трохи згодом.</translation>
+    </message>
+</context>
+<context>
+    <name>TranslateDialog</name>
+    <message>
+        <source>Original</source>
+        <translation>Оригінал</translation>
+    </message>
+    <message>
+        <source>Already in %1</source>
+        <translation>Уже мовою: %1</translation>
+    </message>
+    <message>
+        <source>Set up the translation service in Settings</source>
+        <translation>Налаштуйте сервіс перекладу в Налаштуваннях</translation>
+    </message>
+    <message>
+        <source>This service can&apos;t translate into this language</source>
+        <translation>Цей сервіс не вміє перекладати цією мовою</translation>
+    </message>
+    <message>
+        <source>The translation service is busy. Try again later.</source>
+        <translation>Сервіс перекладу зайнятий. Спробуйте пізніше.</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t reach the translation service</source>
+        <translation>Не вдалося зв&apos;язатися із сервісом перекладу</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t translate this message</source>
+        <translation>Не вдалося перекласти це повідомлення</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Копіювати</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Закрити</translation>
+    </message>
+</context>
+<context>
+    <name>TranslationSettingsPage</name>
+    <message>
+        <source>Translation</source>
+        <translation>Переклад</translation>
+    </message>
+    <message>
+        <source>Service</source>
+        <translation>Сервіс</translation>
+    </message>
+    <message>
+        <source>DeepL API key</source>
+        <translation>Ключ API DeepL</translation>
+    </message>
+    <message>
+        <source>Server address</source>
+        <translation>Адреса сервера</translation>
+    </message>
+    <message>
+        <source>API key (optional)</source>
+        <translation>Ключ API (необов&apos;язково)</translation>
+    </message>
+    <message>
+        <source>The messages you translate are sent to this service.</source>
+        <translation>Повідомлення, які ви перекладаєте, надсилаються до цього сервісу.</translation>
     </message>
 </context>
 </TS>

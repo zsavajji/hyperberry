@@ -211,6 +211,10 @@ void EngineLink::readLines()
                     prefs["autoDoc"] = file.value("autoDoc", false).toBool();
                     prefs["cloudflareDNS"] = file.value("cloudflareDNS", false).toBool();
                     prefs["language"] = m_language;
+                    prefs["translateProvider"] = file.value("translateProvider", "google").toString();
+                    prefs["deeplKey"] = file.value("deeplKey").toString();
+                    prefs["libreURL"] = file.value("libreURL").toString();
+                    prefs["libreKey"] = file.value("libreKey").toString();
                     prefs["cacheMB"] = qBound(64, file.value("cacheLimit", 64).toInt(), 512);
                     request("prefs.set", prefs);
                     qDebug() << "engine: connected, link" << m_link["state"].toString()

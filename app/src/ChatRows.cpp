@@ -82,6 +82,7 @@ ChatRow::ChatRow(ListView *list)
     , m_readItem(0)
     , m_pinItem(0)
     , m_muteItem(0)
+    , m_translateItem(0)
     , m_archiveItem(0)
     , m_openItem(0)
 {
@@ -344,6 +345,7 @@ void ChatRow::makeActions()
     m_readItem = action(SLOT(onRead()));
     m_pinItem = action(SLOT(onPin()));
     m_muteItem = action(SLOT(onMute()));
+    m_translateItem = action(SLOT(onTranslate()));
     m_archiveItem = action(SLOT(onArchive()));
 }
 
@@ -367,6 +369,7 @@ void ChatRow::onPopulating()
     m_pinItem->setEnabled(!channels);
     setItem(m_muteItem, flag("muted") ? "Unmute" : "Mute\xE2\x80\xA6", "asset:///images/mute_action.png");
     m_muteItem->setEnabled(!channels);
+    setItem(m_translateItem, "Translate\xE2\x80\xA6", "asset:///images/translate_action.png");
     if (channels)
         setItem(m_archiveItem, "Unfollow", "file:///usr/share/icons/bb_action_delete.png");
     else
@@ -378,5 +381,6 @@ void ChatRow::onCall() { Card::call(m_list, m_calls ? "callBack" : "call", m_cha
 void ChatRow::onRead() { Card::call(m_list, "toggleUnread", m_chat); }
 void ChatRow::onPin() { Card::call(m_list, "togglePin", m_chat); }
 void ChatRow::onMute() { Card::call(m_list, "toggleMute", m_chat); }
+void ChatRow::onTranslate() { Card::call(m_list, "pickTranslate", m_chat); }
 void ChatRow::onArchive() { Card::call(m_list, "toggleArchive", m_chat); }
 void ChatRow::onOpenChat() { Card::call(m_list, "openChat", m_chat); }

@@ -40,6 +40,11 @@ class Settings : public QObject
     Q_PROPERTY(int videoQuality READ videoQuality WRITE setVideoQuality NOTIFY videoQualityChanged)
     // Video calls, the camera's aspect ratio: false is the camera's own, true crops it to 9:16 (CallVideo's crop).
     Q_PROPERTY(bool cameraCrop READ cameraCrop WRITE setCameraCrop NOTIFY cameraCropChanged)
+    // Translation (the engine's prefs): the service ("google", "deepl", "libre") and what it needs. One signal for the four.
+    Q_PROPERTY(QString translateProvider READ translateProvider WRITE setTranslateProvider NOTIFY translateChanged)
+    Q_PROPERTY(QString deeplKey READ deeplKey WRITE setDeeplKey NOTIFY translateChanged)
+    Q_PROPERTY(QString libreURL READ libreURL WRITE setLibreURL NOTIFY translateChanged)
+    Q_PROPERTY(QString libreKey READ libreKey WRITE setLibreKey NOTIFY translateChanged)
 
 public:
     explicit Settings(EngineLink *engine, QObject *parent = 0);
@@ -62,6 +67,10 @@ public:
     int callHints() const;
     int videoQuality() const;
     bool cameraCrop() const;
+    QString translateProvider() const;
+    QString deeplKey() const;
+    QString libreURL() const;
+    QString libreKey() const;
     void setTheme(int theme);
     void setEnterSends(bool on);
     void setNotifyPreview(bool on);
@@ -80,6 +89,10 @@ public:
     void setCallHints(int count);
     void setVideoQuality(int quality);
     void setCameraCrop(bool on);
+    void setTranslateProvider(const QString &value);
+    void setDeeplKey(const QString &value);
+    void setLibreURL(const QString &value);
+    void setLibreKey(const QString &value);
     Q_INVOKABLE QString cacheSize();
     Q_INVOKABLE QString clearCache();
 
@@ -99,6 +112,7 @@ signals:
     void callHintsChanged();
     void videoQualityChanged(int quality);
     void cameraCropChanged(bool on);
+    void translateChanged();
 
 private slots:
     void bootTimerReplied();
@@ -107,7 +121,8 @@ private:
     void applyTheme();
     void applyBootTimer(bool on);
     void store(const char *key, const QVariant &value);
-    void storePref(const char *key, bool on);
+    void storePref(const char *key, const QVariant &value);
+    void setTranslate(const char *key, const QString &value);
     QSettings m_file;
     EngineLink *m_engine;
     bb::system::LocaleHandler m_region; // for the size text, as the chat models have it
