@@ -43,6 +43,7 @@
 #include "Profile.h"
 #include "Proximity.h"
 #include "QrImage.h"
+#include "MemoryPatch.h"
 #include "Settings.h"
 
 using namespace bb::cascades;
@@ -162,6 +163,7 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     EmojiModel emojis(&app);
     QrImage qr(&app);
     Settings settings(&engine, &app);
+    MemoryPatch memPatch(&app);
     // Our camera's size and aspect follow Settings > Data and storage > Calls, also during a call.
     callVideo.setQuality(settings.videoQuality());
     QObject::connect(&settings, SIGNAL(videoQualityChanged(int)), &callVideo, SLOT(setQuality(int)));
@@ -213,6 +215,7 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     document->setContextProperty("emojis", &emojis);
     document->setContextProperty("qr", &qr);
     document->setContextProperty("settings", &settings);
+    document->setContextProperty("memPatch", &memPatch);
     document->setContextProperty("openRequests", &openRequests);
     document->setContextProperty("invites", &invites);
     // The phone's region and language ("IT", "it"): the linking page's first country, and the

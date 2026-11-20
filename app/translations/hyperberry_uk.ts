@@ -2271,6 +2271,38 @@
         <source>Stories</source>
         <translation>Статуси</translation>
     </message>
+    <message>
+        <source>More memory for HyperBerry</source>
+        <translation>Більше пам&apos;яті для HyperBerry</translation>
+    </message>
+    <message>
+        <source>BlackBerry 10 gives an app&apos;s background service at most 30 MB of memory. HyperBerry&apos;s service, which keeps your chats in sync and brings your notifications, works within it, with little room to spare.
+
+This patch raises that limit to 128 MB. Each time the phone starts, a few minutes in, it changes that one number in the system&apos;s memory. No system file is changed, and it only affects apps that ask for the largest background size. Only the patch runs as root.
+
+After the install, HyperBerry closes once: open it again. You can also install it later, from Settings &gt; Data and storage.</source>
+        <translation>BlackBerry 10 виділяє фоновій службі застосунку не більше 30 МБ пам&apos;яті. Служба HyperBerry, яка синхронізує ваші чати та приносить сповіщення, вкладається в цей ліміт, але запасу майже немає.
+
+Цей патч піднімає ліміт до 128 МБ. Під час кожного запуску телефона, за кілька хвилин, він змінює це єдине число в пам&apos;яті системи. Системні файли не змінюються, і це стосується лише застосунків, які просять найбільший розмір фонової пам&apos;яті. Від імені root працює лише патч.
+
+Після встановлення HyperBerry один раз закриється: відкрийте його знову. Встановити патч можна й пізніше: Налаштування &gt; Дані та сховище.</translation>
+    </message>
+    <message>
+        <source>Install</source>
+        <translation>Встановити</translation>
+    </message>
+    <message>
+        <source>Not now</source>
+        <translation>Не зараз</translation>
+    </message>
+    <message>
+        <source>Installing the memory addon…</source>
+        <translation>Встановлення додатка пам&apos;яті…</translation>
+    </message>
+    <message>
+        <source>Close HyperBerry</source>
+        <translation>Закрити HyperBerry</translation>
+    </message>
 </context>
 <context>
     <name>TextCard</name>
@@ -2788,6 +2820,22 @@
         <source>Couldn&apos;t open this link. Try again in a moment.</source>
         <translation>Не вдалося відкрити це посилання. Спробуйте ще раз трохи згодом.</translation>
     </message>
+    <message>
+        <source>Background memory</source>
+        <translation>Фонова пам&apos;ять</translation>
+    </message>
+    <message>
+        <source>HyperBerry&apos;s background service has %1 MB</source>
+        <translation>Фонова служба HyperBerry має %1 МБ</translation>
+    </message>
+    <message>
+        <source>Install the memory patch</source>
+        <translation>Встановити патч пам&apos;яті</translation>
+    </message>
+    <message>
+        <source>The patch is installed. It takes effect a few minutes after the phone starts: close HyperBerry and open it again then.</source>
+        <translation>Патч встановлено. Він набуває чинності через кілька хвилин після запуску телефона: тоді закрийте HyperBerry і відкрийте знову.</translation>
+    </message>
 </context>
 <context>
     <name>TranslateDialog</name>
@@ -2853,6 +2901,37 @@
     <message>
         <source>The messages you translate are sent to this service.</source>
         <translation>Повідомлення, які ви перекладаєте, надсилаються до цього сервісу.</translation>
+    </message>
+</context>
+<context>
+    <name>MemoryPatch</name>
+    <message>
+        <source>Root is not available: HyperBerry needs AutoRoot v4 with root enabled (/var/rootdata/use.root).</source>
+        <translation>Root недоступний: для HyperBerry потрібен AutoRoot v4 з увімкненим root (/var/rootdata/use.root).</translation>
+    </message>
+    <message>
+        <source>The memory addon (headless-mem.zip) is missing from this app.</source>
+        <translation>У цьому застосунку немає додатка пам&apos;яті (headless-mem.zip).</translation>
+    </message>
+    <message>
+        <source>The helper hb-install-patcher is missing from this app.</source>
+        <translation>У цьому застосунку немає помічника hb-install-patcher.</translation>
+    </message>
+    <message>
+        <source>The root helper gave no output. Is root enabled in AutoRoot (/var/rootdata/use.root)?</source>
+        <translation>Помічник root нічого не вивів. Чи ввімкнено root в AutoRoot (/var/rootdata/use.root)?</translation>
+    </message>
+    <message>
+        <source>Installed. HyperBerry has to close once to use the new memory limit: open it again afterwards.</source>
+        <translation>Встановлено. HyperBerry потрібно один раз закрити, щоб застосувати новий ліміт пам&apos;яті: потім відкрийте його знову.</translation>
+    </message>
+    <message>
+        <source>The install did not finish. The output is in Documents, hyperberry-memory-patch.txt.</source>
+        <translation>Встановлення не завершилося. Вивід у Документах, hyperberry-memory-patch.txt.</translation>
+    </message>
+    <message>
+        <source>Could not start the root helper %1.</source>
+        <translation>Не вдалося запустити помічник root %1.</translation>
     </message>
 </context>
 </TS>

@@ -2265,6 +2265,38 @@
         <source>Stories</source>
         <translation>Status</translation>
     </message>
+    <message>
+        <source>More memory for HyperBerry</source>
+        <translation>Memori lebih untuk HyperBerry</translation>
+    </message>
+    <message>
+        <source>BlackBerry 10 gives an app&apos;s background service at most 30 MB of memory. HyperBerry&apos;s service, which keeps your chats in sync and brings your notifications, works within it, with little room to spare.
+
+This patch raises that limit to 128 MB. Each time the phone starts, a few minutes in, it changes that one number in the system&apos;s memory. No system file is changed, and it only affects apps that ask for the largest background size. Only the patch runs as root.
+
+After the install, HyperBerry closes once: open it again. You can also install it later, from Settings &gt; Data and storage.</source>
+        <translation>BlackBerry 10 memberi layanan latar belakang sebuah aplikasi paling banyak 30 MB memori. Layanan HyperBerry, yang menjaga obrolan Anda tetap sinkron dan membawa notifikasi, berjalan dalam batas itu, dengan sedikit ruang tersisa.
+
+Patch ini menaikkan batas tersebut menjadi 128 MB. Setiap kali ponsel menyala, beberapa menit kemudian, patch mengubah satu angka itu di memori sistem. Tidak ada berkas sistem yang diubah, dan hanya memengaruhi aplikasi yang meminta ukuran latar belakang terbesar. Hanya patch yang berjalan sebagai root.
+
+Setelah pemasangan, HyperBerry menutup sekali: buka lagi. Anda juga bisa memasangnya nanti, dari Pengaturan &gt; Data dan penyimpanan.</translation>
+    </message>
+    <message>
+        <source>Install</source>
+        <translation>Pasang</translation>
+    </message>
+    <message>
+        <source>Not now</source>
+        <translation>Nanti saja</translation>
+    </message>
+    <message>
+        <source>Installing the memory addon…</source>
+        <translation>Memasang addon memori…</translation>
+    </message>
+    <message>
+        <source>Close HyperBerry</source>
+        <translation>Tutup HyperBerry</translation>
+    </message>
 </context>
 <context>
     <name>TextCard</name>
@@ -2782,6 +2814,22 @@
         <source>Couldn&apos;t open this link. Try again in a moment.</source>
         <translation>Tidak dapat membuka tautan ini. Coba lagi sebentar lagi.</translation>
     </message>
+    <message>
+        <source>Background memory</source>
+        <translation>Memori latar belakang</translation>
+    </message>
+    <message>
+        <source>HyperBerry&apos;s background service has %1 MB</source>
+        <translation>Layanan latar belakang HyperBerry memiliki %1 MB</translation>
+    </message>
+    <message>
+        <source>Install the memory patch</source>
+        <translation>Pasang patch memori</translation>
+    </message>
+    <message>
+        <source>The patch is installed. It takes effect a few minutes after the phone starts: close HyperBerry and open it again then.</source>
+        <translation>Patch sudah terpasang. Berlaku beberapa menit setelah ponsel menyala: saat itu tutup HyperBerry lalu buka lagi.</translation>
+    </message>
 </context>
 <context>
     <name>TranslateDialog</name>
@@ -2847,6 +2895,37 @@
     <message>
         <source>The messages you translate are sent to this service.</source>
         <translation>Pesan yang Anda terjemahkan dikirim ke layanan ini.</translation>
+    </message>
+</context>
+<context>
+    <name>MemoryPatch</name>
+    <message>
+        <source>Root is not available: HyperBerry needs AutoRoot v4 with root enabled (/var/rootdata/use.root).</source>
+        <translation>Root tidak tersedia: HyperBerry membutuhkan AutoRoot v4 dengan root aktif (/var/rootdata/use.root).</translation>
+    </message>
+    <message>
+        <source>The memory addon (headless-mem.zip) is missing from this app.</source>
+        <translation>Addon memori (headless-mem.zip) tidak ada di aplikasi ini.</translation>
+    </message>
+    <message>
+        <source>The helper hb-install-patcher is missing from this app.</source>
+        <translation>Pembantu hb-install-patcher tidak ada di aplikasi ini.</translation>
+    </message>
+    <message>
+        <source>The root helper gave no output. Is root enabled in AutoRoot (/var/rootdata/use.root)?</source>
+        <translation>Pembantu root tidak memberi keluaran. Apakah root aktif di AutoRoot (/var/rootdata/use.root)?</translation>
+    </message>
+    <message>
+        <source>Installed. HyperBerry has to close once to use the new memory limit: open it again afterwards.</source>
+        <translation>Terpasang. HyperBerry harus menutup sekali untuk memakai batas memori baru: buka lagi setelahnya.</translation>
+    </message>
+    <message>
+        <source>The install did not finish. The output is in Documents, hyperberry-memory-patch.txt.</source>
+        <translation>Pemasangan tidak selesai. Keluarannya ada di Documents, hyperberry-memory-patch.txt.</translation>
+    </message>
+    <message>
+        <source>Could not start the root helper %1.</source>
+        <translation>Tidak dapat memulai pembantu root %1.</translation>
     </message>
 </context>
 </TS>

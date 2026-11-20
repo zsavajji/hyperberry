@@ -2265,6 +2265,38 @@
         <source>Stories</source>
         <translation>Trạng thái</translation>
     </message>
+    <message>
+        <source>More memory for HyperBerry</source>
+        <translation>Thêm bộ nhớ cho HyperBerry</translation>
+    </message>
+    <message>
+        <source>BlackBerry 10 gives an app&apos;s background service at most 30 MB of memory. HyperBerry&apos;s service, which keeps your chats in sync and brings your notifications, works within it, with little room to spare.
+
+This patch raises that limit to 128 MB. Each time the phone starts, a few minutes in, it changes that one number in the system&apos;s memory. No system file is changed, and it only affects apps that ask for the largest background size. Only the patch runs as root.
+
+After the install, HyperBerry closes once: open it again. You can also install it later, from Settings &gt; Data and storage.</source>
+        <translation>BlackBerry 10 cấp cho dịch vụ nền của một ứng dụng tối đa 30 MB bộ nhớ. Dịch vụ của HyperBerry, giữ cho các cuộc trò chuyện được đồng bộ và mang thông báo đến, hoạt động trong giới hạn đó, nhưng còn rất ít dư địa.
+
+Bản vá này nâng giới hạn lên 128 MB. Mỗi lần điện thoại khởi động, vài phút sau, nó thay đúng con số đó trong bộ nhớ của hệ thống. Không có tệp hệ thống nào bị thay đổi, và nó chỉ ảnh hưởng đến các ứng dụng yêu cầu kích thước nền lớn nhất. Chỉ bản vá chạy với quyền root.
+
+Sau khi cài, HyperBerry sẽ đóng một lần: hãy mở lại. Bạn cũng có thể cài sau, trong Cài đặt &gt; Dữ liệu và lưu trữ.</translation>
+    </message>
+    <message>
+        <source>Install</source>
+        <translation>Cài đặt</translation>
+    </message>
+    <message>
+        <source>Not now</source>
+        <translation>Không phải bây giờ</translation>
+    </message>
+    <message>
+        <source>Installing the memory addon…</source>
+        <translation>Đang cài addon bộ nhớ…</translation>
+    </message>
+    <message>
+        <source>Close HyperBerry</source>
+        <translation>Đóng HyperBerry</translation>
+    </message>
 </context>
 <context>
     <name>TextCard</name>
@@ -2782,6 +2814,22 @@
         <source>Couldn&apos;t open this link. Try again in a moment.</source>
         <translation>Không thể mở liên kết này. Hãy thử lại sau giây lát.</translation>
     </message>
+    <message>
+        <source>Background memory</source>
+        <translation>Bộ nhớ nền</translation>
+    </message>
+    <message>
+        <source>HyperBerry&apos;s background service has %1 MB</source>
+        <translation>Dịch vụ nền của HyperBerry có %1 MB</translation>
+    </message>
+    <message>
+        <source>Install the memory patch</source>
+        <translation>Cài bản vá bộ nhớ</translation>
+    </message>
+    <message>
+        <source>The patch is installed. It takes effect a few minutes after the phone starts: close HyperBerry and open it again then.</source>
+        <translation>Bản vá đã được cài. Nó có hiệu lực vài phút sau khi điện thoại khởi động: khi đó hãy đóng HyperBerry và mở lại.</translation>
+    </message>
 </context>
 <context>
     <name>TranslateDialog</name>
@@ -2847,6 +2895,37 @@
     <message>
         <source>The messages you translate are sent to this service.</source>
         <translation>Các tin nhắn bạn dịch được gửi đến dịch vụ này.</translation>
+    </message>
+</context>
+<context>
+    <name>MemoryPatch</name>
+    <message>
+        <source>Root is not available: HyperBerry needs AutoRoot v4 with root enabled (/var/rootdata/use.root).</source>
+        <translation>Không có root: HyperBerry cần AutoRoot v4 với root đã bật (/var/rootdata/use.root).</translation>
+    </message>
+    <message>
+        <source>The memory addon (headless-mem.zip) is missing from this app.</source>
+        <translation>Ứng dụng này thiếu addon bộ nhớ (headless-mem.zip).</translation>
+    </message>
+    <message>
+        <source>The helper hb-install-patcher is missing from this app.</source>
+        <translation>Ứng dụng này thiếu trình hỗ trợ hb-install-patcher.</translation>
+    </message>
+    <message>
+        <source>The root helper gave no output. Is root enabled in AutoRoot (/var/rootdata/use.root)?</source>
+        <translation>Trình hỗ trợ root không có đầu ra. Root đã bật trong AutoRoot chưa (/var/rootdata/use.root)?</translation>
+    </message>
+    <message>
+        <source>Installed. HyperBerry has to close once to use the new memory limit: open it again afterwards.</source>
+        <translation>Đã cài. HyperBerry phải đóng một lần để dùng giới hạn bộ nhớ mới: sau đó hãy mở lại.</translation>
+    </message>
+    <message>
+        <source>The install did not finish. The output is in Documents, hyperberry-memory-patch.txt.</source>
+        <translation>Việc cài đặt chưa hoàn tất. Kết quả nằm trong Documents, hyperberry-memory-patch.txt.</translation>
+    </message>
+    <message>
+        <source>Could not start the root helper %1.</source>
+        <translation>Không thể khởi động trình hỗ trợ root %1.</translation>
     </message>
 </context>
 </TS>

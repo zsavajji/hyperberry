@@ -238,6 +238,38 @@ Page {
                         textStyle.color: ui.palette.secondaryTextOnPlain
                     }
                 }
+                // The engine's memory cap (memMB in the link body; MemoryPatch.cpp). Hidden when unknown.
+                Header {
+                    visible: engine.link.memMB > 0
+                    title: qsTr("Background memory")
+                }
+                Container {
+                    visible: engine.link.memMB > 0
+                    topPadding: zoom * ui.du(2)
+                    leftPadding: zoom * ui.du(2)
+                    rightPadding: zoom * ui.du(2)
+                    bottomPadding: zoom * ui.du(2)
+                    Label {
+                        multiline: true
+                        text: qsTr("HyperBerry's background service has %1 MB").arg(engine.link.memMB)
+                    }
+                    Button {
+                        visible: engine.link.memMB < 128 && !memPatch.installed
+                        topMargin: zoom * ui.du(1)
+                        horizontalAlignment: HorizontalAlignment.Fill
+                        enabled: !memPatch.busy
+                        text: qsTr("Install the memory patch")
+                        onClicked: nav.askMemory()
+                    }
+                    Label {
+                        visible: engine.link.memMB < 128 && memPatch.installed
+                        topMargin: zoom * ui.du(1)
+                        multiline: true
+                        text: qsTr("The patch is installed. It takes effect a few minutes after the phone starts: close HyperBerry and open it again then.")
+                        textStyle.base: SystemDefaults.TextStyles.SubtitleText
+                        textStyle.color: ui.palette.secondaryTextOnPlain
+                    }
+                }
             }
         }
     }

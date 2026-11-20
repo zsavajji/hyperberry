@@ -2268,6 +2268,38 @@
         <source>Stories</source>
         <translation>Statuts</translation>
     </message>
+    <message>
+        <source>More memory for HyperBerry</source>
+        <translation>Plus de mémoire pour HyperBerry</translation>
+    </message>
+    <message>
+        <source>BlackBerry 10 gives an app&apos;s background service at most 30 MB of memory. HyperBerry&apos;s service, which keeps your chats in sync and brings your notifications, works within it, with little room to spare.
+
+This patch raises that limit to 128 MB. Each time the phone starts, a few minutes in, it changes that one number in the system&apos;s memory. No system file is changed, and it only affects apps that ask for the largest background size. Only the patch runs as root.
+
+After the install, HyperBerry closes once: open it again. You can also install it later, from Settings &gt; Data and storage.</source>
+        <translation>BlackBerry 10 accorde au service d&apos;arrière-plan d&apos;une app 30 Mo de mémoire au maximum. Le service de HyperBerry, qui garde vos discussions synchronisées et apporte vos notifications, fonctionne dans cette limite, avec peu de marge.
+
+Ce correctif relève cette limite à 128 Mo. À chaque démarrage du téléphone, quelques minutes après, il modifie ce seul nombre dans la mémoire du système. Aucun fichier système n&apos;est modifié, et cela ne concerne que les apps qui demandent la plus grande taille en arrière-plan. Seul le correctif s&apos;exécute en root.
+
+Après l&apos;installation, HyperBerry se ferme une fois : rouvrez-le. Vous pouvez aussi l&apos;installer plus tard, depuis Réglages &gt; Données et stockage.</translation>
+    </message>
+    <message>
+        <source>Install</source>
+        <translation>Installer</translation>
+    </message>
+    <message>
+        <source>Not now</source>
+        <translation>Pas maintenant</translation>
+    </message>
+    <message>
+        <source>Installing the memory addon…</source>
+        <translation>Installation de l&apos;addon mémoire…</translation>
+    </message>
+    <message>
+        <source>Close HyperBerry</source>
+        <translation>Fermer HyperBerry</translation>
+    </message>
 </context>
 <context>
     <name>TextCard</name>
@@ -2785,6 +2817,22 @@
         <source>Couldn&apos;t open this link. Try again in a moment.</source>
         <translation>Impossible d&apos;ouvrir ce lien. Réessayez dans un instant.</translation>
     </message>
+    <message>
+        <source>Background memory</source>
+        <translation>Mémoire en arrière-plan</translation>
+    </message>
+    <message>
+        <source>HyperBerry&apos;s background service has %1 MB</source>
+        <translation>Le service d&apos;arrière-plan de HyperBerry dispose de %1 Mo</translation>
+    </message>
+    <message>
+        <source>Install the memory patch</source>
+        <translation>Installer le correctif mémoire</translation>
+    </message>
+    <message>
+        <source>The patch is installed. It takes effect a few minutes after the phone starts: close HyperBerry and open it again then.</source>
+        <translation>Le correctif est installé. Il prend effet quelques minutes après le démarrage du téléphone : fermez alors HyperBerry et rouvrez-le.</translation>
+    </message>
 </context>
 <context>
     <name>TranslateDialog</name>
@@ -2850,6 +2898,37 @@
     <message>
         <source>The messages you translate are sent to this service.</source>
         <translation>Les messages que vous traduisez sont envoyés à ce service.</translation>
+    </message>
+</context>
+<context>
+    <name>MemoryPatch</name>
+    <message>
+        <source>Root is not available: HyperBerry needs AutoRoot v4 with root enabled (/var/rootdata/use.root).</source>
+        <translation>Root n&apos;est pas disponible : HyperBerry nécessite AutoRoot v4 avec root activé (/var/rootdata/use.root).</translation>
+    </message>
+    <message>
+        <source>The memory addon (headless-mem.zip) is missing from this app.</source>
+        <translation>L&apos;addon mémoire (headless-mem.zip) est absent de cette app.</translation>
+    </message>
+    <message>
+        <source>The helper hb-install-patcher is missing from this app.</source>
+        <translation>L&apos;assistant hb-install-patcher est absent de cette app.</translation>
+    </message>
+    <message>
+        <source>The root helper gave no output. Is root enabled in AutoRoot (/var/rootdata/use.root)?</source>
+        <translation>L&apos;assistant root n&apos;a rien renvoyé. Root est-il activé dans AutoRoot (/var/rootdata/use.root) ?</translation>
+    </message>
+    <message>
+        <source>Installed. HyperBerry has to close once to use the new memory limit: open it again afterwards.</source>
+        <translation>Installé. HyperBerry doit se fermer une fois pour utiliser la nouvelle limite de mémoire : rouvrez-le ensuite.</translation>
+    </message>
+    <message>
+        <source>The install did not finish. The output is in Documents, hyperberry-memory-patch.txt.</source>
+        <translation>L&apos;installation ne s&apos;est pas terminée. La sortie est dans Documents, hyperberry-memory-patch.txt.</translation>
+    </message>
+    <message>
+        <source>Could not start the root helper %1.</source>
+        <translation>Impossible de lancer l&apos;assistant root %1.</translation>
     </message>
 </context>
 </TS>
