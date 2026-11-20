@@ -157,7 +157,7 @@ func (s *Session) hello() any {
 }
 
 func (s *Session) linkBody() map[string]any {
-	b := map[string]any{"state": s.link, "conn": s.conn}
+	b := map[string]any{"state": s.link, "conn": s.conn, "memMB": memMB}
 	if s.syncing {
 		b["syncing"] = true
 	}

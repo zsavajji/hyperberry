@@ -110,7 +110,7 @@ func (s *Sim) hello() any {
 
 // body is the link body of docs/protocol.md.
 func (s *Sim) body() map[string]any {
-	b := map[string]any{"state": s.link, "conn": "offline"}
+	b := map[string]any{"state": s.link, "conn": "offline", "memMB": memMB}
 	if s.syncing {
 		b["syncing"] = true
 	}

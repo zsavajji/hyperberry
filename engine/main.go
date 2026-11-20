@@ -26,13 +26,6 @@ import (
 )
 
 func main() {
-	// The phone caps the engine at about 30 MB (phase6.md 6.3). Near this limit the collector
-	// works harder and returns memory to the OS sooner, instead of the heap growing till the OS
-	// kills us.
-	// ponytail: the real account's live heap is unmeasured; if it lives above this the collector
-	// will run often (raise the limit, or measure the heap).
-	rdebug.SetMemoryLimit(24 << 20)
-
 	// Started as the headless service the engine gets no arguments; BB10 sets HOME to the
 	// app's data/, which the UI reads too.
 	home := os.Getenv("HOME")
@@ -77,6 +70,14 @@ func main() {
 		}
 	}
 
+	// The phone caps the engine's data (RLIMIT_DATA) at 30 MiB (phase6.md 6.3), or 128 MiB with the headless-mem
+	// addon. Near the cap the collector works harder and returns memory to the OS sooner, instead of the heap
+	// growing till the OS kills us, so Go's limit is four fifths of the real cap. It is set once the log is open
+	// (a few flag reads after the start) so the rlimit line can be logged.
+	// ponytail: the real account's live heap is unmeasured; if it lives above this the collector will run often
+	// (raise the fraction, or measure the heap).
+	memMB = readMemMB(log)
+	rdebug.SetMemoryLimit(goMemLimit(memMB))
 	log.Infof("engine memory at start: %s", memUsage())
 
 	identity(*osName, *days)
