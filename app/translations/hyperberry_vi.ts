@@ -247,22 +247,6 @@
         <source>Unfollow</source>
         <translation>Bỏ theo dõi</translation>
     </message>
-    <message>
-        <source>Off</source>
-        <translation>Tắt</translation>
-    </message>
-    <message>
-        <source>Translate incoming messages</source>
-        <translation>Dịch tin nhắn đến</translation>
-    </message>
-    <message>
-        <source>The messages you read in this chat are sent to the translation service.</source>
-        <translation>Các tin nhắn bạn đọc trong cuộc trò chuyện này được gửi đến dịch vụ dịch.</translation>
-    </message>
-    <message>
-        <source>OK</source>
-        <translation>OK</translation>
-    </message>
 </context>
 <context>
     <name>ChatListModel</name>
@@ -387,6 +371,10 @@
         <location filename="../assets/ChatPage.qml" line="108"/>
         <source>Couldn&apos;t edit this message</source>
         <translation>Không thể chỉnh sửa tin nhắn này</translation>
+    </message>
+    <message>
+        <source>Translate…</source>
+        <translation>Dịch…</translation>
     </message>
 </context>
 <context>
@@ -2926,6 +2914,29 @@ Sau khi cài, HyperBerry sẽ đóng một lần: hãy mở lại.</translation>
     <message>
         <source>Could not start the root helper %1.</source>
         <translation>Không thể khởi động trình hỗ trợ root %1.</translation>
+    </message>
+</context>
+<context>
+    <name>TranslatePicker</name>
+    <message>
+        <source>Off</source>
+        <translation>Tắt</translation>
+    </message>
+    <message>
+        <source>Translate incoming messages</source>
+        <translation>Dịch tin nhắn đến</translation>
+    </message>
+    <message>
+        <source>The messages you read in this chat are sent to the translation service.</source>
+        <translation>Các tin nhắn bạn đọc trong cuộc trò chuyện này được gửi đến dịch vụ dịch.</translation>
+    </message>
+    <message>
+        <source>OK</source>
+        <translation>OK</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Hủy</translation>
     </message>
 </context>
 </TS>

@@ -1,7 +1,6 @@
 import bb.cascades 1.4
 import bb.system 1.2
 import hyperberry 1.0
-import "languages.js" as Languages
 
 // The rows of a chat list, for ChatsPage and ArchivedPage: the model is set by the page, which
 // takes chatTapped. The rows are C++ (ChatRows.cpp): they reach the work through the list's
@@ -65,31 +64,11 @@ ListView {
         }
     }
     function pickTranslate(chat) {
-        translateDialog.jid = chat.jid
-        // Rebuilt at each show, with the chat's language selected (filled here for the reason toggleMute says).
-        translateDialog.clearList()
-        translateDialog.appendItem(qsTr("Off"), true, !chat.translate)
-        var langs = Languages.list()
-        for (var i = 0; i < langs.length; i++) {
-            translateDialog.appendItem(langs[i][1], true, chat.translate == langs[i][0])
-        }
-        translateDialog.show()
+        translateDialog.pick(chat.jid, chat.translate)
     }
     attachedObjects: [
-        SystemListDialog {
+        TranslatePicker {
             id: translateDialog
-            property string jid
-            title: qsTr("Translate incoming messages")
-            body: qsTr("The messages you read in this chat are sent to the translation service.")
-            confirmButton.label: qsTr("OK")
-            cancelButton.label: qsTr("Cancel")
-            onFinished: {
-                if (value != SystemUiResult.ConfirmButtonSelection) {
-                    return
-                }
-                var i = selectedIndices[0]
-                list.set(jid, {"translate": i > 0 ? Languages.list()[i - 1][0] : ""})
-            }
         },
         SystemDialog {
             id: unfollowDialog

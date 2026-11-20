@@ -240,6 +240,7 @@ void MessageModel::onChats(const QStringList &jids)
     if (now == m_translate)
         return;
     m_translate = now;
+    emit translateChanged();
     m_askedTr.clear();
     reload();
 }

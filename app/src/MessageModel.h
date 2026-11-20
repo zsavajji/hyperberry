@@ -39,6 +39,8 @@ class MessageModel : public bb::cascades::DataModel
     Q_PROPERTY(bool empty READ empty NOTIFY emptyChanged)
     // True from opening the chat until its first page is in: the page shows a spinner meanwhile.
     Q_PROPERTY(bool loading READ loading NOTIFY loadingChanged)
+    // The language this chat's incoming messages are shown in ("it"), "" for off: chats.translate, read again on a chats event.
+    Q_PROPERTY(QString translate READ translate NOTIFY translateChanged)
 public:
     MessageModel(EngineLink *engine, const QString &chat, bool group, QObject *parent = 0);
 
@@ -59,6 +61,7 @@ public:
 
     bool empty() const { return m_entries.isEmpty(); }
     bool loading() const { return m_loading; }
+    QString translate() const { return m_translate; }
 
     // The chat's unread count as chats.db has it now.
     int unread() const;
@@ -71,6 +74,7 @@ public:
 signals:
     void emptyChanged();
     void loadingChanged();
+    void translateChanged();
     // A merge added a message that isn't ours and wasn't there before (not a first load or an
     // older page): the controller decides whether it was seen.
     void incoming();

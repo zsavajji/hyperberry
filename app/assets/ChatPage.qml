@@ -85,6 +85,7 @@ Page {
             chat: page.chat
             chatCtl: ctl
         },
+        TranslatePicker { id: chatTranslate },
         PollAction { id: pollAction; jid: page.chat ? page.chat.jid : "" },
         ComponentDefinition {
             id: callPickDef
@@ -148,7 +149,8 @@ Page {
             id: translateDef
             TranslateDialog {
                 chatCtl: ctl
-                defaultLang: page.chat && page.chat.translate ? page.chat.translate : phoneLocale.language
+                // The chat's live language (the model re-reads it), not page.chat's, which is as it was at the open.
+                defaultLang: ctl.messages && ctl.messages.translate ? ctl.messages.translate : phoneLocale.language
             }
         },
         ComponentDefinition {
@@ -216,6 +218,13 @@ Page {
             imageSource: "asset:///images/search.png"
             ActionBar.placement: ActionBarPlacement.InOverflow
             onTriggered: page.searchBar().open()
+        },
+        // Every kind of chat, channels too. Opened with the language the model has now.
+        ActionItem {
+            title: qsTr("Translate…")
+            imageSource: "asset:///images/translate_action.png"
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            onTriggered: chatTranslate.pick(page.chat.jid, ctl.messages ? ctl.messages.translate : "")
         },
         PinnedAction {
             chatCtl: ctl

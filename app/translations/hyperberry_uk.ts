@@ -249,22 +249,6 @@
         <source>Unfollow</source>
         <translation>Відписатися</translation>
     </message>
-    <message>
-        <source>Off</source>
-        <translation>Вимк.</translation>
-    </message>
-    <message>
-        <source>Translate incoming messages</source>
-        <translation>Перекладати вхідні повідомлення</translation>
-    </message>
-    <message>
-        <source>The messages you read in this chat are sent to the translation service.</source>
-        <translation>Повідомлення, які ви читаєте в цьому чаті, надсилаються до сервісу перекладу.</translation>
-    </message>
-    <message>
-        <source>OK</source>
-        <translation>OK</translation>
-    </message>
 </context>
 <context>
     <name>ChatListModel</name>
@@ -389,6 +373,10 @@
         <location filename="../assets/ChatPage.qml" line="108"/>
         <source>Couldn&apos;t edit this message</source>
         <translation>Не вдалося відредагувати повідомлення</translation>
+    </message>
+    <message>
+        <source>Translate…</source>
+        <translation>Переклад…</translation>
     </message>
 </context>
 <context>
@@ -2932,6 +2920,29 @@ After the install, HyperBerry closes once: open it again.</source>
     <message>
         <source>Could not start the root helper %1.</source>
         <translation>Не вдалося запустити помічник root %1.</translation>
+    </message>
+</context>
+<context>
+    <name>TranslatePicker</name>
+    <message>
+        <source>Off</source>
+        <translation>Вимк.</translation>
+    </message>
+    <message>
+        <source>Translate incoming messages</source>
+        <translation>Перекладати вхідні повідомлення</translation>
+    </message>
+    <message>
+        <source>The messages you read in this chat are sent to the translation service.</source>
+        <translation>Повідомлення, які ви читаєте в цьому чаті, надсилаються до сервісу перекладу.</translation>
+    </message>
+    <message>
+        <source>OK</source>
+        <translation>OK</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Скасувати</translation>
     </message>
 </context>
 </TS>

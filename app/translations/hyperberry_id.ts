@@ -247,22 +247,6 @@
         <source>Unfollow</source>
         <translation>Berhenti mengikuti</translation>
     </message>
-    <message>
-        <source>Off</source>
-        <translation>Mati</translation>
-    </message>
-    <message>
-        <source>Translate incoming messages</source>
-        <translation>Terjemahkan pesan masuk</translation>
-    </message>
-    <message>
-        <source>The messages you read in this chat are sent to the translation service.</source>
-        <translation>Pesan yang Anda baca di obrolan ini dikirim ke layanan terjemahan.</translation>
-    </message>
-    <message>
-        <source>OK</source>
-        <translation>OK</translation>
-    </message>
 </context>
 <context>
     <name>ChatListModel</name>
@@ -387,6 +371,10 @@
         <location filename="../assets/ChatPage.qml" line="108"/>
         <source>Couldn&apos;t edit this message</source>
         <translation>Tidak dapat mengedit pesan ini</translation>
+    </message>
+    <message>
+        <source>Translate…</source>
+        <translation>Terjemahkan…</translation>
     </message>
 </context>
 <context>
@@ -2926,6 +2914,29 @@ Setelah pemasangan, HyperBerry menutup sekali: buka lagi.</translation>
     <message>
         <source>Could not start the root helper %1.</source>
         <translation>Tidak dapat memulai pembantu root %1.</translation>
+    </message>
+</context>
+<context>
+    <name>TranslatePicker</name>
+    <message>
+        <source>Off</source>
+        <translation>Mati</translation>
+    </message>
+    <message>
+        <source>Translate incoming messages</source>
+        <translation>Terjemahkan pesan masuk</translation>
+    </message>
+    <message>
+        <source>The messages you read in this chat are sent to the translation service.</source>
+        <translation>Pesan yang Anda baca di obrolan ini dikirim ke layanan terjemahan.</translation>
+    </message>
+    <message>
+        <source>OK</source>
+        <translation>OK</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Batal</translation>
     </message>
 </context>
 </TS>

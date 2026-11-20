@@ -248,22 +248,6 @@
         <source>Unfollow</source>
         <translation>Nicht mehr folgen</translation>
     </message>
-    <message>
-        <source>Off</source>
-        <translation>Aus</translation>
-    </message>
-    <message>
-        <source>Translate incoming messages</source>
-        <translation>Eingehende Nachrichten übersetzen</translation>
-    </message>
-    <message>
-        <source>The messages you read in this chat are sent to the translation service.</source>
-        <translation>Die Nachrichten, die du in diesem Chat liest, werden an den Übersetzungsdienst gesendet.</translation>
-    </message>
-    <message>
-        <source>OK</source>
-        <translation>OK</translation>
-    </message>
 </context>
 <context>
     <name>ChatListModel</name>
@@ -388,6 +372,10 @@
         <location filename="../assets/ChatPage.qml" line="108"/>
         <source>Couldn&apos;t edit this message</source>
         <translation>Nachricht konnte nicht bearbeitet werden</translation>
+    </message>
+    <message>
+        <source>Translate…</source>
+        <translation>Übersetzen…</translation>
     </message>
 </context>
 <context>
@@ -2929,6 +2917,29 @@ Nach der Installation schließt sich HyperBerry einmal: Öffne es erneut.</trans
     <message>
         <source>Could not start the root helper %1.</source>
         <translation>Das Root-Hilfsprogramm %1 konnte nicht gestartet werden.</translation>
+    </message>
+</context>
+<context>
+    <name>TranslatePicker</name>
+    <message>
+        <source>Off</source>
+        <translation>Aus</translation>
+    </message>
+    <message>
+        <source>Translate incoming messages</source>
+        <translation>Eingehende Nachrichten übersetzen</translation>
+    </message>
+    <message>
+        <source>The messages you read in this chat are sent to the translation service.</source>
+        <translation>Die Nachrichten, die du in diesem Chat liest, werden an den Übersetzungsdienst gesendet.</translation>
+    </message>
+    <message>
+        <source>OK</source>
+        <translation>OK</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Abbrechen</translation>
     </message>
 </context>
 </TS>

@@ -248,22 +248,6 @@
         <source>Unfollow</source>
         <translation>Ne plus suivre</translation>
     </message>
-    <message>
-        <source>Off</source>
-        <translation>Désactivé</translation>
-    </message>
-    <message>
-        <source>Translate incoming messages</source>
-        <translation>Traduire les messages reçus</translation>
-    </message>
-    <message>
-        <source>The messages you read in this chat are sent to the translation service.</source>
-        <translation>Les messages que vous lisez dans cette discussion sont envoyés au service de traduction.</translation>
-    </message>
-    <message>
-        <source>OK</source>
-        <translation>OK</translation>
-    </message>
 </context>
 <context>
     <name>ChatListModel</name>
@@ -388,6 +372,10 @@
         <location filename="../assets/ChatPage.qml" line="108"/>
         <source>Couldn&apos;t edit this message</source>
         <translation>Impossible de modifier ce message</translation>
+    </message>
+    <message>
+        <source>Translate…</source>
+        <translation>Traduire…</translation>
     </message>
 </context>
 <context>
@@ -2929,6 +2917,29 @@ Après l&apos;installation, HyperBerry se ferme une fois : rouvrez-le.</translat
     <message>
         <source>Could not start the root helper %1.</source>
         <translation>Impossible de lancer l&apos;assistant root %1.</translation>
+    </message>
+</context>
+<context>
+    <name>TranslatePicker</name>
+    <message>
+        <source>Off</source>
+        <translation>Désactivé</translation>
+    </message>
+    <message>
+        <source>Translate incoming messages</source>
+        <translation>Traduire les messages reçus</translation>
+    </message>
+    <message>
+        <source>The messages you read in this chat are sent to the translation service.</source>
+        <translation>Les messages que vous lisez dans cette discussion sont envoyés au service de traduction.</translation>
+    </message>
+    <message>
+        <source>OK</source>
+        <translation>OK</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Annuler</translation>
     </message>
 </context>
 </TS>

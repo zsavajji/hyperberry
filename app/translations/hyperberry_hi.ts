@@ -248,22 +248,6 @@
         <source>Unfollow</source>
         <translation>अनफ़ॉलो करें</translation>
     </message>
-    <message>
-        <source>Off</source>
-        <translation>बंद</translation>
-    </message>
-    <message>
-        <source>Translate incoming messages</source>
-        <translation>आने वाले संदेशों का अनुवाद करें</translation>
-    </message>
-    <message>
-        <source>The messages you read in this chat are sent to the translation service.</source>
-        <translation>इस चैट में आप जो संदेश पढ़ते हैं, वे अनुवाद सेवा को भेजे जाते हैं।</translation>
-    </message>
-    <message>
-        <source>OK</source>
-        <translation>ठीक है</translation>
-    </message>
 </context>
 <context>
     <name>ChatListModel</name>
@@ -388,6 +372,10 @@
         <location filename="../assets/ChatPage.qml" line="108"/>
         <source>Couldn&apos;t edit this message</source>
         <translation>यह संदेश संपादित नहीं हो सका</translation>
+    </message>
+    <message>
+        <source>Translate…</source>
+        <translation>अनुवाद…</translation>
     </message>
 </context>
 <context>
@@ -2929,6 +2917,29 @@ After the install, HyperBerry closes once: open it again.</source>
     <message>
         <source>Could not start the root helper %1.</source>
         <translation>root सहायक %1 शुरू नहीं हो सका।</translation>
+    </message>
+</context>
+<context>
+    <name>TranslatePicker</name>
+    <message>
+        <source>Off</source>
+        <translation>बंद</translation>
+    </message>
+    <message>
+        <source>Translate incoming messages</source>
+        <translation>आने वाले संदेशों का अनुवाद करें</translation>
+    </message>
+    <message>
+        <source>The messages you read in this chat are sent to the translation service.</source>
+        <translation>इस चैट में आप जो संदेश पढ़ते हैं, वे अनुवाद सेवा को भेजे जाते हैं।</translation>
+    </message>
+    <message>
+        <source>OK</source>
+        <translation>ठीक है</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>रद्द करें</translation>
     </message>
 </context>
 </TS>
