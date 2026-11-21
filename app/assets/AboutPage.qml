@@ -66,6 +66,17 @@ Page {
                         textStyle.fontSize: FontSize.PercentageValue
                         textStyle.fontSizeValue: nav.bodySize
                     }
+                    // The user, 2026-11-21: say it's unofficial, not Meta's, and at your own risk (the README's note).
+                    Label {
+                        horizontalAlignment: HorizontalAlignment.Fill
+                        multiline: true
+                        topMargin: zoom * ui.du(1.5)
+                        text: qsTr("HyperBerry is unofficial: it is not affiliated with or endorsed by WhatsApp or Meta. Using it may break WhatsApp's terms of service, so use it at your own risk.")
+                        textFormat: TextFormat.Plain
+                        textStyle.fontSize: FontSize.PercentageValue
+                        textStyle.fontSizeValue: nav.bodySize
+                        textStyle.color: ui.palette.secondaryTextOnPlain
+                    }
                 }
                 Header {
                     title: qsTr("Developer")

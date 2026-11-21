@@ -13,6 +13,10 @@
         <translation>Ứng dụng khách WhatsApp dựa trên hypermeow và meowcaller, dành cho BlackBerry 10.</translation>
     </message>
     <message>
+        <source>HyperBerry is unofficial: it is not affiliated with or endorsed by WhatsApp or Meta. Using it may break WhatsApp's terms of service, so use it at your own risk.</source>
+        <translation>HyperBerry là ứng dụng không chính thức: không liên kết với WhatsApp hay Meta và không được họ chứng thực. Việc sử dụng có thể vi phạm điều khoản dịch vụ của WhatsApp, vì vậy bạn tự chịu rủi ro khi sử dụng.</translation>
+    </message>
+    <message>
         <source>Thanks</source>
         <translation>Lời cảm ơn</translation>
     </message>

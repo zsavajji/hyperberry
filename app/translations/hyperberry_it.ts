@@ -13,6 +13,10 @@
         <translation>Un client per WhatsApp basato su hypermeow e meowcaller, per BlackBerry 10.</translation>
     </message>
     <message>
+        <source>HyperBerry is unofficial: it is not affiliated with or endorsed by WhatsApp or Meta. Using it may break WhatsApp's terms of service, so use it at your own risk.</source>
+        <translation>HyperBerry non è un'app ufficiale: non è affiliata a WhatsApp né a Meta, né approvata da loro. Usarla può violare i termini di servizio di WhatsApp: usala a tuo rischio.</translation>
+    </message>
+    <message>
         <source>Thanks</source>
         <translation>Ringraziamenti</translation>
     </message>

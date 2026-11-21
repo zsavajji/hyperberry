@@ -13,6 +13,10 @@
         <translation>BlackBerry 10 के लिए WhatsApp क्लाइंट, जो hypermeow और meowcaller पर आधारित है।</translation>
     </message>
     <message>
+        <source>HyperBerry is unofficial: it is not affiliated with or endorsed by WhatsApp or Meta. Using it may break WhatsApp's terms of service, so use it at your own risk.</source>
+        <translation>HyperBerry अनौपचारिक है: यह WhatsApp या Meta से संबद्ध नहीं है और न ही उनके द्वारा समर्थित है। इसका उपयोग WhatsApp की सेवा की शर्तों का उल्लंघन कर सकता है, इसलिए इसे अपने जोखिम पर उपयोग करें।</translation>
+    </message>
+    <message>
         <source>Thanks</source>
         <translation>धन्यवाद</translation>
     </message>
