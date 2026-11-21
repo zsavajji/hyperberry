@@ -24,6 +24,14 @@
         <source>Developer</source>
         <translation>Programista</translation>
     </message>
+    <message>
+        <source>Open source libraries</source>
+        <translation>Biblioteki open source</translation>
+    </message>
+    <message>
+        <source>License</source>
+        <translation>Licencja</translation>
+    </message>
 </context>
 <context>
     <name>AlbumPage</name>

@@ -24,6 +24,14 @@
         <source>Developer</source>
         <translation>Nhà phát triển</translation>
     </message>
+    <message>
+        <source>Open source libraries</source>
+        <translation>Thư viện mã nguồn mở</translation>
+    </message>
+    <message>
+        <source>License</source>
+        <translation>Giấy phép</translation>
+    </message>
 </context>
 <context>
     <name>AlbumPage</name>

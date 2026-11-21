@@ -24,6 +24,14 @@
         <source>Developer</source>
         <translation>Entwickler</translation>
     </message>
+    <message>
+        <source>Open source libraries</source>
+        <translation>Open-Source-Bibliotheken</translation>
+    </message>
+    <message>
+        <source>License</source>
+        <translation>Lizenz</translation>
+    </message>
 </context>
 <context>
     <name>AlbumPage</name>
