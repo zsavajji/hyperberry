@@ -65,6 +65,11 @@ bool Settings::darkGrey() const
 int Settings::callHints() const { return qMax(0, m_file.value("callHints", 0).toInt()); }
 int Settings::videoQuality() const { return qBound(0, m_file.value("videoQuality", 1).toInt(), 2); }
 bool Settings::cameraCrop() const { return m_file.value("cameraCrop", false).toBool(); }
+QString Settings::translateProvider() const { return m_file.value("translateProvider", "google").toString(); }
+QString Settings::googleKey() const { return m_file.value("googleKey").toString(); }
+QString Settings::deeplKey() const { return m_file.value("deeplKey").toString(); }
+QString Settings::libreURL() const { return m_file.value("libreURL").toString(); }
+QString Settings::libreKey() const { return m_file.value("libreKey").toString(); }
 
 qreal Settings::textScale() const
 {
@@ -183,16 +188,30 @@ void Settings::bootTimerReplied()
 }
 
 // A setting the engine keeps too (prefs.set): stored here, and sent when connected.
-void Settings::storePref(const char *key, bool on)
+void Settings::storePref(const char *key, const QVariant &value)
 {
-    store(key, on);
+    store(key, value);
     // Not connected: the hello path sends it on the next connect.
     if (m_engine->connected()) {
         QVariantMap prefs;
-        prefs[key] = on;
+        prefs[key] = value;
         m_engine->request("prefs.set", prefs);
     }
 }
+
+void Settings::setTranslate(const char *key, const QString &value)
+{
+    if (value == m_file.value(key, QString(key) == "translateProvider" ? "google" : "").toString())
+        return;
+    storePref(key, value);
+    emit translateChanged();
+}
+
+void Settings::setTranslateProvider(const QString &value) { setTranslate("translateProvider", value); }
+void Settings::setGoogleKey(const QString &value) { setTranslate("googleKey", value); }
+void Settings::setDeeplKey(const QString &value) { setTranslate("deeplKey", value); }
+void Settings::setLibreURL(const QString &value) { setTranslate("libreURL", value); }
+void Settings::setLibreKey(const QString &value) { setTranslate("libreKey", value); }
 
 void Settings::setMediaOnMobile(bool on)
 {

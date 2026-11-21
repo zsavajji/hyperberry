@@ -78,11 +78,13 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
     , m_reactions(0)
     , m_edited(Card::tr(kContext, "edited") + " ")
     , m_starMark(QString::fromUtf8("\xE2\x98\x85 "))
+    , m_trMark(QString::fromUtf8("\xE2\x87\x84 "))
     , m_reply(0)
     , m_react(0)
     , m_forward(0)
     , m_votes(0)
     , m_copy(0)
+    , m_translate(0)
     , m_star(0)
     , m_edit(0)
     , m_revoke(0)
@@ -615,10 +617,10 @@ void MessageCard::fillColumn()
     }
 }
 
-// What goes before the time: a star for a starred message, then "edited".
+// What goes before the time: a star for a starred message, the translation's arrows, then "edited".
 QString MessageCard::timeLead() const
 {
-    return (flag("starred") ? m_starMark : QString()) + (flag("edited") ? m_edited : QString());
+    return (flag("starred") ? m_starMark : QString()) + (flag("translated") ? m_trMark : QString()) + (flag("edited") ? m_edited : QString());
 }
 
 // The time (the star and "edited" before it) and our message's state, as in ChatRows.cpp: sending, sent, delivered,

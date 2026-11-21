@@ -39,6 +39,8 @@ MessageModel::MessageModel(EngineLink *engine, const QString &chat, bool group, 
     , m_group(group)
     , m_atStart(false)
     , m_loading(true)
+    , m_translate(readTranslate())
+    , m_retries(0)
     , m_region(bb::system::LocaleType::Region)
     , m_now(0)
     , m_titlesDay(0)
@@ -46,6 +48,13 @@ MessageModel::MessageModel(EngineLink *engine, const QString &chat, bool group, 
     connect(engine, SIGNAL(msgsChanged(QString, QStringList)), this,
             SLOT(onMsgs(QString, QStringList)));
     connect(engine, SIGNAL(connectedChanged()), this, SLOT(onConnected()));
+    connect(engine, SIGNAL(chatsChanged(QStringList)), this, SLOT(onChats(QStringList)));
+    connect(engine, SIGNAL(replied(QString, QString, QVariant)), this, SLOT(onReplied(QString, QString, QVariant)));
+    connect(engine, SIGNAL(failed(QString, QString, QString)), this, SLOT(onFailed(QString, QString, QString)));
+    m_retry.setSingleShot(true);
+    connect(&m_retry, SIGNAL(timeout()), this, SLOT(retryTranslate()));
+    m_trSoon.setSingleShot(true);
+    connect(&m_trSoon, SIGNAL(timeout()), this, SLOT(askTranslate()));
     QTimer::singleShot(kFirstLoadMs, this, SLOT(loadFirst()));
 }
 
@@ -95,6 +104,12 @@ QVariant MessageModel::data(const QVariantList &indexPath)
     const Entry e = m_entries.value(indexPath.value(0).toInt());
     if (e.msg < 0)
         return e.title;
+    // The list draws this row: its translation is asked for now, if the chat has a language and the row none yet.
+    if (!m_translate.isEmpty()) {
+        wantTranslation(m_all[e.msg]);
+        foreach (int member, e.members)
+            wantTranslation(m_all[member]);
+    }
     return e.members.isEmpty() ? QVariant(m_all[e.msg].data) : QVariant(albumData(e));
 }
 
@@ -225,6 +240,78 @@ void MessageModel::onConnected()
     if (!m_engine || !m_engine->connected() || m_loading)
         return;
     m_asked.clear(); // a fetch the engine lost with its restart is asked again
+    m_askedTr.clear(); // and a translation
+    m_toTranslate.clear();
+    if (!m_translating.isEmpty()) {
+        m_translating.clear();
+        emit translatingChanged();
+    }
+    m_retries = 0;
+    m_retry.stop();
+    reload();
+}
+
+// The chat's row changed: when its language did, the rows are read again, in the new one.
+void MessageModel::onChats(const QStringList &jids)
+{
+    if (m_loading || !jids.contains(m_chat))
+        return;
+    const QString now = readTranslate();
+    if (now == m_translate)
+        return;
+    m_translate = now;
+    emit translateChanged();
+    m_askedTr.clear();
+    m_toTranslate.clear();
+    m_trSoon.stop();
+    // The requests still out were for the old language: their answers and failures are ignored from now on, so
+    // "Translating…" and a late toast don't outlast turning it off (the user, 2026-11-21: "shouldn't it be immediate?").
+    if (!m_translating.isEmpty()) {
+        m_translating.clear();
+        emit translatingChanged();
+    }
+    m_retries = 0;
+    m_retry.stop();
+    reload();
+}
+
+void MessageModel::onReplied(const QString &id, const QString &cmd, const QVariant &)
+{
+    if (cmd != "msg.translate" || m_translating.remove(id) == 0)
+        return;
+    m_retries = 0;
+    if (m_translating.isEmpty())
+        emit translatingChanged();
+}
+
+// A translation failed. Its ids are asked again by whatever reads those rows next: the rows the engine wrote before
+// failing come back through its msgs events with their tr_lang, so they are not queued. A failure never asks again
+// by itself: only the one timer (60 s, which the engine's own pause outlasts or nearly) re-reads the loaded rows.
+void MessageModel::onFailed(const QString &id, const QString &cmd, const QString &code)
+{
+    if (cmd != "msg.translate" || !m_translating.contains(id))
+        return;
+    foreach (const QString &m, m_translating.take(id))
+        m_askedTr.remove(m);
+    if (m_translating.isEmpty())
+        emit translatingChanged();
+    emit translateStalled(code);
+    // ponytail: a fixed 60 s, 5 times; the engine's pause doubles up to 15 min, so after the fifth the next page or reconnect asks again.
+    if ((code == "rate_limited" || code == "offline" || code == "no_engine") && m_retries < 5 && !m_retry.isActive())
+        m_retry.start(60000);
+}
+
+void MessageModel::retryTranslate()
+{
+    if (m_loading || !m_engine || !m_engine->connected())
+        return;
+    ++m_retries;
+    reload();
+}
+
+// Every loaded row again, or the first page when none is.
+void MessageModel::reload()
+{
     if (m_all.isEmpty()) {
         loadPage();
         return;

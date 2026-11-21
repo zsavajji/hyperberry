@@ -35,7 +35,8 @@ static const char *const kColumns = "rowid, id, ts, out, state, sender, sender_n
                                     QUOTED("out") ", " QUOTED("sender") ", " QUOTED("sender_name") ", duration, waveform, media_state, played, "
                                     "thumb, width, height, size, path, "
                                     "(SELECT group_concat(emoji, ' ') FROM reactions r WHERE r.chat = messages.chat AND r.msg = messages.id), "
-                                    "(SELECT emoji FROM reactions r WHERE r.chat = messages.chat AND r.msg = messages.id AND r.sender = ''), extra, starred, quote_id";
+                                    "(SELECT emoji FROM reactions r WHERE r.chat = messages.chat AND r.msg = messages.id AND r.sender = ''), extra, starred, quote_id, "
+                                    "tr, tr_lang, tr_from";
 #undef QUOTED
 
 MessageModel::Msg MessageModel::read(QSqlQuery &q)
@@ -93,6 +94,19 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
     m.data["edited"] = q.value(10).toInt() != 0;
     m.data["starred"] = q.value(27).toInt() != 0;
     m.data["deleted"] = deleted;
+    // Translate (docs/plan/translate.md): texts and captions. An incoming one in a chat with a language shows its
+    // translation once the engine has written it for that language; until then it wants one (wantTr), which is asked for
+    // when the list draws the row (data()).
+    const QString trLang = q.value(30).toString();
+    const bool canTranslate = !deleted && (kind == 0 || kind == 1 || kind == 2) && !text.isEmpty();
+    const bool translated = canTranslate && !out && !m_translate.isEmpty() && trLang == m_translate
+                            && !q.value(29).toString().isEmpty();
+    m.data["wantTr"] = canTranslate && !out && !m_translate.isEmpty() && trLang != m_translate;
+    m.data["canTranslate"] = canTranslate;
+    m.data["translated"] = translated;
+    m.data["original"] = translated ? text : QString();
+    if (translated)
+        shown = q.value(29).toString();
     // The chip under the card: up to three different emoji, and how many reactions there are.
     const QStringList all = deleted ? QStringList() : q.value(24).toString().split(' ', QString::SkipEmptyParts);
     QStringList kinds;
@@ -174,6 +188,60 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
     m.data["hasQuoteThumb"] = !storyThumb.isEmpty();
     m.data["quoteThumb"] = QVariant::fromValue(storyThumb.isEmpty() ? bb::cascades::Image() : bb::cascades::Image(storyThumb));
     return m;
+}
+
+static QSqlDatabase database();
+
+// The language incoming messages are shown in, "" for off (and when chats.db has no such row).
+QString MessageModel::readTranslate() const
+{
+    QSqlDatabase db = database();
+    if (!db.isOpen())
+        return QString();
+    QSqlQuery q(db);
+    q.prepare("SELECT translate FROM chats WHERE jid = ?");
+    q.addBindValue(m_chat);
+    return q.exec() && q.next() ? q.value(0).toString() : QString();
+}
+
+// A row the list draws that still wants its translation is queued, once, and the queue goes out 200 ms later, so a
+// screenful is one request. Only what is drawn is asked for: the list asks data() for the rows on screen and the few it
+// keeps ready around them, and a whole page at once kept the service busy.
+void MessageModel::wantTranslation(const Msg &m)
+{
+    if (!m.data.value("wantTr").toBool() || m_askedTr.contains(m.id) || m_toTranslate.contains(m.id))
+        return;
+    m_toTranslate << m.id;
+    if (!m_trSoon.isActive())
+        m_trSoon.start(200);
+}
+
+// What wantTranslation queued goes to the engine in requests of at most 200 ids. The engine
+// writes each translation as it lands and says so with a msgs event, which reads the row again,
+// now with its tr_lang: nothing is queued twice. A failure forgets the ids (onFailed); one timer retries.
+void MessageModel::askTranslate()
+{
+    QStringList ids = m_toTranslate;
+    m_toTranslate.clear();
+    while (!ids.isEmpty() && m_engine) {
+        const QStringList part = ids.mid(0, 200);
+        ids = ids.mid(part.size());
+        QVariantMap args;
+        args["chat"] = m_chat;
+        QVariantList list;
+        foreach (const QString &id, part)
+            list << id;
+        args["ids"] = list;
+        args["to"] = m_translate;
+        const QString request = m_engine->requestQuiet("msg.translate", args);
+        if (request.isEmpty())
+            return; // not connected: the link coming back reads the rows again
+        m_translating.insert(request, part);
+        if (m_translating.size() == 1)
+            emit translatingChanged();
+        foreach (const QString &id, part)
+            m_askedTr.insert(id);
+    }
 }
 
 // A day's long name is asked once, not once per message of that day.

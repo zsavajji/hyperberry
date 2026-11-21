@@ -51,6 +51,7 @@ Page {
         ctl.messages.itemAdded.connect(page.added)
         ctl.messages.newestComing.connect(page.coming)
         ctl.messages.loadingChanged.connect(page.loaded)
+        ctl.messages.translateStalled.connect(page.translateStalled)
         media.ready.connect(page.mediaReady)
         media.pictureEdited.connect(page.stage) // the editor's file is staged in place, the caption (the composer's text) kept
         media.openFailed.connect(mediaFailed.show)
@@ -84,6 +85,10 @@ Page {
             title: !page.chat ? "" : page.chat.kind == 0 ? qsTr("Contact info") : page.chat.kind == 3 ? qsTr("Channel info") : qsTr("Group info")
             chat: page.chat
             chatCtl: ctl
+        },
+        ComponentDefinition {
+            id: pickerDef
+            TranslatePicker {}
         },
         PollAction { id: pollAction; jid: page.chat ? page.chat.jid : "" },
         ComponentDefinition {
@@ -145,6 +150,14 @@ Page {
             }
         },
         ComponentDefinition {
+            id: translateDef
+            TranslateDialog {
+                chatCtl: ctl
+                // The chat's live language (the model re-reads it), not page.chat's, which is as it was at the open.
+                defaultLang: ctl.messages && ctl.messages.translate ? ctl.messages.translate : phoneLocale.language
+            }
+        },
+        ComponentDefinition {
             id: reactDef
             ReactBar {
                 jid: page.chat ? page.chat.jid : ""
@@ -160,6 +173,9 @@ Page {
                 onEdit: media.editPicture(page.stagedPng != "" ? page.stagedPng : page.staged)
                 onCancelled: page.unstage()
             }
+        },
+        SystemToast {
+            id: translateWarning
         },
         SystemToast {
             id: mediaFailed
@@ -210,6 +226,19 @@ Page {
             ActionBar.placement: ActionBarPlacement.InOverflow
             onTriggered: page.searchBar().open()
         },
+        // Every kind of chat, channels too. Opened with the language the model has now.
+        ActionItem {
+            title: qsTr("Translate…")
+            imageSource: "asset:///images/translate_action.png"
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            // The picker is made at its first use, like translateDialog().
+            onTriggered: {
+                if (!page.pickerObj) {
+                    page.pickerObj = pickerDef.createObject(page)
+                }
+                page.pickerObj.pick(page.chat.jid, ctl.messages ? ctl.messages.translate : "")
+            }
+        },
         PinnedAction {
             chatCtl: ctl
             onJump: page.jump(id)
@@ -241,6 +270,24 @@ Page {
     property variant searchObj
     property variant reactObj
     property variant stagedObj
+    property variant translateObj
+    property variant pickerObj
+    // The codes already warned about in this opening of the chat, "|" before each: the warning shows once for each.
+    // A string: an object in a variant property is copied at each read, so a key set on it is lost.
+    property string warned: ""
+    // In-place translation failed (MessageModel retries the ones that may pass, itself). The other codes, offline above all, are
+    // not worth a toast.
+    function translateStalled(code) {
+        var words = code == "rate_limited" ? qsTr("The translation service is busy. The messages will be translated when it answers again.")
+                  : code == "no_key" ? qsTr("Set up the translation service in Settings")
+                  : code == "unsupported" ? qsTr("This service can't translate into this language") : ""
+        if (words == "" || warned.indexOf("|" + code) >= 0) {
+            return
+        }
+        warned += "|" + code
+        translateWarning.body = words
+        translateWarning.show()
+    }
     function player() {
         if (!playerObj) {
             var holder = playerDef.createObject()
@@ -276,6 +323,16 @@ Page {
             reactObj = b
         }
         return reactObj
+    }
+    // The translation dialog, made at its first use; its parent is the page, which it goes with.
+    function translateDialog() {
+        if (!translateObj) {
+            var d = translateDef.createObject(page)
+            ctl.translated.connect(d.got)
+            ctl.translateFailed.connect(d.failed)
+            translateObj = d
+        }
+        return translateObj
     }
     function stagedBar() {
         if (!stagedObj) {
@@ -497,7 +554,8 @@ Page {
     titleBar: ChatTitleBar {
         visibility: page.atEar ? ChromeVisibility.Hidden : ChromeVisibility.Visible
         chat: page.chat
-        status: ctl.status
+        // While the chat's messages are being translated the line says so: a page can take the service a while.
+        status: ctl.messages && ctl.messages.translating ? qsTr("Translating…") : ctl.status
         members: ctl.groupInfo.participants ? ctl.groupInfo.participants.length : 0
         onTapped: infoAction.showInfo()
         // Only while this page is on top: a second tap during the slide out popped the chat list too, the last page,
@@ -564,6 +622,14 @@ Page {
                     }
                     function copy(text) {
                         ctl.copy(text)
+                    }
+                    // Translate: a message already shown translated gives its original, any other its translation.
+                    function translate(msg) {
+                        if (msg.translated) {
+                            page.translateDialog().showOriginal(msg)
+                        } else {
+                            page.translateDialog().ask(msg)
+                        }
                     }
                     // Star, or take the star off one that has it: the engine tells the phone, and the card redraws.
                     function star(msg) {

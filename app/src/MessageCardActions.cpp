@@ -55,6 +55,8 @@ void MessageCard::onPopulating()
     if (m_votes)
         m_votes->setEnabled(flag("poll") && !deleted);
     m_copy->setEnabled(!deleted && !str("text").isEmpty());
+    m_translate->setEnabled(flag("canTranslate"));
+    m_translate->setTitle(Card::tr(kContext, flag("translated") ? "Show original" : "Translate"));
     const bool starred = flag("starred");
     m_star->setTitle(Card::tr(kContext, starred ? "Unstar" : "Star"));
     m_star->setImageSource(Card::url(starred ? "asset:///images/unstar_action.png" : "asset:///images/star_action.png"));
@@ -103,6 +105,8 @@ void MessageCard::makeActions()
         m_votes = action("View votes", "file:///usr/share/icons/ic_accept.png", SLOT(onVotes()), "v");
     // /usr/share/icons has no copy icon: this one is the stock Text Messages app's.
     m_copy = action("Copy", "asset:///images/copy.png", SLOT(onCopy()), "c");
+    // Opens the translation dialog, or the original of a message already shown translated (onPopulating).
+    m_translate = action("Translate", "asset:///images/translate_action.png", SLOT(onTranslate()), "t");
     // A filled star to star, an outline to take it off (gen-icons.py); onPopulating swaps them.
     m_star = action("Star", "asset:///images/star_action.png", SLOT(onStar()), "s");
     m_edit = action("Edit", "file:///usr/share/icons/ic_edit.png", SLOT(onEdit()), "e");
@@ -177,6 +181,7 @@ void MessageCard::onReact() { Card::call(m_list, "react", m_msg); }
 void MessageCard::onForward() { Card::call(m_list, "forward", m_msg); }
 void MessageCard::onVotes() { Card::call(m_list, "showVoters", str("votesText")); }
 void MessageCard::onCopy() { Card::call(m_list, "copy", str("text")); }
+void MessageCard::onTranslate() { Card::call(m_list, "translate", m_msg); }
 void MessageCard::onStar() { Card::call(m_list, "star", m_msg); }
 void MessageCard::onEdit() { Card::call(m_list, "edit", m_msg); }
 void MessageCard::onRevoke() { Card::call(m_list, "deleteForEveryone", str("id")); }

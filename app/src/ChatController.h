@@ -91,6 +91,10 @@ public:
     // A group's member changed by an admin: action is add, remove, promote or demote. groupInfo
     // is asked again once WhatsApp agrees; a refusal shows in the engine's failure.
     Q_INVOKABLE void changeParticipant(const QString &jid, const QString &action);
+    // Translates one message into the language `to` (msg.translate); translated or translateFailed answers.
+    Q_INVOKABLE void translate(const QString &id, const QString &to);
+    // A language's name in its own language, capitalised ("Italiano"); the code when Qt knows none.
+    Q_INVOKABLE QString languageName(const QString &code) const;
 
 signals:
     void messagesChanged();
@@ -101,6 +105,10 @@ signals:
     void voiceReady(const QString &id, const QString &path);
     // A recording was dropped from here (minimised): the page resets its recorder.
     void voiceCancelled();
+    // The answer to translate(): the message, its text in `to` ("" when it already is in it), the language the service saw.
+    void translated(const QString &msgId, const QString &text, const QString &from, const QString &to);
+    // translate() failed: the engine's error code (no_key, unsupported, rate_limited, offline, no_engine, ...).
+    void translateFailed(const QString &code);
 
 private slots:
     void onTyping(const QString &chat, const QString &who, bool on, bool voice);
@@ -112,6 +120,8 @@ private slots:
     void onFullscreenChanged();
     void onReplied(const QString &id, const QString &cmd, const QVariant &result);
     void onPhoto(const QString &jid, const QString &path);
+    void onTranslateReplied(const QString &id, const QString &cmd, const QVariant &result);
+    void onTranslateFailure();
 
 private:
     void takeGroupInfo(QVariantMap info);
@@ -133,6 +143,8 @@ private:
     QVariantMap m_groupInfo;
     QString m_infoId; // the group.info request we wait for
     QString m_changeId; // the group.participants request we wait for
+    QString m_translateId; // the msg.translate request we wait for
+    QString m_translateTo; // and the language it asked for
     QString m_participants; // "N participants", the status line of a group
     QStringList m_pending;
     bool m_group;

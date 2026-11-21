@@ -374,6 +374,26 @@
         <source>Couldn&apos;t edit this message</source>
         <translation>Не вдалося відредагувати повідомлення</translation>
     </message>
+    <message>
+        <source>Translate…</source>
+        <translation>Переклад…</translation>
+    </message>
+    <message>
+        <source>The translation service is busy. The messages will be translated when it answers again.</source>
+        <translation>Сервіс перекладу зайнятий. Повідомлення буде перекладено, коли він знову відповість.</translation>
+    </message>
+    <message>
+        <source>Translating…</source>
+        <translation>Переклад…</translation>
+    </message>
+    <message>
+        <source>Set up the translation service in Settings</source>
+        <translation>Налаштуйте сервіс перекладу в Налаштуваннях</translation>
+    </message>
+    <message>
+        <source>This service can&apos;t translate into this language</source>
+        <translation>Цей сервіс не вміє перекладати цією мовою</translation>
+    </message>
 </context>
 <context>
     <name>ChatRow</name>
@@ -426,6 +446,10 @@
         <location filename="../assets/ChatRow.qml" line="1" />
         <source>Call</source>
         <translation>Зателефонувати</translation>
+    </message>
+    <message>
+        <source>Translate…</source>
+        <translation>Переклад…</translation>
     </message>
 </context>
 <context>
@@ -1082,6 +1106,14 @@
     <message>
         <source>Unstar</source>
         <translation>Прибрати з обраного</translation>
+    </message>
+    <message>
+        <source>Translate</source>
+        <translation>Перекласти</translation>
+    </message>
+    <message>
+        <source>Show original</source>
+        <translation>Показати оригінал</translation>
     </message>
 </context>
 <context>
@@ -1782,6 +1814,14 @@
         <source>Enter key, proximity sensor, video calls</source>
         <translation>Клавіша Enter, датчик наближення, відеодзвінки</translation>
     </message>
+    <message>
+        <source>Translation</source>
+        <translation>Переклад</translation>
+    </message>
+    <message>
+        <source>Service, API key</source>
+        <translation>Сервіс, ключ API</translation>
+    </message>
 </context>
 <context>
     <name>CallsModel</name>
@@ -2234,6 +2274,34 @@
         <location filename="../assets/main.qml" line="1" />
         <source>Stories</source>
         <translation>Статуси</translation>
+    </message>
+    <message>
+        <source>More memory for HyperBerry</source>
+        <translation>Більше пам&apos;яті для HyperBerry</translation>
+    </message>
+    <message>
+        <source>BlackBerry 10 gives an app&apos;s background service at most 30 MB of memory. HyperBerry&apos;s service, which keeps your chats in sync and brings your notifications, works within it, with little room to spare.
+
+This patch raises that limit to 128 MB. Each time the phone starts, a few minutes in, it changes that one number in the system&apos;s memory. No system file is changed, and it only affects apps that ask for the largest background size. Only the patch runs as root.
+
+After the install, HyperBerry closes once: open it again.</source>
+        <translation>BlackBerry 10 виділяє фоновій службі застосунку не більше 30 МБ пам&apos;яті. Служба HyperBerry, яка синхронізує ваші чати та приносить сповіщення, вкладається в цей ліміт, але запасу майже немає.
+
+Цей патч піднімає ліміт до 128 МБ. Під час кожного запуску телефона, за кілька хвилин, він змінює це єдине число в пам&apos;яті системи. Системні файли не змінюються, і це стосується лише застосунків, які просять найбільший розмір фонової пам&apos;яті. Від імені root працює лише патч.
+
+Після встановлення HyperBerry один раз закриється: відкрийте його знову.</translation>
+    </message>
+    <message>
+        <source>Install</source>
+        <translation>Встановити</translation>
+    </message>
+    <message>
+        <source>Installing the memory addon…</source>
+        <translation>Встановлення додатка пам&apos;яті…</translation>
+    </message>
+    <message>
+        <source>Close HyperBerry</source>
+        <translation>Закрити HyperBerry</translation>
     </message>
 </context>
 <context>
@@ -2751,6 +2819,154 @@
     <message>
         <source>Couldn&apos;t open this link. Try again in a moment.</source>
         <translation>Не вдалося відкрити це посилання. Спробуйте ще раз трохи згодом.</translation>
+    </message>
+    <message>
+        <source>Background memory</source>
+        <translation>Фонова пам&apos;ять</translation>
+    </message>
+    <message>
+        <source>HyperBerry&apos;s background service has %1 MB</source>
+        <translation>Фонова служба HyperBerry має %1 МБ</translation>
+    </message>
+    <message>
+        <source>Install the memory patch</source>
+        <translation>Встановити патч пам&apos;яті</translation>
+    </message>
+    <message>
+        <source>The patch is installed. It takes effect a few minutes after the phone starts: close HyperBerry and open it again then.</source>
+        <translation>Патч встановлено. Він набуває чинності через кілька хвилин після запуску телефона: тоді закрийте HyperBerry і відкрийте знову.</translation>
+    </message>
+</context>
+<context>
+    <name>TranslateDialog</name>
+    <message>
+        <source>Original</source>
+        <translation>Оригінал</translation>
+    </message>
+    <message>
+        <source>Already in %1</source>
+        <translation>Уже мовою: %1</translation>
+    </message>
+    <message>
+        <source>Set up the translation service in Settings</source>
+        <translation>Налаштуйте сервіс перекладу в Налаштуваннях</translation>
+    </message>
+    <message>
+        <source>This service can&apos;t translate into this language</source>
+        <translation>Цей сервіс не вміє перекладати цією мовою</translation>
+    </message>
+    <message>
+        <source>The translation service is busy. Try again later.</source>
+        <translation>Сервіс перекладу зайнятий. Спробуйте пізніше.</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t reach the translation service</source>
+        <translation>Не вдалося зв&apos;язатися із сервісом перекладу</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t translate this message</source>
+        <translation>Не вдалося перекласти це повідомлення</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Копіювати</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Закрити</translation>
+    </message>
+    <message>
+        <source>Translate to</source>
+        <translation>Перекласти на</translation>
+    </message>
+</context>
+<context>
+    <name>TranslationSettingsPage</name>
+    <message>
+        <source>Translation</source>
+        <translation>Переклад</translation>
+    </message>
+    <message>
+        <source>Service</source>
+        <translation>Сервіс</translation>
+    </message>
+    <message>
+        <source>DeepL API key</source>
+        <translation>Ключ API DeepL</translation>
+    </message>
+    <message>
+        <source>Server address</source>
+        <translation>Адреса сервера</translation>
+    </message>
+    <message>
+        <source>API key (optional)</source>
+        <translation>Ключ API (необов&apos;язково)</translation>
+    </message>
+    <message>
+        <source>The messages you translate are sent to this service.</source>
+        <translation>Повідомлення, які ви перекладаєте, надсилаються до цього сервісу.</translation>
+    </message>
+    <message>
+        <source>Google API key (optional)</source>
+        <translation>Ключ API Google (необов&apos;язково)</translation>
+    </message>
+    <message>
+        <source>Without a key, Google&apos;s free service is used: it may stop answering for a while after many translations.</source>
+        <translation>Без ключа використовується безкоштовний сервіс Google: після багатьох перекладів він може на певний час перестати відповідати.</translation>
+    </message>
+</context>
+<context>
+    <name>MemoryPatch</name>
+    <message>
+        <source>Root is not available: HyperBerry needs AutoRoot v4 with root enabled (/var/rootdata/use.root).</source>
+        <translation>Root недоступний: для HyperBerry потрібен AutoRoot v4 з увімкненим root (/var/rootdata/use.root).</translation>
+    </message>
+    <message>
+        <source>The memory addon (headless-mem.zip) is missing from this app.</source>
+        <translation>У цьому застосунку немає додатка пам&apos;яті (headless-mem.zip).</translation>
+    </message>
+    <message>
+        <source>The helper hb-install-patcher is missing from this app.</source>
+        <translation>У цьому застосунку немає помічника hb-install-patcher.</translation>
+    </message>
+    <message>
+        <source>The root helper gave no output. Is root enabled in AutoRoot (/var/rootdata/use.root)?</source>
+        <translation>Помічник root нічого не вивів. Чи ввімкнено root в AutoRoot (/var/rootdata/use.root)?</translation>
+    </message>
+    <message>
+        <source>Installed. HyperBerry has to close once to use the new memory limit: open it again afterwards.</source>
+        <translation>Встановлено. HyperBerry потрібно один раз закрити, щоб застосувати новий ліміт пам&apos;яті: потім відкрийте його знову.</translation>
+    </message>
+    <message>
+        <source>The install did not finish. The output is in Documents, hyperberry-memory-patch.txt.</source>
+        <translation>Встановлення не завершилося. Вивід у Документах, hyperberry-memory-patch.txt.</translation>
+    </message>
+    <message>
+        <source>Could not start the root helper %1.</source>
+        <translation>Не вдалося запустити помічник root %1.</translation>
+    </message>
+</context>
+<context>
+    <name>TranslatePicker</name>
+    <message>
+        <source>Off</source>
+        <translation>Вимк.</translation>
+    </message>
+    <message>
+        <source>Translate incoming messages</source>
+        <translation>Перекладати вхідні повідомлення</translation>
+    </message>
+    <message>
+        <source>The messages you read in this chat are sent to the translation service.</source>
+        <translation>Повідомлення, які ви читаєте в цьому чаті, надсилаються до сервісу перекладу.</translation>
+    </message>
+    <message>
+        <source>OK</source>
+        <translation>OK</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Скасувати</translation>
     </message>
 </context>
 </TS>

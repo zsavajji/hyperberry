@@ -211,6 +211,11 @@ void EngineLink::readLines()
                     prefs["autoDoc"] = file.value("autoDoc", false).toBool();
                     prefs["cloudflareDNS"] = file.value("cloudflareDNS", false).toBool();
                     prefs["language"] = m_language;
+                    prefs["translateProvider"] = file.value("translateProvider", "google").toString();
+                    prefs["googleKey"] = file.value("googleKey").toString();
+                    prefs["deeplKey"] = file.value("deeplKey").toString();
+                    prefs["libreURL"] = file.value("libreURL").toString();
+                    prefs["libreKey"] = file.value("libreKey").toString();
                     prefs["cacheMB"] = qBound(64, file.value("cacheLimit", 64).toInt(), 512);
                     request("prefs.set", prefs);
                     qDebug() << "engine: connected, link" << m_link["state"].toString()
@@ -225,6 +230,8 @@ void EngineLink::readLines()
             } else {
                 const QString cmd = m_pending.take(id);
                 const bool quiet = m_quiet.remove(id);
+                if (!ok)
+                    emit failed(id, cmd, error["code"].toString());
                 if (!ok && quiet)
                     qWarning() << "engine:" << cmd << "failed:" << error["code"].toString()
                                << error["message"].toString();
@@ -311,6 +318,7 @@ void EngineLink::lost()
     const QHash<QString, QString> pending = m_pending;
     m_pending.clear();
     for (QHash<QString, QString>::const_iterator it = pending.begin(); it != pending.end(); ++it) {
+        emit failed(it.key(), it.value(), "no_engine");
         if (!m_quiet.contains(it.key()))
             fail(it.value(), "no_engine", tr("The engine isn't running."));
     }

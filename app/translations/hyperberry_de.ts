@@ -373,6 +373,26 @@
         <source>Couldn&apos;t edit this message</source>
         <translation>Nachricht konnte nicht bearbeitet werden</translation>
     </message>
+    <message>
+        <source>Translate…</source>
+        <translation>Übersetzen…</translation>
+    </message>
+    <message>
+        <source>The translation service is busy. The messages will be translated when it answers again.</source>
+        <translation>Der Übersetzungsdienst ist ausgelastet. Die Nachrichten werden übersetzt, sobald er wieder antwortet.</translation>
+    </message>
+    <message>
+        <source>Translating…</source>
+        <translation>Wird übersetzt…</translation>
+    </message>
+    <message>
+        <source>Set up the translation service in Settings</source>
+        <translation>Richte den Übersetzungsdienst in den Einstellungen ein</translation>
+    </message>
+    <message>
+        <source>This service can&apos;t translate into this language</source>
+        <translation>Dieser Dienst kann nicht in diese Sprache übersetzen</translation>
+    </message>
 </context>
 <context>
     <name>ChatRow</name>
@@ -425,6 +445,10 @@
         <location filename="../assets/ChatRow.qml" line="1" />
         <source>Call</source>
         <translation>Anrufen</translation>
+    </message>
+    <message>
+        <source>Translate…</source>
+        <translation>Übersetzen…</translation>
     </message>
 </context>
 <context>
@@ -1080,6 +1104,14 @@
     <message>
         <source>Unstar</source>
         <translation>Stern entfernen</translation>
+    </message>
+    <message>
+        <source>Translate</source>
+        <translation>Übersetzen</translation>
+    </message>
+    <message>
+        <source>Show original</source>
+        <translation>Original anzeigen</translation>
     </message>
 </context>
 <context>
@@ -1779,6 +1811,14 @@
         <source>Enter key, proximity sensor, video calls</source>
         <translation>Eingabetaste, Näherungssensor, Videoanrufe</translation>
     </message>
+    <message>
+        <source>Translation</source>
+        <translation>Übersetzung</translation>
+    </message>
+    <message>
+        <source>Service, API key</source>
+        <translation>Dienst, API-Schlüssel</translation>
+    </message>
 </context>
 <context>
     <name>CallsModel</name>
@@ -2231,6 +2271,34 @@
         <location filename="../assets/main.qml" line="1" />
         <source>Stories</source>
         <translation>Status</translation>
+    </message>
+    <message>
+        <source>More memory for HyperBerry</source>
+        <translation>Mehr Speicher für HyperBerry</translation>
+    </message>
+    <message>
+        <source>BlackBerry 10 gives an app&apos;s background service at most 30 MB of memory. HyperBerry&apos;s service, which keeps your chats in sync and brings your notifications, works within it, with little room to spare.
+
+This patch raises that limit to 128 MB. Each time the phone starts, a few minutes in, it changes that one number in the system&apos;s memory. No system file is changed, and it only affects apps that ask for the largest background size. Only the patch runs as root.
+
+After the install, HyperBerry closes once: open it again.</source>
+        <translation>BlackBerry 10 gibt dem Hintergrunddienst einer App höchstens 30 MB Speicher. Der Dienst von HyperBerry, der deine Chats synchron hält und deine Benachrichtigungen bringt, kommt damit aus, hat aber wenig Spielraum.
+
+Dieser Patch hebt die Grenze auf 128 MB an. Bei jedem Start des Telefons ändert er einige Minuten später diese eine Zahl im Speicher des Systems. Es wird keine Systemdatei verändert, und es betrifft nur Apps, die die größte Hintergrundgröße anfordern. Nur der Patch läuft als Root.
+
+Nach der Installation schließt sich HyperBerry einmal: Öffne es erneut.</translation>
+    </message>
+    <message>
+        <source>Install</source>
+        <translation>Installieren</translation>
+    </message>
+    <message>
+        <source>Installing the memory addon…</source>
+        <translation>Speicher-Addon wird installiert…</translation>
+    </message>
+    <message>
+        <source>Close HyperBerry</source>
+        <translation>HyperBerry schließen</translation>
     </message>
 </context>
 <context>
@@ -2748,6 +2816,154 @@
     <message>
         <source>Couldn&apos;t open this link. Try again in a moment.</source>
         <translation>Dieser Link konnte nicht geöffnet werden. Versuche es gleich noch einmal.</translation>
+    </message>
+    <message>
+        <source>Background memory</source>
+        <translation>Hintergrundspeicher</translation>
+    </message>
+    <message>
+        <source>HyperBerry&apos;s background service has %1 MB</source>
+        <translation>Der Hintergrunddienst von HyperBerry hat %1 MB</translation>
+    </message>
+    <message>
+        <source>Install the memory patch</source>
+        <translation>Speicher-Patch installieren</translation>
+    </message>
+    <message>
+        <source>The patch is installed. It takes effect a few minutes after the phone starts: close HyperBerry and open it again then.</source>
+        <translation>Der Patch ist installiert. Er wirkt einige Minuten nach dem Start des Telefons: Schließe HyperBerry dann und öffne es erneut.</translation>
+    </message>
+</context>
+<context>
+    <name>TranslateDialog</name>
+    <message>
+        <source>Original</source>
+        <translation>Original</translation>
+    </message>
+    <message>
+        <source>Already in %1</source>
+        <translation>Bereits auf %1</translation>
+    </message>
+    <message>
+        <source>Set up the translation service in Settings</source>
+        <translation>Richte den Übersetzungsdienst in den Einstellungen ein</translation>
+    </message>
+    <message>
+        <source>This service can&apos;t translate into this language</source>
+        <translation>Dieser Dienst kann nicht in diese Sprache übersetzen</translation>
+    </message>
+    <message>
+        <source>The translation service is busy. Try again later.</source>
+        <translation>Der Übersetzungsdienst ist ausgelastet. Versuche es später erneut.</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t reach the translation service</source>
+        <translation>Der Übersetzungsdienst ist nicht erreichbar</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t translate this message</source>
+        <translation>Diese Nachricht konnte nicht übersetzt werden</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopieren</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Schließen</translation>
+    </message>
+    <message>
+        <source>Translate to</source>
+        <translation>Übersetzen nach</translation>
+    </message>
+</context>
+<context>
+    <name>TranslationSettingsPage</name>
+    <message>
+        <source>Translation</source>
+        <translation>Übersetzung</translation>
+    </message>
+    <message>
+        <source>Service</source>
+        <translation>Dienst</translation>
+    </message>
+    <message>
+        <source>DeepL API key</source>
+        <translation>DeepL-API-Schlüssel</translation>
+    </message>
+    <message>
+        <source>Server address</source>
+        <translation>Serveradresse</translation>
+    </message>
+    <message>
+        <source>API key (optional)</source>
+        <translation>API-Schlüssel (optional)</translation>
+    </message>
+    <message>
+        <source>The messages you translate are sent to this service.</source>
+        <translation>Die Nachrichten, die du übersetzt, werden an diesen Dienst gesendet.</translation>
+    </message>
+    <message>
+        <source>Google API key (optional)</source>
+        <translation>Google-API-Schlüssel (optional)</translation>
+    </message>
+    <message>
+        <source>Without a key, Google&apos;s free service is used: it may stop answering for a while after many translations.</source>
+        <translation>Ohne Schlüssel wird der kostenlose Dienst von Google verwendet: Nach vielen Übersetzungen antwortet er möglicherweise eine Zeit lang nicht.</translation>
+    </message>
+</context>
+<context>
+    <name>MemoryPatch</name>
+    <message>
+        <source>Root is not available: HyperBerry needs AutoRoot v4 with root enabled (/var/rootdata/use.root).</source>
+        <translation>Root ist nicht verfügbar: HyperBerry benötigt AutoRoot v4 mit aktiviertem Root (/var/rootdata/use.root).</translation>
+    </message>
+    <message>
+        <source>The memory addon (headless-mem.zip) is missing from this app.</source>
+        <translation>Das Speicher-Addon (headless-mem.zip) fehlt in dieser App.</translation>
+    </message>
+    <message>
+        <source>The helper hb-install-patcher is missing from this app.</source>
+        <translation>Das Hilfsprogramm hb-install-patcher fehlt in dieser App.</translation>
+    </message>
+    <message>
+        <source>The root helper gave no output. Is root enabled in AutoRoot (/var/rootdata/use.root)?</source>
+        <translation>Das Root-Hilfsprogramm hat nichts ausgegeben. Ist Root in AutoRoot aktiviert (/var/rootdata/use.root)?</translation>
+    </message>
+    <message>
+        <source>Installed. HyperBerry has to close once to use the new memory limit: open it again afterwards.</source>
+        <translation>Installiert. HyperBerry muss sich einmal schließen, um die neue Speichergrenze zu nutzen: Öffne es danach erneut.</translation>
+    </message>
+    <message>
+        <source>The install did not finish. The output is in Documents, hyperberry-memory-patch.txt.</source>
+        <translation>Die Installation wurde nicht abgeschlossen. Die Ausgabe steht in Dokumente, hyperberry-memory-patch.txt.</translation>
+    </message>
+    <message>
+        <source>Could not start the root helper %1.</source>
+        <translation>Das Root-Hilfsprogramm %1 konnte nicht gestartet werden.</translation>
+    </message>
+</context>
+<context>
+    <name>TranslatePicker</name>
+    <message>
+        <source>Off</source>
+        <translation>Aus</translation>
+    </message>
+    <message>
+        <source>Translate incoming messages</source>
+        <translation>Eingehende Nachrichten übersetzen</translation>
+    </message>
+    <message>
+        <source>The messages you read in this chat are sent to the translation service.</source>
+        <translation>Die Nachrichten, die du in diesem Chat liest, werden an den Übersetzungsdienst gesendet.</translation>
+    </message>
+    <message>
+        <source>OK</source>
+        <translation>OK</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Abbrechen</translation>
     </message>
 </context>
 </TS>

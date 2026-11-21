@@ -52,6 +52,18 @@ def action(img, out, name):
     box.save(f"{out}/{name}_action.png")
 
 
+def translate_icon(out):
+    """The card menu's Translate and the chat row's Translate...: two arrows, one each way, as the mark a translated card
+    carries (U+21C4)."""
+    img, d = canvas(H)
+    white, w = (255, 255, 255, 255), round(0.11 * H * S)
+    for y, a, b in ((0.34, 0.1, 0.9), (0.68, 0.9, 0.1)):
+        d.line(pts((a, y), (b, y)), white, w)
+        s = 1 if b > a else -1
+        d.line(pts((b - s * 0.2, y - 0.16), (b, y), (b - s * 0.2, y + 0.16)), white, w, joint="curve")
+    action(img, out, "translate")
+
+
 def main(out):
     white, w = (255, 255, 255, 255), round(0.11 * H * S)
 
@@ -67,6 +79,8 @@ def main(out):
     d.line(pts((0.6, 0.47), (0.5, 0.55), (0.5, 0.64)), white, w, joint="curve")
     d.ellipse(pts((0.44, 0.71), (0.56, 0.83)), white)
     action(img, out, "help")
+
+    translate_icon(out)
 
     # The Stories tab's mark (2026-11-12): WhatsApp's status ring, three arcs with gaps round a dot. A tab icon,
     # 80 px like message.png.

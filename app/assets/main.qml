@@ -205,6 +205,45 @@ TabbedPane {
                 },
                 SystemToast {
                     id: inviteFailed
+                },
+                // The headless-mem addon (MemoryPatch.cpp) is offered only in Settings > Data and storage (the user's
+                // decision, 2026-11-20). Nothing shows it is needed today: the two times the engine ran out of the stock
+                // 30 MB were bugs fixed at the source (a voice note decoded whole, e44d8a5; the group list with its
+                // members, c46e82c). It is room for the next one. This dialog explains it before the root install.
+                SystemDialog {
+                    id: memDialog
+                    title: qsTr("More memory for HyperBerry")
+                    body: qsTr("BlackBerry 10 gives an app's background service at most 30 MB of memory. HyperBerry's service, which keeps your chats in sync and brings your notifications, works within it, with little room to spare.\n\nThis patch raises that limit to 128 MB. Each time the phone starts, a few minutes in, it changes that one number in the system's memory. No system file is changed, and it only affects apps that ask for the largest background size. Only the patch runs as root.\n\nAfter the install, HyperBerry closes once: open it again.")
+                    confirmButton.label: qsTr("Install")
+                    cancelButton.label: qsTr("Cancel")
+                    onFinished: {
+                        if (value == SystemUiResult.ConfirmButtonSelection) {
+                            // Nothing else shows while the root shell works (about 5 s, up to 25).
+                            memToast.body = qsTr("Installing the memory addon…")
+                            memToast.show()
+                            memPatch.install()
+                        }
+                    }
+                },
+                // Without root the addon can't be installed: say so. memPatch.headline holds the words from the start.
+                SystemDialog {
+                    id: rootDialog
+                    title: qsTr("More memory for HyperBerry")
+                    body: memPatch.headline
+                    cancelButton.label: ""
+                },
+                // After a successful install: the navigator keeps the 30 MB limit until no process of the app is left,
+                // so HyperBerry closes once (MemoryPatch::closeAll). One button.
+                SystemDialog {
+                    id: closeDialog
+                    title: qsTr("More memory for HyperBerry")
+                    body: memPatch.headline
+                    confirmButton.label: qsTr("Close HyperBerry")
+                    cancelButton.label: ""
+                    onFinished: memPatch.closeAll()
+                },
+                SystemToast {
+                    id: memToast
                 }
             ]
             onPopTransitionEnded: {
@@ -221,9 +260,28 @@ TabbedPane {
                 invites.joined.connect(nav.openRequested)
                 invites.chatLinked.connect(nav.numberRequested)
                 openRequests.link.connect(nav.linkRequested)
+                memPatch.finished.connect(nav.memFinished)
                 // setCover, as the skills have it: cover belongs to Application, not to a page.
                 Application.setCover(coverDef.createObject())
                 show()
+            }
+
+            // Settings > Data and storage's button: the explanation, or why there is no install without root.
+            function askMemory() {
+                if (memPatch.rootAvailable) {
+                    memDialog.show()
+                } else {
+                    rootDialog.show()
+                }
+            }
+
+            function memFinished(ok) {
+                if (ok) {
+                    closeDialog.show()
+                    return
+                }
+                memToast.body = memPatch.headline
+                memToast.show()
             }
 
             property string failedCmd: engine.failure.cmd || ""

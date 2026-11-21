@@ -4,7 +4,7 @@
          data/ (session.db holds the link, chats.db the only copy of the history). -->
     <id>com.zsavajji.hyperberry</id>
     <name>HyperBerry</name>
-    <versionNumber>0.3.1</versionNumber>
+    <versionNumber>0.4.0</versionNumber>
     <!-- Overwritten at packaging by -buildIdFile (scripts/build-app.sh): the installer keeps
          the old app when Package-Version (versionNumber.buildId) didn't change. -->
     <buildId>1</buildId>
@@ -21,6 +21,11 @@
         <platformArchitecture>armle-v7</platformArchitecture>
         <asset entryPointId="HyperBerry" path="../build/ui/app/hyperberry" entry="true" type="Qnx/Elf">hyperberry</asset>
         <asset entryPointId="HyperBerryService" path="../build/hyperberryd" type="Qnx/Elf">hyperberryd</asset>
+        <!-- The memory patch (src/MemoryPatch.cpp, ../rlimit-patch): the root addon that raises the headless cap to
+             128 MB, and the helper that starts its install as a new application, so that it survives HyperBerry
+             closing. Both land in app/native/, beside the binaries. -->
+        <asset path="../build/ui/hb-install-patcher" type="Qnx/Elf">hb-install-patcher</asset>
+        <asset path="../build/headless-mem.zip">headless-mem.zip</asset>
     </configuration>
 
     <entryPoint id="HyperBerry">

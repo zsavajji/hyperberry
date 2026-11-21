@@ -82,6 +82,7 @@ func newSim(srv *Server, st *Store, log waLog.Logger) *Sim {
 	srv.Handle("chat.clear", s.handleChatClear)
 	srv.Handle("chat.delete", s.handleChatDelete)
 	srv.Handle("chat.export", st.handleExport)
+	srv.HandleAsync("msg.translate", st.handleTranslate)
 	srv.Handle("chat.open", s.handleOpen)
 	srv.Handle("chat.typing", s.handleChatTyping)
 	srv.Handle("group.info", s.handleGroupInfo)
@@ -109,7 +110,7 @@ func (s *Sim) hello() any {
 
 // body is the link body of docs/protocol.md.
 func (s *Sim) body() map[string]any {
-	b := map[string]any{"state": s.link, "conn": "offline"}
+	b := map[string]any{"state": s.link, "conn": "offline", "memMB": memMB}
 	if s.syncing {
 		b["syncing"] = true
 	}

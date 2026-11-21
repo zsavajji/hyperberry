@@ -70,6 +70,7 @@ private slots:
     void onRead();
     void onPin();
     void onMute();
+    void onTranslate();
     void onArchive();
     void onOpenChat();
 
@@ -114,6 +115,7 @@ private:
     bb::cascades::ActionItem *m_readItem;
     bb::cascades::ActionItem *m_pinItem;
     bb::cascades::ActionItem *m_muteItem;
+    bb::cascades::ActionItem *m_translateItem;
     bb::cascades::ActionItem *m_archiveItem;
     bb::cascades::ActionItem *m_openItem;
 };

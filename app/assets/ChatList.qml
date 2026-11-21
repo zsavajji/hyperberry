@@ -63,7 +63,13 @@ ListView {
             muteDialog.show()
         }
     }
+    function pickTranslate(chat) {
+        translateDialog.pick(chat.jid, chat.translate)
+    }
     attachedObjects: [
+        TranslatePicker {
+            id: translateDialog
+        },
         SystemDialog {
             id: unfollowDialog
             property string jid

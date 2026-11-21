@@ -58,6 +58,7 @@ type Store struct {
 func newStore(db *sql.DB, srv *Server, log waLog.Logger) *Store {
 	st := &Store{db: db, srv: srv, log: log, ops: make(chan func(*storeTx), 1024), done: make(chan struct{})}
 	st.nt = newNotifier(srv.dir, log)
+	transLog = log
 	st.hist = newHistoryQueue(st)
 	srv.Handle("prefs.set", st.handlePrefs)
 	go st.run()
@@ -561,7 +562,7 @@ func (t *storeTx) changed(chat, id string) {
 }
 
 func (t *storeTx) editMessage(chat, id, text string) {
-	if t.exec("UPDATE messages SET text = ?, edited = 1 WHERE chat = ? AND id = ?", text, chat, id) > 0 {
+	if t.exec("UPDATE messages SET text = ?, edited = 1, tr = NULL, tr_lang = NULL, tr_from = NULL WHERE chat = ? AND id = ?", text, chat, id) > 0 {
 		t.changed(chat, id)
 		t.refreshLast(chat, id, false)
 	}

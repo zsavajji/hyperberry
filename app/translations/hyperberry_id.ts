@@ -372,6 +372,26 @@
         <source>Couldn&apos;t edit this message</source>
         <translation>Tidak dapat mengedit pesan ini</translation>
     </message>
+    <message>
+        <source>Translate…</source>
+        <translation>Terjemahkan…</translation>
+    </message>
+    <message>
+        <source>The translation service is busy. The messages will be translated when it answers again.</source>
+        <translation>Layanan terjemahan sedang sibuk. Pesan akan diterjemahkan saat layanan merespons lagi.</translation>
+    </message>
+    <message>
+        <source>Translating…</source>
+        <translation>Menerjemahkan…</translation>
+    </message>
+    <message>
+        <source>Set up the translation service in Settings</source>
+        <translation>Atur layanan terjemahan di Pengaturan</translation>
+    </message>
+    <message>
+        <source>This service can&apos;t translate into this language</source>
+        <translation>Layanan ini tidak dapat menerjemahkan ke bahasa ini</translation>
+    </message>
 </context>
 <context>
     <name>ChatRow</name>
@@ -424,6 +444,10 @@
         <location filename="../assets/ChatRow.qml" line="1" />
         <source>Call</source>
         <translation>Telepon</translation>
+    </message>
+    <message>
+        <source>Translate…</source>
+        <translation>Terjemahkan…</translation>
     </message>
 </context>
 <context>
@@ -1078,6 +1102,14 @@
     <message>
         <source>Unstar</source>
         <translation>Hapus bintang</translation>
+    </message>
+    <message>
+        <source>Translate</source>
+        <translation>Terjemahkan</translation>
+    </message>
+    <message>
+        <source>Show original</source>
+        <translation>Tampilkan asli</translation>
     </message>
 </context>
 <context>
@@ -1776,6 +1808,14 @@
         <source>Enter key, proximity sensor, video calls</source>
         <translation>Tombol Enter, sensor jarak, panggilan video</translation>
     </message>
+    <message>
+        <source>Translation</source>
+        <translation>Terjemahan</translation>
+    </message>
+    <message>
+        <source>Service, API key</source>
+        <translation>Layanan, kunci API</translation>
+    </message>
 </context>
 <context>
     <name>CallsModel</name>
@@ -2228,6 +2268,34 @@
         <location filename="../assets/main.qml" line="1" />
         <source>Stories</source>
         <translation>Status</translation>
+    </message>
+    <message>
+        <source>More memory for HyperBerry</source>
+        <translation>Memori lebih untuk HyperBerry</translation>
+    </message>
+    <message>
+        <source>BlackBerry 10 gives an app&apos;s background service at most 30 MB of memory. HyperBerry&apos;s service, which keeps your chats in sync and brings your notifications, works within it, with little room to spare.
+
+This patch raises that limit to 128 MB. Each time the phone starts, a few minutes in, it changes that one number in the system&apos;s memory. No system file is changed, and it only affects apps that ask for the largest background size. Only the patch runs as root.
+
+After the install, HyperBerry closes once: open it again.</source>
+        <translation>BlackBerry 10 memberi layanan latar belakang sebuah aplikasi paling banyak 30 MB memori. Layanan HyperBerry, yang menjaga obrolan Anda tetap sinkron dan membawa notifikasi, berjalan dalam batas itu, dengan sedikit ruang tersisa.
+
+Patch ini menaikkan batas tersebut menjadi 128 MB. Setiap kali ponsel menyala, beberapa menit kemudian, patch mengubah satu angka itu di memori sistem. Tidak ada berkas sistem yang diubah, dan hanya memengaruhi aplikasi yang meminta ukuran latar belakang terbesar. Hanya patch yang berjalan sebagai root.
+
+Setelah pemasangan, HyperBerry menutup sekali: buka lagi.</translation>
+    </message>
+    <message>
+        <source>Install</source>
+        <translation>Pasang</translation>
+    </message>
+    <message>
+        <source>Installing the memory addon…</source>
+        <translation>Memasang addon memori…</translation>
+    </message>
+    <message>
+        <source>Close HyperBerry</source>
+        <translation>Tutup HyperBerry</translation>
     </message>
 </context>
 <context>
@@ -2745,6 +2813,154 @@
     <message>
         <source>Couldn&apos;t open this link. Try again in a moment.</source>
         <translation>Tidak dapat membuka tautan ini. Coba lagi sebentar lagi.</translation>
+    </message>
+    <message>
+        <source>Background memory</source>
+        <translation>Memori latar belakang</translation>
+    </message>
+    <message>
+        <source>HyperBerry&apos;s background service has %1 MB</source>
+        <translation>Layanan latar belakang HyperBerry memiliki %1 MB</translation>
+    </message>
+    <message>
+        <source>Install the memory patch</source>
+        <translation>Pasang patch memori</translation>
+    </message>
+    <message>
+        <source>The patch is installed. It takes effect a few minutes after the phone starts: close HyperBerry and open it again then.</source>
+        <translation>Patch sudah terpasang. Berlaku beberapa menit setelah ponsel menyala: saat itu tutup HyperBerry lalu buka lagi.</translation>
+    </message>
+</context>
+<context>
+    <name>TranslateDialog</name>
+    <message>
+        <source>Original</source>
+        <translation>Asli</translation>
+    </message>
+    <message>
+        <source>Already in %1</source>
+        <translation>Sudah dalam %1</translation>
+    </message>
+    <message>
+        <source>Set up the translation service in Settings</source>
+        <translation>Atur layanan terjemahan di Pengaturan</translation>
+    </message>
+    <message>
+        <source>This service can&apos;t translate into this language</source>
+        <translation>Layanan ini tidak dapat menerjemahkan ke bahasa ini</translation>
+    </message>
+    <message>
+        <source>The translation service is busy. Try again later.</source>
+        <translation>Layanan terjemahan sedang sibuk. Coba lagi nanti.</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t reach the translation service</source>
+        <translation>Tidak dapat menjangkau layanan terjemahan</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t translate this message</source>
+        <translation>Tidak dapat menerjemahkan pesan ini</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Salin</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Tutup</translation>
+    </message>
+    <message>
+        <source>Translate to</source>
+        <translation>Terjemahkan ke</translation>
+    </message>
+</context>
+<context>
+    <name>TranslationSettingsPage</name>
+    <message>
+        <source>Translation</source>
+        <translation>Terjemahan</translation>
+    </message>
+    <message>
+        <source>Service</source>
+        <translation>Layanan</translation>
+    </message>
+    <message>
+        <source>DeepL API key</source>
+        <translation>Kunci API DeepL</translation>
+    </message>
+    <message>
+        <source>Server address</source>
+        <translation>Alamat server</translation>
+    </message>
+    <message>
+        <source>API key (optional)</source>
+        <translation>Kunci API (opsional)</translation>
+    </message>
+    <message>
+        <source>The messages you translate are sent to this service.</source>
+        <translation>Pesan yang Anda terjemahkan dikirim ke layanan ini.</translation>
+    </message>
+    <message>
+        <source>Google API key (optional)</source>
+        <translation>Kunci API Google (opsional)</translation>
+    </message>
+    <message>
+        <source>Without a key, Google&apos;s free service is used: it may stop answering for a while after many translations.</source>
+        <translation>Tanpa kunci, layanan gratis Google digunakan: setelah banyak terjemahan, layanan ini bisa berhenti merespons untuk sementara.</translation>
+    </message>
+</context>
+<context>
+    <name>MemoryPatch</name>
+    <message>
+        <source>Root is not available: HyperBerry needs AutoRoot v4 with root enabled (/var/rootdata/use.root).</source>
+        <translation>Root tidak tersedia: HyperBerry membutuhkan AutoRoot v4 dengan root aktif (/var/rootdata/use.root).</translation>
+    </message>
+    <message>
+        <source>The memory addon (headless-mem.zip) is missing from this app.</source>
+        <translation>Addon memori (headless-mem.zip) tidak ada di aplikasi ini.</translation>
+    </message>
+    <message>
+        <source>The helper hb-install-patcher is missing from this app.</source>
+        <translation>Pembantu hb-install-patcher tidak ada di aplikasi ini.</translation>
+    </message>
+    <message>
+        <source>The root helper gave no output. Is root enabled in AutoRoot (/var/rootdata/use.root)?</source>
+        <translation>Pembantu root tidak memberi keluaran. Apakah root aktif di AutoRoot (/var/rootdata/use.root)?</translation>
+    </message>
+    <message>
+        <source>Installed. HyperBerry has to close once to use the new memory limit: open it again afterwards.</source>
+        <translation>Terpasang. HyperBerry harus menutup sekali untuk memakai batas memori baru: buka lagi setelahnya.</translation>
+    </message>
+    <message>
+        <source>The install did not finish. The output is in Documents, hyperberry-memory-patch.txt.</source>
+        <translation>Pemasangan tidak selesai. Keluarannya ada di Documents, hyperberry-memory-patch.txt.</translation>
+    </message>
+    <message>
+        <source>Could not start the root helper %1.</source>
+        <translation>Tidak dapat memulai pembantu root %1.</translation>
+    </message>
+</context>
+<context>
+    <name>TranslatePicker</name>
+    <message>
+        <source>Off</source>
+        <translation>Mati</translation>
+    </message>
+    <message>
+        <source>Translate incoming messages</source>
+        <translation>Terjemahkan pesan masuk</translation>
+    </message>
+    <message>
+        <source>The messages you read in this chat are sent to the translation service.</source>
+        <translation>Pesan yang Anda baca di obrolan ini dikirim ke layanan terjemahan.</translation>
+    </message>
+    <message>
+        <source>OK</source>
+        <translation>OK</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Batal</translation>
     </message>
 </context>
 </TS>

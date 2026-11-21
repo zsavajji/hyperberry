@@ -373,6 +373,26 @@
         <source>Couldn&apos;t edit this message</source>
         <translation>यह संदेश संपादित नहीं हो सका</translation>
     </message>
+    <message>
+        <source>Translate…</source>
+        <translation>अनुवाद…</translation>
+    </message>
+    <message>
+        <source>The translation service is busy. The messages will be translated when it answers again.</source>
+        <translation>अनुवाद सेवा व्यस्त है। जब वह फिर जवाब देगी, संदेशों का अनुवाद हो जाएगा।</translation>
+    </message>
+    <message>
+        <source>Translating…</source>
+        <translation>अनुवाद हो रहा है…</translation>
+    </message>
+    <message>
+        <source>Set up the translation service in Settings</source>
+        <translation>सेटिंग्स में अनुवाद सेवा सेट करें</translation>
+    </message>
+    <message>
+        <source>This service can&apos;t translate into this language</source>
+        <translation>यह सेवा इस भाषा में अनुवाद नहीं कर सकती</translation>
+    </message>
 </context>
 <context>
     <name>ChatRow</name>
@@ -425,6 +445,10 @@
         <location filename="../assets/ChatRow.qml" line="1" />
         <source>Call</source>
         <translation>कॉल करें</translation>
+    </message>
+    <message>
+        <source>Translate…</source>
+        <translation>अनुवाद…</translation>
     </message>
 </context>
 <context>
@@ -1080,6 +1104,14 @@
     <message>
         <source>Unstar</source>
         <translation>स्टार हटाएं</translation>
+    </message>
+    <message>
+        <source>Translate</source>
+        <translation>अनुवाद करें</translation>
+    </message>
+    <message>
+        <source>Show original</source>
+        <translation>मूल दिखाएँ</translation>
     </message>
 </context>
 <context>
@@ -1779,6 +1811,14 @@
         <source>Enter key, proximity sensor, video calls</source>
         <translation>Enter कुंजी, निकटता सेंसर, वीडियो कॉल</translation>
     </message>
+    <message>
+        <source>Translation</source>
+        <translation>अनुवाद</translation>
+    </message>
+    <message>
+        <source>Service, API key</source>
+        <translation>सेवा, API कुंजी</translation>
+    </message>
 </context>
 <context>
     <name>CallsModel</name>
@@ -2231,6 +2271,34 @@
         <location filename="../assets/main.qml" line="1" />
         <source>Stories</source>
         <translation>स्टेटस</translation>
+    </message>
+    <message>
+        <source>More memory for HyperBerry</source>
+        <translation>HyperBerry के लिए अधिक मेमोरी</translation>
+    </message>
+    <message>
+        <source>BlackBerry 10 gives an app&apos;s background service at most 30 MB of memory. HyperBerry&apos;s service, which keeps your chats in sync and brings your notifications, works within it, with little room to spare.
+
+This patch raises that limit to 128 MB. Each time the phone starts, a few minutes in, it changes that one number in the system&apos;s memory. No system file is changed, and it only affects apps that ask for the largest background size. Only the patch runs as root.
+
+After the install, HyperBerry closes once: open it again.</source>
+        <translation>BlackBerry 10 किसी ऐप की बैकग्राउंड सेवा को अधिकतम 30 MB मेमोरी देता है। HyperBerry की सेवा, जो आपकी चैट सिंक रखती है और सूचनाएँ लाती है, इसी सीमा में चलती है, पर गुंजाइश बहुत कम है।
+
+यह पैच उस सीमा को 128 MB कर देता है। फ़ोन हर बार चालू होने के कुछ मिनट बाद यह सिस्टम की मेमोरी में सिर्फ़ यही एक संख्या बदलता है। कोई सिस्टम फ़ाइल नहीं बदली जाती, और यह केवल उन ऐप्स पर असर डालता है जो सबसे बड़ा बैकग्राउंड आकार माँगते हैं। केवल पैच root के रूप में चलता है।
+
+इंस्टॉल के बाद HyperBerry एक बार बंद होगा: इसे फिर से खोलें।</translation>
+    </message>
+    <message>
+        <source>Install</source>
+        <translation>इंस्टॉल करें</translation>
+    </message>
+    <message>
+        <source>Installing the memory addon…</source>
+        <translation>मेमोरी ऐडऑन इंस्टॉल हो रहा है…</translation>
+    </message>
+    <message>
+        <source>Close HyperBerry</source>
+        <translation>HyperBerry बंद करें</translation>
     </message>
 </context>
 <context>
@@ -2748,6 +2816,154 @@
     <message>
         <source>Couldn&apos;t open this link. Try again in a moment.</source>
         <translation>यह लिंक नहीं खुल सका। थोड़ी देर में फिर से कोशिश करें।</translation>
+    </message>
+    <message>
+        <source>Background memory</source>
+        <translation>बैकग्राउंड मेमोरी</translation>
+    </message>
+    <message>
+        <source>HyperBerry&apos;s background service has %1 MB</source>
+        <translation>HyperBerry की बैकग्राउंड सेवा के पास %1 MB है</translation>
+    </message>
+    <message>
+        <source>Install the memory patch</source>
+        <translation>मेमोरी पैच इंस्टॉल करें</translation>
+    </message>
+    <message>
+        <source>The patch is installed. It takes effect a few minutes after the phone starts: close HyperBerry and open it again then.</source>
+        <translation>पैच इंस्टॉल हो गया है। यह फ़ोन चालू होने के कुछ मिनट बाद लागू होता है: तब HyperBerry बंद करके फिर से खोलें।</translation>
+    </message>
+</context>
+<context>
+    <name>TranslateDialog</name>
+    <message>
+        <source>Original</source>
+        <translation>मूल</translation>
+    </message>
+    <message>
+        <source>Already in %1</source>
+        <translation>पहले से %1 में</translation>
+    </message>
+    <message>
+        <source>Set up the translation service in Settings</source>
+        <translation>सेटिंग्स में अनुवाद सेवा सेट करें</translation>
+    </message>
+    <message>
+        <source>This service can&apos;t translate into this language</source>
+        <translation>यह सेवा इस भाषा में अनुवाद नहीं कर सकती</translation>
+    </message>
+    <message>
+        <source>The translation service is busy. Try again later.</source>
+        <translation>अनुवाद सेवा व्यस्त है। बाद में फिर कोशिश करें।</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t reach the translation service</source>
+        <translation>अनुवाद सेवा तक नहीं पहुँच सके</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t translate this message</source>
+        <translation>इस संदेश का अनुवाद नहीं हो सका</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>कॉपी करें</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>बंद करें</translation>
+    </message>
+    <message>
+        <source>Translate to</source>
+        <translation>इसमें अनुवाद करें</translation>
+    </message>
+</context>
+<context>
+    <name>TranslationSettingsPage</name>
+    <message>
+        <source>Translation</source>
+        <translation>अनुवाद</translation>
+    </message>
+    <message>
+        <source>Service</source>
+        <translation>सेवा</translation>
+    </message>
+    <message>
+        <source>DeepL API key</source>
+        <translation>DeepL API कुंजी</translation>
+    </message>
+    <message>
+        <source>Server address</source>
+        <translation>सर्वर का पता</translation>
+    </message>
+    <message>
+        <source>API key (optional)</source>
+        <translation>API कुंजी (वैकल्पिक)</translation>
+    </message>
+    <message>
+        <source>The messages you translate are sent to this service.</source>
+        <translation>आप जिन संदेशों का अनुवाद करते हैं, वे इस सेवा को भेजे जाते हैं।</translation>
+    </message>
+    <message>
+        <source>Google API key (optional)</source>
+        <translation>Google API कुंजी (वैकल्पिक)</translation>
+    </message>
+    <message>
+        <source>Without a key, Google&apos;s free service is used: it may stop answering for a while after many translations.</source>
+        <translation>बिना कुंजी के Google की मुफ़्त सेवा इस्तेमाल होती है: बहुत सारे अनुवादों के बाद वह कुछ समय के लिए जवाब देना बंद कर सकती है।</translation>
+    </message>
+</context>
+<context>
+    <name>MemoryPatch</name>
+    <message>
+        <source>Root is not available: HyperBerry needs AutoRoot v4 with root enabled (/var/rootdata/use.root).</source>
+        <translation>Root उपलब्ध नहीं है: HyperBerry को root सक्षम के साथ AutoRoot v4 चाहिए (/var/rootdata/use.root)।</translation>
+    </message>
+    <message>
+        <source>The memory addon (headless-mem.zip) is missing from this app.</source>
+        <translation>इस ऐप में मेमोरी ऐडऑन (headless-mem.zip) मौजूद नहीं है।</translation>
+    </message>
+    <message>
+        <source>The helper hb-install-patcher is missing from this app.</source>
+        <translation>इस ऐप में सहायक hb-install-patcher मौजूद नहीं है।</translation>
+    </message>
+    <message>
+        <source>The root helper gave no output. Is root enabled in AutoRoot (/var/rootdata/use.root)?</source>
+        <translation>root सहायक ने कोई आउटपुट नहीं दिया। क्या AutoRoot में root चालू है (/var/rootdata/use.root)?</translation>
+    </message>
+    <message>
+        <source>Installed. HyperBerry has to close once to use the new memory limit: open it again afterwards.</source>
+        <translation>इंस्टॉल हो गया। नई मेमोरी सीमा इस्तेमाल करने के लिए HyperBerry को एक बार बंद होना होगा: बाद में इसे फिर से खोलें।</translation>
+    </message>
+    <message>
+        <source>The install did not finish. The output is in Documents, hyperberry-memory-patch.txt.</source>
+        <translation>इंस्टॉल पूरा नहीं हुआ। आउटपुट Documents में है, hyperberry-memory-patch.txt।</translation>
+    </message>
+    <message>
+        <source>Could not start the root helper %1.</source>
+        <translation>root सहायक %1 शुरू नहीं हो सका।</translation>
+    </message>
+</context>
+<context>
+    <name>TranslatePicker</name>
+    <message>
+        <source>Off</source>
+        <translation>बंद</translation>
+    </message>
+    <message>
+        <source>Translate incoming messages</source>
+        <translation>आने वाले संदेशों का अनुवाद करें</translation>
+    </message>
+    <message>
+        <source>The messages you read in this chat are sent to the translation service.</source>
+        <translation>इस चैट में आप जो संदेश पढ़ते हैं, वे अनुवाद सेवा को भेजे जाते हैं।</translation>
+    </message>
+    <message>
+        <source>OK</source>
+        <translation>ठीक है</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>रद्द करें</translation>
     </message>
 </context>
 </TS>
