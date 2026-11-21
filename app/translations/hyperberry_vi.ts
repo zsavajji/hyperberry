@@ -381,6 +381,10 @@
         <translation>Dịch vụ dịch đang bận. Các tin nhắn sẽ được dịch khi dịch vụ phản hồi lại.</translation>
     </message>
     <message>
+        <source>Translating…</source>
+        <translation>Đang dịch…</translation>
+    </message>
+    <message>
         <source>Set up the translation service in Settings</source>
         <translation>Thiết lập dịch vụ dịch trong Cài đặt</translation>
     </message>

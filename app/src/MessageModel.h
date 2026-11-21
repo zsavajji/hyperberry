@@ -42,6 +42,9 @@ class MessageModel : public bb::cascades::DataModel
     Q_PROPERTY(bool loading READ loading NOTIFY loadingChanged)
     // The language this chat's incoming messages are shown in ("it"), "" for off: chats.translate, read again on a chats event.
     Q_PROPERTY(QString translate READ translate NOTIFY translateChanged)
+    // True while a msg.translate of this chat's is not answered yet: a page can take the service a while, and the
+    // title bar says so meanwhile.
+    Q_PROPERTY(bool translating READ translating NOTIFY translatingChanged)
 public:
     MessageModel(EngineLink *engine, const QString &chat, bool group, QObject *parent = 0);
 
@@ -63,6 +66,7 @@ public:
     bool empty() const { return m_entries.isEmpty(); }
     bool loading() const { return m_loading; }
     QString translate() const { return m_translate; }
+    bool translating() const { return !m_translating.isEmpty(); }
 
     // The chat's unread count as chats.db has it now.
     int unread() const;
@@ -76,6 +80,7 @@ signals:
     void emptyChanged();
     void loadingChanged();
     void translateChanged();
+    void translatingChanged();
     // A msg.translate of this model's failed (the engine's error code, or no_engine): the page warns the user.
     void translateStalled(const QString &code);
     // A merge added a message that isn't ours and wasn't there before (not a first load or an
@@ -93,6 +98,7 @@ private slots:
     void onReplied(const QString &id, const QString &cmd, const QVariant &result);
     void onFailed(const QString &id, const QString &cmd, const QString &code);
     void retryTranslate();
+    void askTranslate();
 
 private:
     struct Msg
@@ -130,7 +136,7 @@ private:
     QString dayTitle(const Msg &m);
     QString readTranslate() const;
     void reload();
-    void askTranslate();
+    void wantTranslation(const Msg &m);
 
     QPointer<EngineLink> m_engine;
     QString m_chat;
@@ -146,7 +152,8 @@ private:
     QHash<QString, QStringList> m_translating; // the msg.translate requests in flight: request id and the message ids it asked for
     QTimer m_retry; // single shot: the one retry armed after a failure that may pass (rate_limited, offline, no_engine)
     int m_retries; // the retries run in a row; a reply, a new language or a reconnect starts the count again
-    QStringList m_toTranslate; // read() queues, select() sends: newest first
+    QStringList m_toTranslate; // the rows drawn that want a translation (wantTranslation), sent by askTranslate
+    QTimer m_trSoon; // single shot, 200 ms: a screenful of rows is one request
     QList<Entry> m_entries;
     bb::system::LocaleHandler m_region;
     QLocale m_locale; // the region's locale, read once per select()

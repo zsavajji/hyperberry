@@ -381,6 +381,10 @@
         <translation>Layanan terjemahan sedang sibuk. Pesan akan diterjemahkan saat layanan merespons lagi.</translation>
     </message>
     <message>
+        <source>Translating…</source>
+        <translation>Menerjemahkan…</translation>
+    </message>
+    <message>
         <source>Set up the translation service in Settings</source>
         <translation>Atur layanan terjemahan di Pengaturan</translation>
     </message>

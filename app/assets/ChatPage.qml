@@ -544,7 +544,8 @@ Page {
     titleBar: ChatTitleBar {
         visibility: page.atEar ? ChromeVisibility.Hidden : ChromeVisibility.Visible
         chat: page.chat
-        status: ctl.status
+        // While the chat's messages are being translated the line says so: a page can take the service a while.
+        status: ctl.messages && ctl.messages.translating ? qsTr("Translating…") : ctl.status
         members: ctl.groupInfo.participants ? ctl.groupInfo.participants.length : 0
         onTapped: infoAction.showInfo()
         // Only while this page is on top: a second tap during the slide out popped the chat list too, the last page,

@@ -382,6 +382,10 @@
         <translation>El servicio de traducción está ocupado. Los mensajes se traducirán cuando vuelva a responder.</translation>
     </message>
     <message>
+        <source>Translating…</source>
+        <translation>Traduciendo…</translation>
+    </message>
+    <message>
         <source>Set up the translation service in Settings</source>
         <translation>Configura el servicio de traducción en Ajustes</translation>
     </message>

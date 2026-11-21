@@ -382,6 +382,10 @@
         <translation>Der Übersetzungsdienst ist ausgelastet. Die Nachrichten werden übersetzt, sobald er wieder antwortet.</translation>
     </message>
     <message>
+        <source>Translating…</source>
+        <translation>Wird übersetzt…</translation>
+    </message>
+    <message>
         <source>Set up the translation service in Settings</source>
         <translation>Richte den Übersetzungsdienst in den Einstellungen ein</translation>
     </message>

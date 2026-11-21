@@ -383,6 +383,10 @@
         <translation>Сервіс перекладу зайнятий. Повідомлення буде перекладено, коли він знову відповість.</translation>
     </message>
     <message>
+        <source>Translating…</source>
+        <translation>Переклад…</translation>
+    </message>
+    <message>
         <source>Set up the translation service in Settings</source>
         <translation>Налаштуйте сервіс перекладу в Налаштуваннях</translation>
     </message>

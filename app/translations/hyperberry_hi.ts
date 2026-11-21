@@ -382,6 +382,10 @@
         <translation>अनुवाद सेवा व्यस्त है। जब वह फिर जवाब देगी, संदेशों का अनुवाद हो जाएगा।</translation>
     </message>
     <message>
+        <source>Translating…</source>
+        <translation>अनुवाद हो रहा है…</translation>
+    </message>
+    <message>
         <source>Set up the translation service in Settings</source>
         <translation>सेटिंग्स में अनुवाद सेवा सेट करें</translation>
     </message>

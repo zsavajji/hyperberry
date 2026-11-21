@@ -383,6 +383,10 @@
         <translation>Сервис перевода занят. Сообщения будут переведены, когда он снова ответит.</translation>
     </message>
     <message>
+        <source>Translating…</source>
+        <translation>Перевод…</translation>
+    </message>
+    <message>
         <source>Set up the translation service in Settings</source>
         <translation>Настройте сервис перевода в Настройках</translation>
     </message>

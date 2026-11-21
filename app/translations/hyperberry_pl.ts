@@ -383,6 +383,10 @@
         <translation>Usługa tłumaczeń jest zajęta. Wiadomości zostaną przetłumaczone, gdy znów odpowie.</translation>
     </message>
     <message>
+        <source>Translating…</source>
+        <translation>Tłumaczenie…</translation>
+    </message>
+    <message>
         <source>Set up the translation service in Settings</source>
         <translation>Skonfiguruj usługę tłumaczeń w Ustawieniach</translation>
     </message>
