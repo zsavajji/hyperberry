@@ -263,6 +263,13 @@ void MessageModel::onChats(const QStringList &jids)
     emit translateChanged();
     m_askedTr.clear();
     m_toTranslate.clear();
+    m_trSoon.stop();
+    // The requests still out were for the old language: their answers and failures are ignored from now on, so
+    // "Translating…" and a late toast don't outlast turning it off (the user, 2026-11-21: "shouldn't it be immediate?").
+    if (!m_translating.isEmpty()) {
+        m_translating.clear();
+        emit translatingChanged();
+    }
     m_retries = 0;
     m_retry.stop();
     reload();
