@@ -21,6 +21,10 @@ Dialog {
     property string original: ""
     // The screen's height, from the dim layer that fills it: the card takes at most 80 % of it.
     property real screenH: 0
+    // languages.js's name; the phone's language when the list has it not (nb, from a Norwegian phone) from QLocale.
+    function nameOf(code) {
+        return Languages.name(code) || chatCtl.languageName(code)
+    }
     function show(title, text, how) {
         heading = title
         body = text
@@ -40,7 +44,7 @@ Dialog {
         original = msg.text
         lang = defaultLang
         select(lang)
-        show(chatCtl.languageName(lang), "", "wait")
+        show(nameOf(lang), "", "wait")
         chatCtl.translate(msg.id, lang)
     }
     // The select shows code: "" is its first option, Original (the select can't be left empty with certainty on 10.3).
@@ -69,7 +73,7 @@ Dialog {
             mode = "text"
             return
         }
-        heading = chatCtl.languageName(code)
+        heading = nameOf(code)
         body = ""
         mode = "wait"
         chatCtl.translate(msgId, code)
@@ -79,8 +83,8 @@ Dialog {
         if (id != msgId || mode != "wait" || to != lang) {
             return
         }
-        var name = chatCtl.languageName(to)
-        heading = from ? chatCtl.languageName(from) + " → " + name : name
+        var name = nameOf(to)
+        heading = from ? nameOf(from) + " → " + name : name
         if (text == "") {
             body = qsTr("Already in %1").arg(name)
             mode = "fail"
@@ -140,7 +144,7 @@ Dialog {
                 textStyle.fontSizeValue: nav.bodySize * 1.1
                 textStyle.fontWeight: FontWeight.W500
             }
-            // The select is the scrolling content's first child: its open list (eleven options, taller than the card on
+            // The select is the scrolling content's first child: its open list (nearly fifty options, taller than the card on
             // a Q10) scrolls with the text, and is never outside the ScrollView.
             ScrollView {
                 layoutProperties: StackLayoutProperties {
@@ -159,7 +163,7 @@ Dialog {
                             }
                             add(dlg.option(qsTr("Original"), ""))
                             if (dlg.defaultLang != "" && !found) {
-                                add(dlg.option(dlg.chatCtl.languageName(dlg.defaultLang), dlg.defaultLang))
+                                add(dlg.option(dlg.nameOf(dlg.defaultLang), dlg.defaultLang))
                             }
                             for (var j = 0; j < all.length; j++) {
                                 add(dlg.option(all[j][1], all[j][0]))

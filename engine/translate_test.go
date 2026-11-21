@@ -145,13 +145,13 @@ func TestTranslateDeepL(t *testing.T) {
 	for _, c := range []struct {
 		key, to string
 		want    string
-	}{{"", "it", "no_key"}, {"abc", "hi", "unsupported"}} {
+	}{{"", "it", "no_key"}} {
 		if _, _, err := translateText(ctx, transSettings{provider: "deepl", deeplKey: c.key}, "Hallo", c.to); code(err) != c.want {
 			t.Errorf("%+v: %v", c, err)
 		}
 	}
 	if pro.n.Load() != before {
-		t.Error("a request went out with no key or no Hindi")
+		t.Error("a request went out with no key")
 	}
 	for status, want := range map[int]string{403: "no_key", 429: "rate_limited", 456: "rate_limited", 400: "unsupported", 503: "translate_failed"} {
 		deeplProURL = newStub(t, status, "").URL

@@ -335,8 +335,6 @@ func translateDeepL(ctx context.Context, ts transSettings, text, to string) (out
 	}
 	target := strings.ToUpper(to)
 	switch langBase(to) {
-	case "hi":
-		return "", "", &Error{"unsupported", "translate: DeepL has no Hindi"}
 	case "en":
 		target = "EN-US"
 	case "pt":
