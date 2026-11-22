@@ -417,8 +417,8 @@ func TestBareFave(t *testing.T) {
 	if faves, recent := tx.stickerLists(dir); len(faves) != 0 || len(recent) != 0 {
 		t.Errorf("favourites %+v, recent %+v: want none, nothing to fetch them with", faves, recent)
 	}
-	if src, ok := tx.stickerSource(dir, hashOf(9)); !ok || src.usable() {
-		t.Errorf("source %+v %v: want found, not usable", src, ok)
+	if src, ok := tx.stickerSource(dir, hashOf(9)); !ok || src.usable() || !src.fave {
+		t.Errorf("source %+v %v: want found, a favourite, not usable", src, ok)
 	}
 	tx.insertMessage(stickerRow("R1", 20, false, 9, "image/webp"))
 	faves, _ := tx.stickerLists(dir)
@@ -456,6 +456,9 @@ func TestUploadExpired(t *testing.T) {
 	here := stickerCopy(dir, hashOf(12), false)
 	if err := writeFile(here, []byte("webp")); err != nil {
 		t.Fatal(err)
+	}
+	if src, _ := tx.stickerSource(dir, hashOf(12)); src.fave {
+		t.Errorf("a sticker only a message carries reads as a favourite")
 	}
 	if _, recent := tx.stickerLists(dir); len(recent) != 1 || recent[0].Path != here {
 		t.Errorf("recent %+v: with the file here it is listed, and sent by uploading it again", recent)

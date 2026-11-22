@@ -41,6 +41,7 @@ type stickerSrc struct {
 	thumb    []byte // a message row's PNG; a favourite has none
 	animated bool
 	path     string // the file, when it is here
+	fave     bool   // one of the favourites
 }
 
 // stickerItem is one sticker of the stickers.get lists.
@@ -191,6 +192,7 @@ ORDER BY ts DESC LIMIT 1`, hash).
 	if !fave && !inRow {
 		return src, false
 	}
+	src.fave = fave
 	json.Unmarshal([]byte(media), &src.info) // our own marshal: it reads ("" when no favourite)
 	if inRow && !src.usable() {
 		json.Unmarshal([]byte(rowMedia), &src.info)
@@ -373,6 +375,12 @@ func (s *Session) sendSticker(cli *whatsmeow.Client, jid types.JID, chat, id, ha
 			s.store.ops <- func(t *storeTx) {
 				t.exec("UPDATE messages SET media = ?, size = ? WHERE chat = ? AND id = ?", string(media), int64(up.FileLength), chat, id)
 				t.exec("UPDATE sticker_faves SET media = ? WHERE hash = ?", string(media), hash)
+			}
+			// The favourite is the account's, in app state: written again with the new upload, the phone, any other linked
+			// device and a later link of this one get a live one too (the phone never refreshes it: it keeps the file).
+			sum, _ := base64.StdEncoding.DecodeString(hash)
+			if p, perr := appstate.BuildFavoriteSticker(sum, stickerAction(src, true)); src.fave && perr == nil {
+				go s.sendPatch(cli, "sticker.fave", p) // not in the way of the message
 			}
 		}
 	}
