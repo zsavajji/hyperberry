@@ -475,14 +475,12 @@ Page {
                 rightPadding: zoom * ui.du(2)
                 topPadding: zoom * ui.du(1)
                 bottomPadding: zoom * ui.du(1)
-                maxHeight: fourLines.layoutFrame.height > 0 ? fourLines.layoutFrame.height + zoom * ui.du(2) : 100000
+                // As tall as the caption, at most four lines: a ScrollView alone takes all the room it's given.
                 ScrollView {
                     horizontalAlignment: HorizontalAlignment.Fill
-                    layoutProperties: StackLayoutProperties {
-                        spaceQuota: 1
-                    }
+                    preferredHeight: capFrame.layoutFrame.height > 0 ? Math.min(capFrame.layoutFrame.height, fourLines.layoutFrame.height) : fourLines.layoutFrame.height
                     Label {
-                        horizontalAlignment: HorizontalAlignment.Center
+                        horizontalAlignment: HorizontalAlignment.Fill
                         multiline: true
                         text: sheet.cur.text ? sheet.cur.text : ""
                         textFormat: TextFormat.Plain
@@ -491,6 +489,9 @@ Page {
                         textStyle.fontSize: FontSize.PercentageValue
                         textStyle.fontSizeValue: nav.bodySize
                         textStyle.color: Color.White
+                        attachedObjects: LayoutUpdateHandler {
+                            id: capFrame
+                        }
                     }
                 }
                 gestureHandlers: TapHandler {
