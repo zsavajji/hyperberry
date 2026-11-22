@@ -61,6 +61,10 @@ func forwardContent(m msgRow) (*waE2E.Message, int, error) {
 	case *waE2E.StickerMessage:
 		d.ContextInfo = ci
 		msg.StickerMessage = d
+		if info.lottie() { // wrapped, as WhatsApp sends one (stickerOut)
+			d.IsLottie, d.IsAnimated = proto.Bool(true), proto.Bool(true)
+			msg = &waE2E.Message{LottieStickerMessage: &waE2E.FutureProofMessage{Message: msg}}
+		}
 	case *waE2E.AudioMessage:
 		d.PTT, d.ContextInfo = proto.Bool(m.Kind == msgVoice), ci
 		if m.Kind == msgVoice {

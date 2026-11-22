@@ -32,8 +32,15 @@ func TestForwardContent(t *testing.T) {
 		t.Errorf("voice: %v %v", m, err)
 	}
 
+	lottie, _ := json.Marshal(mediaInfo{DirectPath: "/v/l", MediaKey: []byte{1}, FileLength: 9, Mimetype: lottieMime})
+	m, _, err = forwardContent(msgRow{Kind: msgSticker, Media: string(lottie)})
+	st := m.GetLottieStickerMessage().GetMessage().GetStickerMessage()
+	if err != nil || m.GetStickerMessage() != nil || !st.GetIsLottie() || !st.GetContextInfo().GetIsForwarded() {
+		t.Errorf("lottie sticker: %v %v", m, err)
+	}
+
 	for name, row := range map[string]msgRow{
-		"poll":             {Kind: msgPoll, Text: "Pizza?"},
+		"poll":            {Kind: msgPoll, Text: "Pizza?"},
 		"deleted":          {Kind: msgText, Deleted: true},
 		"photo, no upload": {Kind: msgPhoto},
 		"photo, bad media": {Kind: msgPhoto, Media: "{}"},
