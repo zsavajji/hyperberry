@@ -61,6 +61,17 @@ void MessageCard::onPopulating()
     m_star->setTitle(Card::tr(kContext, starred ? "Unstar" : "Star"));
     m_star->setImageSource(Card::url(starred ? "asset:///images/unstar_action.png" : "asset:///images/star_action.png"));
     m_star->setEnabled(!deleted);
+    // A sticker row (a name, not deleted) offers its favourite action; any other card's menu doesn't have it.
+    const bool sticker = !deleted && !str("sticker").isEmpty();
+    if (sticker != m_faveIn) {
+        if (sticker)
+            m_menu->insert(m_faveAt, m_fave);
+        else
+            m_menu->remove(m_fave);
+        m_faveIn = sticker;
+    }
+    m_fave->setTitle(Card::tr(kContext, flag("fave") ? "Remove from favourites" : "Add to favourites"));
+    m_fave->setEnabled(sticker); // out of the menu, its letter stays off too
     m_edit->setEnabled(flag("editable"));
     m_revoke->setEnabled(flag("revocable"));
     m_deleteMe->setEnabled(!readOnly);
@@ -109,6 +120,10 @@ void MessageCard::makeActions()
     m_translate = action("Translate", "asset:///images/translate_action.png", SLOT(onTranslate()), "t");
     // A filled star to star, an outline to take it off (gen-icons.py); onPopulating swaps them.
     m_star = action("Star", "asset:///images/star_action.png", SLOT(onStar()), "s");
+    // A sticker's: the heart, the app's own (the story viewer's like). It is out of the menu until onPopulating finds a sticker.
+    m_faveAt = m_menu->count();
+    m_fave = action("Add to favourites", "asset:///images/heart.png", SLOT(onFave()), "o");
+    m_menu->remove(m_fave);
     m_edit = action("Edit", "file:///usr/share/icons/ic_edit.png", SLOT(onEdit()), "e");
     m_revoke = action("Delete for everyone", "file:///usr/share/icons/bb_action_delete.png",
                       SLOT(onRevoke()), "x");
@@ -183,6 +198,7 @@ void MessageCard::onVotes() { Card::call(m_list, "showVoters", str("votesText"))
 void MessageCard::onCopy() { Card::call(m_list, "copy", str("text")); }
 void MessageCard::onTranslate() { Card::call(m_list, "translate", m_msg); }
 void MessageCard::onStar() { Card::call(m_list, "star", m_msg); }
+void MessageCard::onFave() { Card::call(m_list, "fave", m_msg); }
 void MessageCard::onEdit() { Card::call(m_list, "edit", m_msg); }
 void MessageCard::onRevoke() { Card::call(m_list, "deleteForEveryone", str("id")); }
 void MessageCard::onDeleteMe() { Card::call(m_list, "deleteForMe", str("id")); }

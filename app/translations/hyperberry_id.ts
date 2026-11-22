@@ -1116,6 +1116,14 @@
         <translation>Hapus bintang</translation>
     </message>
     <message>
+        <source>Add to favourites</source>
+        <translation>Tambahkan ke favorit</translation>
+    </message>
+    <message>
+        <source>Remove from favourites</source>
+        <translation>Hapus dari favorit</translation>
+    </message>
+    <message>
         <source>Translate</source>
         <translation>Terjemahkan</translation>
     </message>
@@ -2993,6 +3001,37 @@ Setelah pemasangan, HyperBerry menutup sekali: buka lagi.</translation>
     <message>
         <source>Cancel</source>
         <translation>Batal</translation>
+    </message>
+</context>
+<context>
+    <name>StickersPage</name>
+    <message>
+        <source>Stickers</source>
+        <translation>Stiker</translation>
+    </message>
+    <message>
+        <source>No stickers yet. The stickers you send and your favourites show here.</source>
+        <translation>Belum ada stiker. Stiker yang Anda kirim dan stiker favorit Anda muncul di sini.</translation>
+    </message>
+    <message>
+        <source>Send</source>
+        <translation>Kirim</translation>
+    </message>
+    <message>
+        <source>Add to favourites</source>
+        <translation>Tambahkan ke favorit</translation>
+    </message>
+    <message>
+        <source>Remove from favourites</source>
+        <translation>Hapus dari favorit</translation>
+    </message>
+    <message>
+        <source>Favourites</source>
+        <translation>Favorit</translation>
+    </message>
+    <message>
+        <source>Recent</source>
+        <translation>Terbaru</translation>
     </message>
 </context>
 </TS>

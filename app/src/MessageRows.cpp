@@ -27,8 +27,9 @@ using namespace bb::utility::i18n;
 static const char *const kDb = "chats";
 
 // The three QUOTED are the quoted message's out, sender and sender_name, by its primary key. The
-// last two columns are the message's reactions, all and ours (sender '' is us); the engine makes
-// that table when it migrates chats.db, before the UI reads it.
+// reactions columns are the message's reactions, all and ours (sender '' is us); the engine makes
+// that table when it migrates chats.db, before the UI reads it. The last two are a sticker's name and
+// whether it is one of the favourites (sticker_faves, also the engine's).
 #define QUOTED(col) "(SELECT " col " FROM messages q WHERE q.chat = messages.chat AND q.id = messages.quote_id)"
 static const char *const kColumns = "rowid, id, ts, out, state, sender, sender_name, kind, "
                                     "text, quote_preview, edited, deleted, "
@@ -36,7 +37,8 @@ static const char *const kColumns = "rowid, id, ts, out, state, sender, sender_n
                                     "thumb, width, height, size, path, "
                                     "(SELECT group_concat(emoji, ' ') FROM reactions r WHERE r.chat = messages.chat AND r.msg = messages.id), "
                                     "(SELECT emoji FROM reactions r WHERE r.chat = messages.chat AND r.msg = messages.id AND r.sender = ''), extra, starred, quote_id, "
-                                    "tr, tr_lang, tr_from";
+                                    "tr, tr_lang, tr_from, sticker, "
+                                    "EXISTS(SELECT 1 FROM sticker_faves f WHERE f.hash = messages.sticker)";
 #undef QUOTED
 
 MessageModel::Msg MessageModel::read(QSqlQuery &q)
@@ -93,6 +95,9 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
     m.data["state"] = q.value(4).toInt();
     m.data["edited"] = q.value(10).toInt() != 0;
     m.data["starred"] = q.value(27).toInt() != 0;
+    // A sticker's name, which the menu's favourite action needs, and whether it is a favourite (the card's menu says which).
+    m.data["sticker"] = q.value(32).toString();
+    m.data["fave"] = q.value(33).toInt() != 0;
     m.data["deleted"] = deleted;
     // Translate (docs/plan/translate.md): texts and captions. An incoming one in a chat with a language shows its
     // translation once the engine has written it for that language; until then it wants one (wantTr), which is asked for

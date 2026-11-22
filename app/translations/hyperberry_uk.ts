@@ -1120,6 +1120,14 @@
         <translation>Прибрати з обраного</translation>
     </message>
     <message>
+        <source>Add to favourites</source>
+        <translation>Додати стікер до вибраного</translation>
+    </message>
+    <message>
+        <source>Remove from favourites</source>
+        <translation>Видалити стікер із вибраного</translation>
+    </message>
+    <message>
         <source>Translate</source>
         <translation>Перекласти</translation>
     </message>
@@ -2999,6 +3007,37 @@ After the install, HyperBerry closes once: open it again.</source>
     <message>
         <source>Cancel</source>
         <translation>Скасувати</translation>
+    </message>
+</context>
+<context>
+    <name>StickersPage</name>
+    <message>
+        <source>Stickers</source>
+        <translation>Стікери</translation>
+    </message>
+    <message>
+        <source>No stickers yet. The stickers you send and your favourites show here.</source>
+        <translation>Стікерів ще немає. Стікери, які ви надсилаєте, і вибране з'являться тут.</translation>
+    </message>
+    <message>
+        <source>Send</source>
+        <translation>Надіслати</translation>
+    </message>
+    <message>
+        <source>Add to favourites</source>
+        <translation>Додати до вибраного</translation>
+    </message>
+    <message>
+        <source>Remove from favourites</source>
+        <translation>Видалити з вибраного</translation>
+    </message>
+    <message>
+        <source>Favourites</source>
+        <translation>Вибране</translation>
+    </message>
+    <message>
+        <source>Recent</source>
+        <translation>Нещодавні</translation>
     </message>
 </context>
 </TS>

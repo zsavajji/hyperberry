@@ -1120,6 +1120,14 @@
         <translation>Убрать из избранного</translation>
     </message>
     <message>
+        <source>Add to favourites</source>
+        <translation>Добавить стикер в избранное</translation>
+    </message>
+    <message>
+        <source>Remove from favourites</source>
+        <translation>Удалить стикер из избранного</translation>
+    </message>
+    <message>
         <source>Translate</source>
         <translation>Перевести</translation>
     </message>
@@ -2999,6 +3007,37 @@ After the install, HyperBerry closes once: open it again.</source>
     <message>
         <source>Cancel</source>
         <translation>Отмена</translation>
+    </message>
+</context>
+<context>
+    <name>StickersPage</name>
+    <message>
+        <source>Stickers</source>
+        <translation>Стикеры</translation>
+    </message>
+    <message>
+        <source>No stickers yet. The stickers you send and your favourites show here.</source>
+        <translation>Стикеров пока нет. Стикеры, которые вы отправляете, и избранное появятся здесь.</translation>
+    </message>
+    <message>
+        <source>Send</source>
+        <translation>Отправить</translation>
+    </message>
+    <message>
+        <source>Add to favourites</source>
+        <translation>Добавить в избранное</translation>
+    </message>
+    <message>
+        <source>Remove from favourites</source>
+        <translation>Удалить из избранного</translation>
+    </message>
+    <message>
+        <source>Favourites</source>
+        <translation>Избранное</translation>
+    </message>
+    <message>
+        <source>Recent</source>
+        <translation>Недавние</translation>
     </message>
 </context>
 </TS>

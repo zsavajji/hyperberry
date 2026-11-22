@@ -6,6 +6,10 @@ import bb.cascades 1.4
 Container {
     id: picker
     signal picked(string emoji)
+    // The strip's last cell: the sticker page (StickersPage.qml). The chat opens it, and sets hasStickers: the reaction pickers
+    // (ReactBar, StoryViewer) have no use for it, so they have no button, and their cells stay 72 px.
+    signal stickers()
+    property bool hasStickers: false
     horizontalAlignment: HorizontalAlignment.Fill
     layout: StackLayout {
         orientation: LayoutOrientation.TopToBottom
@@ -36,17 +40,18 @@ Container {
     }
     attachedObjects: ComponentDefinition {
         id: cellDef
-        // 72 px, ten across the Q10's 720: the icon 54 px, the group under the list's first item
-        // underlined in the primary colour. These cells are reached by the Classic's trackpad (the user, 2026-11-20):
-        // FocusPolicy.Key, not KeyAndTouch, so a touch leaves the focus (the composer's keyboard) where it is; the one with the
-        // focus is lit as the pressed colour, and a click (Enter) does what a tap does. The grid's cells are the list's own.
+        // 64 px with the Stickers button, else 72: ten across the Q10's 720 either way. The icon 54 px, the group under
+        // the list's first item underlined in the primary colour. These cells and the Stickers button are reached by the
+        // Classic's trackpad (the user, 2026-11-20): FocusPolicy.Key, not KeyAndTouch, so a touch leaves the focus (the
+        // composer's keyboard) where it is; the one with the focus is lit as the pressed colour, and a click (Enter) does
+        // what a tap does. The grid's cells are the list's own.
         Container {
             id: cell
             property int index
             property alias image: icon.imageSource
             property alias marked: underline.visible
             signal tapped(int index)
-            preferredWidth: pxZoom * ui.px(72)
+            preferredWidth: pxZoom * ui.px(picker.hasStickers ? 64 : 72)
             preferredHeight: pxZoom * ui.px(72)
             layout: DockLayout {}
             focusPolicy: FocusPolicy.Key
@@ -78,10 +83,57 @@ Container {
             }
         }
     }
+    // The first row: the groups, then the Stickers button fixed at its end, apart from them: it opens the sticker page (the chat
+    // does, on stickers()), it isn't a group of this grid.
     Container {
-        id: strip
+        horizontalAlignment: HorizontalAlignment.Fill
         layout: StackLayout {
             orientation: LayoutOrientation.LeftToRight
+        }
+        Container {
+            id: strip
+            layoutProperties: StackLayoutProperties {
+                spaceQuota: 1
+            }
+            layout: StackLayout {
+                orientation: LayoutOrientation.LeftToRight
+            }
+        }
+        Container {
+            visible: picker.hasStickers
+            preferredWidth: pxZoom * ui.px(2)
+            preferredHeight: pxZoom * ui.px(48)
+            verticalAlignment: VerticalAlignment.Center
+            background: ui.palette.secondaryTextOnPlain
+            opacity: 0.4
+        }
+        Container {
+            id: stickersBtn
+            visible: picker.hasStickers
+            preferredWidth: pxZoom * ui.px(72)
+            preferredHeight: pxZoom * ui.px(72)
+            layout: DockLayout {}
+            focusPolicy: FocusPolicy.Key
+            background: stickersBtn.focused ? Color.create(nav.pressColor) : Color.Transparent
+            gestureHandlers: TapHandler {
+                onTapped: picker.stickers()
+            }
+            keyListeners: KeyListener {
+                onKeyReleased: {
+                    if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                        picker.stickers()
+                    }
+                }
+            }
+            ImageView {
+                horizontalAlignment: HorizontalAlignment.Center
+                verticalAlignment: VerticalAlignment.Center
+                preferredWidth: pxZoom * ui.px(54)
+                preferredHeight: pxZoom * ui.px(54)
+                // The sticker mark, drawn by scripts/gen-sticker-icon.py: white, tinted as the theme's quiet text.
+                imageSource: "asset:///images/stickers.png"
+                filterColor: ui.palette.secondaryTextOnPlain
+            }
         }
     }
     ListView {

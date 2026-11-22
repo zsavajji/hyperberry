@@ -1118,6 +1118,14 @@
         <translation>स्टार हटाएं</translation>
     </message>
     <message>
+        <source>Add to favourites</source>
+        <translation>पसंदीदा में जोड़ें</translation>
+    </message>
+    <message>
+        <source>Remove from favourites</source>
+        <translation>पसंदीदा से हटाएं</translation>
+    </message>
+    <message>
         <source>Translate</source>
         <translation>अनुवाद करें</translation>
     </message>
@@ -2996,6 +3004,37 @@ After the install, HyperBerry closes once: open it again.</source>
     <message>
         <source>Cancel</source>
         <translation>रद्द करें</translation>
+    </message>
+</context>
+<context>
+    <name>StickersPage</name>
+    <message>
+        <source>Stickers</source>
+        <translation>स्टिकर</translation>
+    </message>
+    <message>
+        <source>No stickers yet. The stickers you send and your favourites show here.</source>
+        <translation>अभी कोई स्टिकर नहीं है। आपके भेजे गए स्टिकर और आपके पसंदीदा यहाँ दिखते हैं।</translation>
+    </message>
+    <message>
+        <source>Send</source>
+        <translation>भेजें</translation>
+    </message>
+    <message>
+        <source>Add to favourites</source>
+        <translation>पसंदीदा में जोड़ें</translation>
+    </message>
+    <message>
+        <source>Remove from favourites</source>
+        <translation>पसंदीदा से हटाएं</translation>
+    </message>
+    <message>
+        <source>Favourites</source>
+        <translation>पसंदीदा</translation>
+    </message>
+    <message>
+        <source>Recent</source>
+        <translation>हाल के</translation>
     </message>
 </context>
 </TS>

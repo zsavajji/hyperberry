@@ -18,6 +18,11 @@ const int kStickerPx = 180;
 // be read or decoded.
 QByteArray picture(const QString &id, const QString &path);
 
+// The picker's picture: the PNG, at most side square, of the first frame of the file at path, kept in
+// data/cache/previews/st-<side>-<hex of hash>.png; its path, "" when the file can't be read or decoded. Touches only
+// QImage, QFile, libwebp and rlottie, so a worker thread may call it.
+QString gridPicture(const QString &hash, const QString &path, int side);
+
 // Whether the file at path is a Lottie sticker: a ZIP, which starts with "PK\x03\x04", as a WebP never does. The UI looks at
 // the file, not its name or mimetype: our own download of one is saved as <id>.webp.
 bool isLottie(const QString &path);

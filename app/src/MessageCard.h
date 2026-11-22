@@ -78,6 +78,7 @@ private slots:
     void onRevoke();
     void onDeleteMe();
     void onStar();
+    void onFave();
     void onWho();
     void onJoin();
     void onQuote();
@@ -193,6 +194,10 @@ private:
     bb::cascades::ActionItem *m_copy;
     bb::cascades::ActionItem *m_translate;
     bb::cascades::ActionItem *m_star;
+    // A sticker's Add to or Remove from favourites, in the menu only for a sticker row, at m_faveAt (just after Star).
+    bb::cascades::ActionItem *m_fave;
+    int m_faveAt;
+    bool m_faveIn;
     bb::cascades::ActionItem *m_edit;
     bb::cascades::ActionItem *m_revoke;
     bb::cascades::DeleteActionItem *m_deleteMe;

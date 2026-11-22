@@ -1120,6 +1120,14 @@
         <translation>Usuń gwiazdkę</translation>
     </message>
     <message>
+        <source>Add to favourites</source>
+        <translation>Dodaj do ulubionych</translation>
+    </message>
+    <message>
+        <source>Remove from favourites</source>
+        <translation>Usuń z ulubionych</translation>
+    </message>
+    <message>
         <source>Translate</source>
         <translation>Tłumacz</translation>
     </message>
@@ -2999,6 +3007,37 @@ Po instalacji HyperBerry zamknie się raz: otwórz go ponownie.</translation>
     <message>
         <source>Cancel</source>
         <translation>Anuluj</translation>
+    </message>
+</context>
+<context>
+    <name>StickersPage</name>
+    <message>
+        <source>Stickers</source>
+        <translation>Naklejki</translation>
+    </message>
+    <message>
+        <source>No stickers yet. The stickers you send and your favourites show here.</source>
+        <translation>Brak naklejek. Naklejki, które wysyłasz, i twoje ulubione pokażą się tutaj.</translation>
+    </message>
+    <message>
+        <source>Send</source>
+        <translation>Wyślij</translation>
+    </message>
+    <message>
+        <source>Add to favourites</source>
+        <translation>Dodaj do ulubionych</translation>
+    </message>
+    <message>
+        <source>Remove from favourites</source>
+        <translation>Usuń z ulubionych</translation>
+    </message>
+    <message>
+        <source>Favourites</source>
+        <translation>Ulubione</translation>
+    </message>
+    <message>
+        <source>Recent</source>
+        <translation>Ostatnie</translation>
     </message>
 </context>
 </TS>

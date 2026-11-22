@@ -147,24 +147,49 @@ static QImage lottieFirstFrame(const QString &path, int side)
     return image;
 }
 
+// The still picture of the file at path, at most side square: a Lottie's frame 0, else a WebP's first frame (null on failure).
+static QImage still(const QString &path, int side)
+{
+    QImage image = Sticker::isLottie(path) ? lottieFirstFrame(path, side) : firstFrame(path);
+    if (!image.isNull() && (image.width() > side || image.height() > side))
+        image = image.scaled(side, side, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    return image;
+}
+
+// The PNG of the still picture of path kept in file, made the first time; false when it can't be made.
+static bool cached(const QString &file, const QString &path, int side)
+{
+    if (QFile::exists(file))
+        return true;
+    const QImage image = still(path, side);
+    if (image.isNull() || !QDir().mkpath(QFileInfo(file).path()))
+        return false;
+    if (!image.save(file, "PNG")) {
+        QFile::remove(file); // no half-written preview left to be taken for a good one
+        return false;
+    }
+    return true;
+}
+
 // ponytail: made on the UI thread, as the photo previews are; a worker thread if scrolling stutters (a Lottie takes 20 to
 // 60 ms to parse, once). A file that doesn't decode is tried again at every read of its row.
 QByteArray Sticker::picture(const QString &id, const QString &path)
 {
     const QString file = QDir::homePath() + "/cache/previews/" + id + ".png";
-    if (!QFile::exists(file)) {
-        QImage image = isLottie(path) ? lottieFirstFrame(path, kStickerPx) : firstFrame(path);
-        if (image.isNull() || !QDir().mkpath(QFileInfo(file).path()))
-            return QByteArray();
-        if (image.width() > kStickerPx || image.height() > kStickerPx)
-            image = image.scaled(kStickerPx, kStickerPx, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        if (!image.save(file, "PNG")) {
-            QFile::remove(file); // no half-written preview left to be taken for a good one
-            return QByteArray();
-        }
-    }
+    if (!cached(file, path, kStickerPx))
+        return QByteArray();
     QFile f(file);
     return f.open(QIODevice::ReadOnly) ? f.readAll() : QByteArray();
+}
+
+// The picker's cells and preview: the same, named by the sticker's hash (hex, as the engine names its copy of the file) and the
+// side, so the 128 px of the grid and the 360 px of the preview don't share a file. Only QImage, QFile, libwebp and rlottie are
+// touched: a worker thread calls it.
+QString Sticker::gridPicture(const QString &hash, const QString &path, int side)
+{
+    const QString file = QDir::homePath() + "/cache/previews/st-" + QString::number(side) + "-"
+                         + QString::fromLatin1(QByteArray::fromBase64(hash.toLatin1()).toHex()) + ".png";
+    return cached(file, path, side) ? file : QString();
 }
 
 void Sticker::fetch(EngineLink *engine, const QString &chat, const QString &id, QSet<QString> &asked)

@@ -1118,6 +1118,14 @@
         <translation>Stern entfernen</translation>
     </message>
     <message>
+        <source>Add to favourites</source>
+        <translation>Zu Favoriten hinzufügen</translation>
+    </message>
+    <message>
+        <source>Remove from favourites</source>
+        <translation>Aus Favoriten entfernen</translation>
+    </message>
+    <message>
         <source>Translate</source>
         <translation>Übersetzen</translation>
     </message>
@@ -2996,6 +3004,37 @@ Nach der Installation schließt sich HyperBerry einmal: Öffne es erneut.</trans
     <message>
         <source>Cancel</source>
         <translation>Abbrechen</translation>
+    </message>
+</context>
+<context>
+    <name>StickersPage</name>
+    <message>
+        <source>Stickers</source>
+        <translation>Sticker</translation>
+    </message>
+    <message>
+        <source>No stickers yet. The stickers you send and your favourites show here.</source>
+        <translation>Noch keine Sticker. Die Sticker, die du sendest, und deine Favoriten erscheinen hier.</translation>
+    </message>
+    <message>
+        <source>Send</source>
+        <translation>Senden</translation>
+    </message>
+    <message>
+        <source>Add to favourites</source>
+        <translation>Zu Favoriten hinzufügen</translation>
+    </message>
+    <message>
+        <source>Remove from favourites</source>
+        <translation>Aus Favoriten entfernen</translation>
+    </message>
+    <message>
+        <source>Favourites</source>
+        <translation>Favoriten</translation>
+    </message>
+    <message>
+        <source>Recent</source>
+        <translation>Zuletzt verwendet</translation>
     </message>
 </context>
 </TS>

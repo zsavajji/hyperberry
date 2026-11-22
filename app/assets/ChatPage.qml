@@ -97,6 +97,10 @@ Page {
             id: callPickDef
             source: "CallPickPage.qml"
         },
+        ComponentDefinition {
+            id: stickersDef
+            source: "StickersPage.qml"
+        },
         SystemToast {
             id: notSent
             body: qsTr("Not sent: HyperBerry is reconnecting. Try again in a moment.")
@@ -580,6 +584,29 @@ Page {
     function callPlaced() {
         nav.pop()
     }
+    // The sticker page, pushed over this one from the emoji picker's Stickers button; a tap there sends and closes it
+    // (sendSticker).
+    function openStickers() {
+        var stickers = stickersDef.createObject()
+        stickers.picked.connect(page.sendSticker)
+        nav.push(stickers)
+    }
+    // A sticker is a message of its own, the reply quote going with it. It goes at once, and the sticker page closes, and the
+    // emoji picker under it, as after a send. A request that did not go out leaves the page open.
+    function sendSticker(hash) {
+        var args = {"chat": chat.jid, "hash": hash}
+        if (ctl.quoteId()) {
+            args.quote = ctl.quoteId()
+        }
+        if (!engine.request("sticker.send", args)) {
+            notSent.show()
+            return
+        }
+        ctl.cancelReply()
+        page.followOwn = true
+        page.picking = false
+        nav.pop()
+    }
     // At the ear, a voice note playing: the screen goes black and takes no touch, as the call screen does (the
     // user's ask, 2026-11-16); the title bar hides, so the black covers it all. The action bar is hidden already.
     Container {
@@ -636,6 +663,10 @@ Page {
                     // Star, or take the star off one that has it: the engine tells the phone, and the card redraws.
                     function star(msg) {
                         engine.request("msg.star", {"chat": page.chat.jid, "id": msg.id, "star": !msg.starred})
+                    }
+                    // Add a sticker to the favourites, or take it out: the engine tells the phone, and the card redraws.
+                    function fave(msg) {
+                        engine.request("sticker.fave", {"chat": page.chat.jid, "id": msg.id, "on": !msg.fave})
                     }
                     // Forward: the Send to page, titled Forward to; its pick sends the message (main.qml's forwardTo).
                     function forward(msg) {
@@ -905,6 +936,8 @@ Page {
                 onControlChanged: {
                     if (control) {
                         control.picked.connect(page.picked)
+                        control.hasStickers = true
+                        control.stickers.connect(page.openStickers)
                     }
                 }
             }

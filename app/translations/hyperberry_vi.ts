@@ -1116,6 +1116,14 @@
         <translation>Bỏ dấu sao</translation>
     </message>
     <message>
+        <source>Add to favourites</source>
+        <translation>Thêm vào yêu thích</translation>
+    </message>
+    <message>
+        <source>Remove from favourites</source>
+        <translation>Xóa khỏi yêu thích</translation>
+    </message>
+    <message>
         <source>Translate</source>
         <translation>Dịch</translation>
     </message>
@@ -2993,6 +3001,37 @@ Sau khi cài, HyperBerry sẽ đóng một lần: hãy mở lại.</translation>
     <message>
         <source>Cancel</source>
         <translation>Hủy</translation>
+    </message>
+</context>
+<context>
+    <name>StickersPage</name>
+    <message>
+        <source>Stickers</source>
+        <translation>Nhãn dán</translation>
+    </message>
+    <message>
+        <source>No stickers yet. The stickers you send and your favourites show here.</source>
+        <translation>Chưa có nhãn dán nào. Nhãn dán bạn gửi và nhãn dán yêu thích sẽ hiển thị ở đây.</translation>
+    </message>
+    <message>
+        <source>Send</source>
+        <translation>Gửi</translation>
+    </message>
+    <message>
+        <source>Add to favourites</source>
+        <translation>Thêm vào yêu thích</translation>
+    </message>
+    <message>
+        <source>Remove from favourites</source>
+        <translation>Xóa khỏi yêu thích</translation>
+    </message>
+    <message>
+        <source>Favourites</source>
+        <translation>Yêu thích</translation>
+    </message>
+    <message>
+        <source>Recent</source>
+        <translation>Gần đây</translation>
     </message>
 </context>
 </TS>
