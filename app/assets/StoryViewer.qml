@@ -379,6 +379,20 @@ Page {
         attachedObjects: LayoutUpdateHandler {
             id: area
         }
+        // Four lines of the caption's text, unseen and under everything: the caption scrolls past this height.
+        Label {
+            opacity: 0
+            touchPropagationMode: TouchPropagationMode.None
+            multiline: true
+            text: "A\nB\nC\nD"
+            textFormat: TextFormat.Plain
+            textStyle.base: nav.emojiStyle
+            textStyle.fontSize: FontSize.PercentageValue
+            textStyle.fontSizeValue: nav.bodySize
+            attachedObjects: LayoutUpdateHandler {
+                id: fourLines
+            }
+        }
         // A photo, or a video's thumbnail until its file is here. Hidden while the video plays: the video's
         // window is under the Cascades layer, and a picture over its hole would cover it.
         ImageView {
@@ -446,7 +460,8 @@ Page {
         Container {
             horizontalAlignment: HorizontalAlignment.Fill
             verticalAlignment: VerticalAlignment.Bottom
-            // The caption, over a band so white reads on any picture; a tap on it moves through the stories as elsewhere.
+            // The caption, over a band so white reads on any picture; past four lines it scrolls. A tap on it moves through the
+            // stories as elsewhere.
             Container {
                 visible: (sheet.cur.kind == 1 || sheet.cur.kind == 2) && !!sheet.cur.text && !sheet.picking
                 horizontalAlignment: HorizontalAlignment.Fill
@@ -455,17 +470,23 @@ Page {
                 rightPadding: zoom * ui.du(2)
                 topPadding: zoom * ui.du(1)
                 bottomPadding: zoom * ui.du(1)
-                Label {
-                    horizontalAlignment: HorizontalAlignment.Center
-                    multiline: true
-                    autoSize.maxLineCount: 6
-                    text: sheet.cur.text ? sheet.cur.text : ""
-                    textFormat: TextFormat.Plain
-                    textStyle.base: nav.emojiStyle
-                    textStyle.textAlign: TextAlign.Center
-                    textStyle.fontSize: FontSize.PercentageValue
-                    textStyle.fontSizeValue: nav.bodySize
-                    textStyle.color: Color.White
+                maxHeight: fourLines.layoutFrame.height > 0 ? fourLines.layoutFrame.height + zoom * ui.du(2) : 100000
+                ScrollView {
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    layoutProperties: StackLayoutProperties {
+                        spaceQuota: 1
+                    }
+                    Label {
+                        horizontalAlignment: HorizontalAlignment.Center
+                        multiline: true
+                        text: sheet.cur.text ? sheet.cur.text : ""
+                        textFormat: TextFormat.Plain
+                        textStyle.base: nav.emojiStyle
+                        textStyle.textAlign: TextAlign.Center
+                        textStyle.fontSize: FontSize.PercentageValue
+                        textStyle.fontSizeValue: nav.bodySize
+                        textStyle.color: Color.White
+                    }
                 }
                 gestureHandlers: TapHandler {
                     onTapped: sheet.tapped(event.x)
