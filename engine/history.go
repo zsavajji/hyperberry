@@ -52,10 +52,10 @@ func (st *Store) history(ctx context.Context, t *storeTx, cli *whatsmeow.Client,
 
 		var evs []*events.Message
 		for _, hm := range conv.GetMessages() {
-			if ev, err := cli.ParseWebMessage(chat, hm.GetMessage()); err == nil {
-				evs = append(evs, ev)
-			} else {
+			if ev, err := cli.ParseWebMessage(chat, hm.GetMessage()); err != nil {
 				st.log.Debugf("history message: %v", err)
+			} else if secondCopy(ev) == "" { // the standard copy is a message of its own
+				evs = append(evs, ev)
 			}
 		}
 		sort.SliceStable(evs, func(i, j int) bool { return evs[i].Info.Timestamp.Before(evs[j].Info.Timestamp) })
@@ -95,6 +95,10 @@ func (st *Store) history(ctx context.Context, t *storeTx, cli *whatsmeow.Client,
 // message handles a live message.
 func (st *Store) message(ctx context.Context, t *storeTx, cli *whatsmeow.Client, e *events.Message) {
 	chat := e.Info.Chat
+	if c := secondCopy(e); c != "" { // the standard copy is a message of its own
+		st.log.Infof("message %s in %s: not kept, a second copy (%s)", e.Info.ID, chat, c)
+		return
+	}
 	if chat == types.StatusBroadcastJID { // a story: its own table, no chat (stories.go)
 		st.story(ctx, t, cli, e)
 		return

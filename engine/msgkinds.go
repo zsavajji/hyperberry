@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/polymorfa/hypermeow/proto/waE2E"
+	"github.com/polymorfa/hypermeow/types/events"
 )
 
 // The message kinds of step 6.5: what content() says of them, and what fillExtra keeps of each
@@ -48,6 +49,27 @@ func silent(m *waE2E.Message) bool {
 		m.GetStickerSyncRmrMessage() != nil || m.GetGroupRootKeyShare() != nil ||
 		m.GetRootSecretDistributeMessage() != nil || m.GetPollAddOptionMessage() != nil ||
 		m.GetSecretEncryptedMessage() != nil
+}
+
+// secondCopy names the extra upload of a photo or video that also comes as a message of its own: the HD, HEVC,
+// AV1 or streamed copy a phone sends beside the standard one, "" for any other message. A poster's Android sent
+// one video story twice, H.264 and HEVC; BB10 decodes no HEVC, so that copy played black with sound
+// (2026-11-22). An album's photos are associated children too, and stay.
+func secondCopy(e *events.Message) string {
+	if e.IsAssociatedChild {
+		switch t := e.Message.GetMessageContextInfo().GetMessageAssociation().GetAssociationType(); t {
+		case waE2E.MessageAssociation_HD_VIDEO_DUAL_UPLOAD, waE2E.MessageAssociation_HD_IMAGE_DUAL_UPLOAD,
+			waE2E.MessageAssociation_HEVC_VIDEO_DUAL_UPLOAD, waE2E.MessageAssociation_AV1_VIDEO_DUAL_UPLOAD,
+			waE2E.MessageAssociation_STREAMED_HD_VIDEO_DUAL_UPLOAD:
+			return t.String()
+		}
+	}
+	switch t := contextInfo(e.Message).GetPairedMediaType(); t {
+	case waE2E.ContextInfo_HD_VIDEO_CHILD, waE2E.ContextInfo_HD_IMAGE_CHILD, waE2E.ContextInfo_HEVC_VIDEO_CHILD,
+		waE2E.ContextInfo_AV1_VIDEO_CHILD, waE2E.ContextInfo_STREAMED_VIDEO_CHILD:
+		return t.String()
+	}
+	return ""
 }
 
 // moreKinds is content() for the kinds of step 6.5. done is false when m is none of them or the

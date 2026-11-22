@@ -408,3 +408,32 @@ func TestExportNotice(t *testing.T) {
 		t.Errorf("export: %q", got)
 	}
 }
+
+// An HD, HEVC or AV1 copy is dropped, by its association or by its paired media type; an album's photo and the
+// standard copy stay.
+func TestSecondCopy(t *testing.T) {
+	child := func(a waE2E.MessageAssociation_AssociationType) *events.Message {
+		return &events.Message{IsAssociatedChild: true, Message: &waE2E.Message{
+			VideoMessage:       &waE2E.VideoMessage{},
+			MessageContextInfo: &waE2E.MessageContextInfo{MessageAssociation: &waE2E.MessageAssociation{AssociationType: a.Enum()}}}}
+	}
+	paired := func(p waE2E.ContextInfo_PairedMediaType) *events.Message {
+		return &events.Message{Message: &waE2E.Message{VideoMessage: &waE2E.VideoMessage{
+			ContextInfo: &waE2E.ContextInfo{PairedMediaType: p.Enum()}}}}
+	}
+	for name, c := range map[string]struct {
+		e    *events.Message
+		drop bool
+	}{
+		"hevc child":  {child(waE2E.MessageAssociation_HEVC_VIDEO_DUAL_UPLOAD), true},
+		"hd photo":    {child(waE2E.MessageAssociation_HD_IMAGE_DUAL_UPLOAD), true},
+		"album photo": {child(waE2E.MessageAssociation_MEDIA_ALBUM), false},
+		"paired hevc": {paired(waE2E.ContextInfo_HEVC_VIDEO_CHILD), true},
+		"hevc parent": {paired(waE2E.ContextInfo_HEVC_VIDEO_PARENT), false},
+		"plain video": {&events.Message{Message: &waE2E.Message{VideoMessage: &waE2E.VideoMessage{}}}, false},
+	} {
+		if got := secondCopy(c.e) != ""; got != c.drop {
+			t.Errorf("%s: dropped %v, want %v", name, got, c.drop)
+		}
+	}
+}
