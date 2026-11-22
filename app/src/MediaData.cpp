@@ -8,6 +8,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QHash>
 #include <QImage>
 #include <QImageReader>
 #include <QUrl>
@@ -151,6 +152,18 @@ bool MediaData::fill(QVariantMap &data, const QString &id, int kind, const QStri
     data["ratio"] = width > 0 && height > 0 ? double(height) / width : 0.75;
     data["mediaState"] = mediaState;
     data["path"] = path;
+    // A downloaded sticker that moves (Sticker::animated), which StickerPlayer plays; always set, so a recycled card never
+    // reads another row's. A sticker's file never changes, so its first bytes are read once: one entry per sticker seen
+    // (fill() runs on the UI thread only).
+    bool animated = false;
+    if (kind == 5 && mediaState == 2 && !path.isEmpty()) {
+        static QHash<QString, bool> sniffed;
+        QHash<QString, bool>::const_iterator it = sniffed.constFind(id);
+        if (it == sniffed.constEnd())
+            it = sniffed.insert(id, Sticker::animated(path));
+        animated = it.value();
+    }
+    data["animated"] = animated;
     data["sizeText"] = sizeText(size, locale);
     data["durationText"] = (kind == 2 || kind == 8) && duration > 0 ? clock(duration) : QString();
     data["fileName"] = kind == 4 ? text : QString();

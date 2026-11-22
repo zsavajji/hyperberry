@@ -36,6 +36,9 @@ class Settings : public QObject
     Q_PROPERTY(bool darkGrey READ darkGrey WRITE setDarkGrey NOTIFY darkGreyChanged)
     // How many group calls showed the people drawer's first-time hint (CallDrawer.qml shows it in the first 2).
     Q_PROPERTY(int callHints READ callHints WRITE setCallHints NOTIFY callHintsChanged)
+    // Animated stickers in the chat (the user, 2026-11-22): 0 Loop (default), 1 Play once, 2 Off, which keeps the still.
+    // MediaBubble reads it through stickerPlayMode(); StickerPlayer stops when it turns to Off.
+    Q_PROPERTY(int stickerPlay READ stickerPlay WRITE setStickerPlay NOTIFY stickerPlayChanged)
     // Video calls, the max camera resolution: 0 is 1280x720, 1 is 640x480 (default), 2 is 320x240 (CallVideo's quality).
     Q_PROPERTY(int videoQuality READ videoQuality WRITE setVideoQuality NOTIFY videoQualityChanged)
     // Video calls, the camera's aspect ratio: false is the camera's own, true crops it to 9:16 (CallVideo's crop).
@@ -66,6 +69,7 @@ public:
     bool compact() const;
     bool darkGrey() const;
     int callHints() const;
+    int stickerPlay() const;
     int videoQuality() const;
     bool cameraCrop() const;
     QString translateProvider() const;
@@ -89,6 +93,7 @@ public:
     void setCompact(bool on);
     void setDarkGrey(bool on);
     void setCallHints(int count);
+    void setStickerPlay(int mode);
     void setVideoQuality(int quality);
     void setCameraCrop(bool on);
     void setTranslateProvider(const QString &value);
@@ -96,6 +101,10 @@ public:
     void setDeeplKey(const QString &value);
     void setLibreURL(const QString &value);
     void setLibreKey(const QString &value);
+    // The same for MediaBubble and StickerPlayer: kept in step by the constructor's load and setStickerPlay.
+    static int stickerPlayMode() { return s_stickerPlay; }
+    // main.qml: true while a page other than a chat is on top, so the animated stickers stop drawing.
+    Q_INVOKABLE void coverStickers(bool covered);
     Q_INVOKABLE QString cacheSize();
     Q_INVOKABLE QString clearCache();
 
@@ -113,6 +122,7 @@ signals:
     void compactChanged();
     void darkGreyChanged();
     void callHintsChanged();
+    void stickerPlayChanged();
     void videoQualityChanged(int quality);
     void cameraCropChanged(bool on);
     void translateChanged();
@@ -126,6 +136,7 @@ private:
     void store(const char *key, const QVariant &value);
     void storePref(const char *key, const QVariant &value);
     void setTranslate(const char *key, const QString &value);
+    static int s_stickerPlay;
     QSettings m_file;
     EngineLink *m_engine;
     bb::system::LocaleHandler m_region; // for the size text, as the chat models have it

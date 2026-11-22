@@ -21,7 +21,10 @@
 #include <QTime>
 
 #include "EngineLink.h"
+#include "StickerPlayer.h"
 #include "sizes.h"
+
+int Settings::s_stickerPlay = 0; // Loop, as stickerPlay() reads it
 
 Settings::Settings(EngineLink *engine, QObject *parent)
     : QObject(parent),
@@ -29,6 +32,7 @@ Settings::Settings(EngineLink *engine, QObject *parent)
       m_engine(engine),
       m_region(bb::system::LocaleType::Region)
 {
+    s_stickerPlay = stickerPlay();
     // Dark is the bar descriptor's theme (CASCADES_THEME): nothing to apply, and no reload.
     if (theme() == 1)
         applyTheme();
@@ -63,6 +67,7 @@ bool Settings::darkGrey() const
     return m_file.value("darkGrey", lcd).toBool();
 }
 int Settings::callHints() const { return qMax(0, m_file.value("callHints", 0).toInt()); }
+int Settings::stickerPlay() const { return qBound(0, m_file.value("stickerPlay", 0).toInt(), 2); }
 int Settings::videoQuality() const { return qBound(0, m_file.value("videoQuality", 1).toInt(), 2); }
 bool Settings::cameraCrop() const { return m_file.value("cameraCrop", false).toBool(); }
 QString Settings::translateProvider() const { return m_file.value("translateProvider", "google").toString(); }
@@ -308,6 +313,21 @@ void Settings::setCallHints(int count)
         return;
     store("callHints", count);
     emit callHintsChanged();
+}
+
+void Settings::setStickerPlay(int mode)
+{
+    mode = qBound(0, mode, 2);
+    if (mode == stickerPlay())
+        return;
+    store("stickerPlay", mode);
+    s_stickerPlay = mode;
+    emit stickerPlayChanged();
+}
+
+void Settings::coverStickers(bool covered)
+{
+    StickerPlayer::setCovered(covered);
 }
 
 void Settings::setVideoQuality(int quality)

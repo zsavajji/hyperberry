@@ -2692,6 +2692,26 @@ Tras la instalación, HyperBerry se cierra una vez: ábrelo de nuevo.</translati
         <translation>Si está desactivado, las notas de voz siguen en el altavoz y la pantalla sigue encendida en las llamadas. Para un sensor averiado.</translation>
     </message>
     <message>
+        <source>Animated stickers</source>
+        <translation>Stickers animados</translation>
+    </message>
+    <message>
+        <source>Loop plays them over and over; Play once stops after one go, and a tap plays it again; Off shows them still.</source>
+        <translation>Repetir las reproduce una y otra vez; Reproducir una vez se detiene tras una vez, y un toque la vuelve a reproducir; Desactivado las muestra fijas.</translation>
+    </message>
+    <message>
+        <source>Loop</source>
+        <translation>Repetir</translation>
+    </message>
+    <message>
+        <source>Play once</source>
+        <translation>Reproducir una vez</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Desactivado</translation>
+    </message>
+    <message>
         <source>Calls</source>
         <translation>Llamadas</translation>
     </message>

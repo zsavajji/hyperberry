@@ -11,6 +11,7 @@ IMAGE=${BB10_NDK_IMAGE:-yamsergey/bb10-ndk:0.6}
 "$ROOT/scripts/fetch-qrcodegen.sh"
 "$ROOT/scripts/fetch-omxil.sh"
 "$ROOT/scripts/fetch-libwebp.sh"
+"$ROOT/scripts/fetch-tgs.sh"
 # The app offers the headless-mem addon (app/src/MemoryPatch.cpp). The docker mount below covers only this
 # project, so the zip has to be a real copy.
 if [ ! -x "$ROOT/../rlimit-patch/build.sh" ]; then

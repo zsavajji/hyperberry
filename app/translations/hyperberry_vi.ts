@@ -2689,6 +2689,26 @@ Sau khi cài, HyperBerry sẽ đóng một lần: hãy mở lại.</translation>
         <translation>Khi tắt, tin nhắn thoại vẫn phát qua loa và màn hình vẫn sáng khi gọi. Dành cho cảm biến bị hỏng.</translation>
     </message>
     <message>
+        <source>Animated stickers</source>
+        <translation>Nhãn dán động</translation>
+    </message>
+    <message>
+        <source>Loop plays them over and over; Play once stops after one go, and a tap plays it again; Off shows them still.</source>
+        <translation>Lặp phát liên tục; Phát một lần dừng sau một lượt, chạm để phát lại; Tắt chỉ hiển thị ảnh tĩnh.</translation>
+    </message>
+    <message>
+        <source>Loop</source>
+        <translation>Lặp</translation>
+    </message>
+    <message>
+        <source>Play once</source>
+        <translation>Phát một lần</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Tắt</translation>
+    </message>
+    <message>
         <source>Calls</source>
         <translation>Cuộc gọi</translation>
     </message>

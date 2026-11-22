@@ -2692,6 +2692,26 @@ Après l&apos;installation, HyperBerry se ferme une fois : rouvrez-le.</translat
         <translation>Si désactivé, les messages vocaux restent sur le haut-parleur et l'écran reste allumé pendant les appels. Pour un capteur défectueux.</translation>
     </message>
     <message>
+        <source>Animated stickers</source>
+        <translation>Stickers animés</translation>
+    </message>
+    <message>
+        <source>Loop plays them over and over; Play once stops after one go, and a tap plays it again; Off shows them still.</source>
+        <translation>Boucle les joue en continu ; Lire une fois s'arrête après une lecture, et un toucher la relance ; Désactivé les affiche fixes.</translation>
+    </message>
+    <message>
+        <source>Loop</source>
+        <translation>Boucle</translation>
+    </message>
+    <message>
+        <source>Play once</source>
+        <translation>Lire une fois</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Désactivé</translation>
+    </message>
+    <message>
         <source>Calls</source>
         <translation>Appels</translation>
     </message>

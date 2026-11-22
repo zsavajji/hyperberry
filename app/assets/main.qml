@@ -15,6 +15,7 @@ TabbedPane {
         root.fillTab()
         callList.active = activeTab == callsTab
         storyList.active = activeTab == storiesTab
+        root.coverStickers()
     }
     Menu.definition: MenuDefinition {
         settingsAction: SettingsActionItem {
@@ -65,6 +66,10 @@ TabbedPane {
             callSheet = callSheetDef.createObject(root)
         }
     }
+    // Animated stickers draw only while a chat page is on top (ChatPage's playsStickers) in the Chats tab, as noPeek is read.
+    function coverStickers() {
+        settings.coverStickers(activeTab != chatsTab || !(nav.top && nav.top.playsStickers))
+    }
     function fillTab() {
         if (activeTab == callsTab && callsNav.count() == 0) {
             callsNav.push(callsPageDef.createObject())
@@ -105,6 +110,7 @@ TabbedPane {
             property bool peekWas: true
             onTopChanged: {
                 nav.noPeek = !!nav.top && !!nav.top.noPeek
+                root.coverStickers()
                 // A page that has a chat over it (the starred list) catches up when it is the top again.
                 if (nav.top && nav.top.uncovered) {
                     nav.top.uncovered()

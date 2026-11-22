@@ -2695,6 +2695,26 @@ After the install, HyperBerry closes once: open it again.</source>
         <translation>Если выключено, голосовые сообщения играют через динамик, а экран не гаснет во время звонков. Для неисправного датчика.</translation>
     </message>
     <message>
+        <source>Animated stickers</source>
+        <translation>Анимированные стикеры</translation>
+    </message>
+    <message>
+        <source>Loop plays them over and over; Play once stops after one go, and a tap plays it again; Off shows them still.</source>
+        <translation>«Повтор» проигрывает их по кругу; «Один раз» останавливает после одного проигрывания, а нажатие запускает снова; «Выкл.» показывает их статично.</translation>
+    </message>
+    <message>
+        <source>Loop</source>
+        <translation>Повтор</translation>
+    </message>
+    <message>
+        <source>Play once</source>
+        <translation>Один раз</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Выкл.</translation>
+    </message>
+    <message>
         <source>Calls</source>
         <translation>Звонки</translation>
     </message>

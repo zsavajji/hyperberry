@@ -2692,6 +2692,26 @@ Dopo l&apos;installazione HyperBerry si chiude una volta: riaprilo.</translation
         <translation>Se disattivato, i vocali restano sull'altoparlante e lo schermo resta acceso nelle chiamate. Per un sensore guasto.</translation>
     </message>
     <message>
+        <source>Animated stickers</source>
+        <translation>Sticker animati</translation>
+    </message>
+    <message>
+        <source>Loop plays them over and over; Play once stops after one go, and a tap plays it again; Off shows them still.</source>
+        <translation>Ripeti li riproduce in continuo; Riproduci una volta si ferma dopo una volta, e un tocco lo riproduce di nuovo; Disattivati li mostra fermi.</translation>
+    </message>
+    <message>
+        <source>Loop</source>
+        <translation>Ripeti</translation>
+    </message>
+    <message>
+        <source>Play once</source>
+        <translation>Riproduci una volta</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Disattivati</translation>
+    </message>
+    <message>
         <source>Calls</source>
         <translation>Chiamate</translation>
     </message>

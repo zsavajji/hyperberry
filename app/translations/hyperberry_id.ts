@@ -2689,6 +2689,26 @@ Setelah pemasangan, HyperBerry menutup sekali: buka lagi.</translation>
         <translation>Jika nonaktif, pesan suara tetap di speaker dan layar tetap menyala saat panggilan. Untuk sensor yang rusak.</translation>
     </message>
     <message>
+        <source>Animated stickers</source>
+        <translation>Stiker animasi</translation>
+    </message>
+    <message>
+        <source>Loop plays them over and over; Play once stops after one go, and a tap plays it again; Off shows them still.</source>
+        <translation>Ulang memutarnya terus-menerus; Putar sekali berhenti setelah sekali, dan ketuk untuk memutarnya lagi; Nonaktif menampilkannya diam.</translation>
+    </message>
+    <message>
+        <source>Loop</source>
+        <translation>Ulang</translation>
+    </message>
+    <message>
+        <source>Play once</source>
+        <translation>Putar sekali</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Nonaktif</translation>
+    </message>
+    <message>
         <source>Calls</source>
         <translation>Panggilan</translation>
     </message>

@@ -21,9 +21,10 @@ class UIConfig;
 // MediaBubble.qml. A picture is the message's thumbnail, a video with a play mark and its length; a
 // file is a row of an icon, its name and its size. A tap opens it. list is the chat page's list,
 // which holds the fetch (mediaLoadingId) and opens the file (openMedia). A sticker (step 6.5b) is
-// its picture alone, small, with no caption and no tap: the model fetches its file by itself. A
-// location (6.5c) is its map picture as a photo's, or without one a row to tap; the card's label
-// and text under it are the card's, and a tap asks which maps app opens it. A contact (6.5d) is a
+// its picture alone, small, with no caption: the model fetches its file by itself. An animated one plays
+// (StickerPlayer, as Settings > Chats and Calls > Animated stickers says) and a tap plays it again; any other
+// sticker does nothing on a tap. A location (6.5c) is its map picture as a photo's, or without one a row to
+// tap; the card's label and text under it are the card's, and a tap asks which maps app opens it. A contact (6.5d) is a
 // row of the system's add-contact icon, its names and its number (or "N contacts"); a tap imports
 // it into the Contacts app. A spoiler (6.6d) is a photo or video under a blurred cover with
 // "Spoiler" on it and no play mark or length: a tap takes the cover off (the model's unspoil), the
@@ -88,6 +89,7 @@ private:
     bb::cascades::Label *m_name;
     bb::cascades::Label *m_info;
     QString m_infoText; // what m_info says when nothing is being fetched
+    QString m_stickerId; // the animated sticker's row this card shows, "" for any other
     bb::cascades::ActivityIndicator *m_fileSpin;
     bb::cascades::ImageView *m_fileRing;
 };

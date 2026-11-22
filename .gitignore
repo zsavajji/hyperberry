@@ -7,3 +7,4 @@ app/assets/translations/
 .DS_Store
 lib/libwebp/
 lib/omxil/
+lib/tgs/

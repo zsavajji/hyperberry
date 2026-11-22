@@ -2692,6 +2692,26 @@ After the install, HyperBerry closes once: open it again.</source>
         <translation>बंद होने पर वॉइस नोट स्पीकर पर ही रहते हैं और कॉल में स्क्रीन चालू रहती है। खराब सेंसर के लिए।</translation>
     </message>
     <message>
+        <source>Animated stickers</source>
+        <translation>एनिमेटेड स्टिकर</translation>
+    </message>
+    <message>
+        <source>Loop plays them over and over; Play once stops after one go, and a tap plays it again; Off shows them still.</source>
+        <translation>लूप उन्हें बार-बार चलाता है; एक बार चलाएं एक बार के बाद रुक जाता है, और टैप करने पर फिर चलता है; बंद उन्हें स्थिर दिखाता है।</translation>
+    </message>
+    <message>
+        <source>Loop</source>
+        <translation>लूप</translation>
+    </message>
+    <message>
+        <source>Play once</source>
+        <translation>एक बार चलाएं</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>बंद</translation>
+    </message>
+    <message>
         <source>Calls</source>
         <translation>कॉल</translation>
     </message>

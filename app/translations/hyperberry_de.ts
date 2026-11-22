@@ -2692,6 +2692,26 @@ Nach der Installation schließt sich HyperBerry einmal: Öffne es erneut.</trans
         <translation>Wenn aus, bleiben Sprachnachrichten auf dem Lautsprecher und der Bildschirm bleibt bei Anrufen an. Für einen defekten Sensor.</translation>
     </message>
     <message>
+        <source>Animated stickers</source>
+        <translation>Animierte Sticker</translation>
+    </message>
+    <message>
+        <source>Loop plays them over and over; Play once stops after one go, and a tap plays it again; Off shows them still.</source>
+        <translation>Wiederholen spielt sie immer wieder ab; Einmal abspielen hält nach einem Durchlauf an, und ein Tippen spielt sie erneut ab; Aus zeigt sie als Standbild.</translation>
+    </message>
+    <message>
+        <source>Loop</source>
+        <translation>Wiederholen</translation>
+    </message>
+    <message>
+        <source>Play once</source>
+        <translation>Einmal abspielen</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Aus</translation>
+    </message>
+    <message>
         <source>Calls</source>
         <translation>Anrufe</translation>
     </message>

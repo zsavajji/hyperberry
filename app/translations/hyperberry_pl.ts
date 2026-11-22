@@ -2695,6 +2695,26 @@ Po instalacji HyperBerry zamknie się raz: otwórz go ponownie.</translation>
         <translation>Gdy wyłączone, wiadomości głosowe zostają na głośniku, a ekran pozostaje włączony podczas połączeń. Dla uszkodzonego czujnika.</translation>
     </message>
     <message>
+        <source>Animated stickers</source>
+        <translation>Animowane naklejki</translation>
+    </message>
+    <message>
+        <source>Loop plays them over and over; Play once stops after one go, and a tap plays it again; Off shows them still.</source>
+        <translation>Pętla odtwarza je w kółko; Odtwórz raz zatrzymuje się po jednym odtworzeniu, a dotknięcie odtwarza ponownie; Wyłączone pokazuje je nieruchome.</translation>
+    </message>
+    <message>
+        <source>Loop</source>
+        <translation>Pętla</translation>
+    </message>
+    <message>
+        <source>Play once</source>
+        <translation>Odtwórz raz</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Wyłączone</translation>
+    </message>
+    <message>
         <source>Calls</source>
         <translation>Połączenia</translation>
     </message>

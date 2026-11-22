@@ -8,6 +8,8 @@ import hyperberry 1.0
 Page {
     id: page
     property variant chat
+    // Read by main.qml: animated stickers play only while this page is on top.
+    property bool playsStickers: true
     // The composer's TextArea (Composer.qml): text, editor and requestFocus() are used all over this page.
     property variant composer: composerBar.field
     // Back is in the title bar and the composer is ours: nothing left for the bar. openActionMenu()

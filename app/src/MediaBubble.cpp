@@ -25,6 +25,8 @@
 
 #include "CardStyle.h"
 #include "MessageModel.h"
+#include "Settings.h"
+#include "StickerPlayer.h"
 
 using namespace bb::cascades;
 
@@ -312,8 +314,20 @@ void MediaBubble::show(const QVariantMap &msg)
 
     m_stickerImage->setVisible(m_sticker && hasThumb);
     m_stickerText->setVisible(m_sticker && !hasThumb);
-    if (m_sticker)
-        m_stickerImage->setImage(m_msg.value("thumb").value<Image>());
+    const bool animated = m_sticker && flag("animated");
+    const QString stickerId = animated ? str("id") : QString();
+    StickerPlayer *player = StickerPlayer::instance();
+    // A new row in this card (a re-read of the same row happens at every update): the other row's sticker stops first.
+    const bool newRow = stickerId != m_stickerId;
+    if (newRow) {
+        player->release(m_stickerImage);
+        m_stickerId = stickerId;
+    }
+    const Image still = m_msg.value("thumb").value<Image>();
+    if (m_sticker && !player->playing(m_stickerImage))
+        m_stickerImage->setImage(still);
+    if (newRow && animated && Settings::stickerPlayMode() != 2)
+        player->play(m_stickerImage, still, str("path"), Settings::stickerPlayMode() == 0);
 
     const bool file = !m_picture && !m_sticker;
     m_file->setVisible(file);
@@ -388,5 +402,9 @@ void MediaBubble::onTap()
             model->unspoil(str("id"));
     } else if (!m_sticker) {
         Card::call(m_list, "openMedia", m_msg);
+    } else if (flag("animated") && Settings::stickerPlayMode() != 2) {
+        // Plays again (Play once), or from the start (Loop).
+        StickerPlayer::instance()->play(m_stickerImage, m_msg.value("thumb").value<Image>(), str("path"),
+                                        Settings::stickerPlayMode() == 0);
     }
 }
