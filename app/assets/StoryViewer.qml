@@ -200,6 +200,17 @@ Page {
             sendFailed.show()
         }
     }
+    // A tap on the story: the left third back, the rest forward.
+    function tapped(x) {
+        if (new Date().getTime() - sheet.lostAt < 500) {
+            return
+        }
+        if (x < area.layoutFrame.width / 3) {
+            sheet.prev()
+        } else {
+            sheet.next()
+        }
+    }
     function prev() {
         sheet.show(sheet.index - 1)
     }
@@ -427,24 +438,39 @@ Page {
             horizontalAlignment: HorizontalAlignment.Fill
             verticalAlignment: VerticalAlignment.Fill
             gestureHandlers: TapHandler {
-                onTapped: {
-                    if (new Date().getTime() - sheet.lostAt < 500) {
-                        return
-                    }
-                    if (event.x < area.layoutFrame.width / 3) {
-                        sheet.prev()
-                    } else {
-                        sheet.next()
-                    }
-                }
+                onTapped: sheet.tapped(event.x)
             }
         }
-        // The bottom of the story, not on our own: the emoji picker when it is open, over the reply bar. The picker
-        // is made at the first open and kept, as the chat's is.
+        // The bottom of the story: a photo's or video's caption, then on others' the emoji picker when it is open over
+        // the reply bar, on ours the viewers band. The picker is made at the first open and kept, as the chat's is.
         Container {
-            visible: !sheet.own
             horizontalAlignment: HorizontalAlignment.Fill
             verticalAlignment: VerticalAlignment.Bottom
+            // The caption, over a band so white reads on any picture; a tap on it moves through the stories as elsewhere.
+            Container {
+                visible: (sheet.cur.kind == 1 || sheet.cur.kind == 2) && !!sheet.cur.text && !sheet.picking
+                horizontalAlignment: HorizontalAlignment.Fill
+                background: Color.create(0.0, 0.0, 0.0, 0.55)
+                leftPadding: zoom * ui.du(2)
+                rightPadding: zoom * ui.du(2)
+                topPadding: zoom * ui.du(1)
+                bottomPadding: zoom * ui.du(1)
+                Label {
+                    horizontalAlignment: HorizontalAlignment.Center
+                    multiline: true
+                    autoSize.maxLineCount: 6
+                    text: sheet.cur.text ? sheet.cur.text : ""
+                    textFormat: TextFormat.Plain
+                    textStyle.base: nav.emojiStyle
+                    textStyle.textAlign: TextAlign.Center
+                    textStyle.fontSize: FontSize.PercentageValue
+                    textStyle.fontSizeValue: nav.bodySize
+                    textStyle.color: Color.White
+                }
+                gestureHandlers: TapHandler {
+                    onTapped: sheet.tapped(event.x)
+                }
+            }
             // On a ground of its own, with a line above: over a story the picker would otherwise be emoji on a picture.
             Container {
                 visible: sheet.picking
@@ -469,6 +495,7 @@ Page {
             }
             // The reply field, the emoji button and the heart, over a band.
             Container {
+                visible: !sheet.own
                 horizontalAlignment: HorizontalAlignment.Fill
                 background: Color.create(0.0, 0.0, 0.0, 0.55)
                 leftPadding: zoom * ui.du(1)
@@ -560,48 +587,47 @@ Page {
                     }
                 }
             }
-        }
-        // Ours: who viewed it. An eye and the count over a band, where the others' reply bar is; a tap slides the list in.
-        Container {
-            id: viewersBtn
-            visible: sheet.own
-            horizontalAlignment: HorizontalAlignment.Fill
-            verticalAlignment: VerticalAlignment.Bottom
-            preferredHeight: zoom * ui.du(10)
-            // Focused: the band lighter, the veil over its black.
-            background: viewersBtn.focused ? Color.create("#80555555") : Color.create(0.0, 0.0, 0.0, 0.55)
-            focusPolicy: FocusPolicy.KeyAndTouch
-            layout: DockLayout {}
+            // Ours: who viewed it. An eye and the count over a band, where the others' reply bar is; a tap slides the list in.
             Container {
-                horizontalAlignment: HorizontalAlignment.Center
-                verticalAlignment: VerticalAlignment.Center
-                layout: StackLayout {
-                    orientation: LayoutOrientation.LeftToRight
-                }
-                ImageView {
+                id: viewersBtn
+                visible: sheet.own
+                horizontalAlignment: HorizontalAlignment.Fill
+                preferredHeight: zoom * ui.du(10)
+                // Focused: the band lighter, the veil over its black.
+                background: viewersBtn.focused ? Color.create("#80555555") : Color.create(0.0, 0.0, 0.0, 0.55)
+                focusPolicy: FocusPolicy.KeyAndTouch
+                layout: DockLayout {}
+                Container {
+                    horizontalAlignment: HorizontalAlignment.Center
                     verticalAlignment: VerticalAlignment.Center
-                    preferredWidth: zoom * ui.du(5.5)
-                    preferredHeight: zoom * ui.du(5.5)
-                    imageSource: "asset:///images/eye.png"
-                    filterColor: Color.White
+                    layout: StackLayout {
+                        orientation: LayoutOrientation.LeftToRight
+                    }
+                    ImageView {
+                        verticalAlignment: VerticalAlignment.Center
+                        preferredWidth: zoom * ui.du(5.5)
+                        preferredHeight: zoom * ui.du(5.5)
+                        imageSource: "asset:///images/eye.png"
+                        filterColor: Color.White
+                    }
+                    Label {
+                        verticalAlignment: VerticalAlignment.Center
+                        leftMargin: zoom * ui.du(1)
+                        text: "" + sheet.views
+                        textFormat: TextFormat.Plain
+                        textStyle.fontSize: FontSize.PercentageValue
+                        textStyle.fontSizeValue: nav.bodySize
+                        textStyle.color: Color.White
+                    }
                 }
-                Label {
-                    verticalAlignment: VerticalAlignment.Center
-                    leftMargin: zoom * ui.du(1)
-                    text: "" + sheet.views
-                    textFormat: TextFormat.Plain
-                    textStyle.fontSize: FontSize.PercentageValue
-                    textStyle.fontSizeValue: nav.bodySize
-                    textStyle.color: Color.White
+                gestureHandlers: TapHandler {
+                    onTapped: sheet.showViewers()
                 }
-            }
-            gestureHandlers: TapHandler {
-                onTapped: sheet.showViewers()
-            }
-            keyListeners: KeyListener {
-                onKeyReleased: {
-                    if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
-                        sheet.showViewers()
+                keyListeners: KeyListener {
+                    onKeyReleased: {
+                        if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                            sheet.showViewers()
+                        }
                     }
                 }
             }
