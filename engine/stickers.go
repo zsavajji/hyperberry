@@ -152,10 +152,15 @@ func (t *storeTx) stickerList(dir, q string) []stickerItem {
 		}
 	}
 	rows.Close() // before the lookups below
-	for i, it := range list {
-		list[i].Path = t.stickerFile(dir, it.Hash, it.Lottie)
+	usable := list[:0]
+	for _, it := range list {
+		// A sticker with no file here and nothing to fetch it with would be an empty cell, and can't be sent.
+		if src, ok := t.stickerSource(dir, it.Hash); ok && (src.path != "" || src.usable()) {
+			it.Path = src.path
+			usable = append(usable, it)
+		}
 	}
-	return list
+	return usable
 }
 
 // stickerLists are the favourites, newest first, and the 32 stickers we sent most recently, as WhatsApp's own Recent tab.
@@ -167,8 +172,9 @@ WHERE kind = 5 AND out = 1 AND sticker IS NOT NULL AND deleted = 0 GROUP BY stic
 	return faves, recent
 }
 
-// stickerSource finds a sticker's details: its favourite's, else the newest message's that carries it. ok is false
-// when neither is here.
+// stickerSource finds a sticker's details: its favourite's, else the newest message's that carries it. The phone's app
+// state has favourites with no media details at all, the hash alone (2026-11-22: three of seven, the older ones); then a
+// message's details stand in. ok is false when neither is here; usable() says whether it can be fetched or sent.
 func (t *storeTx) stickerSource(dir, hash string) (src stickerSrc, ok bool) {
 	var media, rowMedia string
 	var rowW, rowH int
@@ -176,15 +182,19 @@ func (t *storeTx) stickerSource(dir, hash string) (src stickerSrc, ok bool) {
 	fave := t.tx.QueryRow("SELECT media, COALESCE(width, 0), COALESCE(height, 0) FROM sticker_faves WHERE hash = ?", hash).
 		Scan(&media, &src.w, &src.h) == nil
 	inRow := t.tx.QueryRow(`SELECT media, COALESCE(width, 0), COALESCE(height, 0), thumb, extra FROM messages
-WHERE sticker = ? AND deleted = 0 AND media IS NOT NULL ORDER BY ts DESC LIMIT 1`, hash).
+WHERE sticker = ? AND deleted = 0 AND media IS NOT NULL AND json_extract(media, '$.directPath') != ''
+ORDER BY ts DESC LIMIT 1`, hash).
 		Scan(&rowMedia, &rowW, &rowH, &src.thumb, &extra) == nil
-	if !fave {
-		if !inRow {
-			return src, false
-		}
-		media, src.w, src.h = rowMedia, rowW, rowH
+	if !fave && !inRow {
+		return src, false
 	}
-	json.Unmarshal([]byte(media), &src.info) // our own marshal: it reads
+	json.Unmarshal([]byte(media), &src.info) // our own marshal: it reads ("" when no favourite)
+	if inRow && !src.usable() {
+		json.Unmarshal([]byte(rowMedia), &src.info)
+		if rowW > 0 && rowH > 0 {
+			src.w, src.h = rowW, rowH
+		}
+	}
 	var x struct{ Animated bool }
 	json.Unmarshal([]byte(extra.String), &x) // no extra, or no such key: not marked
 	src.animated = x.Animated || src.info.lottie()
@@ -193,6 +203,9 @@ WHERE sticker = ? AND deleted = 0 AND media IS NOT NULL ORDER BY ts DESC LIMIT 1
 	}
 	return src, true
 }
+
+// usable is whether src points at an upload: what a download or a send needs.
+func (src stickerSrc) usable() bool { return src.info.DirectPath != "" && len(src.info.MediaKey) > 0 }
 
 // stickerOut is the message that sends src and our row of it, as queueRow takes it. The quote's ContextInfo is the
 // caller's, once it has the quoted message: on flatten(msg).GetStickerMessage(), wrapped or not.
@@ -279,6 +292,8 @@ func (s *Session) handleStickersFile(req json.RawMessage) (any, error) {
 		return nil, &Error{"not_found", "no such sticker"}
 	case src.path != "":
 		return map[string]string{"path": src.path}, nil
+	case !src.usable():
+		return nil, &Error{"not_found", "this sticker's file isn't on WhatsApp's servers"}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
 	defer cancel()
@@ -314,6 +329,9 @@ func (s *Session) handleStickerSend(req json.RawMessage) (any, error) {
 	}
 	if !ok {
 		return nil, &Error{"not_found", "no such sticker"}
+	}
+	if !src.usable() { // the server takes a sticker with no upload, and nobody gets anything
+		return nil, &Error{"bad_request", "this sticker's file isn't on WhatsApp's servers"}
 	}
 	id := cli.GenerateMessageID()
 	msg, row := stickerOut(src, r.Hash, r.Chat, id, time.Now().Unix())

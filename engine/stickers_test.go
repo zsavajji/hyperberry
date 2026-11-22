@@ -401,3 +401,29 @@ func TestStickerCopy(t *testing.T) {
 		t.Errorf("lottie: %s", got)
 	}
 }
+
+// The phone's app state has favourites that carry the hash alone (the user's Q10, 2026-11-22): such a one is left out of
+// the lists and can't be sent, until a message brings the sticker's details; a row we sent with no upload never stands in.
+func TestBareFave(t *testing.T) {
+	tx, _ := newTestTx(t)
+	dir := t.TempDir()
+	tx.ensureChat(stickerChat, chatUser)
+	bare := &waSyncAction.StickerAction{Mimetype: proto.String("image/webp"), Width: proto.Uint32(200), Height: proto.Uint32(200),
+		IsFavorite: proto.Bool(true)}
+	tx.setFave(hashOf(9), bare, 100)
+	sent := stickerRow("S1", 10, true, 9, "image/webp")
+	sent.Media = `{"directPath":"","mediaKey":"","fileSha256":"` + hashOf(9) + `","mimetype":"image/webp"}`
+	tx.insertMessage(sent)
+	if faves, recent := tx.stickerLists(dir); len(faves) != 0 || len(recent) != 0 {
+		t.Errorf("favourites %+v, recent %+v: want none, nothing to fetch them with", faves, recent)
+	}
+	if src, ok := tx.stickerSource(dir, hashOf(9)); !ok || src.usable() {
+		t.Errorf("source %+v %v: want found, not usable", src, ok)
+	}
+	tx.insertMessage(stickerRow("R1", 20, false, 9, "image/webp"))
+	faves, _ := tx.stickerLists(dir)
+	src, _ := tx.stickerSource(dir, hashOf(9))
+	if len(faves) != 1 || !src.usable() || src.info.DirectPath != "/v/s9" || src.w != 512 {
+		t.Errorf("favourites %+v, source %+v: want the received message's details", faves, src)
+	}
+}
