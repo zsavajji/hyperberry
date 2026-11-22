@@ -501,6 +501,12 @@ TabbedPane {
                     page.destroy()
                 }
             }
+            // The story viewer: on a keyboard phone Cascades focuses its Reply field during the push, which held the story.
+            onPushTransitionEnded: {
+                if (page && page.pushed) {
+                    page.pushed()
+                }
+            }
             // A page that waits while another is over it (the story viewer under its viewers' page) goes on when it is the top again.
             onTopChanged: {
                 if (storiesNav.top && storiesNav.top.uncovered) {

@@ -101,6 +101,11 @@ Page {
             sheet.paused = reply.focused || sheet.picking
         }
     }
+    // The push has ended (main.qml): Cascades gave the Reply field the focus during it on the Q10 (the user, 2026-11-22: a
+    // photo story neither moved nor closed), and a focused field holds the story. Its focus change sets paused.
+    function pushed() {
+        reply.loseFocus()
+    }
     // Once: the ticker could ask again during the pop's slide.
     function close() {
         if (sheet.closing) {
