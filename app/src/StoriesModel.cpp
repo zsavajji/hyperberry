@@ -14,6 +14,8 @@
 #include <QImage>
 #include <QImageReader>
 #include <QLocale>
+#include <QMetaObject>
+#include <QRunnable>
 #include <QSqlDatabase>
 #include <QSqlError>
 #include <QSqlQuery>
@@ -27,32 +29,29 @@ static const char *const kDb = "stories";
 // A story lives 24 h (docs/protocol.md): rows older than that are hidden even if the engine hasn't swept.
 static const uint kLife = 24 * 60 * 60;
 
-// A story's picture as a file: the downloaded photo scaled to w x h (made once, kept in data/cache/previews/ as
-// <id>-<what>.jpg, which the engine wipes on unlink), else the story's inline thumbnail written out as it is.
-// "" when the story has neither (a text story, a video whose thumbnail didn't come).
-// ponytail: made on the UI thread, tens of ms on the Q10 and once per photo; a worker thread if the tab stutters.
-static QString pictureFile(const QString &id, int kind, const QString &path, QSqlDatabase &db, const QString &poster,
-                           const char *what, int w, int h, Qt::AspectRatioMode mode, int quality)
+// Where a story's picture is kept: data/cache/previews/<id>-<what>.jpg, which the engine wipes on unlink.
+static QString previewFile(const QString &id, const QString &what)
 {
-    const QString dir = QDir::homePath() + "/cache/previews/";
+    return QDir::homePath() + "/cache/previews/" + id + "-" + what + ".jpg";
+}
+
+// A story's picture as a file: the downloaded photo scaled (made once by make(), on a worker thread), else the
+// story's inline thumbnail written out as it is. A photo that is here but not scaled yet gives its thumbnail and
+// sets *pending, for the caller to have the scaled one made. "" when the story has neither (a text story, a
+// video whose thumbnail didn't come).
+static QString pictureFile(const QString &id, int kind, const QString &path, QSqlDatabase &db, const QString &poster,
+                           const char *what, bool *pending)
+{
+    if (pending)
+        *pending = false;
     if (kind == 1 && !path.isEmpty() && QFile::exists(path)) {
-        const QString file = dir + id + "-" + what + ".jpg";
-        if (QFile::exists(file))
-            return file;
-        QImageReader reader(path);
-        QSize to = reader.size(); // from the header
-        if (to.isValid()) {
-            to.scale(w, h, mode);
-            reader.setScaledSize(to);
-            const QImage image = reader.read();
-            if (!image.isNull() && QDir().mkpath(dir)) {
-                if (image.save(file, "JPEG", quality))
-                    return file;
-                QFile::remove(file); // no half-written preview left to be taken for a good one
-            }
-        }
+        const QString scaled = previewFile(id, what);
+        if (QFile::exists(scaled))
+            return scaled;
+        if (pending)
+            *pending = true;
     }
-    const QString file = dir + id + "-thumb.jpg";
+    const QString file = previewFile(id, "thumb");
     if (QFile::exists(file))
         return file;
     QSqlQuery q(db);
@@ -63,24 +62,57 @@ static QString pictureFile(const QString &id, int kind, const QString &path, QSq
         return QString();
     const QByteArray thumb = q.value(0).toByteArray();
     QFile f(file);
-    if (thumb.isEmpty() || !QDir().mkpath(dir) || !f.open(QIODevice::WriteOnly))
+    if (thumb.isEmpty() || !QDir().mkpath(QFileInfo(file).path()) || !f.open(QIODevice::WriteOnly))
         return QString();
     f.write(thumb);
     f.close();
     return file;
 }
 
-// The tile is 310 x 211 px on the Q10; its picture is made a little larger and the ImageView crops it.
-static QString tileFile(const QString &id, int kind, const QString &path, QSqlDatabase &db, const QString &poster)
+// The photo src scaled to w x h as a JPEG at file. Off the UI thread: QImage only, never QPixmap.
+static bool scalePicture(const QString &src, const QString &file, int w, int h, Qt::AspectRatioMode mode, int quality)
 {
-    return pictureFile(id, kind, path, db, poster, "tile", 320, 220, Qt::KeepAspectRatioByExpanding, 80);
+    QImageReader reader(src);
+    QSize to = reader.size(); // from the header
+    if (!to.isValid() || !QDir().mkpath(QFileInfo(file).path()))
+        return false;
+    to.scale(w, h, mode);
+    reader.setScaledSize(to);
+    const QImage image = reader.read();
+    if (image.isNull())
+        return false;
+    // Written aside and renamed: the UI thread takes any file at that path for a finished one.
+    const QString part = file + ".part";
+    if (image.save(part, "JPEG", quality) && QFile::rename(part, file))
+        return true;
+    QFile::remove(part);
+    return false;
 }
 
-// The viewer's picture fits the Q10's 720 px square, which a larger screen's ImageView scales up.
-static QString viewFile(const QString &id, int kind, const QString &path, QSqlDatabase &db, const QString &poster)
+// One preview to scale, run on the model's pool; the model hears of it on the UI thread (pictureMade).
+class PictureJob : public QRunnable
 {
-    return pictureFile(id, kind, path, db, poster, "view", 720, 720, Qt::KeepAspectRatio, 85);
-}
+public:
+    PictureJob(QObject *model, const QString &poster, const QString &id, const QString &what, const QString &src,
+               const QString &file, int w, int h, Qt::AspectRatioMode mode, int quality)
+        : m_model(model), m_poster(poster), m_id(id), m_what(what), m_src(src), m_file(file)
+        , m_w(w), m_h(h), m_mode(mode), m_quality(quality)
+    {
+    }
+    void run()
+    {
+        const bool ok = scalePicture(m_src, m_file, m_w, m_h, m_mode, m_quality);
+        QMetaObject::invokeMethod(m_model, "pictureMade", Qt::QueuedConnection, Q_ARG(QString, m_poster),
+                                  Q_ARG(QString, m_id), Q_ARG(QString, m_what), Q_ARG(bool, ok));
+    }
+
+private:
+    QObject *m_model;
+    QString m_poster, m_id, m_what, m_src, m_file;
+    int m_w, m_h;
+    Qt::AspectRatioMode m_mode;
+    int m_quality;
+};
 
 // A text story's colour: WhatsApp's ARGB number as "#RRGGBB", "" when it has none.
 static QString argb(const QVariantMap &extra, const char *key)
@@ -111,6 +143,7 @@ StoriesModel::StoriesModel(EngineLink *engine, QObject *parent)
     , m_unseen(0)
     , m_region(bb::system::LocaleType::Region)
 {
+    m_pool.setMaxThreadCount(1); // one at a time: the other Krait core stays with the UI and the video
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", kDb);
     db.setDatabaseName(QDir::homePath() + "/chats.db");
     db.setConnectOptions("QSQLITE_OPEN_READONLY");
@@ -147,9 +180,67 @@ bool StoriesModel::hasChildren(const QVariantList &indexPath)
 
 QString StoriesModel::itemType(const QVariantList &) { return "item"; }
 
+// A row Cascades asks for whose tile is still the thumbnail has its sharp one made now, so only the tiles on
+// screen are made. ponytail: a photo that won't decode is tried again each time its tile is asked for.
 QVariant StoriesModel::data(const QVariantList &indexPath)
 {
-    return indexPath.size() == 1 ? m_rows.value(indexPath[0].toInt()) : QVariant();
+    if (indexPath.size() != 1)
+        return QVariant();
+    const QVariantMap row = m_rows.value(indexPath[0].toInt());
+    if (!row.value("tileSrc").toString().isEmpty())
+        make(row.value("poster").toString(), row.value("tileId").toString(), "tile", row.value("tileSrc").toString());
+    return row;
+}
+
+// The tile is 310 x 211 px on the Q10, so its picture is made a little larger and the ImageView crops it; the
+// viewer's picture fits the Q10's 720 px square, which a larger screen's ImageView scales up.
+void StoriesModel::make(const QString &poster, const QString &id, const char *what, const QString &src)
+{
+    const QString file = previewFile(id, what);
+    if (QFile::exists(file) || m_making.contains(file))
+        return;
+    const bool tile = qstrcmp(what, "tile") == 0;
+    m_making.insert(file);
+    m_pool.start(new PictureJob(this, poster, id, what, src, file, tile ? 320 : 720, tile ? 220 : 720,
+                                tile ? Qt::KeepAspectRatioByExpanding : Qt::KeepAspectRatio, tile ? 80 : 85));
+}
+
+// A preview is made (or not): a tile's row takes it, the viewer is told to read the story again.
+void StoriesModel::pictureMade(const QString &poster, const QString &id, const QString &what, bool ok)
+{
+    m_making.remove(previewFile(id, what));
+    if (!ok)
+        return;
+    if (what == "view") {
+        emit storyReady(poster, id);
+        return;
+    }
+    for (int i = 0; i < m_rows.size(); ++i) {
+        QVariantMap &row = m_rows[i];
+        if (row.value("poster").toString() == poster && row.value("tileId").toString() == id) {
+            row["tile"] = previewFile(id, what);
+            row["tileSrc"] = QString();
+            emit itemUpdated(QVariantList() << i);
+            return;
+        }
+    }
+}
+
+// The viewer is about to show the story, or the one after: a photo that is here gets its sharp picture made.
+void StoriesModel::prepare(const QString &poster, const QString &id)
+{
+    QSqlDatabase db = QSqlDatabase::database(kDb, false);
+    if (!db.isOpen() && !db.open())
+        return;
+    QSqlQuery q(db);
+    q.prepare("SELECT kind, path FROM stories WHERE poster = ? AND id = ?");
+    q.addBindValue(poster);
+    q.addBindValue(id);
+    if (!q.exec() || !q.next() || q.value(0).toInt() != 1)
+        return;
+    const QString path = q.value(1).toString();
+    if (!path.isEmpty() && QFile::exists(path))
+        make(poster, id, "view", path);
 }
 
 void StoriesModel::setActive(bool on)
@@ -245,7 +336,12 @@ void StoriesModel::reload()
                 row["text"] = q.value(4).toString().left(90);
                 row["bg"] = bg.isEmpty() ? QString(pickColor(p, kColors, kColorCount)) : bg;
                 row["fg"] = argb(extra, "fg").isEmpty() ? QString("#FFFFFF") : argb(extra, "fg");
-                row["tile"] = kind == 0 ? QString() : tileFile(q.value(1).toString(), kind, q.value(5).toString(), db, p);
+                // A photo here without its scaled tile shows the thumbnail; data() has the tile made when it is asked for.
+                const QString id = q.value(1).toString();
+                bool pending = false;
+                row["tile"] = kind == 0 ? QString() : pictureFile(id, kind, q.value(5).toString(), db, p, "tile", &pending);
+                row["tileId"] = pending ? id : QString();
+                row["tileSrc"] = pending ? q.value(5).toString() : QString();
             }
         }
         if (!row.isEmpty())
@@ -301,7 +397,7 @@ QVariantMap StoriesModel::storyMap(QSqlQuery &q, QSqlDatabase &db)
     row["duration"] = q.value(8).toInt();
     row["width"] = q.value(9).toInt();
     row["height"] = q.value(10).toInt();
-    row["pic"] = kind == 0 ? QString() : viewFile(id, kind, path, db, poster);
+    row["pic"] = kind == 0 ? QString() : pictureFile(id, kind, path, db, poster, "view", 0);
     row["video"] = kind == 2 && here ? path : QString();
     row["ready"] = kind == 0 || here;
     return row;

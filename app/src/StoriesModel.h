@@ -6,9 +6,11 @@
 #include <bb/utility/i18n/RelativeDateFormatter>
 #include <QHash>
 #include <QList>
+#include <QSet>
 #include <QStringList>
 #include <QSqlDatabase>
 #include <QSqlQuery>
+#include <QThreadPool>
 #include <QTimer>
 #include <QVariantMap>
 
@@ -19,7 +21,9 @@ class EngineLink;
 // initials, color, photo (the chat's picture, "" when none), count, unseen, muted (the phone muted the poster's
 // updates, the engine's story_muted: below the others, greyed, and not in the badge), time, and the tile: kind
 // (0 text, 1 photo, 2 video), tile (a small JPEG's path, "" when none), bg and fg (a text story's colours)
-// and text. The tile is the first story not yet seen, else the newest. Read-only on chats.db, like
+// and text. The tile is the first story not yet seen, else the newest. A photo's tile is its thumbnail until
+// the sharp one is made, on a worker thread when Cascades first asks for the row (the row has tileId and
+// tileSrc, the story and its photo, till then), and then the row is updated. Read-only on chats.db, like
 // CallsModel; the list reloads only while `active` (the tab is shown), but `unseen`, all posters'
 // unseen stories (the tab's badge), is kept up to date always. Our own stories (poster "me") are one row,
 // "My story", always first, with `own` true and nothing unseen. The viewer (StoryViewer.qml) reads one
@@ -47,8 +51,9 @@ public:
     Q_INVOKABLE QVariantList storiesOf(const QString &poster);
     // One story: id, poster, kind (0 text, 1 photo, 2 video), text, bg and fg (a text story's colours),
     // seen, time ("Today, 14:03"), duration (seconds, 0 if unknown), width, height, pic (the picture
-    // to show: a photo sized for the screen, else the inline thumbnail, "" for a text story), video (the
-    // file's path, "" until it is here) and ready (everything it shows is here). {} for none.
+    // to show: a photo sized for the screen, else the inline thumbnail, "" for a text story; a photo's is the
+    // thumbnail until prepare has made the sized one), video (the file's path, "" until it is here) and ready
+    // (everything it shows is here). {} for none.
     Q_INVOKABLE QVariantMap storyOf(const QString &poster, const QString &id);
     // A poster as the tile row has them (poster, own, name, initials, color, photo), for opening their stories from a chat; {} when
     // none of their stories is left.
@@ -58,6 +63,8 @@ public:
     Q_INVOKABLE QVariantList viewersOf(const QString &id);
     // How many viewed our story id; 0 when none or unknown.
     Q_INVOKABLE int viewCount(const QString &id);
+    // Makes a photo story's sized picture on a worker thread if it isn't made; storyReady says when it is.
+    Q_INVOKABLE void prepare(const QString &poster, const QString &id);
     // Asks the engine for the story's file (story.get); storyReady or storyFailed answers.
     Q_INVOKABLE void fetch(const QString &poster, const QString &id);
     // The viewer showed it: the engine marks it seen and sends the read receipt (story.seen).
@@ -88,9 +95,13 @@ private slots:
     void onReplied(const QString &id, const QString &cmd, const QVariant &result);
     void onFailure();
     void onStoryOp(const QString &cmd, const QString &id, bool ok);
+    // A job of make() is done, ok when the file is there; called by name from the worker, queued onto the UI thread.
+    void pictureMade(const QString &poster, const QString &id, const QString &what, bool ok);
 
 private:
     QVariantMap storyMap(QSqlQuery &q, QSqlDatabase &db);
+    // Queues the scaling of src to the picture "tile" or "view" of story id, once; the pool does one at a time.
+    void make(const QString &poster, const QString &id, const char *what, const QString &src);
     // The name to show: the chat's, else the one that came with the row, else "+number", else "Unknown".
     QString personName(const QString &chatName, const QString &ownName, const QString &key) const;
     EngineLink *m_engine;
@@ -102,6 +113,9 @@ private:
     int m_unseen;
     QTimer m_soon;
     bb::system::LocaleHandler m_region;
+    QThreadPool m_pool;
+    // The files being made, so a job is queued once.
+    QSet<QString> m_making;
 };
 
 #endif

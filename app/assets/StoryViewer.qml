@@ -8,7 +8,8 @@ import hyperberry 1.0
 // picture, name and the story's time; the story fills the rest. A tap on the left third goes back one story, a
 // tap anywhere else forward; after the last the sheet closes. A photo or text story lasts 5 s, a video its own
 // length. Showing a story marks it seen and sends the read receipt (storyList.markSeen). A story whose file isn't
-// here is fetched (storyList.fetch) while its thumbnail shows; the next video is fetched ahead.
+// here is fetched (storyList.fetch) while its thumbnail shows; the next video is fetched ahead. A photo shows its
+// thumbnail until its sharp picture is made (storyList.prepare, on a worker thread, for the shown story and the next).
 // The video plays through MediaPlayer into a ForeignWindowControl, which sits under Cascades' hole, so the
 // segments and the header draw over it (the Q10 video gate, 2026-11-12; sound and taps on controls over it
 // worked). StoriesPage makes one per open (start(row), row being a StoriesModel row) and pops it on finished().
@@ -136,10 +137,14 @@ Page {
             storyList.fetch(sheet.poster.poster, s.id)
         } else if (s.kind == 2) {
             sheet.playVideo(s.video)
+        } else if (s.kind == 1) {
+            storyList.prepare(sheet.poster.poster, s.id)
         }
         var ahead = sheet.items[i + 1]
         if (ahead && ahead.kind == 2 && !ahead.ready) {
             storyList.fetch(sheet.poster.poster, ahead.id)
+        } else if (ahead && ahead.kind == 1 && ahead.ready) {
+            storyList.prepare(sheet.poster.poster, ahead.id)
         }
         sheet.countViews()
         ticker.start()
@@ -233,6 +238,10 @@ Page {
                 sheet.items = all
                 if (i == sheet.index && all[i].kind == 2 && all[i].video) {
                     sheet.playVideo(all[i].video)
+                }
+                // The shown photo and the next get their sharp picture; when it is made this comes again and finds it there.
+                if (all[i].kind == 1 && (i == sheet.index || i == sheet.index + 1)) {
+                    storyList.prepare(p, id)
                 }
                 return
             }
