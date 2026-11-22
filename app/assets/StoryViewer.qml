@@ -218,7 +218,14 @@ Page {
         }
     }
     function tick() {
-        if (sheet.paused || sheet.cur.kind == 2 || sheet.index < 0) {
+        if (sheet.paused || sheet.index < 0) {
+            return
+        }
+        // A video's position comes once a second (mm-renderer's status interval): in between the ticker moves its segment.
+        if (sheet.cur.kind == 2) {
+            if (player.mediaState == MediaState.Started && player.duration > 0) {
+                sheet.setProgress(sheet.progress + 100 / player.duration)
+            }
             return
         }
         sheet.setProgress(sheet.progress + 0.1 / sheet.seconds)
@@ -286,8 +293,12 @@ Page {
             windowGroupId: surface.windowGroup
             onMediaStateChanged: sheet.playing = (mediaState == MediaState.Started || mediaState == MediaState.Paused)
             onPositionChanged: {
-                if (sheet.cur.kind == 2 && player.duration > 0 && !sheet.paused) {
-                    sheet.setProgress(player.position / player.duration)
+                // The player's word corrects the ticker's guess: always when ahead, when behind only past half a
+                // second (a stall), so the segment doesn't step back a little every second.
+                var p = player.duration > 0 ? player.position / player.duration : 0
+                if (sheet.cur.kind == 2 && player.duration > 0 && !sheet.paused
+                        && (p > sheet.progress || sheet.progress - p > 500 / player.duration)) {
+                    sheet.setProgress(p)
                 }
             }
             onPlaybackCompleted: sheet.next()
