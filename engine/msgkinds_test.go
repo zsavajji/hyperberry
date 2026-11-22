@@ -291,6 +291,7 @@ func TestFlattenMore(t *testing.T) {
 			msgText, "Order #1\nThanks!\n3 items"},
 		{"order, one item, picture", orderPic, msgPhoto, "Order #2\n1 item"},
 		{"audio sticker", &waE2E.Message{AudioStickerMessage: &waE2E.FutureProofMessage{Message: &waE2E.Message{StickerMessage: &waE2E.StickerMessage{}}}}, msgSticker, ""},
+		{"lottie sticker", &waE2E.Message{LottieStickerMessage: &waE2E.FutureProofMessage{Message: &waE2E.Message{StickerMessage: &waE2E.StickerMessage{ContextInfo: ci}}}}, msgSticker, ""},
 		{"question", &waE2E.Message{QuestionMessage: &waE2E.FutureProofMessage{Message: &waE2E.Message{Conversation: str("Ask me")}}}, msgText, "Ask me"},
 		{"question reply", &waE2E.Message{QuestionReplyMessage: &waE2E.FutureProofMessage{Message: &waE2E.Message{Conversation: str("Fine")}}}, msgText, "Fine"},
 		{"poll with an option image", &waE2E.Message{PollCreationOptionImageMessage: &waE2E.FutureProofMessage{

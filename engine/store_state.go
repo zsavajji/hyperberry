@@ -16,9 +16,9 @@ func (t *storeTx) messageByID(chat, id string) (msgRow, bool) {
 	var media, extra sql.NullString
 	err := t.tx.QueryRow(`SELECT ts, out, state, sender, sender_name, kind, text, quote_id, quote_preview,
 edited, deleted, duration, waveform, media, media_state, played, thumb, COALESCE(width, 0), COALESCE(height, 0),
-COALESCE(size, 0), COALESCE(path, ''), extra FROM messages WHERE chat = ? AND id = ?`, chat, id).
+COALESCE(size, 0), COALESCE(path, ''), extra, COALESCE(sticker, '') FROM messages WHERE chat = ? AND id = ?`, chat, id).
 		Scan(&r.TS, &r.Out, &r.State, &sender, &name, &r.Kind, &text, &qid, &qprev, &r.Edited, &r.Deleted,
-			&secs, &r.Waveform, &media, &r.MediaState, &r.Played, &r.Thumb, &r.Width, &r.Height, &r.Size, &r.Path, &extra)
+			&secs, &r.Waveform, &media, &r.MediaState, &r.Played, &r.Thumb, &r.Width, &r.Height, &r.Size, &r.Path, &extra, &r.Sticker)
 	r.Sender, r.SenderName, r.Text, r.QuoteID, r.QuotePreview =
 		sender.String, name.String, text.String, qid.String, qprev.String
 	r.Duration, r.Media, r.Extra = int(secs.Int64), media.String, extra.String

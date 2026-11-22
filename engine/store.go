@@ -123,7 +123,7 @@ func (st *Store) afterCommit(f func()) {
 // Downloads' files, as a browser's. The folders come back on the next write.
 func (st *Store) wipe() {
 	st.nt.unlink() // the Hub's account and items belong to the link too
-	for _, d := range []string{"voice", "cache", "media", "profile", "history", "photos", "stories"} {
+	for _, d := range []string{"voice", "cache", "media", "profile", "history", "photos", "stories", "stickers"} {
 		if err := os.RemoveAll(filepath.Join(st.srv.dir, d)); err != nil {
 			st.log.Warnf("wipe %s: %v", d, err)
 		}
@@ -175,7 +175,7 @@ func (st *Store) handle(cli *whatsmeow.Client, evt any) {
 			st.ops <- func(t *storeTx) { st.dispatch(t, cli, evt) }
 		}
 	case *events.HistorySync, *events.Message, *events.Contact, *events.LIDContact, *events.AppStateSyncComplete,
-		*events.PushName, *events.GroupInfo, *events.JoinedGroup, *events.Mute, *events.Pin, *events.Archive, *events.UnarchiveChatsSetting, *events.UserStatusMute, *events.Star, *events.MarkChatAsRead,
+		*events.PushName, *events.GroupInfo, *events.JoinedGroup, *events.Mute, *events.Pin, *events.Archive, *events.UnarchiveChatsSetting, *events.UserStatusMute, *events.Star, *events.FavoriteSticker, *events.MarkChatAsRead,
 		*events.Receipt, *events.ChatPresence, *events.Presence, *events.DeleteForMe, *events.ClearChat, *events.DeleteChat:
 		st.ops <- func(t *storeTx) { st.dispatch(t, cli, evt) }
 		if h, ok := e.(*events.HistorySync); ok && st.historyIn != nil {
@@ -188,8 +188,8 @@ func (st *Store) handle(cli *whatsmeow.Client, evt any) {
 }
 
 // resyncAppState fetches the three app-state collections that hold settings in full once more, so the
-// stars, muted stories and "Keep chats archived" the phone set before this link existed arrive as
-// events (session.go: EmitFullSyncIndexes). A fetch that fails leaves the flag for the next connect.
+// stars, muted stories, "Keep chats archived" and favourite stickers the phone set before this link existed arrive as
+// events (session.go: EmitFullSyncIndexes, EmitStickerEventsOnFullSync). A fetch that fails leaves the flag for the next connect.
 func (st *Store) resyncAppState(cli *whatsmeow.Client) {
 	ctx := context.Background()
 	for _, name := range []appstate.WAPatchName{appstate.WAPatchRegular, appstate.WAPatchRegularLow, appstate.WAPatchRegularHigh} {
@@ -318,6 +318,8 @@ func (st *Store) dispatch(t *storeTx, cli *whatsmeow.Client, evt any) {
 		}
 	case *events.Star:
 		t.setStarred(chatKey(ctx, t, lids, e.ChatJID, types.EmptyJID), e.MessageID, e.Action.GetStarred())
+	case *events.FavoriteSticker:
+		t.setFave(e.FileSHA256, e.Action, e.Timestamp.Unix())
 	case *events.MarkChatAsRead:
 		n := 0
 		if !e.Action.GetRead() {
@@ -390,6 +392,7 @@ func (st *Store) clear() {
 		t.exec("DELETE FROM stories")
 		t.exec("DELETE FROM story_views")
 		t.exec("DELETE FROM story_muted")
+		t.exec("DELETE FROM sticker_faves")
 		t.exec("DELETE FROM engine_state WHERE key = 'unarchive_chats'") // the phone's settings go with its link
 		t.stories = true
 		t.exec("DELETE FROM chats")
@@ -541,13 +544,13 @@ func (t *storeTx) setArchived(jid string, v bool) {
 func (t *storeTx) insertMessage(m msgRow) bool {
 	if t.exec(`INSERT OR IGNORE INTO messages(chat, id, ts, out, state, sender, sender_name, kind, text,
 quote_id, quote_preview, edited, deleted, duration, waveform, media, media_state, played,
-thumb, width, height, size, path, extra)
+thumb, width, height, size, path, extra, sticker)
 VALUES(?, ?, ?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?, NULLIF(?, ''), NULLIF(?, ''), NULLIF(?, ''), ?, ?,
-NULLIF(?, 0), ?, NULLIF(?, ''), ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, ''), NULLIF(?, ''))`,
+NULLIF(?, 0), ?, NULLIF(?, ''), ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, ''), NULLIF(?, ''), NULLIF(?, ''))`,
 		m.Chat, m.ID, m.TS, m.Out, m.State, m.Sender, m.SenderName, m.Kind, m.Text,
 		m.QuoteID, m.QuotePreview, m.Edited, m.Deleted,
 		m.Duration, blob(m.Waveform), m.Media, m.MediaState, m.Played,
-		blob(m.Thumb), m.Width, m.Height, m.Size, m.Path, m.Extra) == 0 {
+		blob(m.Thumb), m.Width, m.Height, m.Size, m.Path, m.Extra, m.Sticker) == 0 {
 		return false
 	}
 	t.changed(m.Chat, m.ID)

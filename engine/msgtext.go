@@ -2,6 +2,7 @@ package main
 
 import (
 	"cmp"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -41,6 +42,8 @@ type msgRow struct {
 	Path          string
 	// Step 6.5: each kind's own details as JSON (msgkinds.go), "" for none.
 	Extra string
+	// A sticker's file by its plaintext SHA-256, base64 (stickers.go); "" for any other row.
+	Sticker string
 }
 
 // content says what a message shows: its kind and text. ok is false for messages with nothing
@@ -193,6 +196,9 @@ func fillMedia(r *msgRow, m *waE2E.Message) {
 	if info.DirectPath != "" {
 		if b, err := json.Marshal(info); err == nil {
 			r.Media, r.MediaState = string(b), 1
+			if m.GetStickerMessage() != nil && len(info.FileSHA256) > 0 {
+				r.Sticker = base64.StdEncoding.EncodeToString(info.FileSHA256)
+			}
 		}
 	}
 }

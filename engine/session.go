@@ -83,6 +83,7 @@ func newSession(container *sqlstore.Container, srv *Server, store *Store, log wa
 	registerContacts(srv, s)
 	registerProfile(srv, s)
 	registerMedia(srv, s)
+	registerStickers(srv, s)
 	registerVoiceSend(srv, s)
 	srv.Handle("media.send", s.handleMediaSend)
 	if s.cli.Store.ID != nil {
@@ -130,6 +131,8 @@ func (s *Session) newClient(device *store.Device) *whatsmeow.Client {
 	// story or "Keep chats archived" set on the phone before the link reaches us; the rest of the full
 	// sync stays silent, since EmitAppStateEventsOnFullSync would replay mark-read, contacts and deletes.
 	cli.EmitFullSyncIndexes = map[string]bool{appstate.IndexStar: true, appstate.IndexUserStatusMute: true, appstate.IndexSettingUnarchiveChats: true}
+	// The favourite stickers have a switch of their own in hypermeow: the phone's reach us as events (stickers.go).
+	cli.EmitStickerEventsOnFullSync = true
 	configureReconnect(cli)
 	s.callsOn(cli) // before it connects: meowcaller listens to the call stanzas from the start
 	cli.AddEventHandler(func(evt any) { s.onEvent(cli, evt) })

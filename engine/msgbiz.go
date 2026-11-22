@@ -74,7 +74,7 @@ func unwrap(m *waE2E.Message) *waE2E.Message {
 		return &waE2E.Message{ImageMessage: m.GetInstantImageMessage()}
 	}
 	for _, w := range []*waE2E.FutureProofMessage{m.GetPollCreationMessageV4(), m.GetSpoilerMessage(),
-		m.GetAudioStickerMessage(), m.GetPollCreationOptionImageMessage(), m.GetQuestionMessage(),
+		m.GetAudioStickerMessage(), m.GetLottieStickerMessage(), m.GetPollCreationOptionImageMessage(), m.GetQuestionMessage(),
 		m.GetQuestionReplyMessage(), m.GetBotForwardedMessage()} {
 		if in := w.GetMessage(); in != nil {
 			return flatten(in)

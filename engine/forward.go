@@ -95,7 +95,7 @@ func (st *Store) forwardCopy(r forwardReq, id string, now int64) (*waE2E.Message
 	}
 	return msg, msgRow{Chat: r.To, ID: id, TS: now, Out: true, State: stateSending, Kind: m.Kind, Text: m.Text,
 		Thumb: m.Thumb, Width: m.Width, Height: m.Height, Size: m.Size, Path: m.Path, Media: m.Media,
-		MediaState: m.MediaState, Duration: m.Duration, Waveform: m.Waveform,
+		MediaState: m.MediaState, Duration: m.Duration, Waveform: m.Waveform, Sticker: m.Sticker,
 		Extra: withKey("", "forwarded", strconv.Itoa(score))}, nil
 }
 

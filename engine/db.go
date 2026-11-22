@@ -156,6 +156,14 @@ INSERT INTO engine_state SELECT 'appstate_resync', 1 WHERE EXISTS (SELECT 1 FROM
 ALTER TABLE messages ADD COLUMN tr_lang TEXT;
 ALTER TABLE messages ADD COLUMN tr_from TEXT;
 ALTER TABLE chats ADD COLUMN translate TEXT NOT NULL DEFAULT '';`,
+	// Stickers (stickers.go). sticker is the base64 plaintext SHA-256 of a sticker row's file, the name WhatsApp's app
+	// state gives a favourite by; sticker_faves mirrors the phone's favourites, media a mediaInfo as messages.media has
+	// it. The refetch brings the favourites set before this version, as the settings' step did.
+	`ALTER TABLE messages ADD COLUMN sticker TEXT;
+UPDATE messages SET sticker = json_extract(media, '$.fileSha256') WHERE kind = 5 AND media IS NOT NULL;
+CREATE INDEX messages_sticker ON messages(sticker);
+CREATE TABLE sticker_faves(hash TEXT PRIMARY KEY, media TEXT NOT NULL, width INTEGER, height INTEGER, ts INTEGER NOT NULL);
+INSERT OR REPLACE INTO engine_state SELECT 'appstate_resync', 1 WHERE EXISTS (SELECT 1 FROM chats);`,
 }
 
 // openChats opens chats.db in WAL mode and migrates it to the newest schema.
