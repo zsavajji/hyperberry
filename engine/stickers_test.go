@@ -427,3 +427,37 @@ func TestBareFave(t *testing.T) {
 		t.Errorf("favourites %+v, source %+v: want the received message's details", faves, src)
 	}
 }
+
+// An upload's expiry is its direct path's oe (hex unix time); the CDN answers 403 after it (the user's Q10, 2026-11-22).
+func TestUploadExpired(t *testing.T) {
+	now := time.Unix(0x6AEF0C3F, 0)
+	for path, want := range map[string]bool{
+		"/v/t62.15575-24/1_n.enc?ccb=11-4&oh=x&oe=6AEF0C3F&_nc_sid=5e03e0":               true,  // at it
+		"/v/t62.15575-24/1_n.enc?ccb=11-4&oh=x&oe=" + fmt.Sprintf("%X", 0x6AEF0C3F+1800): true,  // within the hour's margin
+		"/v/t62.15575-24/1_n.enc?ccb=11-4&oh=x&oe=" + fmt.Sprintf("%X", 0x6AEF0C3F+7200): false, // two hours left
+		"/v/s9": false, // no oe: no expiry known
+	} {
+		if got := uploadExpired(path, now); got != want {
+			t.Errorf("%s: expired %v, want %v", path, got, want)
+		}
+	}
+	tx, _ := newTestTx(t)
+	dir := t.TempDir()
+	tx.ensureChat(stickerChat, chatUser)
+	old := infoOf(12, "image/webp")
+	old.DirectPath = "/v/x.enc?oe=6AEF0C3F"
+	media, _ := json.Marshal(old)
+	r := stickerRow("X1", 10, true, 12, "image/webp")
+	r.Media = string(media)
+	tx.insertMessage(r)
+	if _, recent := tx.stickerLists(dir); len(recent) != 0 {
+		t.Errorf("recent %+v: an expired upload with no file here is left out", recent)
+	}
+	here := stickerCopy(dir, hashOf(12), false)
+	if err := writeFile(here, []byte("webp")); err != nil {
+		t.Fatal(err)
+	}
+	if _, recent := tx.stickerLists(dir); len(recent) != 1 || recent[0].Path != here {
+		t.Errorf("recent %+v: with the file here it is listed, and sent by uploading it again", recent)
+	}
+}

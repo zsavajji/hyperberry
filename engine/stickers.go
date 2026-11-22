@@ -7,8 +7,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"time"
 
@@ -16,6 +18,7 @@ import (
 	"github.com/polymorfa/hypermeow/appstate"
 	"github.com/polymorfa/hypermeow/proto/waE2E"
 	"github.com/polymorfa/hypermeow/proto/waSyncAction"
+	"github.com/polymorfa/hypermeow/types"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -204,8 +207,22 @@ ORDER BY ts DESC LIMIT 1`, hash).
 	return src, true
 }
 
-// usable is whether src points at an upload: what a download or a send needs.
-func (src stickerSrc) usable() bool { return src.info.DirectPath != "" && len(src.info.MediaKey) > 0 }
+// usable is whether src points at an upload that is still there: what a download or a send needs.
+func (src stickerSrc) usable() bool {
+	return src.info.DirectPath != "" && len(src.info.MediaKey) > 0 && !uploadExpired(src.info.DirectPath, time.Now())
+}
+
+// uploadExpired reads a direct path's oe, the hex unix time its upload expires at: the CDN answers 403 after it (the
+// user's Q10, 2026-11-22: a favourite from the phone's app state had expired two weeks before, and the sticker sent with
+// it reached nobody). An hour's margin, for the time the message takes to be fetched; no oe is taken as no expiry.
+func uploadExpired(directPath string, now time.Time) bool {
+	u, err := url.Parse(directPath)
+	if err != nil {
+		return true
+	}
+	oe, err := strconv.ParseInt(u.Query().Get("oe"), 16, 64)
+	return err == nil && time.Unix(oe, 0).Before(now.Add(time.Hour))
+}
 
 // stickerOut is the message that sends src and our row of it, as queueRow takes it. The quote's ContextInfo is the
 // caller's, once it has the quoted message: on flatten(msg).GetStickerMessage(), wrapped or not.
@@ -292,7 +309,7 @@ func (s *Session) handleStickersFile(req json.RawMessage) (any, error) {
 		return nil, &Error{"not_found", "no such sticker"}
 	case src.path != "":
 		return map[string]string{"path": src.path}, nil
-	case !src.usable():
+	case !src.usable(): // none, or expired
 		return nil, &Error{"not_found", "this sticker's file isn't on WhatsApp's servers"}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
@@ -330,25 +347,48 @@ func (s *Session) handleStickerSend(req json.RawMessage) (any, error) {
 	if !ok {
 		return nil, &Error{"not_found", "no such sticker"}
 	}
-	if !src.usable() { // the server takes a sticker with no upload, and nobody gets anything
+	if !src.usable() && src.path == "" { // the server takes a sticker with no upload, and nobody gets anything
 		return nil, &Error{"bad_request", "this sticker's file isn't on WhatsApp's servers"}
 	}
 	id := cli.GenerateMessageID()
-	msg, row := stickerOut(src, r.Hash, r.Chat, id, time.Now().Unix())
+	_, row := stickerOut(src, r.Hash, r.Chat, id, time.Now().Unix())
 	q, created := s.store.queueRow(jid, r.Chat, r.Quote, row)
 	s.nameNew(cli, jid, r.Chat, created)
-	if q.ID != "" {
-		flatten(msg).GetStickerMessage().ContextInfo = quoteInfo(cli, r.Chat, q)
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
-	defer cancel()
-	resp, err := cli.SendMessage(ctx, jid, msg, whatsmeow.SendRequestExtra{ID: id})
-	if err != nil {
-		s.store.ops <- func(t *storeTx) { t.sentAs(r.Chat, id, 0, stateFailed) }
-		return nil, err
-	}
-	s.store.ops <- func(t *storeTx) { t.sentAs(r.Chat, id, resp.Timestamp.Unix(), stateSent) }
+	go s.sendSticker(cli, jid, r.Chat, id, r.Hash, src, q)
 	return map[string]string{"id": id}, nil
+}
+
+// sendSticker sends a queued sticker row. An upload that expired is made again from the file here, as WhatsApp's own app
+// does: the same file (its SHA-256, its name, is unchanged) under a new key and path, which the row and the favourite keep
+// so the next send reuses it.
+func (s *Session) sendSticker(cli *whatsmeow.Client, jid types.JID, chat, id, hash string, src stickerSrc, q msgRow) {
+	ctx, cancel := context.WithTimeout(context.Background(), mediaTimeout)
+	defer cancel()
+	var err error
+	if !src.usable() {
+		var up whatsmeow.UploadResponse
+		if up, err = s.uploadFile(ctx, cli, src.path, whatsmeow.MediaImage); err == nil {
+			src.info = mediaInfo{up.DirectPath, up.MediaKey, up.FileEncSHA256, up.FileSHA256, up.FileLength, src.info.Mimetype}
+			media, _ := json.Marshal(src.info)
+			s.store.ops <- func(t *storeTx) {
+				t.exec("UPDATE messages SET media = ?, size = ? WHERE chat = ? AND id = ?", string(media), int64(up.FileLength), chat, id)
+				t.exec("UPDATE sticker_faves SET media = ? WHERE hash = ?", string(media), hash)
+			}
+		}
+	}
+	if err == nil {
+		msg, _ := stickerOut(src, hash, chat, id, 0)
+		if q.ID != "" {
+			flatten(msg).GetStickerMessage().ContextInfo = quoteInfo(cli, chat, q)
+		}
+		var resp whatsmeow.SendResponse
+		if resp, err = cli.SendMessage(ctx, jid, msg, whatsmeow.SendRequestExtra{ID: id}); err == nil {
+			s.store.ops <- func(t *storeTx) { t.sentAs(chat, id, resp.Timestamp.Unix(), stateSent) }
+			return
+		}
+	}
+	s.log.Warnf("sticker %s: %v", id, err)
+	s.store.ops <- func(t *storeTx) { t.sentAs(chat, id, 0, stateFailed) }
 }
 
 // handleStickerFave is sticker.fave: a sticker by its hash, or by the message that carries it, becomes a favourite or

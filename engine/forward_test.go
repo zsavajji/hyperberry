@@ -40,7 +40,7 @@ func TestForwardContent(t *testing.T) {
 	}
 
 	for name, row := range map[string]msgRow{
-		"poll":            {Kind: msgPoll, Text: "Pizza?"},
+		"poll":             {Kind: msgPoll, Text: "Pizza?"},
 		"deleted":          {Kind: msgText, Deleted: true},
 		"photo, no upload": {Kind: msgPhoto},
 		"photo, bad media": {Kind: msgPhoto, Media: "{}"},
