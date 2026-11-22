@@ -129,6 +129,8 @@ Page {
                 property int bodySize: nav.bodySize
                 property int smallSize: nav.smallSize
                 property string pressColor: nav.pressColor
+                property real tileZoom: zoom
+                property real tilePxZoom: pxZoom
                 layout: GridListLayout {
                     columnCount: 2
                     cellAspectRatio: 310 / 211

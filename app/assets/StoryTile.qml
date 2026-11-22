@@ -7,6 +7,10 @@ import bb.cascades 1.4
 // press colour, as the chat list's does. A poster the phone muted is dimmed, as WhatsApp greys their updates.
 Container {
     property variant story
+    // The page's zoom and pxZoom, through the view: here the tile reached the view but not those context
+    // properties (ReferenceError at each tile on the Q10, 2026-11-22). They shadow the global names in this file.
+    property real zoom: tile.ListItem.view.tileZoom
+    property real pxZoom: tile.ListItem.view.tilePxZoom
     id: tile
     opacity: tile.story.muted ? 0.5 : 1.0
     layout: DockLayout {}
