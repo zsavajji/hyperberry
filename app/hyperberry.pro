@@ -1,13 +1,17 @@
-# HyperBerry's UI, a plain executable as the bar's Qnx/Elf entry point. Built and packaged by
-# scripts/build-app.sh, out of tree in build/ui.
-TEMPLATE = app
+# HyperBerry's UI is a shared object, the bar's Qnx/Cascades entry point, which the launcher's /bin/cascades (already holding
+# Cascades and Qt) loads and whose exported main() it calls. Built and packaged by scripts/build-app.sh, out of tree in build/ui.
+TEMPLATE = lib
 TARGET = hyperberry
-CONFIG += qt warn_on release
+CONFIG += qt warn_on release plugin
 QT += declarative network sql gui
 # QtGui links anyway (QtDeclarative needs it); QImage and QImageReader make the photo previews and the
 # thumbnail sent with a photo (step 6.3), since the engine decodes no picture.
 LIBS += -lbbcascades -lbbdevice -lbbdata -lbbsystem -lbbplatform -lbb -lbbutilityi18n -lslog2 -lbbpim -lbps -lasound -laudio_manager -lscreen -lcamapi
 QMAKE_LFLAGS += -Wl,-rpath-link,$${QNX_DIR}/$${QNX_CPUDIR}/usr/lib/qt4/lib
+# As a shared object loaded into a process that already holds the system's libraries, our own globals (libwebp, qrcodegen,
+# our classes) would otherwise bind to a same-named symbol loaded before us; -Bsymbolic binds our references to our own
+# definitions.
+QMAKE_LFLAGS += -Wl,-Bsymbolic
 QMAKE_CXXFLAGS += -Wno-psabi
 # gcc 4.8.3 and C++11, as Tengram (the user, 2026-11-20). The spec's qcc -Vgcc_ntoarmv7le takes the NDK's default, gcc 4.6.3, whose
 # C++11 is partial. 4.8.3 ships in the same NDK with GNU libstdc++ only, and Qt and Cascades are built against Dinkumware

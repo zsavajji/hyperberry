@@ -4,7 +4,7 @@
          data/ (session.db holds the link, chats.db the only copy of the history). -->
     <id>com.zsavajji.hyperberry</id>
     <name>HyperBerry</name>
-    <versionNumber>1.0.2</versionNumber>
+    <versionNumber>1.0.3</versionNumber>
     <!-- Overwritten at packaging by -buildIdFile (scripts/build-app.sh): the installer keeps
          the old app when Package-Version (versionNumber.buildId) didn't change. -->
     <buildId>1</buildId>
@@ -19,7 +19,7 @@
 
     <configuration name="Device-Release">
         <platformArchitecture>armle-v7</platformArchitecture>
-        <asset entryPointId="HyperBerry" path="../build/ui/app/hyperberry" entry="true" type="Qnx/Elf">hyperberry</asset>
+        <asset entryPointId="HyperBerry" path="../build/ui/app/libhyperberry.so" entry="true" type="Qnx/Elf">libhyperberry.so</asset>
         <asset entryPointId="HyperBerryService" path="../build/hyperberryd" type="Qnx/Elf">hyperberryd</asset>
         <!-- The memory patch (src/MemoryPatch.cpp, ../rlimit-patch): the root addon that raises the headless cap to
              128 MB, and the helper that starts its install as a new application, so that it survives HyperBerry
@@ -30,8 +30,11 @@
         <asset path="../build/headless-mem.zip">headless-mem.zip</asset>
     </configuration>
 
+    <!-- The launcher forks /bin/cascades (Cascades and Qt already loaded) and calls libhyperberry.so's main(); a plain
+         executable loaded about 100 libraries itself at every start (Tengram, Classic, 2026-11-24: the scene at 1.5 s, from 4.35 s). -->
     <entryPoint id="HyperBerry">
         <name>HyperBerry</name>
+        <entryPointType>Qnx/Cascades</entryPointType>
     </entryPoint>
     <!-- The engine (PLAN.md §3): headless, started by the UI and kept running. Not at boot
          (user, 2026-10-29): an unsigned app can't run until root is up, and the boot event

@@ -141,9 +141,11 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     QTextCodec::setCodecForCStrings(QTextCodec::codecForName("UTF-8"));
     // The phone's language, once at start (no live switching): the .qm is in the bar's assets, and
     // English, the source text, has none. Before the QML loads, whose qsTr reads it then.
+    // Not applicationDirPath(): that is the launcher's /bin now; the bar's folder is app/native under
+    // the working directory.
     QTranslator translator;
     const QString language = bb::system::LocaleHandler(bb::system::LocaleType::Messages).locale().name().section('_', 0, 0);
-    if (translator.load("hyperberry_" + language, QCoreApplication::applicationDirPath() + "/assets/translations"))
+    if (translator.load("hyperberry_" + language, QDir::currentPath() + "/app/native/assets/translations"))
         app.installTranslator(&translator);
     EngineLink engine(&app);
     engine.setLanguage(language); // before engine.start(): the hello sends it
