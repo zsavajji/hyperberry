@@ -55,6 +55,11 @@ using namespace bb::cascades;
 // 0.0.1.132 left nothing to read (Q10, 2026-11-02).
 static slog2_buffer_t logBuffer;
 static bool toSlog = false;
+// A start whose scene is set later than this (ms) is slow, and the address book's first read then waits SlowBookWaitMs.
+// Through the launcher the scene is set at 1.3 to 1.5 s (Tengram on the Classic, 1.0.2.129, two starts; HyperBerry's own
+// have not been taken).
+static const int SlowStartMs = 2000;
+static const int SlowBookWaitMs = 15000;
 static FILE *logFile = 0;
 
 static void writeLog(QtMsgType type, const char *msg)
@@ -232,6 +237,17 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     if (!root)
         return 1;
     app.setScene(root);
-    qDebug("ui: scene set at %d ms", sinceLaunch());
+    const int sceneAt = sinceLaunch();
+    qDebug("ui: scene set at %d ms", sceneAt);
+    // The address book's first read makes the phone's contacts service work at a higher priority than the UI thread:
+    // on a start that is already slow it stalled the UI over a second (Tengram, the Classic, 2026-11-24: the plain
+    // executable's scene at 5.8 to 7.2 s against 4.0 to 4.8; HyperBerry's own have not been taken). Such a start
+    // reads the book once things have settled.
+    // ponytail: SlowStartMs is from Tengram's two starts through the launcher, and no slow one has been seen yet: set it
+    // again from ui.log's "scene set" lines if a "stalled" line follows a start it let through.
+    const bool slow = sceneAt > SlowStartMs;
+    if (slow)
+        qDebug("ui: a slow start, the contact book waits %d s", SlowBookWaitMs / 1000);
+    book.readAfter(slow ? SlowBookWaitMs : 2000);
     return Application::exec();
 }
