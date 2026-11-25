@@ -78,7 +78,9 @@ Page {
                     }
                     ImageView {
                         horizontalAlignment: HorizontalAlignment.Center
-                        image: qr.image(engine.link.qr || "", 360)
+                        // Half the screen's width: 360 px on the 720 px phones, 720 on the Passport, where 360 was small (the
+                        // user, 2026-11-25, screenshot).
+                        image: qr.image(engine.link.qr || "", screenWidth >= 1440 ? 720 : 360)
                         scalingMethod: ScalingMethod.None
                         loadEffect: ImageViewLoadEffect.None
                     }
