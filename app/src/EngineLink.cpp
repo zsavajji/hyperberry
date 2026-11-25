@@ -218,6 +218,10 @@ void EngineLink::readLines()
                     prefs["libreKey"] = file.value("libreKey").toString();
                     prefs["cacheMB"] = qBound(64, file.value("cacheLimit", 64).toInt(), 512);
                     request("prefs.set", prefs);
+                    while (!m_queued.isEmpty()) {
+                        const QPair<QString, QVariantMap> queued = m_queued.takeFirst();
+                        post(queued.first, queued.second);
+                    }
                     qDebug() << "engine: connected, link" << m_link["state"].toString()
                              << ", conn" << m_conn;
                 } else {
@@ -360,6 +364,11 @@ QString EngineLink::requestQuiet(const QString &cmd, const QVariantMap &args)
     const QString id = post(cmd, args);
     m_quiet.insert(id);
     return id;
+}
+
+void EngineLink::queue(const QString &cmd, const QVariantMap &args)
+{
+    m_queued.append(qMakePair(cmd, args));
 }
 
 QString EngineLink::post(const QString &cmd, const QVariantMap &args)

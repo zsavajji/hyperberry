@@ -5,7 +5,9 @@
 #include <QAbstractSocket>
 #include <QElapsedTimer>
 #include <QHash>
+#include <QList>
 #include <QObject>
+#include <QPair>
 #include <QSet>
 #include <QString>
 #include <QStringList>
@@ -71,6 +73,11 @@ public:
     // failure, and an engine that's down, are logged but never put in failure, so no page shows them.
     // Returns the request id, "" when the engine isn't connected (then nothing was sent).
     QString requestQuiet(const QString &cmd, const QVariantMap &args);
+    // Holds a request made while the engine is down (msg.send only: a text typed meanwhile) and sends
+    // it, in order, once the engine has answered hello. Nothing is put in failure.
+    // ponytail: the queue lives in memory, so a message typed while the engine is down is lost if the
+    // app is closed before it comes back; keep it in settings.ini if that matters.
+    void queue(const QString &cmd, const QVariantMap &args);
 
 signals:
     void connectedChanged();
@@ -138,6 +145,7 @@ private:
     QString m_helloId;
     QHash<QString, QString> m_pending;
     QSet<QString> m_quiet; // the ids in m_pending that requestQuiet sent
+    QList<QPair<QString, QVariantMap> > m_queued; // queue()'s, for the next hello
     bool m_connected;
     QVariantMap m_link;
     QString m_conn;
