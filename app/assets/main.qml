@@ -173,7 +173,7 @@ TabbedPane {
                 },
                 ComponentDefinition {
                     id: coverDef
-                    source: "cover.qml"
+                    source: screenWidth >= 1440 ? "PassportCover.qml" : "Cover.qml"
                 },
                 ComponentDefinition {
                     id: viewerDef

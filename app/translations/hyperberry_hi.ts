@@ -2120,7 +2120,7 @@
     </message>
 </context>
 <context>
-    <name>cover</name>
+    <name>Cover</name>
     <message>
         <source>All caught up</source>
         <translation>सब देख लिया</translation>
@@ -2138,23 +2138,26 @@
         <translation>मिस्ड कॉल</translation>
     </message>
     <message>
-        <source>None</source>
-        <translation>कोई नहीं</translation>
-    </message>
-    <message>
-        <location filename="../assets/cover.qml" line="25" />
+        <location filename="../assets/Cover.qml" line="25" />
         <source>unread</source>
         <translation>अनपढ़े</translation>
     </message>
     <message>
-        <location filename="../assets/cover.qml" line="25" />
+        <location filename="../assets/Cover.qml" line="25" />
         <source>Nothing new to see</source>
         <translation>कुछ नया नहीं</translation>
     </message>
     <message>
-        <location filename="../assets/cover.qml" line="83" />
+        <location filename="../assets/Cover.qml" line="83" />
         <source>Not logged in</source>
         <translation>लॉग इन नहीं है</translation>
+    </message>
+</context>
+<context>
+    <name>CoverRow</name>
+    <message>
+        <source>None</source>
+        <translation>कोई नहीं</translation>
     </message>
 </context>
 <context>

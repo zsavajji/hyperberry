@@ -2117,7 +2117,7 @@
     </message>
 </context>
 <context>
-    <name>cover</name>
+    <name>Cover</name>
     <message>
         <source>All caught up</source>
         <translation>Semua sudah dibaca</translation>
@@ -2135,23 +2135,26 @@
         <translation>Panggilan tak terjawab</translation>
     </message>
     <message>
-        <source>None</source>
-        <translation>Tidak ada</translation>
-    </message>
-    <message>
-        <location filename="../assets/cover.qml" line="25" />
+        <location filename="../assets/Cover.qml" line="25" />
         <source>unread</source>
         <translation>belum dibaca</translation>
     </message>
     <message>
-        <location filename="../assets/cover.qml" line="25" />
+        <location filename="../assets/Cover.qml" line="25" />
         <source>Nothing new to see</source>
         <translation>Tidak ada yang baru</translation>
     </message>
     <message>
-        <location filename="../assets/cover.qml" line="83" />
+        <location filename="../assets/Cover.qml" line="83" />
         <source>Not logged in</source>
         <translation>Belum masuk</translation>
+    </message>
+</context>
+<context>
+    <name>CoverRow</name>
+    <message>
+        <source>None</source>
+        <translation>Tidak ada</translation>
     </message>
 </context>
 <context>

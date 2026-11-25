@@ -2120,7 +2120,7 @@
     </message>
 </context>
 <context>
-    <name>cover</name>
+    <name>Cover</name>
     <message>
         <source>All caught up</source>
         <translation>Tutto in pari</translation>
@@ -2138,23 +2138,26 @@
         <translation>Chiamate perse</translation>
     </message>
     <message>
-        <source>None</source>
-        <translation>Nessuno</translation>
-    </message>
-    <message>
-        <location filename="../assets/cover.qml" line="25"/>
+        <location filename="../assets/Cover.qml" line="25"/>
         <source>unread</source>
         <translation>da leggere</translation>
     </message>
     <message>
-        <location filename="../assets/cover.qml" line="25"/>
+        <location filename="../assets/Cover.qml" line="25"/>
         <source>Nothing new to see</source>
         <translation>Niente di nuovo</translation>
     </message>
     <message>
-        <location filename="../assets/cover.qml" line="83"/>
+        <location filename="../assets/Cover.qml" line="83"/>
         <source>Not logged in</source>
         <translation>Non collegato</translation>
+    </message>
+</context>
+<context>
+    <name>CoverRow</name>
+    <message>
+        <source>None</source>
+        <translation>Nessuno</translation>
     </message>
 </context>
 <context>

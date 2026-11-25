@@ -2117,7 +2117,7 @@
     </message>
 </context>
 <context>
-    <name>cover</name>
+    <name>Cover</name>
     <message>
         <source>All caught up</source>
         <translation>Đã xem hết</translation>
@@ -2135,23 +2135,26 @@
         <translation>Cuộc gọi nhỡ</translation>
     </message>
     <message>
-        <source>None</source>
-        <translation>Không có</translation>
-    </message>
-    <message>
-        <location filename="../assets/cover.qml" line="25" />
+        <location filename="../assets/Cover.qml" line="25" />
         <source>unread</source>
         <translation>chưa đọc</translation>
     </message>
     <message>
-        <location filename="../assets/cover.qml" line="25" />
+        <location filename="../assets/Cover.qml" line="25" />
         <source>Nothing new to see</source>
         <translation>Không có gì mới</translation>
     </message>
     <message>
-        <location filename="../assets/cover.qml" line="83" />
+        <location filename="../assets/Cover.qml" line="83" />
         <source>Not logged in</source>
         <translation>Chưa đăng nhập</translation>
+    </message>
+</context>
+<context>
+    <name>CoverRow</name>
+    <message>
+        <source>None</source>
+        <translation>Không có</translation>
     </message>
 </context>
 <context>
