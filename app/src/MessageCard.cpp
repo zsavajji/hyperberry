@@ -601,8 +601,15 @@ void MessageCard::fillColumn()
     // phone's fallback font has (DejaVu Sans, 0.73 em: 3.2 du at 100 % on the Q10). It isn't a
     // space, so the line keeps it, and the run wraps as a word does. Right-to-left text ends at
     // the left, so there the blanks take a line of their own.
+    // A text of one to three emoji alone (data bigEmoji) is drawn big, as Telegram's and WhatsApp's apps do (the user,
+    // 2026-11-25): three times the body size for one, 2.5 for two, twice for three. Set on every fill, since restyle() sets
+    // the body size only when it changed and a recycled card may have held a big one. The blanks grow with it, so fewer of
+    // them make the time's room.
+    const int big = m_msg.value("bigEmoji").toInt();
+    const float grow = big > 0 ? 3.5f - 0.5f * big : 1;
+    m_text->textStyle()->setFontSizeValue(qRound(m_body * grow));
     QString room = text.section('\n', -1).isRightToLeft() ? QString(html.isEmpty() ? "\n" : "<br/>") : QString(" ");
-    room += QString(qCeil((timeWidth() + Card::du(m_ui, 0.5)) / Card::du(m_ui, 3.1 * m_scale)), QChar(0x2800));
+    room += QString(qCeil((timeWidth() + Card::du(m_ui, 0.5)) / Card::du(m_ui, 3.1 * m_scale * grow)), QChar(0x2800));
     m_text->setTextFormat(html.isEmpty() ? TextFormat::Plain : TextFormat::Html);
     m_text->setText((html.isEmpty() ? Card::noKeycaps(text) : html) + room);
     m_text->content()->setFlags(deleted ? TextContentFlag::Default : TextContentFlag::ActiveText);

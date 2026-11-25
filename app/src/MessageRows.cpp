@@ -2,6 +2,7 @@
 
 #include <bb/cascades/Image>
 
+#include "BigEmoji.h"
 #include "EngineLink.h"
 #include "MediaData.h"
 #include "MessageKinds.h"
@@ -66,6 +67,7 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
                                    q.value(6).toString(), time, locale, m.data, label, shown);
     if (m.service) {
         m.data["text"] = shown;
+        m.data["bigEmoji"] = 0;
         m.data["html"] = QString(); // set on every row (below too), so QML never reads undefined
         return m;
     }
@@ -152,6 +154,7 @@ MessageModel::Msg MessageModel::read(QSqlQuery &q)
         m.data["waveData"] = wave;
     }
     m.data["text"] = shown;
+    m.data["bigEmoji"] = kind == 0 && !deleted ? bigEmoji(shown) : 0; // 1 to 3 emoji alone: MessageCard draws them big
     // The same text with its mentions linked, "" for none (MessageKinds::html).
     m.data["html"] = MessageKinds::html(shown, extra);
     m.data["quote"] = q.value(9).toString();
