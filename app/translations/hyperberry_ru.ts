@@ -2141,6 +2141,10 @@
         <translation>Пропущенные звонки</translation>
     </message>
     <message>
+        <source>Stories</source>
+        <translation>Статусы</translation>
+    </message>
+    <message>
         <location filename="../assets/Cover.qml" line="25" />
         <source>unread</source>
         <translation>непрочитано</translation>

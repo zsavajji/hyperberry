@@ -2138,6 +2138,10 @@
         <translation>Appels manqués</translation>
     </message>
     <message>
+        <source>Stories</source>
+        <translation>Statuts</translation>
+    </message>
+    <message>
         <location filename="../assets/Cover.qml" line="25" />
         <source>unread</source>
         <translation>non lus</translation>

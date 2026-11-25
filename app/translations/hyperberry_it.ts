@@ -2138,6 +2138,10 @@
         <translation>Chiamate perse</translation>
     </message>
     <message>
+        <source>Stories</source>
+        <translation>Stato</translation>
+    </message>
+    <message>
         <location filename="../assets/Cover.qml" line="25"/>
         <source>unread</source>
         <translation>da leggere</translation>

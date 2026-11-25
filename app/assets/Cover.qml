@@ -22,7 +22,9 @@ SceneCover {
     // 2026-11-19).
     property bool grey: !bright && settings.darkGrey
     property variant line: bright ? Color.create("#D0D0D0") : Color.create("#464646")
-    property bool idle: chats.unreadTotal == 0 && callList.missedNew == 0
+    // The Passport's third row is the stories not seen (the user, 2026-11-25); the other phones keep two rows, and so
+    // their idle.
+    property bool idle: chats.unreadTotal == 0 && callList.missedNew == 0 && (k == 1 || storyList.unseen == 0)
     // The Passport (1440 px): its frame is 440 x 486 (440 x 195 short), and the Q10's sizes looked small there (the user,
     // 2026-11-25, as Tengram's). Glyph, type and spacing are k times the Q10's, and the rows fill the frame; the other
     // phones keep 1.
@@ -114,6 +116,29 @@ SceneCover {
                 label: qsTr("Missed calls")
                 // The newest one, "Name · time" (CallsModel).
                 detail: callList.missedLast
+                ink: cover.ink
+                quiet: cover.quiet
+                accent: cover.accent
+                emojiStyle: nav.emojiStyle
+                k: cover.k
+                kt: cover.kt
+            }
+            // The Passport's frame has room for a third: the stories not seen, and their posters (the user, 2026-11-25).
+            Container {
+                visible: k > 1
+                horizontalAlignment: HorizontalAlignment.Fill
+                minHeight: 2
+                maxHeight: 2
+                background: line
+                topMargin: 0
+                bottomMargin: 0
+            }
+            CoverRow {
+                visible: k > 1
+                count: storyList.unseen
+                label: qsTr("Stories")
+                // The posters' names, newest first (StoriesModel builds the line).
+                detail: storyList.unseenNames
                 ink: cover.ink
                 quiet: cover.quiet
                 accent: cover.accent

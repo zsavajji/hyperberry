@@ -2138,6 +2138,10 @@
         <translation>Llamadas perdidas</translation>
     </message>
     <message>
+        <source>Stories</source>
+        <translation>Estados</translation>
+    </message>
+    <message>
         <location filename="../assets/Cover.qml" line="25" />
         <source>unread</source>
         <translation>sin leer</translation>

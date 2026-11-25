@@ -35,6 +35,9 @@ class StoriesModel : public bb::cascades::DataModel
     Q_PROPERTY(bool active READ active WRITE setActive NOTIFY activeChanged)
     Q_PROPERTY(bool empty READ empty NOTIFY emptyChanged)
     Q_PROPERTY(int unseen READ unseen NOTIFY unseenChanged)
+    // Who posted them: the names of the posters with unseen, unmuted stories, newest first, ", " between, ten at most
+    // (the Active Frame's Stories row, Cover.qml).
+    Q_PROPERTY(QString unseenNames READ unseenNames NOTIFY unseenChanged)
 public:
     explicit StoriesModel(EngineLink *engine, QObject *parent = 0);
 
@@ -46,6 +49,7 @@ public:
     void setActive(bool on);
     bool empty() const { return m_rows.isEmpty(); }
     int unseen() const { return m_unseen; }
+    QString unseenNames() const { return m_unseenNames; }
 
     // The poster's stories under 24 h old, oldest first, as storyOf's maps.
     Q_INVOKABLE QVariantList storiesOf(const QString &poster);
@@ -111,6 +115,7 @@ private:
     QList<QVariantMap> m_rows;
     bool m_active;
     int m_unseen;
+    QString m_unseenNames;
     QTimer m_soon;
     bb::system::LocaleHandler m_region;
     QThreadPool m_pool;

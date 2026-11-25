@@ -14,7 +14,9 @@
 #include <QImage>
 #include <QImageReader>
 #include <QLocale>
+#include <QMap>
 #include <QMetaObject>
+#include <QPair>
 #include <QRunnable>
 #include <QSqlDatabase>
 #include <QSqlError>
@@ -278,6 +280,8 @@ void StoriesModel::reload()
         return;
     }
     int unseenAll = 0;
+    // Each poster's newest unseen story's time and the poster's name (the query runs by poster, then time).
+    QMap<QString, QPair<uint, QString> > unseenBy;
     QList<QVariantMap> rows;
     if (m_active) {
         dayFormatter().applyCurrentTimeAsAnchor();
@@ -291,8 +295,10 @@ void StoriesModel::reload()
             const QString p = q.value(0).toString();
             const bool seen = q.value(7).toInt() != 0;
             const bool muted = q.value(11).toInt() != 0;
-            if (!seen && !muted) // a muted poster's stories don't call for the badge
+            if (!seen && !muted) { // a muted poster's stories don't call for the badge
                 ++unseenAll;
+                unseenBy[p] = qMakePair(q.value(2).toUInt(), personName(q.value(9).toString(), q.value(8).toString(), p));
+            }
             if (p != poster) {
                 if (!row.isEmpty())
                     rows.append(row);
@@ -348,12 +354,23 @@ void StoriesModel::reload()
             rows.append(row);
         qSort(rows.begin(), rows.end(), before);
     } else {
-        while (q.next())
-            if (q.value(7).toInt() == 0 && q.value(11).toInt() == 0)
+        while (q.next()) {
+            if (q.value(7).toInt() == 0 && q.value(11).toInt() == 0) {
+                const QString p = q.value(0).toString();
                 ++unseenAll;
+                unseenBy[p] = qMakePair(q.value(2).toUInt(), personName(q.value(9).toString(), q.value(8).toString(), p));
+            }
+        }
     }
-    if (unseenAll != m_unseen) {
+    QList<QPair<uint, QString> > newest = unseenBy.values();
+    qSort(newest.begin(), newest.end(), qGreater<QPair<uint, QString> >());
+    QStringList names;
+    for (int i = 0; i < newest.size() && i < 10; ++i)
+        names << newest.at(i).second;
+    const QString unseenNames = names.join(", ");
+    if (unseenAll != m_unseen || unseenNames != m_unseenNames) {
         m_unseen = unseenAll;
+        m_unseenNames = unseenNames;
         emit unseenChanged();
     }
     if (m_active) {

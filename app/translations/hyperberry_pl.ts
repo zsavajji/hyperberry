@@ -2141,6 +2141,10 @@
         <translation>Nieodebrane połączenia</translation>
     </message>
     <message>
+        <source>Stories</source>
+        <translation>Status</translation>
+    </message>
+    <message>
         <location filename="../assets/Cover.qml" line="25" />
         <source>unread</source>
         <translation>do przeczytania</translation>

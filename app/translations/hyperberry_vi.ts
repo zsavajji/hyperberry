@@ -2135,6 +2135,10 @@
         <translation>Cuộc gọi nhỡ</translation>
     </message>
     <message>
+        <source>Stories</source>
+        <translation>Trạng thái</translation>
+    </message>
+    <message>
         <location filename="../assets/Cover.qml" line="25" />
         <source>unread</source>
         <translation>chưa đọc</translation>
