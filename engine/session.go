@@ -53,6 +53,8 @@ type Session struct {
 	mc      atomic.Pointer[meowcaller.Client] // meowcaller on the current client
 	// cancels holds the cancel of each media.get in flight, chat + "/" + id -> *context.CancelFunc, for media.cancel.
 	cancels sync.Map
+	// sending holds the id of each text being sent right now, by msg.send or sendQueued, so neither takes the other's.
+	sending sync.Map
 }
 
 // syncCap ends "syncing" if the phone sends no recent-chats history: an account with no chats.
@@ -397,6 +399,7 @@ func (s *Session) onEvent(cli *whatsmeow.Client, evt any) {
 					s.log.Warnf("presence after connecting: %v", err)
 				}
 			}()
+			go s.sendQueued(cli) // the texts typed while it was down
 		}
 		s.srv.Emit("conn", map[string]any{"state": s.conn})
 		s.photos.connected()

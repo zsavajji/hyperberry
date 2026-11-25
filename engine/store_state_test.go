@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 const tc = "a@s.whatsapp.net"
 
@@ -87,5 +90,37 @@ func TestUnreadIncoming(t *testing.T) {
 	}
 	if _, ok := tx.messageByID(tc, "zz"); ok {
 		t.Error("found a missing message")
+	}
+}
+
+// queuedTexts: our texts of msg.send still sending, oldest first; nothing else that is sending.
+func TestQueuedTexts(t *testing.T) {
+	_, st, _ := newTestSim(t)
+	st.ops <- func(tx *storeTx) {
+		tx.ensureChat(tc, chatUser)
+		out := func(id string, ts int64, state, kind int, extra string) msgRow {
+			return msgRow{Chat: tc, ID: id, TS: ts, Out: true, State: state, Kind: kind, Text: id, Extra: extra}
+		}
+		for _, m := range []msgRow{
+			out("late", 30, stateSending, msgText, ""),
+			out("mentions", 10, stateSending, msgText, withMentions("", []mention{{"b@s.whatsapp.net", "Bo"}})),
+			out("tie", 10, stateSending, msgText, ""), // the same second: in the order it came
+			out("sent", 5, stateSent, msgText, ""),
+			out("failed", 6, stateFailed, msgText, ""),
+			out("voice", 7, stateSending, msgVoice, ""),
+			out("forward", 8, stateSending, msgText, withKey("", "forwarded", "1")),
+			out("story", 9, stateSending, msgText, withStoryQuote("", tc, nil)),
+			{Chat: tc, ID: "deleted", TS: 11, Out: true, State: stateSending, Kind: msgText, Deleted: true},
+			{Chat: tc, ID: "theirs", TS: 12, Kind: msgText, Text: "hi"},
+		} {
+			tx.insertMessage(m)
+		}
+	}
+	var got []string
+	for _, m := range st.queuedTexts() {
+		got = append(got, m.ID)
+	}
+	if want := []string{"mentions", "tie", "late"}; strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Errorf("got %v, want %v", got, want)
 	}
 }
