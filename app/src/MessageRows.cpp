@@ -6,18 +6,24 @@
 #include "EngineLink.h"
 #include "MediaData.h"
 #include "MessageKinds.h"
+#include "Outbox.h"
+#include "Pins.h"
 #include "Sticker.h"
 #include "colors.h"
 #include "dates.h"
 #include "Waveform.h"
 
+#include <bb/data/JsonDataAccess>
 #include <bb/utility/i18n/Formatting>
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
+#include <QFile>
+#include <QFileInfo>
 #include <QLocale>
 #include <QSqlDatabase>
 #include <QSqlError>
+#include <QtEndian>
 
 using namespace bb::utility::i18n;
 
@@ -41,10 +47,22 @@ static const char *const kColumns = "rowid, id, ts, out, state, sender, sender_n
                                     "tr, tr_lang, tr_from, sticker, "
                                     "EXISTS(SELECT 1 FROM sticker_faves f WHERE f.hash = messages.sticker)";
 #undef QUOTED
+// How many columns that is: read() takes them as a list, so a row that isn't in chats.db (an outbox entry's) is read the
+// same way.
+static const int kColumnCount = 34;
 
-MessageModel::Msg MessageModel::read(QSqlQuery &q)
+static QVariantList columns(QSqlQuery &q)
+{
+    QVariantList v;
+    for (int i = 0; i < kColumnCount; ++i)
+        v << q.value(i);
+    return v;
+}
+
+MessageModel::Msg MessageModel::read(const QVariantList &q)
 {
     Msg m;
+    m.pending = false;
     m.rowid = q.value(0).toLongLong();
     m.id = q.value(1).toString();
     m.ts = q.value(2).toLongLong();
@@ -320,9 +338,7 @@ QList<MessageModel::Msg> MessageModel::select(const QString &where, const QVaria
     QSqlDatabase db = database();
     if (!db.isOpen())
         return rows;
-    m_locale = m_region.locale();
-    m_clock = timeFormat(m_locale, DateFormat::Short);
-    m_now = QDateTime::currentDateTime().toTime_t();
+    tick();
     QSqlQuery q(db);
     q.prepare(QString("SELECT %1 FROM messages WHERE chat = ? %2 ORDER BY ts DESC, rowid DESC "
                       "LIMIT %3").arg(kColumns, where).arg(limit));
@@ -334,6 +350,163 @@ QList<MessageModel::Msg> MessageModel::select(const QString &where, const QVaria
         return rows;
     }
     while (q.next())
-        rows.prepend(read(q));
+        rows.prepend(read(columns(q)));
+    return rows;
+}
+
+// The locale, the clock and the time that read() takes the rows' times and limits from, as of now.
+void MessageModel::tick()
+{
+    m_locale = m_region.locale();
+    m_clock = timeFormat(m_locale, DateFormat::Short);
+    m_now = QDateTime::currentDateTime().toTime_t();
+}
+
+// One row of any chat, as read() takes it; empty when there is none.
+QVariantList MessageModel::rowValues(const QString &chat, const QString &id)
+{
+    QSqlDatabase db = database();
+    if (!db.isOpen())
+        return QVariantList();
+    QSqlQuery q(db);
+    q.prepare(QString("SELECT %1 FROM messages WHERE chat = ? AND id = ?").arg(kColumns));
+    q.addBindValue(chat);
+    q.addBindValue(id);
+    return q.exec() && q.next() ? columns(q) : QVariantList();
+}
+
+// A WAV's length in seconds: its size over the byte rate in its header (the 44 bytes' own count is neglected).
+static int wavSeconds(const QString &path)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly))
+        return 0;
+    const QByteArray head = file.read(44);
+    const quint32 rate = head.size() < 44 ? 0 : qFromLittleEndian<quint32>(
+        reinterpret_cast<const uchar *>(head.constData()) + 28);
+    return rate ? int(file.size() / rate) : 0;
+}
+
+// Where a sticker's file is on the phone, "" when it isn't: a downloaded message's, else the copy stickers.file made, named
+// by the hash's hex (the engine's stickerFile).
+static QString stickerFile(const QString &hash)
+{
+    QStringList paths;
+    QSqlDatabase db = database();
+    if (db.isOpen()) {
+        QSqlQuery q(db);
+        q.prepare("SELECT path FROM messages WHERE sticker = ? AND media_state = 2 AND path IS NOT NULL ORDER BY ts DESC");
+        q.addBindValue(hash);
+        if (q.exec()) {
+            while (q.next())
+                paths << q.value(0).toString();
+        }
+    }
+    const QString copy = QDir::homePath() + "/stickers/" + QString::fromLatin1(QByteArray::fromBase64(hash.toLatin1()).toHex());
+    paths << copy + ".webp" << copy + ".was";
+    foreach (const QString &path, paths) {
+        if (QFile::exists(path))
+            return path;
+    }
+    return QString();
+}
+
+// The rows of this chat's outbox, as the engine will have them in chats.db once it takes the sends (docs/protocol.md): ours,
+// sending, state 0, made by read() from the columns of kColumns, so every key a card reads is set. db is the loaded rows of
+// chats.db: an entry whose id is among them is the engine's already, and its row shows instead. Of each kind:
+// msg.send and story.reply are a text (the story reply's quote of the story, and mentions' links, wait for the engine's
+// row); media.send is a photo (the thumbnail, size and caption it carries), a video, an audio file or a document by its
+// extension, with the file's size; voice.send is a voice row with the WAV and its length; sticker.send a sticker row with its
+// file, a text "Sticker" when the file isn't on the phone; poll.create a poll row with its question and options; msg.forward
+// the source's row with the new id.
+// ponytail: a voice row has a flat waveform, and plays only once the engine has it (voice.play wants its row).
+QList<MessageModel::Msg> MessageModel::pending(const QList<Msg> &db)
+{
+    QList<Msg> rows;
+    if (!m_engine)
+        return rows;
+    const QVariantList entries = m_engine->outbox()->entries(m_chat);
+    if (entries.isEmpty())
+        return rows;
+    tick();
+    QSet<QString> have;
+    foreach (const Msg &m, db)
+        have.insert(m.id);
+    foreach (const QVariant &entry, entries) {
+        const QVariantMap e = entry.toMap();
+        const QString cmd = e["cmd"].toString();
+        const QVariantMap a = e["args"].toMap();
+        if (have.contains(e["id"].toString()))
+            continue;
+        int kind;
+        QString text;
+        Outbox::row(e, &kind, &text);
+        QVariantList v;
+        if (cmd == "msg.forward")
+            v = rowValues(a["chat"].toString(), a["id"].toString());
+        const bool forward = !v.isEmpty();
+        if (forward) {
+            // The source's, as the engine copies it (forwardCopy): not its sender, quote, reactions, star or translation.
+            static const int others[] = { 5, 6, 9, 10, 11, 12, 13, 14, 18, 24, 25, 27, 28, 29, 30, 31, 33 };
+            for (uint i = 0; i < sizeof others / sizeof *others; ++i)
+                v[others[i]] = QVariant();
+            v[26] = QString("{\"forwarded\":\"1\"}");
+        } else {
+            for (int i = 0; i < kColumnCount; ++i)
+                v << QVariant();
+            v[7] = kind;
+            v[8] = cmd == "msg.forward" ? Pins::summary(0, QString()) : text; // a forward's source isn't in chats.db
+            const QString path = a["path"].toString();
+            if (cmd == "media.send") {
+                v[17] = 2; // media_state: the file is here
+                v[22] = QFileInfo(path).size();
+                v[23] = path;
+                if (kind == 1) {
+                    v[19] = QByteArray::fromBase64(a["thumb"].toString().toLatin1());
+                    v[20] = a["width"].toInt();
+                    v[21] = a["height"].toInt();
+                }
+            } else if (cmd == "voice.send") {
+                v[15] = wavSeconds(path);
+                v[17] = 2;
+                v[23] = path;
+            } else if (cmd == "sticker.send") {
+                const QString file = stickerFile(a["hash"].toString());
+                if (file.isEmpty()) {
+                    v[7] = 0;
+                    v[8] = Pins::summary(5, QString());
+                } else {
+                    v[17] = 2;
+                    v[23] = file;
+                    v[32] = a["hash"].toString();
+                }
+            } else if (cmd == "poll.create") {
+                QVariantMap extra;
+                extra["options"] = a["options"];
+                extra["max"] = a["multiple"].toBool() ? 0 : 1;
+                QByteArray json;
+                bb::data::JsonDataAccess().saveToBuffer(extra, &json);
+                v[26] = QString::fromUtf8(json);
+            }
+            // A quote of a loaded row: its preview, and whose it was for a group's quote name.
+            const QString quote = a["quote"].toString();
+            foreach (const Msg &m, db) {
+                if (m.id != quote)
+                    continue;
+                v[9] = Pins::summary(m.kind, m.data["text"].toString());
+                v[12] = m.data["out"].toBool() ? 1 : 0;
+                v[13] = m.who;
+                v[14] = m.data["sender"].toString();
+                v[28] = quote;
+            }
+        }
+        v[1] = e["id"].toString();
+        v[2] = e["ts"].toLongLong();
+        v[3] = 1;
+        v[4] = 0;
+        Msg m = read(v);
+        m.pending = true;
+        rows << m;
+    }
     return rows;
 }

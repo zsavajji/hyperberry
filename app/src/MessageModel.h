@@ -32,7 +32,9 @@ class EngineLink;
 // map is that first member's plus album, albumCount, media "" (so MediaBubble isn't built) and the
 // last member's time and state, since the card shows when it ended.
 // The newest 50 load at once, older pages as the list nears its top; the loaded set always
-// holds whole days, so a page never lands inside a loaded day.
+// holds whole days, so a page never lands inside a loaded day. After them come the chat's outbox
+// (Outbox.h, the sends made while the engine was down) as our rows still sending, state 0, last
+// whatever their time, each until chats.db has a row with its id.
 class MessageModel : public bb::cascades::DataModel
 {
     Q_OBJECT
@@ -95,6 +97,7 @@ private slots:
     void onMsgs(const QString &chat, const QStringList &ids);
     void onConnected();
     void onChats(const QStringList &jids);
+    void onOutbox(const QString &chat);
     void onReplied(const QString &id, const QString &cmd, const QVariant &result);
     void onFailed(const QString &id, const QString &cmd, const QString &code);
     void retryTranslate();
@@ -110,6 +113,7 @@ private:
         int kind;      // messages.kind
         QString who;   // messages.sender (else its name): the sender Albums compares
         bool service;
+        bool pending;  // an outbox row (pending()), not one of chats.db's: they come last in m_all
         QVariantMap data;
     };
     struct Entry
@@ -122,7 +126,12 @@ private:
     };
 
     static bool lessThan(const Msg &a, const Msg &b);
-    Msg read(QSqlQuery &q);
+    // q is the row's columns, in the order of kColumns (MessageRows.cpp).
+    Msg read(const QVariantList &q);
+    QVariantList rowValues(const QString &chat, const QString &id);
+    QList<Msg> pending(const QList<Msg> &db);
+    const Msg *oldest() const;
+    void tick();
     QList<Msg> select(const QString &where, const QVariantList &args, int limit);
     QList<qint64> pageTimes(const QString &where, const QVariantList &args, int limit);
     void loadPage();

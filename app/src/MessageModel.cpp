@@ -3,6 +3,7 @@
 #include "Albums.h"
 #include "EngineLink.h"
 #include "Moves.h"
+#include "Outbox.h"
 #include "dates.h"
 
 #include <bb/utility/i18n/Formatting>
@@ -49,6 +50,7 @@ MessageModel::MessageModel(EngineLink *engine, const QString &chat, bool group, 
             SLOT(onMsgs(QString, QStringList)));
     connect(engine, SIGNAL(connectedChanged()), this, SLOT(onConnected()));
     connect(engine, SIGNAL(chatsChanged(QStringList)), this, SLOT(onChats(QStringList)));
+    connect(engine->outbox(), SIGNAL(changed(QString)), this, SLOT(onOutbox(QString)));
     connect(engine, SIGNAL(replied(QString, QString, QVariant)), this, SLOT(onReplied(QString, QString, QVariant)));
     connect(engine, SIGNAL(failed(QString, QString, QString)), this, SLOT(onFailed(QString, QString, QString)));
     m_retry.setSingleShot(true);
@@ -153,10 +155,9 @@ void MessageModel::loadPage()
 {
     QString where;
     QVariantList args;
-    if (!m_all.isEmpty()) {
-        const Msg &o = m_all.first();
+    if (const Msg *o = oldest()) {
         where = "AND (ts < ? OR (ts = ? AND rowid < ?))";
-        args << o.ts << o.ts << o.rowid;
+        args << o->ts << o->ts << o->rowid;
     }
     const QList<qint64> times = pageTimes(where, args, kPage);
     int cut = -1;
@@ -193,14 +194,14 @@ void MessageModel::nearTop(const QVariantList &firstVisible)
 int MessageModel::reveal(const QString &id)
 {
     const int at = entryOf(id);
-    if (at >= 0 || m_atStart || m_all.isEmpty())
+    if (at >= 0 || m_atStart || !oldest())
         return at;
     const QList<Msg> target = select("AND id = ?", QVariantList() << id, 1);
     if (target.isEmpty())
         return -1;
     // Every day from the match's to the oldest loaded one, so the loaded set stays whole days
     // with no gap, as loadPage keeps it.
-    const Msg o = m_all.first();
+    const Msg o = *oldest();
     const uint midnight =
         QDateTime(QDateTime::fromTime_t(target.first().ts).date(), QTime(0, 0)).toTime_t();
     merge(QStringList(), select("AND ts >= ? AND (ts < ? OR (ts = ? AND rowid < ?))",
@@ -275,6 +276,30 @@ void MessageModel::onChats(const QStringList &jids)
     reload();
 }
 
+// The chat's outbox changed: a send was added, taken back, or the engine took it. What left it is the engine's now, and its
+// row is in chats.db before the answer that took it, so it is read at once: the msgs event may be behind, and the bubble
+// must not vanish meanwhile. A taken-back send has no row, and goes.
+void MessageModel::onOutbox(const QString &chat)
+{
+    if (chat != m_chat || m_loading || !m_engine)
+        return;
+    QStringList gone;
+    foreach (const Msg &m, m_all) {
+        if (m.pending && !m_engine->outbox()->has(m.id))
+            gone << m.id;
+    }
+    if (gone.isEmpty())
+        merge(QStringList(), QList<Msg>(), false);
+    else
+        onMsgs(m_chat, gone);
+}
+
+// The oldest row of chats.db that is loaded, none when there are none: the outbox rows come last, and are not its.
+const MessageModel::Msg *MessageModel::oldest() const
+{
+    return m_all.isEmpty() || m_all.first().pending ? 0 : &m_all.first();
+}
+
 void MessageModel::onReplied(const QString &id, const QString &cmd, const QVariant &)
 {
     if (cmd != "msg.translate" || m_translating.remove(id) == 0)
@@ -312,11 +337,11 @@ void MessageModel::retryTranslate()
 // Every loaded row again, or the first page when none is.
 void MessageModel::reload()
 {
-    if (m_all.isEmpty()) {
+    if (!oldest()) {
         loadPage();
         return;
     }
-    const Msg o = m_all.first();
+    const Msg o = *oldest();
     QStringList asked;
     foreach (const Msg &m, m_all)
         asked << m.id; // one that isn't read again is gone
@@ -339,6 +364,11 @@ void MessageModel::merge(const QStringList &asked, const QList<Msg> &fresh, bool
     QSet<QString> loaded, updated;
     QList<Msg> all;
     foreach (const Msg &m, m_all) {
+        if (m.pending) { // pending() makes them again below; chats.db's row of the same id takes the place of one
+            if (back.contains(m.id))
+                updated.insert(m.id);
+            continue;
+        }
         loaded.insert(m.id);
         if (!was.contains(m.id))
             all.append(m);
@@ -347,14 +377,15 @@ void MessageModel::merge(const QStringList &asked, const QList<Msg> &fresh, bool
             updated.insert(m.id);
         }
     }
-    const bool empty = m_all.isEmpty();
+    const Msg *first = oldest();
+    const bool empty = !first;
     bool incoming = false;
     foreach (const Msg &m, fresh) {
         if (loaded.contains(m.id))
             continue;
         // A new message older than the loaded ones comes with a later page.
-        if (older || empty || m_atStart || m.ts > m_all.first().ts
-            || (m.ts == m_all.first().ts && m.rowid > m_all.first().rowid)) {
+        if (older || empty || m_atStart || m.ts > first->ts
+            || (m.ts == first->ts && m.rowid > first->rowid)) {
             all.append(m);
             // Only loadPage passes older (the first load and older pages): anything else that is
             // new arrived live, even into a chat that opened empty.
@@ -364,6 +395,7 @@ void MessageModel::merge(const QStringList &asked, const QList<Msg> &fresh, bool
     }
     // Sending moves a row: its ts becomes the server's.
     qStableSort(all.begin(), all.end(), lessThan);
+    all += pending(all);
 
     const QStringList old = keys();
     m_all = all;
