@@ -129,6 +129,12 @@ ChatRow::ChatRow(ListView *list)
     m_mute = new ImageView();
     m_mute->setVerticalAlignment(VerticalAlignment::Center);
     m_mute->setImageSource(Card::url("asset:///images/mute.png"));
+    // 27 px images, the Q20's size; on the Passport pxZoom times that, as its du are (the user, 2026-11-25: the pin, the mute
+    // and the ticks were small there).
+    if (Card::pxZoom() != 1) {
+        m_pin->setPreferredSize(27 * Card::pxZoom(), 27 * Card::pxZoom());
+        m_mute->setPreferredSize(27 * Card::pxZoom(), 27 * Card::pxZoom());
+    }
     // Grows with the text size, as the name and preview do (MessageCard.cpp's time); its size is
     // set by show().
     m_time = new Label();
@@ -270,6 +276,9 @@ void ChatRow::show(const QVariantMap &chat)
         m_ticks->setImageSource(Card::url(state == 0 ? "asset:///images/clock.png"
                                     : state == 1 ? "asset:///images/tick.png" : "asset:///images/ticks.png"));
         m_ticks->setFilterColor(state == 3 ? primary : quiet);
+        // The images' own px (27 tall; ticks.png 35 wide); on the Passport pxZoom times that.
+        if (Card::pxZoom() != 1)
+            m_ticks->setPreferredSize((state >= 2 ? 35 : 27) * Card::pxZoom(), 27 * Card::pxZoom());
     }
     m_bang->setVisible(out && state == 4);
 

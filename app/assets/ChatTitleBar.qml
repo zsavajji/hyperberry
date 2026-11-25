@@ -160,13 +160,14 @@ TitleBar {
                     }
                 }
                 // The stock white handset, tinted with the primary colour as the bar's other live
-                // marks are; 45 px in an 81 px bar.
+                // marks are; 45 px in an 81 px bar. On the Passport (1440 px) 7 du, beside the picture's 9 (the user, 2026-11-25:
+                // small there).
                 ImageView {
                     verticalAlignment: VerticalAlignment.Center
                     imageSource: "file:///usr/share/icons/ic_phone.png"
                     filterColor: ui.palette.primary
-                    preferredWidth: ui.du(5)
-                    preferredHeight: ui.du(5)
+                    preferredWidth: ui.du(screenWidth >= 1440 ? 7 : 5)
+                    preferredHeight: ui.du(screenWidth >= 1440 ? 7 : 5)
                     scalingMethod: ScalingMethod.AspectFit
                 }
             }
@@ -176,8 +177,10 @@ TitleBar {
                 id: barTile
                 verticalAlignment: VerticalAlignment.Center
                 leftMargin: ui.du(1.5)
-                preferredWidth: ui.px(81)
-                preferredHeight: ui.px(81)
+                // 81 px; on the Passport (1440 px) 9 du, which is 81 px on the Q10 (the title bar isn't zoomed, and 81 px was
+                // small there; the user, 2026-11-25).
+                preferredWidth: screenWidth >= 1440 ? ui.du(9) : ui.px(81)
+                preferredHeight: screenWidth >= 1440 ? ui.du(9) : ui.px(81)
                 background: bar.chat ? Color.create(bar.chat.color) : Color.Transparent
                 layout: DockLayout {}
                 focusPolicy: FocusPolicy.KeyAndTouch
