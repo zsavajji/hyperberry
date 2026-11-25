@@ -256,6 +256,10 @@ TabbedPane {
                 if (page) {
                     page.destroy()
                 }
+                // The popped page may have kept the focus till now (the Passport's chat list takes it back).
+                if (nav.top && nav.top.refocus) {
+                    nav.top.refocus()
+                }
             }
             onLinkedChanged: show()
             onCreationCompleted: {

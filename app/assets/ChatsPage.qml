@@ -110,6 +110,15 @@ Page {
             onTriggered: nav.push(channelsDef.createObject())
         }
     ]
+    // The Passport's keyboard scrolls the list (ChatList.qml): it takes the focus when the page is the top one, and again
+    // when the page that was over it is gone (main.qml's onPopTransitionEnded), which may have kept it till then. Not
+    // while the filter field is open: Enter hands it the focus.
+    function refocus() {
+        if (screenWidth >= 1440 && !searching) list.requestFocus()
+    }
+    function uncovered() {
+        refocus()
+    }
     function openChat(chat) {
         var chatPage = chatDef.createObject()
         chatPage.chat = chat
@@ -202,6 +211,11 @@ Page {
                     backgroundVisible: settings.theme != 1
                     hintText: qsTr("Search chats")
                     input.submitKey: SubmitKey.Search
+                    // On the Passport Enter hands the focus to the list, so the keyboard's swipes scroll it (KeyboardScroll; the
+                    // field keeps its touches); a tap on the field takes it back (the user, 2026-11-25).
+                    input.onSubmitted: {
+                        if (screenWidth >= 1440) list.requestFocus()
+                    }
                     onTextChanging: chats.setFilter(text)
                     keyListeners: KeyListener {
                         onKeyPressed: {
@@ -248,6 +262,7 @@ Page {
             verticalAlignment: VerticalAlignment.Fill
             ChatList {
                 id: list
+                refocusOnTouch: screenWidth >= 1440 && nav.top == page
                 dataModel: chats
                 emojiStyle: nav.emojiStyle
                 bodySize: nav.bodySize
