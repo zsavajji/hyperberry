@@ -346,6 +346,10 @@
         <translation>Nicht gelöscht: HyperBerry stellt die Verbindung wieder her. Versuche es gleich noch einmal.</translation>
     </message>
     <message>
+        <source>Not cancelled: it is already being sent</source>
+        <translation>Nicht abgebrochen: wird bereits gesendet</translation>
+    </message>
+    <message>
         <location filename="../assets/ChatPage.qml" line="108" />
         <source>Message deleted</source>
         <translation>Nachricht gelöscht</translation>
@@ -1124,6 +1128,10 @@
     <message>
         <source>Remove from favourites</source>
         <translation>Aus Favoriten entfernen</translation>
+    </message>
+    <message>
+        <source>Cancel sending</source>
+        <translation>Senden abbrechen</translation>
     </message>
     <message>
         <source>Translate</source>

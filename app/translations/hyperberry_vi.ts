@@ -345,6 +345,10 @@
         <translation>Chưa xóa: HyperBerry đang kết nối lại. Hãy thử lại sau giây lát.</translation>
     </message>
     <message>
+        <source>Not cancelled: it is already being sent</source>
+        <translation>Chưa hủy: đang được gửi</translation>
+    </message>
+    <message>
         <location filename="../assets/ChatPage.qml" line="108" />
         <source>Message deleted</source>
         <translation>Đã xóa tin nhắn</translation>
@@ -1122,6 +1126,10 @@
     <message>
         <source>Remove from favourites</source>
         <translation>Xóa khỏi yêu thích</translation>
+    </message>
+    <message>
+        <source>Cancel sending</source>
+        <translation>Hủy gửi</translation>
     </message>
     <message>
         <source>Translate</source>

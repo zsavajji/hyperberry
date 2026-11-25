@@ -74,6 +74,7 @@ void MessageCard::onPopulating()
     m_fave->setEnabled(sticker); // out of the menu, its letter stays off too
     m_edit->setEnabled(flag("editable"));
     m_revoke->setEnabled(flag("revocable"));
+    m_cancel->setEnabled(flag("out") && !deleted && m_msg.value("state").toInt() == 0);
     m_deleteMe->setEnabled(!readOnly);
 }
 
@@ -127,6 +128,8 @@ void MessageCard::makeActions()
     m_edit = action("Edit", "file:///usr/share/icons/ic_edit.png", SLOT(onEdit()), "e");
     m_revoke = action("Delete for everyone", "file:///usr/share/icons/bb_action_delete.png",
                       SLOT(onRevoke()), "x");
+    // A message of ours that is still sending, one the outbox holds or one the engine's queue does: taken back, it is never sent.
+    m_cancel = action("Cancel sending", "file:///usr/share/icons/bb_action_delete.png", SLOT(onCancel()), "n");
     // "Delete for me" is a DeleteActionItem, which the system puts last.
     m_deleteMe = new DeleteActionItem();
     m_deleteMe->setTitle(Card::tr(kContext, "Delete for me"));
@@ -201,6 +204,7 @@ void MessageCard::onStar() { Card::call(m_list, "star", m_msg); }
 void MessageCard::onFave() { Card::call(m_list, "fave", m_msg); }
 void MessageCard::onEdit() { Card::call(m_list, "edit", m_msg); }
 void MessageCard::onRevoke() { Card::call(m_list, "deleteForEveryone", str("id")); }
+void MessageCard::onCancel() { Card::call(m_list, "cancelSending", str("id")); }
 void MessageCard::onDeleteMe() { Card::call(m_list, "deleteForMe", str("id")); }
 void MessageCard::onWho() { Card::call(m_list, "whoReacted", str("id")); }
 

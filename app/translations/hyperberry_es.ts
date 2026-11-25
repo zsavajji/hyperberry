@@ -346,6 +346,10 @@
         <translation>No eliminado: HyperBerry se está reconectando. Inténtalo de nuevo en un momento.</translation>
     </message>
     <message>
+        <source>Not cancelled: it is already being sent</source>
+        <translation>No cancelado: ya se está enviando</translation>
+    </message>
+    <message>
         <location filename="../assets/ChatPage.qml" line="108" />
         <source>Message deleted</source>
         <translation>Mensaje eliminado</translation>
@@ -1124,6 +1128,10 @@
     <message>
         <source>Remove from favourites</source>
         <translation>Quitar de favoritos</translation>
+    </message>
+    <message>
+        <source>Cancel sending</source>
+        <translation>Cancelar envío</translation>
     </message>
     <message>
         <source>Translate</source>

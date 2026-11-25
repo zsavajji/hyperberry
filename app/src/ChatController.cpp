@@ -387,6 +387,20 @@ bool ChatController::deleteForEveryone(const QString &id)
     return true;
 }
 
+void ChatController::cancelSending(const QString &id)
+{
+    if (!m_engine)
+        return;
+    if (m_engine->outbox()->has(id)) {
+        m_engine->outbox()->remove(id, true);
+        return;
+    }
+    QVariantMap args;
+    args["chat"] = m_jid;
+    args["id"] = id;
+    m_engine->request("msg.cancel", args);
+}
+
 void ChatController::composing(const QString &text)
 {
     if (text.isEmpty()) {

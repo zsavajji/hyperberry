@@ -40,6 +40,10 @@ Page {
             editFailed.show()
         } else if (failedCmd == "msg.forward") {
             forwardFailed.show()
+        } else if (failedCmd == "msg.cancel") {
+            if (engine.failure.code == "in_flight") {
+                cancelFailed.show() // not_found and not_sending: the row has moved on, and shows it
+            }
         } else if (failedCmd == "poll.vote" || failedCmd == "poll.create") {
             page.reactBar() // its own failedCmd words these (ReactBar.qml)
         }
@@ -202,6 +206,10 @@ Page {
         SystemToast {
             id: forwardFailed
             body: qsTr("Couldn't forward this message")
+        },
+        SystemToast {
+            id: cancelFailed
+            body: qsTr("Not cancelled: it is already being sent")
         },
         // Delete for me: the card is already hidden, the request goes when the toast closes. Several
         // deletes while it shows join one batch (show() on a showing toast keeps it up), and Undo
@@ -757,6 +765,9 @@ Page {
                     function deleteForEveryone(id) {
                         revokeDialog.msgId = id
                         revokeDialog.show()
+                    }
+                    function cancelSending(id) {
+                        ctl.cancelSending(id)
                     }
                     // The cards reach the shared emoji style (main.qml) through ListItem.view.
                     property variant emojiStyle: nav.emojiStyle

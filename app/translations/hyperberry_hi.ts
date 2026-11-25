@@ -346,6 +346,10 @@
         <translation>डिलीट नहीं हुआ: HyperBerry दोबारा कनेक्ट हो रहा है। थोड़ी देर में फिर कोशिश करें।</translation>
     </message>
     <message>
+        <source>Not cancelled: it is already being sent</source>
+        <translation>रद्द नहीं हुआ: यह पहले से भेजा जा रहा है</translation>
+    </message>
+    <message>
         <location filename="../assets/ChatPage.qml" line="108" />
         <source>Message deleted</source>
         <translation>मैसेज डिलीट किया गया</translation>
@@ -1124,6 +1128,10 @@
     <message>
         <source>Remove from favourites</source>
         <translation>पसंदीदा से हटाएं</translation>
+    </message>
+    <message>
+        <source>Cancel sending</source>
+        <translation>भेजना रद्द करें</translation>
     </message>
     <message>
         <source>Translate</source>

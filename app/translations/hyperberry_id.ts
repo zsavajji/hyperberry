@@ -345,6 +345,10 @@
         <translation>Tidak terhapus: HyperBerry sedang menyambung ulang. Coba lagi sebentar lagi.</translation>
     </message>
     <message>
+        <source>Not cancelled: it is already being sent</source>
+        <translation>Tidak dibatalkan: sedang dikirim</translation>
+    </message>
+    <message>
         <location filename="../assets/ChatPage.qml" line="108" />
         <source>Message deleted</source>
         <translation>Pesan dihapus</translation>
@@ -1122,6 +1126,10 @@
     <message>
         <source>Remove from favourites</source>
         <translation>Hapus dari favorit</translation>
+    </message>
+    <message>
+        <source>Cancel sending</source>
+        <translation>Batalkan pengiriman</translation>
     </message>
     <message>
         <source>Translate</source>

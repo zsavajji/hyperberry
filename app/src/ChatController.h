@@ -89,6 +89,9 @@ public:
     Q_INVOKABLE void commitDelete();
     // False when the engine isn't connected: nothing was sent.
     Q_INVOKABLE bool deleteForEveryone(const QString &id);
+    // Takes back one of our messages that is still sending: one the outbox holds just leaves it, with its file; one the
+    // engine has is asked to drop it (msg.cancel), which refuses once its attempt has started (in_flight, in failure).
+    Q_INVOKABLE void cancelSending(const QString &id);
     // A group's member changed by an admin: action is add, remove, promote or demote. groupInfo
     // is asked again once WhatsApp agrees; a refusal shows in the engine's failure.
     Q_INVOKABLE void changeParticipant(const QString &jid, const QString &action);

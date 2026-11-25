@@ -347,6 +347,10 @@
         <translation>Не видалено: HyperBerry відновлює з’єднання. Повторіть спробу трохи пізніше.</translation>
     </message>
     <message>
+        <source>Not cancelled: it is already being sent</source>
+        <translation>Не скасовано: вже надсилається</translation>
+    </message>
+    <message>
         <location filename="../assets/ChatPage.qml" line="108" />
         <source>Message deleted</source>
         <translation>Повідомлення видалено</translation>
@@ -1126,6 +1130,10 @@
     <message>
         <source>Remove from favourites</source>
         <translation>Видалити стікер із вибраного</translation>
+    </message>
+    <message>
+        <source>Cancel sending</source>
+        <translation>Скасувати надсилання</translation>
     </message>
     <message>
         <source>Translate</source>
