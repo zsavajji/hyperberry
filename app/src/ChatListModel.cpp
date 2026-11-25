@@ -2,6 +2,7 @@
 
 #include "EngineLink.h"
 #include "Moves.h"
+#include "Outbox.h"
 #include "colors.h"
 #include "Pins.h"
 #include "dates.h"
@@ -125,6 +126,19 @@ QString RowClock::place(QVariantMap *row, const QVariant &lastTs, bool pinned) c
     return pinned ? ChatListModel::tr("Pinned") : hasTime ? header : ChatListModel::tr("No messages");
 }
 
+// Puts row in the group of that title: the last one, or a new one after it. The reader and withOutbox both make the list so.
+static void addRow(ChatListRead *out, const QString &title, const QVariantMap &row)
+{
+    if (out->groups.isEmpty() || out->groups.last().title != title) {
+        out->groups.append(ChatListGroup());
+        out->groups.last().title = title;
+        out->groupAt.insert(title, out->groups.size() - 1);
+    }
+    out->itemAt.insert(row["jid"].toString(), qMakePair(out->groups.size() - 1, out->groups.last().rows.size()));
+    out->groups.last().rows.append(row);
+    ++out->chats;
+}
+
 // By the start of any word of the name, ignoring case, as ContactPicker::filter does. An empty filter matches all.
 static bool nameMatches(const QString &filter, const QString &name)
 {
@@ -162,6 +176,8 @@ ChatListModel::ChatListModel(EngineLink *engine, Mode mode, QObject *parent)
     connect(engine, SIGNAL(chatsChanged(QStringList)), this, SLOT(reloadSoon()));
     // Events sent while the link was down are lost; the database has what they said.
     connect(engine, SIGNAL(connectedChanged()), this, SLOT(reloadSoon()));
+    // A send made while the engine is down is the chat's last line, and one the engine took is read from chats.db.
+    connect(engine->outbox(), SIGNAL(changed(QString)), this, SLOT(onOutbox()));
     // Nobody sees the frame while the app is fullscreen: it's computed when the app leaves it.
     if (m_mode == Chats)
         connect(engine, SIGNAL(fullscreenChanged()), this, SLOT(updateFrame()));
@@ -415,19 +431,11 @@ void ChatListReader::read(const ChatListRequest &request)
         fetchNs += step.nsecsElapsed();
         if (!more)
             break;
-        const QString jid = q.value(0).toString();
         QVariantMap row = baseRow(q, clock.now);
         if (!nameMatches(request.filter, row["name"].toString()))
             continue;
-        const QString title = clock.place(&row, q.value(3), row["pinned"].toBool());
-        if (out.groups.isEmpty() || out.groups.last().title != title) {
-            out.groups.append(ChatListGroup());
-            out.groups.last().title = title;
-            out.groupAt.insert(title, out.groups.size() - 1);
-        }
-        out.itemAt.insert(jid, qMakePair(out.groups.size() - 1, out.groups.last().rows.size()));
-        out.groups.last().rows.append(row);
-        ++out.chats;
+        row["ts"] = q.value(3); // null for a chat with no message
+        addRow(&out, clock.place(&row, q.value(3), row["pinned"].toBool()), row);
     }
     const qint64 builtNs = timer.nsecsElapsed();
     out.queryMs = int(execNs / 1000000);
@@ -446,30 +454,8 @@ void ChatListModel::onRead(const ChatListRead &read)
     const bool shownEmpty = empty();
     m_loaded = true;
     if (read.ok) {
-        const bool wasEmpty = m_groups.isEmpty();
-        Moves *moves = 0;
-        if (!wasEmpty) {
-            moves = new Moves;
-            moves->groups = read.groupAt;
-            moves->items = read.itemAt;
-            foreach (const Group &g, m_groups) {
-                moves->oldGroups.append(g.title);
-                QStringList jids;
-                foreach (const QVariantMap &row, g.rows)
-                    jids.append(row["jid"].toString());
-                moves->oldItems.append(jids);
-            }
-        }
-        m_groups = read.groups;
-        if (wasEmpty) {
-            emit itemsChanged(DataModelChangeType::Init);
-        } else {
-            emit itemsChanged(DataModelChangeType::AddRemove, QSharedPointer<IndexMapper>(moves));
-            // The rows that stayed may have new text: the list reads its cached rows again.
-            emit itemsChanged(DataModelChangeType::Update);
-        }
-        ++m_revision;
-        emit revisionChanged();
+        m_raw = read;
+        show(withOutbox(read));
         if (m_mode == Chats) {
             // Once per run: with "ui: main" and the Hub tap's line it times a cold start.
             static bool first = true;
@@ -491,6 +477,93 @@ void ChatListModel::onRead(const ChatListRead &read)
         emit emptyChanged();
     if (m_again)
         reload();
+}
+
+// Swaps the rows in and tells the list.
+void ChatListModel::show(const ChatListRead &read)
+{
+    const bool wasEmpty = m_groups.isEmpty();
+    Moves *moves = 0;
+    if (!wasEmpty) {
+        moves = new Moves;
+        moves->groups = read.groupAt;
+        moves->items = read.itemAt;
+        foreach (const Group &g, m_groups) {
+            moves->oldGroups.append(g.title);
+            QStringList jids;
+            foreach (const QVariantMap &row, g.rows)
+                jids.append(row["jid"].toString());
+            moves->oldItems.append(jids);
+        }
+    }
+    m_groups = read.groups;
+    if (wasEmpty) {
+        emit itemsChanged(DataModelChangeType::Init);
+    } else {
+        emit itemsChanged(DataModelChangeType::AddRemove, QSharedPointer<IndexMapper>(moves));
+        // The rows that stayed may have new text: the list reads its cached rows again.
+        emit itemsChanged(DataModelChangeType::Update);
+    }
+    ++m_revision;
+    emit revisionChanged();
+}
+
+// The pinned first, then the newest: the order the reader's query gives.
+static bool listedBefore(const QVariantMap &a, const QVariantMap &b)
+{
+    if (a["pinned"].toBool() != b["pinned"].toBool())
+        return a["pinned"].toBool();
+    return a["ts"].toLongLong() > b["ts"].toLongLong();
+}
+
+// A chat with sends waiting in the outbox (made while the engine was down) shows the newest as its last line, ours and still
+// sending, and its time when that is newer than the chat's; the list sorts by it. Done here, on the UI thread, over what the
+// reader read, so a send changes the list without a read of chats.db.
+// ponytail: a chat that isn't in chats.db yet (a new chat) isn't listed until the engine makes it.
+ChatListRead ChatListModel::withOutbox(const ChatListRead &read)
+{
+    Outbox *outbox = m_engine->outbox();
+    if (!read.ok || outbox->isEmpty())
+        return read;
+    QList<QVariantMap> rows;
+    bool found = false;
+    foreach (const Group &g, read.groups) {
+        foreach (QVariantMap row, g.rows) {
+            const QVariantList sends = outbox->entries(row["jid"].toString());
+            if (!sends.isEmpty()) {
+                const QVariantMap send = sends.last().toMap();
+                int kind;
+                QString text;
+                Outbox::row(send, &kind, &text);
+                row["preview"] = tr("You") + ": " + Pins::summary(kind, text);
+                row["out"] = true;
+                row["state"] = 0;
+                if (send["ts"].toLongLong() > row["ts"].toLongLong())
+                    row["ts"] = send["ts"];
+                found = true;
+            }
+            rows << row;
+        }
+    }
+    if (!found)
+        return read;
+    qStableSort(rows.begin(), rows.end(), listedBefore);
+    ChatListRead out = read;
+    out.groups.clear();
+    out.groupAt.clear();
+    out.itemAt.clear();
+    out.chats = 0;
+    const RowClock clock(m_region.locale());
+    foreach (QVariantMap row, rows)
+        addRow(&out, clock.place(&row, row["ts"], row["pinned"].toBool()), row);
+    return out;
+}
+
+// The outbox changed: the rows as last read, with it applied again.
+void ChatListModel::onOutbox()
+{
+    if (m_raw.ok)
+        show(withOutbox(m_raw));
 }
 
 // A chat marked unread (unread < 0, step 5.3) counts as 1. 2^40 in muted_until is forever.

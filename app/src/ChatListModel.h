@@ -84,7 +84,8 @@ private:
 // The chat list (PLAN.md §7, step 2.4): chats.db's chats that aren't archived or channels (or, for the Archived and Channels pages, only those), pinned first,
 // then newest first. Headers ("Pinned", "Today", "Yesterday", "Monday", "Jan 20") are the top
 // level ([g]), and the chats are their children ([g, i]): a map of jid, kind, name, initials,
-// color, preview, time, out, state, unread, muted, pinned and photo (a file path, or "").
+// color, preview, time, out, state, unread, muted, pinned and photo (a file path, or ""), and ts, the last message's time
+// (null for none) that the rows are sorted by. A chat with sends waiting in the outbox (Outbox.h) shows the newest as its last line.
 class ChatListModel : public bb::cascades::DataModel
 {
     Q_OBJECT
@@ -133,14 +134,18 @@ private slots:
     void reload();
     void updateFrame();
     void onRead(const ChatListRead &read);
+    void onOutbox();
 
 private:
     bool matches(const QString &name) const;
+    ChatListRead withOutbox(const ChatListRead &read);
+    void show(const ChatListRead &read);
     typedef ChatListGroup Group;
     EngineLink *m_engine;
     Mode m_mode;
     QString m_dbName;
     QList<Group> m_groups;
+    ChatListRead m_raw;      // the last read, as chats.db has it: the outbox is applied over it each time it shows
     int m_unreadTotal;
     QString m_unreadChats;
     int m_revision;
