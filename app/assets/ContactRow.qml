@@ -8,6 +8,9 @@ import bb.cascades 1.4
 Container {
     property variant contact
     id: row
+    // Context properties aren't visible in a list item (ReferenceError on the phone, 2026-11-25): the view hands them over.
+    property real zoom: row.ListItem.view.rowZoom
+    property bool compact: row.ListItem.view.rowCompact
     horizontalAlignment: HorizontalAlignment.Fill
     background: row.ListItem.active ? Color.create(row.ListItem.view.pressColor) : Color.Transparent
     Container {
@@ -15,8 +18,7 @@ Container {
         horizontalAlignment: HorizontalAlignment.Fill
         // The chat list's sizes (ChatRows.cpp): Compact's 7 du tile in a 9.4 du row, else 8.2 in 11.4 (the user, 2026-11-25:
         // search's pictures were small).
-        property bool compact: settings.compact
-        minHeight: zoom * ui.du(compact ? 9.4 : 11.4)
+        minHeight: zoom * ui.du(row.compact ? 9.4 : 11.4)
         leftPadding: zoom * ui.du(1.5)
         rightPadding: zoom * ui.du(1.5)
         layout: StackLayout {
@@ -24,8 +26,8 @@ Container {
         }
         Container {
             verticalAlignment: VerticalAlignment.Center
-            preferredWidth: zoom * ui.du(line.compact ? 7 : 8.2)
-            preferredHeight: zoom * ui.du(line.compact ? 7 : 8.2)
+            preferredWidth: zoom * ui.du(row.compact ? 7 : 8.2)
+            preferredHeight: zoom * ui.du(row.compact ? 7 : 8.2)
             background: Color.create(row.contact.color)
             layout: DockLayout {}
             Label {

@@ -45,6 +45,8 @@ Page {
             property variant emojiStyle: nav.emojiStyle
             property int bodySize: nav.bodySize
             property int smallSize: nav.smallSize
+            property real rowZoom: zoom // ContactRow's zoom and Compact (list items can't see context properties)
+            property bool rowCompact: settings.compact
             property string pressColor: nav.pressColor
             property variant lineColor: nav.lineColor
             dataModel: people
