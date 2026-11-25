@@ -12,6 +12,7 @@
 #include <QDate>
 #include <QDateTime>
 #include <QDir>
+#include <QFile>
 #include <QLocale>
 
 using namespace bb::utility::i18n;
@@ -239,9 +240,11 @@ bool ChatController::send(const QString &text, const QVariantList &mentions)
     return true;
 }
 
+// The UI's recorder writes the WAV; the engine's voice.start only has it follow the file as it grows. So a note recorded
+// while the engine is down is recorded all the same, and voice.send, which takes a complete WAV, goes to the outbox.
 QString ChatController::startVoice()
 {
-    if (!m_engine || !m_engine->connected())
+    if (!m_engine)
         return QString();
     QDir home(QDir::homePath());
     home.mkpath("voice");
@@ -251,7 +254,8 @@ QString ChatController::startVoice()
     QVariantMap args;
     args["chat"] = m_jid;
     args["path"] = m_voicePath;
-    m_engine->request("voice.start", args);
+    if (m_engine->connected())
+        m_engine->request("voice.start", args);
     keepAwake(true);
     return m_voicePath;
 }
@@ -275,11 +279,13 @@ void ChatController::cancelVoice()
 {
     if (m_voicePath.isEmpty())
         return;
-    if (m_engine) {
+    if (m_engine && m_engine->connected()) {
         QVariantMap args;
         args["path"] = m_voicePath;
         m_engine->request("voice.cancel", args);
     }
+    // voice.cancel deletes the WAV too, when the engine had the recording; one made while it was down has no such copy.
+    QFile::remove(m_voicePath);
     m_voicePath.clear();
     keepAwake(false);
 }

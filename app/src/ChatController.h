@@ -63,8 +63,9 @@ public:
     // Whether the list shows the newest message; QML reports it on scrolling.
     Q_INVOKABLE void setAtBottom(bool atBottom);
 
-    // Voice notes (step 4.4b). startVoice returns the absolute path of the WAV to record into, "" when
-    // the engine isn't connected; the page's recorder stops before sendVoice, so the tail is on disk.
+    // Voice notes (step 4.4b). startVoice returns the absolute path of the WAV to record into, "" when there is no
+    // engine link; with the engine down the note is recorded all the same, and sendVoice leaves it to the outbox. The
+    // page's recorder stops before sendVoice, so the tail is on disk.
     Q_INVOKABLE QString startVoice();
     Q_INVOKABLE void sendVoice();
     Q_INVOKABLE void cancelVoice();
