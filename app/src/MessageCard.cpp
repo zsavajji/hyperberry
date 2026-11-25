@@ -372,7 +372,7 @@ void MessageCard::restyle()
     Card::style(m_text, m_list, body);
     // 72 % of SmallText, about two thirds of the body text (the user, 2026-11-14: the time and ticks
     // smaller; it was 85 % since 2026-11-08). The ticks follow it, so they are sized again.
-    m_time->textStyle()->setFontSizeValue(qRound(72 * scale * Card::zoom()));
+    m_time->textStyle()->setFontSizeValue(qRound(72 * scale * (Card::zoom() > 1 ? 1.1f : 1))); // the text's 1.1 on the Passport (ChatPage.qml)
     m_tick = -1;
     if (m_sender)
         Card::style(m_sender, m_list, small);

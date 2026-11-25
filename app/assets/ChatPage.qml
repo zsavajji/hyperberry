@@ -760,8 +760,10 @@ Page {
                     }
                     // The cards reach the shared emoji style (main.qml) through ListItem.view.
                     property variant emojiStyle: nav.emojiStyle
-                    property int bodySize: nav.bodySize
-                    property int smallSize: nav.smallSize
+                    // The messages' text takes 1.1 on the Passport, not the zoom's 1.2: it was bigger than Tengram's, which has
+                    // none, and the user wanted it a tad smaller (2026-11-25). MessageCard's time follows.
+                    property int bodySize: Math.round(105 * settings.textScale * (zoom > 1 ? 1.1 : 1))
+                    property int smallSize: Math.round(85 * settings.textScale * (zoom > 1 ? 1.1 : 1))
                     property real textScale: settings.textScale
                     // A quote's background: white at 8 % lifts it off a dark card, black at 5 % off
                     // a bright one.
