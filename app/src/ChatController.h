@@ -54,8 +54,9 @@ public:
     // chat is a ChatListModel row (jid, kind). Once; later calls do nothing.
     Q_INVOKABLE void open(const QVariantMap &chat);
     Q_INVOKABLE void nearTop(const QVariantList &firstVisible);
-    // False when the engine isn't connected: nothing was sent, so QML keeps the text. mentions are
-    // the {jid, name} of the people the text's "@name"s name (msg.send's, docs/protocol.md).
+    // False for an edit while the engine isn't connected: nothing was sent, so QML keeps the text. A plain send
+    // while it is down goes to the outbox (EngineLink::request). mentions are the {jid, name} of the people the text's
+    // "@name"s name (msg.send's, docs/protocol.md).
     Q_INVOKABLE bool send(const QString &text, const QVariantList &mentions = QVariantList());
     // Called on every change of the composer's text; sends our typing on and off.
     Q_INVOKABLE void composing(const QString &text);

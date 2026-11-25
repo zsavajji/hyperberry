@@ -220,7 +220,8 @@ void ChatController::nearTop(const QVariantList &firstVisible)
 
 bool ChatController::send(const QString &text, const QVariantList &mentions)
 {
-    // An engine that is down (starting, restarting) takes a plain text later, as WhatsApp does; an edit needs it now.
+    // An engine that is down (starting, restarting) takes a plain text later, as WhatsApp does (EngineLink::request keeps it
+    // in the outbox); an edit needs it now.
     if (!m_engine || (!m_engine->connected() && !m_editId.isEmpty()))
         return false;
     setComposing(false);
@@ -233,10 +234,7 @@ bool ChatController::send(const QString &text, const QVariantList &mentions)
         args["id"] = m_editId;
     if (!mentions.isEmpty())
         args["mentions"] = mentions;
-    if (m_engine->connected())
-        m_engine->request(m_editId.isEmpty() ? "msg.send" : "msg.edit", args);
-    else
-        m_engine->queue("msg.send", args);
+    m_engine->request(m_editId.isEmpty() ? "msg.send" : "msg.edit", args);
     cancelReply();
     return true;
 }

@@ -1,19 +1,23 @@
 #ifndef ENGINELINK_H
 #define ENGINELINK_H
 
+#include "Outbox.h"
+
 #include <bb/system/InvokeManager>
 #include <QAbstractSocket>
 #include <QElapsedTimer>
 #include <QHash>
-#include <QList>
 #include <QObject>
-#include <QPair>
 #include <QSet>
 #include <QString>
 #include <QStringList>
 #include <QTcpSocket>
 #include <QTimer>
 #include <QVariantMap>
+
+// v with the doubles that are whole numbers made integers, in maps and lists too: what the engine's JSON needs of QML's
+// numbers. EngineLink::send does it to every request, and Outbox to the entries it writes.
+QVariant wholeNumbers(const QVariant &v);
 
 // The UI's side of the engine link, following docs/protocol.md. It reconnects and restarts the
 // engine by itself: it retries every 500 ms and sends START at most every 1 s.
@@ -67,17 +71,16 @@ public:
 
 
     // Sends a request (docs/protocol.md "Requests"); a failure shows in failure. Returns the
-    // request id, "" when the engine isn't connected.
+    // request id, "" when the engine isn't connected. A send that makes a message of ours (Outbox::takes) made while the engine
+    // is down goes to the outbox instead, to be sent once it is back: nothing fails, and the message's id comes back, which
+    // is also what replied() and failed() give for it then.
     Q_INVOKABLE QString request(const QString &cmd, const QVariantMap &args);
     // request() for something the user didn't ask for (a sticker fetched as its row is drawn): a
     // failure, and an engine that's down, are logged but never put in failure, so no page shows them.
     // Returns the request id, "" when the engine isn't connected (then nothing was sent).
     QString requestQuiet(const QString &cmd, const QVariantMap &args);
-    // Holds a request made while the engine is down (msg.send only: a text typed meanwhile) and sends
-    // it, in order, once the engine has answered hello. Nothing is put in failure.
-    // ponytail: the queue lives in memory, so a message typed while the engine is down is lost if the
-    // app is closed before it comes back; keep it in settings.ini if that matters.
-    void queue(const QString &cmd, const QVariantMap &args);
+    // The sends made while the engine is down, kept on disk; the models show them as messages still sending.
+    Outbox *outbox() { return &m_outbox; }
 
 signals:
     void connectedChanged();
@@ -145,7 +148,8 @@ private:
     QString m_helloId;
     QHash<QString, QString> m_pending;
     QSet<QString> m_quiet; // the ids in m_pending that requestQuiet sent
-    QList<QPair<QString, QVariantMap> > m_queued; // queue()'s, for the next hello
+    Outbox m_outbox;
+    QHash<QString, QString> m_sent; // the requests that sent an outbox entry at the hello, and their entries' ids
     bool m_connected;
     QVariantMap m_link;
     QString m_conn;
