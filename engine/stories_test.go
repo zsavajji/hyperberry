@@ -188,11 +188,11 @@ func TestStoryViews(t *testing.T) {
 	}
 }
 
-// A reply to a story: no session with the phone here, so the send fails, but our row is in the poster's chat
-// first, quoting the story, and the quote that goes out names the status and carries its thumbnail.
+// A reply to a story: no session with the phone here, so the send waits in the queue, but our row is in the poster's
+// chat first, quoting the story, and the quote that goes out names the status and carries its thumbnail.
 func TestStoryReply(t *testing.T) {
 	st, cli := historyFixture(t)
-	s := &Session{cli: cli, store: st}
+	s := &Session{cli: cli, store: st, log: waLog.Noop}
 	pia := types.NewJID("4915700000007", types.DefaultUserServer)
 	k := pia.String()
 	st.handle(cli, status(pia, "S1", time.Minute, &waE2E.Message{ImageMessage: &waE2E.ImageMessage{Caption: proto.String("sunset"),
@@ -210,13 +210,16 @@ func TestStoryReply(t *testing.T) {
 	bad(s.handleStoryReact, `{"poster":"`+k+`","id":"S1"}`, "bad_request")
 	bad(s.handleStoryReact, `{"poster":"`+k+`","id":"nope","emoji":"❤️"}`, "not_found")
 
-	if _, err := s.handleStoryReply(json.RawMessage(`{"poster":"` + k + `","id":"S1","text":"nice one"}`)); err == nil {
-		t.Fatal("a send with no connection went through")
+	if _, err := s.handleStoryReply(json.RawMessage(`{"poster":"` + k + `","id":"S1","text":"nice one"}`)); err != nil {
+		t.Fatal("a send with no connection is refused: ", err)
+	}
+	if n := len(s.queue.items); n != 1 {
+		t.Errorf("%d sends queued, want 1", n)
 	}
 	var text, quote, preview string
 	var state int
 	st.db.QueryRow("SELECT text, quote_id, quote_preview, state FROM messages WHERE chat = ? AND out = 1", k).Scan(&text, &quote, &preview, &state)
-	if text != "nice one" || quote != "S1" || preview != "Photo sunset" || state != stateFailed {
+	if text != "nice one" || quote != "S1" || preview != "Photo sunset" || state != stateSending {
 		t.Errorf("our row: %q quoting %q (%q), state %d", text, quote, preview, state)
 	}
 
@@ -229,8 +232,8 @@ func TestStoryReply(t *testing.T) {
 	}
 }
 
-// Posting: what the request refuses, and that a post which can't be sent (no connection here) leaves nothing: the
-// row and the copy of the file go again, and a storyop event is the way the UI hears of it.
+// Posting: what the request refuses, and that a post which can't be sent for want of a connection (none here) waits in
+// the queue, its row and its copy of the file kept, and says nothing yet: the storyop event comes with the outcome.
 func TestStoryPost(t *testing.T) {
 	st, cli := historyFixture(t)
 	s := &Session{cli: cli, store: st, srv: st.srv, log: waLog.Noop}
@@ -263,10 +266,13 @@ func TestStoryPost(t *testing.T) {
 	}
 	id := res.(map[string]string)["id"]
 	copyPath := filepath.Join(st.srv.dir, "stories", id+".jpg")
-	// ...and out again once the send has failed, copy and all.
-	eventually(t, st, 0, "SELECT count(*) FROM stories WHERE id = ?", id)
-	if _, err := os.Stat(copyPath); !os.IsNotExist(err) {
-		t.Errorf("the copy of a story that wasn't posted is still there: %v", err)
+	// ...and kept, copy and all, while the send waits for the connection.
+	waitQueued(t, s, 1)
+	if n("id = '"+id+"'") != 1 {
+		t.Error("a post waiting for the connection took the row out")
+	}
+	if _, err := os.Stat(copyPath); err != nil {
+		t.Errorf("the copy of a story waiting to be posted is gone: %v", err)
 	}
 
 	// A text story the same way.
@@ -274,7 +280,10 @@ func TestStoryPost(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	eventually(t, st, 0, "SELECT count(*) FROM stories WHERE id = ?", res.(map[string]string)["id"])
+	waitQueued(t, s, 2)
+	if n("id = ?", res.(map[string]string)["id"]) != 1 {
+		t.Error("a text story waiting for the connection is gone")
+	}
 
 	// Delete: not ours, or not there, is refused; with no connection the revoke fails and the row stays.
 	if _, err := s.handleStoryDelete(json.RawMessage(`{"id":"nope"}`)); code(err) != "not_found" {

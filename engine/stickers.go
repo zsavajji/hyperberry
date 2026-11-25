@@ -329,7 +329,7 @@ func (s *Session) handleStickersFile(req json.RawMessage) (any, error) {
 
 // handleStickerSend is sticker.send: the row is in as sending, then the message goes, as handleForward sends one.
 func (s *Session) handleStickerSend(req json.RawMessage) (any, error) {
-	var r struct{ Chat, Hash, Quote string }
+	var r struct{ Chat, Hash, Quote, ID string }
 	if err := json.Unmarshal(req, &r); err != nil || r.Chat == "" || r.Hash == "" {
 		return nil, &Error{"bad_request", "sticker.send needs chat and hash"}
 	}
@@ -352,18 +352,24 @@ func (s *Session) handleStickerSend(req json.RawMessage) (any, error) {
 	if !src.usable() && src.path == "" { // the server takes a sticker with no upload, and nobody gets anything
 		return nil, &Error{"bad_request", "this sticker's file isn't on WhatsApp's servers"}
 	}
-	id := cli.GenerateMessageID()
+	id, dup, err := s.outID(cli, r.Chat, r.ID)
+	if err != nil {
+		return nil, err
+	}
+	if dup {
+		return map[string]string{"id": id}, nil
+	}
 	_, row := stickerOut(src, r.Hash, r.Chat, id, time.Now().Unix())
 	q, created := s.store.queueRow(jid, r.Chat, r.Quote, row)
 	s.nameNew(cli, jid, r.Chat, created)
-	go s.sendSticker(cli, jid, r.Chat, id, r.Hash, src, q)
+	go s.sendOut(cli, r.Chat, id, func(c *whatsmeow.Client) error { return s.sendSticker(c, jid, r.Chat, id, r.Hash, &src, q) })
 	return map[string]string{"id": id}, nil
 }
 
-// sendSticker sends a queued sticker row. An upload that expired is made again from the file here, as WhatsApp's own app
-// does: the same file (its SHA-256, its name, is unchanged) under a new key and path, which the row and the favourite keep
-// so the next send reuses it.
-func (s *Session) sendSticker(cli *whatsmeow.Client, jid types.JID, chat, id, hash string, src stickerSrc, q msgRow) {
+// sendSticker is one attempt at sending a queued sticker row. An upload that expired is made again from the file here, as
+// WhatsApp's own app does: the same file (its SHA-256, its name, is unchanged) under a new key and path, which the row and
+// the favourite keep so the next send reuses it; src takes it too, so a retry of this attempt doesn't upload again.
+func (s *Session) sendSticker(cli *whatsmeow.Client, jid types.JID, chat, id, hash string, src *stickerSrc, q msgRow) error {
 	ctx, cancel := context.WithTimeout(context.Background(), mediaTimeout)
 	defer cancel()
 	var err error
@@ -379,24 +385,24 @@ func (s *Session) sendSticker(cli *whatsmeow.Client, jid types.JID, chat, id, ha
 			// The favourite is the account's, in app state: written again with the new upload, the phone, any other linked
 			// device and a later link of this one get a live one too (the phone never refreshes it: it keeps the file).
 			sum, _ := base64.StdEncoding.DecodeString(hash)
-			if p, perr := appstate.BuildFavoriteSticker(sum, stickerAction(src, true)); src.fave && perr == nil {
+			if p, perr := appstate.BuildFavoriteSticker(sum, stickerAction(*src, true)); src.fave && perr == nil {
 				go s.sendPatch(cli, "sticker.fave", p) // not in the way of the message
 			}
 		}
 	}
 	if err == nil {
-		msg, _ := stickerOut(src, hash, chat, id, 0)
+		msg, _ := stickerOut(*src, hash, chat, id, 0)
 		if q.ID != "" {
 			flatten(msg).GetStickerMessage().ContextInfo = quoteInfo(cli, chat, q)
 		}
 		var resp whatsmeow.SendResponse
 		if resp, err = cli.SendMessage(ctx, jid, msg, whatsmeow.SendRequestExtra{ID: id}); err == nil {
 			s.store.ops <- func(t *storeTx) { t.sentAs(chat, id, resp.Timestamp.Unix(), stateSent) }
-			return
+			return nil
 		}
 	}
 	s.log.Warnf("sticker %s: %v", id, err)
-	s.store.ops <- func(t *storeTx) { t.sentAs(chat, id, 0, stateFailed) }
+	return err
 }
 
 // handleStickerFave is sticker.fave: a sticker by its hash, or by the message that carries it, becomes a favourite or

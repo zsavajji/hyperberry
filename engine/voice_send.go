@@ -15,7 +15,7 @@ func registerVoiceSend(srv *Server, s *Session) {
 	srv.Handle("voice.cancel", s.handleVoiceCancel)
 }
 
-type voicePathReq struct{ Chat, Path, Quote string }
+type voicePathReq struct{ Chat, Path, Quote, ID string } // ID: the one the caller chose for the message, voice.send only
 
 func parseVoicePath(req json.RawMessage, cmd string) (voicePathReq, error) {
 	var r voicePathReq
@@ -71,18 +71,28 @@ func (s *Session) handleVoiceSend(req json.RawMessage) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	id := cli.GenerateMessageID()
-	n, err := s.store.queueVoice(&s.rec, s.srv.dir, jid, r.Chat, r.Path, r.Quote, id)
+	id, dup, err := s.outID(cli, r.Chat, r.ID)
 	if err != nil {
 		return nil, err
 	}
-	go s.uploadVoice(cli, jid, r.Chat, id, n)
+	if dup { // its WAV went with the first one
+		return map[string]string{"id": id}, nil
+	}
+	n, err := s.store.queueVoice(&s.rec, s.srv.dir, jid, r.Chat, r.Path, r.Quote, id)
+	if err != nil {
+		s.sending.Delete(id)
+		return nil, err
+	}
+	go func() {
+		s.stopRecording(r.Chat)
+		s.nameNew(cli, jid, r.Chat, n.created)
+		s.sendOut(cli, r.Chat, id, func(c *whatsmeow.Client) error { return s.uploadVoice(c, jid, r.Chat, id, n) })
+	}()
 	return map[string]string{"id": id}, nil
 }
 
-func (s *Session) uploadVoice(cli *whatsmeow.Client, jid types.JID, chat, id string, n *voiceNote) {
-	s.stopRecording(chat)
-	s.nameNew(cli, jid, chat, n.created)
+// uploadVoice is one attempt at a voice note's send: the upload, then the message, recorded as sent.
+func (s *Session) uploadVoice(cli *whatsmeow.Client, jid types.JID, chat, id string, n *voiceNote) error {
 	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
 	defer cancel()
 	up, err := cli.Upload(ctx, n.ogg, whatsmeow.MediaAudio)
@@ -102,11 +112,11 @@ func (s *Session) uploadVoice(cli *whatsmeow.Client, jid types.JID, chat, id str
 				t.sentAs(chat, id, resp.Timestamp.Unix(), stateSent)
 				t.exec("UPDATE messages SET media = ? WHERE chat = ? AND id = ?", string(info), chat, id)
 			}
-			return
+			return nil
 		}
 	}
 	s.log.Warnf("voice note %s: %v", id, err)
-	s.store.ops <- func(t *storeTx) { t.sentAs(chat, id, 0, stateFailed) }
+	return err
 }
 
 func (s *Session) handleVoiceCancel(req json.RawMessage) (any, error) {

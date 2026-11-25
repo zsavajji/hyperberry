@@ -33,6 +33,7 @@ func (s *Session) linked(chat string) (*whatsmeow.Client, types.JID, error) {
 func registerSend(srv *Server, s *Session) {
 	srv.Handle("msg.send", s.handleSend)
 	srv.Handle("msg.delete", s.handleDelete)
+	srv.Handle("msg.cancel", s.handleCancel)
 	srv.Handle("msg.edit", s.handleEdit)
 	srv.Handle("msg.forward", s.handleForward)
 	srv.Handle("msg.resend", s.handleResend)
@@ -50,8 +51,8 @@ func registerSend(srv *Server, s *Session) {
 
 func (s *Session) handleSend(req json.RawMessage) (any, error) {
 	var r struct {
-		Chat, Text, Quote string
-		Mentions          []mention
+		Chat, Text, Quote, ID string
+		Mentions              []mention
 	}
 	if err := json.Unmarshal(req, &r); err != nil || strings.TrimSpace(r.Text) == "" {
 		return nil, &Error{"bad_request", "msg.send needs chat and non-empty text"}
@@ -60,9 +61,13 @@ func (s *Session) handleSend(req json.RawMessage) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	id, now := cli.GenerateMessageID(), time.Now().Unix()
-	s.sending.Store(id, true) // before the row exists, so sendQueued never takes it while this sends it
-	defer s.sending.Delete(id)
+	id, dup, err := s.outID(cli, r.Chat, r.ID)
+	if err != nil {
+		return nil, err
+	}
+	if dup {
+		return map[string]string{"id": id}, nil
+	}
 
 	// Our row keeps the text as typed ("@Anna Lee") and the mentions, so its bubble links them as a
 	// received one does; the wire message has "@<number>".
@@ -70,27 +75,31 @@ func (s *Session) handleSend(req json.RawMessage) (any, error) {
 	if _, jids := mentionWire(r.Text, r.Mentions); len(jids) > 0 {
 		extra = withMentions("", r.Mentions)
 	}
-	q, created := s.store.queueOutgoing(jid, r.Chat, id, r.Text, r.Quote, extra, now)
+	q, created := s.store.queueOutgoing(jid, r.Chat, id, r.Text, r.Quote, extra, time.Now().Unix())
 	s.nameNew(cli, jid, r.Chat, created)
-	// Down: the row stays sending and sendQueued sends it when the connection is back. (A race of
-	// microseconds, a connect between this check and the return, leaves it for the next connect.)
-	if !cli.IsConnected() {
-		return map[string]string{"id": id, "queued": "true"}, nil
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
-	defer cancel()
-	resp, err := cli.SendMessage(ctx, jid, textMessage(cli, r.Chat, r.Text, q, r.Mentions), whatsmeow.SendRequestExtra{ID: id})
+	// Down: the row stays sending and the queue sends it when the connection is back (sendqueue.go).
+	queued, err := s.sendOut(cli, r.Chat, id, func(c *whatsmeow.Client) error {
+		return s.sendMsg(c, jid, r.Chat, id, textMessage(c, r.Chat, r.Text, q, r.Mentions))
+	})
 	if err != nil {
-		if !cli.IsConnected() { // it dropped during the send: queued too
-			return map[string]string{"id": id, "queued": "true"}, nil
-		}
-		s.store.ops <- func(t *storeTx) { t.sentAs(r.Chat, id, 0, stateFailed) }
 		return nil, err
 	}
-	// The server's clock, not the phone's: it drifts.
-	s.store.ops <- func(t *storeTx) { t.sentAs(r.Chat, id, resp.Timestamp.Unix(), stateSent) }
+	if queued {
+		return map[string]string{"id": id, "queued": "true"}, nil
+	}
 	return map[string]string{"id": id}, nil
+}
+
+// sendMsg sends msg as our row id of chat and records it as sent, with the server's time, not the phone's: it drifts.
+func (s *Session) sendMsg(cli *whatsmeow.Client, jid types.JID, chat, id string, msg *waE2E.Message) error {
+	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
+	defer cancel()
+	resp, err := cli.SendMessage(ctx, jid, msg, whatsmeow.SendRequestExtra{ID: id})
+	if err != nil {
+		return err
+	}
+	s.store.ops <- func(t *storeTx) { t.sentAs(chat, id, resp.Timestamp.Unix(), stateSent) }
+	return nil
 }
 
 // textMessage is the wire message of one of our texts: q is the message it quotes (empty for none).
@@ -107,16 +116,19 @@ func textMessage(cli *whatsmeow.Client, chat, text string, q msgRow, ms []mentio
 	return &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: &wire, ContextInfo: ci}}
 }
 
-// sendQueued sends the texts msg.send left sending while the connection was down, oldest first,
-// each with its own id, so WhatsApp drops a copy of one that had in fact gone. It stops, leaving
-// the rest sending, when the connection is gone again.
-// ponytail: texts only; a photo, voice note, sticker, poll or forward sent while down still fails.
+// sendQueued sends the texts an earlier run left sending, oldest first, each with its own id, so WhatsApp drops a
+// copy of one that had in fact gone. It stops, leaving the rest sending, when the connection is gone again. The sends of
+// this run wait in s.queue instead (sendqueue.go), and are in s.sending, which this skips.
 func (s *Session) sendQueued(cli *whatsmeow.Client) {
 	for _, row := range s.store.queuedTexts() {
 		if !cli.IsConnected() {
 			return
 		}
 		if _, busy := s.sending.LoadOrStore(row.ID, true); busy {
+			continue
+		}
+		if m, ok := s.store.row(row.Chat, row.ID); !ok || m.State != stateSending { // msg.cancel took it since the read
+			s.sending.Delete(row.ID)
 			continue
 		}
 		result := s.sendQueuedRow(cli, row)
@@ -151,8 +163,8 @@ func (s *Session) sendQueuedRow(cli *whatsmeow.Client, row msgRow) string {
 	return "sent"
 }
 
-// queuedTexts reads our texts still sending, oldest first: the ones msg.send left while the link
-// was down. Only its own rows: extra is "" or the mentions alone, so a forward (extra.forwarded)
+// queuedTexts reads our texts still sending, oldest first: the ones an earlier run left (this run's
+// are in s.queue). Only its own rows: extra is "" or the mentions alone, so a forward (extra.forwarded)
 // or a story reply (extra.story) that is sending is not taken for one.
 func (st *Store) queuedTexts() []msgRow {
 	got := make(chan []msgRow, 1)

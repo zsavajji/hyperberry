@@ -413,7 +413,10 @@ func quotedStory(kind int, text string, thumb []byte) *waE2E.Message {
 // message of ours, with the story's one-line preview as its quote.
 // (verify on the real link): that the poster's phone shows it as a reply to their status.
 func (s *Session) handleStoryReply(req json.RawMessage) (any, error) {
-	var r struct{ Poster, ID, Text string }
+	var r struct {
+		Poster, ID, Text string
+		NewID            string `json:"newId"` // the id the caller chose for the reply, if it did (outID)
+	}
 	if err := json.Unmarshal(req, &r); err != nil || r.Poster == "" || r.ID == "" || strings.TrimSpace(r.Text) == "" {
 		return nil, &Error{"bad_request", "story.reply needs poster, id and non-empty text"}
 	}
@@ -425,22 +428,23 @@ func (s *Session) handleStoryReply(req json.RawMessage) (any, error) {
 	if !ok {
 		return nil, &Error{"not_found", "no such story"}
 	}
-	id, now := cli.GenerateMessageID(), time.Now().Unix()
-	_, created := s.store.queueRow(jid, r.Poster, "", msgRow{Chat: r.Poster, ID: id, TS: now, Out: true, State: stateSending,
+	id, dup, err := s.outID(cli, r.Poster, r.NewID)
+	if err != nil {
+		return nil, err
+	}
+	if dup {
+		return map[string]string{"id": id}, nil
+	}
+	_, created := s.store.queueRow(jid, r.Poster, "", msgRow{Chat: r.Poster, ID: id, TS: time.Now().Unix(), Out: true, State: stateSending,
 		Kind: msgText, Text: r.Text, QuoteID: r.ID, QuotePreview: clip(preview(kind, text, 0), 80),
 		Extra: withStoryQuote("", r.Poster, thumb)})
 	s.nameNew(cli, jid, r.Poster, created)
 	msg := &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: &r.Text, ContextInfo: &waE2E.ContextInfo{
 		StanzaID: &r.ID, Participant: &r.Poster, RemoteJID: proto.String(types.StatusBroadcastJID.String()),
 		QuotedMessage: quotedStory(kind, text, thumb)}}}
-	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
-	defer cancel()
-	resp, err := cli.SendMessage(ctx, jid, msg, whatsmeow.SendRequestExtra{ID: id})
-	if err != nil {
-		s.store.ops <- func(t *storeTx) { t.sentAs(r.Poster, id, 0, stateFailed) }
+	if _, err := s.sendOut(cli, r.Poster, id, func(c *whatsmeow.Client) error { return s.sendMsg(c, jid, r.Poster, id, msg) }); err != nil {
 		return nil, err
 	}
-	s.store.ops <- func(t *storeTx) { t.sentAs(r.Poster, id, resp.Timestamp.Unix(), stateSent) }
 	return map[string]string{"id": id}, nil
 }
 
@@ -620,8 +624,13 @@ func (s *Session) handleStoryPost(req json.RawMessage) (any, error) {
 	return map[string]string{"id": id}, nil
 }
 
-// sendStory uploads a photo or video story and sends the story to status@broadcast, then says how it went.
+// sendStory uploads a photo or video story and sends the story to status@broadcast, then says how it went. With the
+// connection down, before or after the try, it waits in the queue (sendqueue.go) and says nothing yet.
 func (s *Session) sendStory(cli *whatsmeow.Client, o *mediaOut, row msgRow, r storyPostReq, bg, fg uint32, recips []types.JID) {
+	again := func(c *whatsmeow.Client) { s.sendStory(c, o, row, r, bg, fg, recips) }
+	if s.holdIfDown(cli, row.ID, again) {
+		return
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), mediaTimeout)
 	defer cancel()
 	var msg *waE2E.Message
@@ -640,6 +649,10 @@ func (s *Session) sendStory(cli *whatsmeow.Client, o *mediaOut, row msgRow, r st
 	if err == nil {
 		_, err = cli.SendMessage(ctx, types.StatusBroadcastJID, msg, whatsmeow.SendRequestExtra{ID: row.ID, StatusRecipients: recips})
 	}
+	if err != nil && s.holdIfDown(cli, row.ID, again) {
+		return
+	}
+	s.sending.Delete(row.ID)
 	if err != nil {
 		s.log.Warnf("story %s: post: %v", row.ID, err)
 		s.store.ops <- func(t *storeTx) { t.deleteStory(ownStory, row.ID) }

@@ -2,7 +2,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"slices"
 	"strings"
@@ -22,6 +21,7 @@ const (
 
 type pollReq struct {
 	Chat, Question string
+	ID             string // the id the caller chose for the message, if it did (outID)
 	Options        []string
 	Multiple       bool
 }
@@ -79,20 +79,19 @@ func (s *Session) handlePollCreate(req json.RawMessage) (any, error) {
 	if r.Multiple {
 		max = 0 // any number, as BuildPollCreation and the rows have it
 	}
-	id, now := cli.GenerateMessageID(), time.Now().Unix()
-	_, created := s.store.queueRow(jid, r.Chat, "", msgRow{Chat: r.Chat, ID: id, TS: now, Out: true, State: stateSending, Kind: msgPoll, Text: r.Question, Extra: pollExtra(r.Options, max)})
+	id, dup, err := s.outID(cli, r.Chat, r.ID)
+	if err != nil {
+		return nil, err
+	}
+	if dup {
+		return map[string]string{"id": id}, nil
+	}
+	_, created := s.store.queueRow(jid, r.Chat, "", msgRow{Chat: r.Chat, ID: id, TS: time.Now().Unix(), Out: true, State: stateSending, Kind: msgPoll, Text: r.Question, Extra: pollExtra(r.Options, max)})
 	s.nameNew(cli, jid, r.Chat, created)
 	// hypermeow stores the poll's secret as it sends, which is what lets us vote on it.
 	msg := cli.BuildPollCreation(r.Question, r.Options, max)
-
-	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
-	defer cancel()
-	resp, err := cli.SendMessage(ctx, jid, msg, whatsmeow.SendRequestExtra{ID: id})
-	if err != nil {
-		s.store.ops <- func(t *storeTx) { t.sentAs(r.Chat, id, 0, stateFailed) }
+	if _, err := s.sendOut(cli, r.Chat, id, func(c *whatsmeow.Client) error { return s.sendMsg(c, jid, r.Chat, id, msg) }); err != nil {
 		return nil, err
 	}
-	// The server's clock, not the phone's: it drifts.
-	s.store.ops <- func(t *storeTx) { t.sentAs(r.Chat, id, resp.Timestamp.Unix(), stateSent) }
 	return map[string]string{"id": id}, nil
 }

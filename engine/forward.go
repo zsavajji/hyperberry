@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"strconv"
 	"time"
@@ -75,7 +74,11 @@ func forwardContent(m msgRow) (*waE2E.Message, int, error) {
 	return msg, score, nil
 }
 
-type forwardReq struct{ Chat, ID, To string }
+// forwardReq is msg.forward: ID is the message to forward, NewID the id the caller chose for the copy, if it did (outID).
+type forwardReq struct {
+	Chat, ID, To string
+	NewID        string `json:"newId"`
+}
 
 func parseForward(req json.RawMessage) (forwardReq, error) {
 	var r forwardReq
@@ -113,20 +116,22 @@ func (s *Session) handleForward(req json.RawMessage) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	id := cli.GenerateMessageID()
+	id, dup, err := s.outID(cli, r.To, r.NewID)
+	if err != nil {
+		return nil, err
+	}
+	if dup {
+		return map[string]string{"id": id}, nil
+	}
 	msg, row, err := s.store.forwardCopy(r, id, time.Now().Unix())
 	if err != nil {
+		s.sending.Delete(id)
 		return nil, err
 	}
 	_, created := s.store.queueRow(jid, r.To, "", row)
 	s.nameNew(cli, jid, r.To, created)
-	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
-	defer cancel()
-	resp, err := cli.SendMessage(ctx, jid, msg, whatsmeow.SendRequestExtra{ID: id})
-	if err != nil {
-		s.store.ops <- func(t *storeTx) { t.sentAs(r.To, id, 0, stateFailed) }
+	if _, err := s.sendOut(cli, r.To, id, func(c *whatsmeow.Client) error { return s.sendMsg(c, jid, r.To, id, msg) }); err != nil {
 		return nil, err
 	}
-	s.store.ops <- func(t *storeTx) { t.sentAs(r.To, id, resp.Timestamp.Unix(), stateSent) }
 	return map[string]string{"id": id}, nil
 }

@@ -70,6 +70,7 @@ func sendKind(path string) (kind int, mimeType string) {
 // Caption goes with a photo or a video only; the UI sends the other kinds' as a text message.
 type mediaSendReq struct {
 	Chat, Path, Quote, Caption string
+	ID                         string // the id the caller chose for the message, if it did (outID)
 	Thumb                      []byte
 	File                       bool // as a document whatever the extension: the staged bar's As file on a JPEG
 	Width, Height              int
@@ -179,8 +180,18 @@ func (s *Session) handleMediaSend(req json.RawMessage) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	id := cli.GenerateMessageID()
-	go s.uploadMedia(cli, jid, r.Path, s.store.queueMedia(jid, r, id))
+	id, dup, err := s.outID(cli, r.Chat, r.ID)
+	if err != nil {
+		return nil, err
+	}
+	if dup {
+		return map[string]string{"id": id}, nil
+	}
+	o := s.store.queueMedia(jid, r, id)
+	go func() {
+		s.nameNew(cli, jid, r.Chat, o.created)
+		s.sendOut(cli, r.Chat, id, func(c *whatsmeow.Client) error { return s.uploadMedia(c, jid, r.Path, o) })
+	}()
 	return map[string]string{"id": id}, nil
 }
 
@@ -215,9 +226,9 @@ func (s *Session) uploadFile(ctx context.Context, cli *whatsmeow.Client, path st
 	return cli.UploadReader(ctx, f, tmp, typ)
 }
 
-func (s *Session) uploadMedia(cli *whatsmeow.Client, jid types.JID, path string, o *mediaOut) {
+// uploadMedia is one attempt at a media send: the upload, then the message, recorded as sent; sendOut handles a failure.
+func (s *Session) uploadMedia(cli *whatsmeow.Client, jid types.JID, path string, o *mediaOut) error {
 	chat, id := o.row.Chat, o.row.ID
-	s.nameNew(cli, jid, chat, o.created)
 	ctx, cancel := context.WithTimeout(context.Background(), mediaTimeout)
 	defer cancel()
 	t0 := time.Now()
@@ -236,9 +247,9 @@ func (s *Session) uploadMedia(cli *whatsmeow.Client, jid types.JID, path string,
 				t.sentAs(chat, id, resp.Timestamp.Unix(), stateSent)
 				t.exec("UPDATE messages SET media = ? WHERE chat = ? AND id = ?", string(info), chat, id)
 			}
-			return
+			return nil
 		}
 	}
 	s.log.Warnf("media %s: %v", id, err)
-	s.store.ops <- func(t *storeTx) { t.sentAs(chat, id, 0, stateFailed) }
+	return err
 }
