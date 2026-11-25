@@ -370,13 +370,18 @@ void ChatController::commitDelete()
         return;
     if (m_engine) {
         QVariantList ids;
-        foreach (const QString &id, m_pending)
-            ids << id;
+        foreach (const QString &id, m_pending) {
+            if (m_engine->outbox()->has(id))
+                m_engine->outbox()->remove(id, true); // never sent, and not to be: nothing to delete
+            else
+                ids << id;
+        }
         QVariantMap args;
         args["chat"] = m_jid;
         args["ids"] = ids;
         args["everyone"] = false;
-        m_engine->request("msg.delete", args);
+        if (!ids.isEmpty())
+            m_engine->request("msg.delete", args);
     }
     m_pending.clear();
 }
