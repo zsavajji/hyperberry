@@ -128,6 +128,40 @@ func TestVoiceFallbackWholeFile(t *testing.T) {
 	}
 }
 
+// voice.send of a WAV no voice.start was made for, as when the UI recorded while the engine was down: the complete file is
+// read whole, and the OGG, the length and the waveform are the same as from one followed as it grew.
+func TestVoiceSendWithoutStart(t *testing.T) {
+	s, st, dir := voiceSim(t)
+	chat, path := simChats[2].jid, filepath.Join(dir, "rec-down.wav")
+	wav, mono := stereoWAV(3)
+	os.WriteFile(path, wav, 0o644)
+	r, err := call(s.handleVoiceSend, `{"chat":%q,"path":%q}`, chat, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := r.(map[string]string)["id"]
+	want, _ := encodeOpus(mono, 48000)
+	if got, _ := os.ReadFile(oggPath(dir, id)); !bytes.Equal(got, want) {
+		t.Error("the OGG differs from encodeOpus on the whole")
+	}
+	if _, err := os.Stat(path); err == nil {
+		t.Error("the WAV is still here")
+	}
+	if row, ok := st.row(chat, id); !ok || row.Kind != msgVoice || row.Duration != 3 || !bytes.Equal(row.Waveform, waveform(mono)) {
+		t.Errorf("row: %+v", row)
+	}
+	// With another file's recording running, a complete WAV is still its own, and the running one is left be.
+	other, mine := filepath.Join(dir, "rec-run.wav"), filepath.Join(dir, "rec-down2.wav")
+	call(s.handleVoiceStart, `{"chat":%q,"path":%q}`, chat, other)
+	os.WriteFile(mine, wav, 0o644)
+	if _, err := call(s.handleVoiceSend, `{"chat":%q,"path":%q}`, chat, mine); err != nil {
+		t.Fatal(err)
+	}
+	if cur := s.rec.cur; cur == nil || cur.path != other {
+		t.Errorf("the running recording was taken: %+v", cur)
+	}
+}
+
 func TestVoiceSendIsQuick(t *testing.T) {
 	s, _, dir := voiceSim(t)
 	chat, path := simChats[2].jid, filepath.Join(dir, "rec-3.wav")

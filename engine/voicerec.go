@@ -34,6 +34,10 @@ type recording struct {
 	once sync.Once
 }
 
+func newRecording(chat, path string, log waLog.Logger) *recording {
+	return &recording{chat: chat, path: path, log: log, poll: voicePoll, stop: make(chan struct{}), done: make(chan struct{})}
+}
+
 func (r *recording) run() {
 	defer close(r.done)
 	t := time.NewTicker(r.poll)
@@ -155,7 +159,7 @@ func (v *voiceRec) start(dir, chat, path string, log waLog.Logger) (string, erro
 	if err != nil {
 		return "", err
 	}
-	r := &recording{chat: chat, path: path, log: log, poll: voicePoll, stop: make(chan struct{}), done: make(chan struct{})}
+	r := newRecording(chat, path, log)
 	go r.run()
 	v.mu.Lock()
 	old := v.cur
@@ -171,19 +175,26 @@ func (v *voiceRec) start(dir, chat, path string, log waLog.Logger) (string, erro
 	return old.chat, nil
 }
 
-// take removes the recording of path from the registry, for voice.send.
-func (v *voiceRec) take(dir, path string) (*recording, error) {
+// take removes the recording of path from the registry, for voice.send. With none running for it, a WAV that is there
+// is a complete one, recorded by the UI while the engine was down: a recording that isn't running is made for it, which
+// finish reads whole, so the same OGG and waveform come out as from one followed all along.
+// ponytail: the file is read at once, tens of MB for many minutes of audio; read it in chunks if that bites.
+func (v *voiceRec) take(dir, path string, log waLog.Logger) (*recording, error) {
 	path, err := wavPath(dir, path)
 	if err != nil {
 		return nil, err
 	}
 	v.mu.Lock()
 	defer v.mu.Unlock()
-	r := v.cur
-	if r == nil || r.path != path {
+	if r := v.cur; r != nil && r.path == path {
+		v.cur = nil
+		return r, nil
+	}
+	if fi, err := os.Stat(path); err != nil || !fi.Mode().IsRegular() {
 		return nil, &Error{"bad_request", "no recording for " + path}
 	}
-	v.cur = nil
+	r := newRecording("", path, log)
+	close(r.done) // nothing polls it
 	return r, nil
 }
 
@@ -221,7 +232,7 @@ type voiceNote struct {
 // queueVoice ends the recording of path and puts our voice note in as sending: its OGG on
 // disk, the row with the length and waveform, the chat's preview. The WAV goes.
 func (st *Store) queueVoice(v *voiceRec, dir string, jid types.JID, chat, path, quote, id string) (*voiceNote, error) {
-	rec, err := v.take(dir, path)
+	rec, err := v.take(dir, path, st.log)
 	if err != nil {
 		return nil, err
 	}
