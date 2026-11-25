@@ -236,13 +236,13 @@ void ChatRow::show(const QVariantMap &chat)
         m_col->setLeftMargin(Card::du(m_ui, side));
         m_row->setMinHeight(Card::du(m_ui, (compact ? 9.4 : 11.4) * scale));
         m_tile->setPreferredSize(Card::du(m_ui, tile * scale), Card::du(m_ui, tile * scale));
-        Card::style(m_initials, m_list, qRound(118 * scale * Card::zoom()));
+        Card::style(m_initials, m_list, qRound(118 * scale)); // no zoom either, as Tengram's
         m_initials->textStyle()->setColor(Color::White);
-        // Compact's text takes no Passport zoom: in its short row it was too big there (the user, 2026-11-25).
-        const float tz = compact ? 1 : Card::zoom();
-        Card::style(m_name, m_list, qRound(115 * scale * tz));
-        m_time->textStyle()->setFontSizeValue(qRound(100 * scale * tz));
-        Card::style(m_preview, m_list, qRound(90 * scale * tz));
+        // The text takes no Passport zoom, as Tengram's: with it, it was bigger than Tengram's there (the user,
+        // 2026-11-25). The row and the tile keep it, which makes them Tengram's sizes.
+        Card::style(m_name, m_list, qRound(115 * scale));
+        m_time->textStyle()->setFontSizeValue(qRound(100 * scale));
+        Card::style(m_preview, m_list, qRound(90 * scale));
     }
 
     paintBackground();
