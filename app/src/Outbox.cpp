@@ -188,7 +188,8 @@ void Outbox::post(const QVariantMap &entry)
     const QString id = entry["id"].toString();
     if (!m_engine->connected() || m_copying.contains(id))
         return;
-    m_sent.insert(m_engine->request(entry["cmd"].toString(), entry["args"].toMap()), id);
+    // Quiet: a link that drops under it is no failure of the send (it goes at the next hello); onFailed shows the real ones.
+    m_sent.insert(m_engine->requestQuiet(entry["cmd"].toString(), entry["args"].toMap()), id);
 }
 
 // The engine is up: what waited goes now, oldest first, after the hello. An entry stays until the engine answers: the app
@@ -210,11 +211,13 @@ void Outbox::onReplied(const QString &req, const QString &cmd, const QVariant &r
     emit replied(id, cmd, result);
 }
 
-void Outbox::onFailed(const QString &req, const QString &, const QString &code)
+void Outbox::onFailed(const QString &req, const QString &cmd, const QString &code)
 {
     const QString id = m_sent.take(req);
-    if (!id.isEmpty() && code != "no_engine")
-        remove(id, false);
+    if (id.isEmpty() || code == "no_engine")
+        return;
+    remove(id, false);
+    m_engine->fail(cmd, code, code); // the engine's refusal: the page's toast for cmd shows it, as for a request
 }
 
 // The link ended (a logout, the device removed): what waits belonged to that account (the user, 2026-11-26).

@@ -75,6 +75,9 @@ public:
     // failure, and an engine that's down, are logged but never put in failure, so no page shows them.
     // Returns the request id, "" when the engine isn't connected (then nothing was sent).
     QString requestQuiet(const QString &cmd, const QVariantMap &args);
+    // Shows a failure of cmd as the one the UI reports (failure): what request() does for an error, for a caller that sent
+    // quietly and decides itself which failures are the user's to see.
+    void fail(const QString &cmd, const QString &code, const QString &message);
 
 signals:
     void connectedChanged();
@@ -128,7 +131,6 @@ private:
     void setConn(const QString &conn);
     void setFullscreen(bool on);
     void sendUiState();
-    void fail(const QString &cmd, const QString &code, const QString &message);
 
     QTcpSocket m_socket;
     QTimer m_retry;
