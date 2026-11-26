@@ -398,3 +398,84 @@ func TestReceiptMovesUnsentRows(t *testing.T) {
 		}
 	}
 }
+
+// settle waits until what the store was given has committed and its after-commit work (file removals) has run.
+func settle(st *Store) {
+	done := make(chan struct{})
+	st.afterCommit(func() { close(done) })
+	<-done
+}
+
+// A send made with an original keeps it in the row's extra, next to what else is there, so a row rebuilt after a restart
+// (mediaOf, from chats.db alone) drops its copies once it is sent, and the path goes back to the original. The key goes
+// when the path is the original again.
+func TestRebuiltSendDropsItsCopies(t *testing.T) {
+	s, st := offlineSession(t)
+	chat, dir, tmp := retryChat, s.srv.dir, t.TempDir()
+	st.runOp(func(tx *storeTx) { tx.ensureChat(chat, chatUser) })
+	write := func(p string) string {
+		os.MkdirAll(filepath.Dir(p), 0o755)
+		os.WriteFile(p, []byte("x"), 0o644)
+		return p
+	}
+	if got := withOriginal(`{"gif":true}`, `/a "b"/c.jpg`); got != `{"gif":true,"original":"/a \"b\"/c.jpg"}` {
+		t.Errorf("withOriginal keeps the other keys: %s", got)
+	}
+	// A send from the UI outbox (its copy, and the file it came from), one from a file the engine copies itself.
+	uiOrig, engOrig := write(filepath.Join(tmp, "ui.jpg")), write(filepath.Join(tmp, "eng.jpg"))
+	uiCopy := write(filepath.Join(dir, "outbox", "U1", "ui.jpg"))
+	for _, body := range []string{
+		`{"chat":"` + chat + `","id":"U1","path":"` + uiCopy + `","original":"` + uiOrig + `"}`,
+		`{"chat":"` + chat + `","id":"E1","path":"` + engOrig + `"}`,
+	} {
+		if _, err := s.handleMediaSend(json.RawMessage(body)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	waitQueued(t, s, 2)
+	settle(st)
+	for id, orig := range map[string]string{"U1": uiOrig, "E1": engOrig} {
+		row, _ := st.row(chat, id)
+		var x struct{ Original string }
+		json.Unmarshal([]byte(row.Extra), &x)
+		if row.Path != filepath.Join(outboxDir(dir), id+".jpg") || x.Original != orig {
+			t.Errorf("%s: path %q, extra %q; want the engine's copy and the original %q", id, row.Path, row.Extra, orig)
+		}
+	}
+
+	// After a restart: a session that has only the rows. The send went; the copies go, the path is the original again.
+	s2 := &Session{cli: s.cli, store: st, srv: st.srv, log: s.log}
+	for id, orig := range map[string]string{"U1": uiOrig, "E1": engOrig} {
+		row, _ := st.row(chat, id)
+		o := s2.mediaOf(row)
+		if o.original != orig {
+			t.Fatalf("%s: rebuilt original %q, want %q", id, o.original, orig)
+		}
+		st.runOp(func(tx *storeTx) { s2.dropSendFiles(tx, o, row.Path) })
+		settle(st)
+		after, _ := st.row(chat, id)
+		if after.Path != orig || strings.Contains(after.Extra, "original") {
+			t.Errorf("%s: path %q, extra %q after the send", id, after.Path, after.Extra)
+		}
+		if exists(row.Path) || exists(filepath.Join(dir, "outbox", id)) || !exists(orig) {
+			t.Errorf("%s: the engine's copy %v, the UI's directory %v, the original %v", id, exists(row.Path),
+				exists(filepath.Join(dir, "outbox", id)), exists(orig))
+		}
+	}
+
+	// With the original gone the copy stays, and so does the key: it is still what the row is a copy of.
+	gone := write(filepath.Join(tmp, "gone.jpg"))
+	if _, err := s.handleMediaSend(json.RawMessage(`{"chat":"` + chat + `","id":"G1","path":"` + gone + `"}`)); err != nil {
+		t.Fatal(err)
+	}
+	waitQueued(t, s, 3)
+	settle(st)
+	os.Remove(gone)
+	row, _ := st.row(chat, "G1")
+	o := s2.mediaOf(row) // not in the op: it reads the quoted row through the writer
+	st.runOp(func(tx *storeTx) { s2.dropSendFiles(tx, o, row.Path) })
+	settle(st)
+	if after, _ := st.row(chat, "G1"); after.Path != row.Path || !exists(row.Path) || !strings.Contains(after.Extra, gone) {
+		t.Errorf("original gone: path %q, extra %q, the copy %v", after.Path, after.Extra, exists(row.Path))
+	}
+}

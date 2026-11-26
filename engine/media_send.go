@@ -104,7 +104,8 @@ type mediaOut struct {
 	quote   msgRow
 	created bool // the chat was new
 	// original is the file the send was first made from, which the bubble shows once the copies of it go: media.send's
-	// original, else its path. Empty for a rebuild after a restart, which doesn't know it.
+	// original, else its path. A rebuild after a restart reads it back from the row's extra ("original"); empty for a row
+	// made before that was kept.
 	original string
 	// poster is a video's thumbnail as the message carries it: the UI draws one with a play mark, so the
 	// phones that get it show a video and not a grey box. Our own row keeps none (the UI marks a video by itself); the
@@ -129,6 +130,9 @@ func (st *Store) queueMedia(jid types.JID, r mediaSendReq, id string) *mediaOut 
 		o.row.Text, o.poster = r.Caption, r.Thumb
 	case msgDoc:
 		o.row.Text = filepath.Base(r.Path)
+	}
+	if r.Original != "" { // the UI outbox's copy: the row's extra keeps the file it is a copy of, for a rebuild after a restart
+		o.row.Extra = withOriginal(o.row.Extra, r.Original)
 	}
 	o.quote, o.created = st.queueRow(jid, r.Chat, r.Quote, o.row)
 	return o
@@ -208,7 +212,7 @@ func (s *Session) handleMediaSend(req json.RawMessage) (any, error) {
 		path := r.Path
 		keep := func() {
 			if path == r.Path {
-				path = s.keepOutgoing(r.Chat, id, r.Path)
+				path = s.keepOutgoing(r.Chat, id, r.Path, o.original)
 			}
 		}
 		if !cli.IsConnected() {
