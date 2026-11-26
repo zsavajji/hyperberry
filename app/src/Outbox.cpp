@@ -163,7 +163,6 @@ QString Outbox::send(const QString &cmd, const QVariantMap &args)
     entry["id"] = id;
     entry["cmd"] = cmd;
     entry["chat"] = chatOf(cmd, a);
-    entry["args"] = a;
     entry["ts"] = qlonglong(QDateTime::currentDateTime().toTime_t());
     // A media.send made with the engine up goes with the user's own path: the engine keeps its own link or copy of the file
     // when it takes the send. Made while it is down, the file is copied here, as the picked file may go and the cache's
