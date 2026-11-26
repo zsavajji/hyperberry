@@ -38,6 +38,10 @@ Page {
             }
         } else if (failedCmd == "msg.edit") {
             editFailed.show()
+        } else if (failedCmd == "media.send") {
+            if (engine.failure.code != "no_engine") {
+                sendFailed.show() // copy_failed (the engine couldn't keep the file), or a file it refuses; no_engine: the outbox sends it again
+            }
         } else if (failedCmd == "msg.forward") {
             forwardFailed.show()
         } else if (failedCmd == "msg.cancel") {
@@ -209,6 +213,10 @@ Page {
             body: qsTr("Couldn't edit this message")
         },
         SystemToast {
+            id: sendFailed
+            body: qsTr("Couldn't send this file")
+        },
+        SystemToast {
             id: forwardFailed
             body: qsTr("Couldn't forward this message")
         },
@@ -375,8 +383,11 @@ Page {
             return
         }
         var editing = ctl.editing
-        // Cleared only once the engine has it: it writes the row before it replies, so nothing typed is lost.
-        if (!(staged == "" ? ctl.send(composer.text, mentionBar.take(composer.text)) : page.sendStaged(text))) {
+        // A staged file and a plain text go through the outbox, which keeps them whatever the engine does; only an edit
+        // needs the engine now, and then the text stays in the composer.
+        if (staged != "") {
+            page.sendStaged(text)
+        } else if (!ctl.send(composer.text, mentionBar.take(composer.text))) {
             notSent.show()
             return
         }
@@ -419,15 +430,12 @@ Page {
         if (picture && text) {
             args.caption = text
         }
-        if (!outbox.send("media.send", args)) {
-            return false
-        }
+        outbox.send("media.send", args)
         if (!picture && text) {
             // The file carries the reply; the text after it is plain.
             ctl.cancelReply()
             ctl.send(text)
         }
-        return true
     }
     // The picker's file waits in the staged bar; what is typed is its caption.
     function stage(path) {
@@ -609,16 +617,13 @@ Page {
         nav.push(stickers)
     }
     // A sticker is a message of its own, the reply quote going with it. It goes at once, and the sticker page closes, and the
-    // emoji picker under it, as after a send. A request that did not go out leaves the page open.
+    // emoji picker under it, as after a send.
     function sendSticker(hash) {
         var args = {"chat": chat.jid, "hash": hash}
         if (ctl.quoteId()) {
             args.quote = ctl.quoteId()
         }
-        if (!outbox.send("sticker.send", args)) {
-            notSent.show()
-            return
-        }
+        outbox.send("sticker.send", args)
         ctl.cancelReply()
         page.followOwn = true
         page.picking = false

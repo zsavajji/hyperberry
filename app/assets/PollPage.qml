@@ -104,10 +104,6 @@ Page {
         SystemToast {
             id: tooFew
             body: qsTr("A poll needs a question and two options")
-        },
-        SystemToast {
-            id: offline
-            body: qsTr("Not sent: HyperBerry is reconnecting. Try again in a moment.")
         }
     ]
     onCreationCompleted: {
@@ -139,10 +135,7 @@ Page {
             tooFew.show()
             return
         }
-        if (!outbox.send("poll.create", {"chat": page.jid, "question": question.text.trim(), "options": list, "multiple": several.checked})) {
-            offline.show()
-            return
-        }
+        outbox.send("poll.create", {"chat": page.jid, "question": question.text.trim(), "options": list, "multiple": several.checked})
         nav.pop()
     }
 }

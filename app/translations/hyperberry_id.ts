@@ -301,6 +301,10 @@
 <context>
     <name>ChatPage</name>
     <message>
+        <source>Couldn't send this file</source>
+        <translation>Tidak bisa mengirim berkas ini</translation>
+    </message>
+    <message>
         <source>Couldn't forward this message</source>
         <translation>Tidak dapat meneruskan pesan ini</translation>
     </message>
@@ -1493,11 +1497,6 @@
         <location filename="../assets/PollPage.qml" line="10" />
         <source>A poll needs a question and two options</source>
         <translation>Polling memerlukan pertanyaan dan dua opsi</translation>
-    </message>
-    <message>
-        <location filename="../assets/PollPage.qml" line="10" />
-        <source>Not sent: HyperBerry is reconnecting. Try again in a moment.</source>
-        <translation>Tidak terkirim: HyperBerry sedang menyambung ulang. Coba lagi sebentar lagi.</translation>
     </message>
     <message>
         <location filename="../assets/PollPage.qml" line="10" />

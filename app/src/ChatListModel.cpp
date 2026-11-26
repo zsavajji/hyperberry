@@ -517,9 +517,11 @@ static bool listedBefore(const QVariantMap &a, const QVariantMap &b)
     return a["ts"].toLongLong() > b["ts"].toLongLong();
 }
 
-// A chat with sends in the outbox (made while the engine was down, or not yet answered) shows the newest as its last line, ours and still
-// sending, and its time when that is newer than the chat's; the list sorts by it. Done here, on the UI thread, over what the
-// reader read, so a send changes the list without a read of chats.db.
+// A chat with sends in the outbox (waiting for the engine, or not yet answered by it) shows the newest as its last line, ours
+// and still sending, and its time when that is newer than the chat's; the list sorts by it. Done here, on the UI thread, over
+// what the reader read, so a send changes the list without a read of chats.db. An entry the engine answered is gone from the
+// outbox, and the line is the reader's again: the engine's chats event, which comes before the answer, has the next read on
+// its way (reloadSoon).
 // ponytail: a chat that isn't in chats.db yet (a new chat) isn't listed until the engine makes it.
 ChatListRead ChatListModel::withOutbox(const ChatListRead &read)
 {
