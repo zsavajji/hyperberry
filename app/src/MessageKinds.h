@@ -35,7 +35,9 @@ bool fill(int kind, const QString &chat, const QString &id, const QString &text,
 // newline a <br/>, U+20E3 dropped as the Label does, each "@name" an anchor to "hbmention:<key>"
 // (MessageCard.cpp opens that person's page), each style a tag. "" otherwise: the Label then shows
 // `shown` as plain text. MessageRows::read sets it as data["html"] beside data["text"], for every row.
-QString html(const QString &shown, const QVariantMap &extra);
+// With `urls` (our own messages), each web address is an anchor too, which MessageCard colours: ActiveText draws
+// links in the theme's primary colour, green on our green bubble (the user, 2026-11-26).
+QString html(const QString &shown, const QVariantMap &extra, bool urls = false);
 }
 
 #endif

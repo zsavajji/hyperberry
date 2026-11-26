@@ -58,7 +58,7 @@ static bool longer(const QString &a, const QString &b)
     return a.size() > b.size();
 }
 
-QString MessageKinds::html(const QString &shown, const QVariantMap &extra)
+QString MessageKinds::html(const QString &shown, const QVariantMap &extra, bool urls)
 {
     const QString text = QString(shown).remove(QChar(0x20E3)); // as the bubble's plain text drops it
 
@@ -92,6 +92,24 @@ QString MessageKinds::html(const QString &shown, const QVariantMap &extra)
             from = at + hit.length();
         }
         plain += text.mid(from);
+    }
+    // Web addresses the same way, so a "_" in one is never a style; the end's punctuation stays text.
+    if (urls && (plain.contains("://") || plain.contains("www."))) {
+        QRegExp url(QString("(?:https?://|www\\.)[^\\s<>\"%1-%2]+").arg(QChar(0xE000)).arg(QChar(0xE7FF)),
+                    Qt::CaseInsensitive);
+        const QString in = plain;
+        plain.clear();
+        int from = 0, at;
+        while ((at = url.indexIn(in, from)) != -1 && anchors.size() < 0x800) {
+            QString hit = url.cap(0);
+            while (!hit.isEmpty() && QString(".,;:!?)]'").contains(hit.at(hit.size() - 1)))
+                hit.chop(1);
+            const QString href = hit.startsWith("www.", Qt::CaseInsensitive) ? "http://" + hit : hit;
+            plain += in.mid(from, at - from) + QChar(0xE000 + anchors.size());
+            anchors << "<a href=\"" + Markup::escaped(href) + "\">" + Markup::escaped(hit) + "</a>";
+            from = at + hit.length();
+        }
+        plain += in.mid(from);
     }
 
     QString out = Markup::html(plain);

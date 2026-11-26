@@ -595,7 +595,10 @@ void MessageCard::fillColumn()
     // With mentions or WhatsApp's styles the html has them linked or styled (MessageKinds::html, which
     // drops the keycaps too); else the plain text. Links, numbers and addresses are tappable, opened by the system
     // (the user's request, 0.0.1.132: a YouTube link did nothing), but not on a deleted message's note.
-    const QString html = str("html");
+    // Our links in WhatsApp's link blue for the theme: ActiveText's primary colour is green on our green bubble.
+    QString html = str("html");
+    if (flag("out"))
+        html.replace("<a href=", Card::bright(m_list) ? "<a style=\"color:#027eb5\" href=" : "<a style=\"color:#53bdeb\" href=");
     const QString text = str("text");
     if (m_rich)
         m_words->setVisible(!text.isEmpty());

@@ -175,7 +175,7 @@ MessageModel::Msg MessageModel::read(const QVariantList &q)
     m.data["text"] = shown;
     m.data["bigEmoji"] = kind == 0 && !deleted ? bigEmoji(shown) : 0; // 1 to 3 emoji alone: MessageCard draws them big
     // The same text with its mentions linked, "" for none (MessageKinds::html).
-    m.data["html"] = MessageKinds::html(shown, extra);
+    m.data["html"] = MessageKinds::html(shown, extra, out);
     m.data["quote"] = q.value(9).toString();
     m.data["quoteId"] = q.value(28).toString(); // a tap on the quote jumps to it
     m.data["sender"] = sender;
