@@ -26,11 +26,13 @@ public:
     // Keeps cmd with args and returns the message's new id, which is also in the entry's args ("newId" for msg.forward and
     // story.reply, else "id"). A media.send's file is copied to outbox/<id>/ under its own name (the engine names a
     // document by it): the picked file may go and the cache's PNG-as-JPEG is overwritten by the next of its name while the
-    // message waits.
+    // message waits. args.original is the file it was copied from: once the engine has sent the message it points the row's
+    // path back to it, if it is still there, and removes the copy (engine/retry.go, dropSendFiles).
     // ponytail: a big video is copied on the UI thread; a hard link or a worker if that stalls.
     QString add(const QString &cmd, const QVariantMap &args);
     // Drops the entry. files: also the copy of its file and a voice note's WAV (a send taken back). Not when the engine took
-    // the message: its row points at them from then on (and the engine deletes the WAV itself).
+    // the message: its row points at them from then on (and the engine deletes the WAV itself; the copy it removes once the
+    // message is sent, when the original is still there).
     void remove(const QString &id, bool files);
     bool has(const QString &id) const;
     // The entries going to chat, oldest first.

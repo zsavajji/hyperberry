@@ -71,6 +71,7 @@ func sendKind(path string) (kind int, mimeType string) {
 type mediaSendReq struct {
 	Chat, Path, Quote, Caption string
 	ID                         string // the id the caller chose for the message, if it did (outID)
+	Original                   string // the file Path is a copy of, if it is one (the UI outbox's): see dropSendFiles
 	Thumb                      []byte
 	File                       bool // as a document whatever the extension: the staged bar's As file on a JPEG
 	Width, Height              int
@@ -79,8 +80,8 @@ type mediaSendReq struct {
 
 func parseMediaSend(req json.RawMessage) (mediaSendReq, error) {
 	var r mediaSendReq
-	if err := json.Unmarshal(req, &r); err != nil || !filepath.IsAbs(r.Path) {
-		return r, &Error{"bad_request", "media.send needs chat and an absolute path (thumb is base64)"}
+	if err := json.Unmarshal(req, &r); err != nil || !filepath.IsAbs(r.Path) || (r.Original != "" && !filepath.IsAbs(r.Original)) {
+		return r, &Error{"bad_request", "media.send needs chat and an absolute path (thumb is base64, original is absolute too)"}
 	}
 	if len(r.Thumb) > maxThumb || r.Width < 0 || r.Height < 0 {
 		return r, &Error{"bad_request", "media.send: thumb is at most 16 KB, width and height aren't negative"}
@@ -102,6 +103,9 @@ type mediaOut struct {
 	mime    string
 	quote   msgRow
 	created bool // the chat was new
+	// original is the file the send was first made from, which the bubble shows once the copies of it go: media.send's
+	// original, else its path. Empty for a rebuild after a restart, which doesn't know it.
+	original string
 	// poster is a video's thumbnail as the message carries it: the UI draws one with a play mark, so the
 	// phones that get it show a video and not a grey box. Our own row keeps none (the UI marks a video by itself); the
 	// send keeps it in outbox-engine/<id>.poster (posterPath) until it is over, for a rebuild after a restart.
@@ -189,6 +193,9 @@ func (s *Session) handleMediaSend(req json.RawMessage) (any, error) {
 		return map[string]string{"id": id}, nil
 	}
 	o := s.store.queueMedia(jid, r, id)
+	if o.original = r.Original; o.original == "" {
+		o.original = r.Path
+	}
 	if len(o.poster) > 0 {
 		if err := writeFile(posterPath(s.srv.dir, id), o.poster); err != nil {
 			s.log.Warnf("poster of %s: %v", id, err)
@@ -269,7 +276,7 @@ func (s *Session) uploadMedia(cli *whatsmeow.Client, jid types.JID, path string,
 			s.store.ops <- func(t *storeTx) {
 				t.sentAs(chat, id, resp.Timestamp.Unix(), stateSent)
 				t.exec("UPDATE messages SET media = ? WHERE chat = ? AND id = ?", string(info), chat, id)
-				s.dropSendFiles(t, o)
+				s.dropSendFiles(t, o, path)
 			}
 			return nil
 		}

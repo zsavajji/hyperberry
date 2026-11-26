@@ -109,9 +109,10 @@ QString Outbox::add(const QString &cmd, const QVariantMap &args)
         const QString from = a["path"].toString();
         const QString dir = QDir::homePath() + "/outbox/" + id + "/";
         const QString to = dir + QFileInfo(from).fileName();
-        if (QDir().mkpath(dir) && QFile::copy(from, to))
+        if (QDir().mkpath(dir) && QFile::copy(from, to)) {
             a["path"] = to;
-        else
+            a["original"] = from; // the engine puts the row's path back to it once the message is sent, and removes the copy
+        } else
             qWarning() << "outbox: could not copy" << from;
     }
     QVariantMap entry;

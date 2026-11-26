@@ -255,7 +255,7 @@ func TestVideoPosterKept(t *testing.T) {
 	}
 
 	// Sent: the op that records it takes the poster.
-	st.runOp(func(tx *storeTx) { s.dropSendFiles(tx, o) })
+	st.runOp(func(tx *storeTx) { s.dropSendFiles(tx, o, o.row.Path) })
 	waitGone(t, posterPath(s.srv.dir, "V1"))
 	// Cancelled.
 	if _, err := s.handleCancel(json.RawMessage(`{"chat":"` + chat + `","id":"V2"}`)); err != nil {
@@ -270,4 +270,78 @@ func TestVideoPosterKept(t *testing.T) {
 		t.Errorf("flush: %q", r)
 	}
 	waitGone(t, posterPath(s.srv.dir, "V4"))
+}
+
+// Once a media send is sent, the row's path goes back to the original and the copies go (the engine's, the UI outbox's, or
+// both: a copy of a copy), while the original is there; without it the copy stays, as the only file the bubble can show.
+func TestSentSendDropsItsCopies(t *testing.T) {
+	s, st := offlineSession(t)
+	chat, dir := retryChat, s.srv.dir
+	tmp := t.TempDir()
+	st.runOp(func(tx *storeTx) { tx.ensureChat(chat, chatUser) })
+	write := func(p string) string {
+		os.MkdirAll(filepath.Dir(p), 0o755)
+		os.WriteFile(p, []byte("x"), 0o644)
+		return p
+	}
+	for _, c := range []struct {
+		id      string
+		ui, eng bool   // the UI outbox's copy, the engine's (made from the UI's if both)
+		orig    string // the original: "here", "gone", "cache" (here, under cache/), or "" for a rebuild, which doesn't know it
+		kept    bool   // the copies are still there afterwards
+	}{
+		{"A", false, true, "here", false}, // a send that waited
+		{"B", true, true, "here", false},  // the UI's copy, then the engine's
+		{"C", true, false, "here", false}, // the UI's copy, sent at once
+		{"D", true, true, "gone", true},
+		{"E", false, true, "", true},
+		{"F", false, false, "here", true}, // sent at once from the original: nothing to drop
+		{"G", true, true, "cache", true},  // the cache doesn't last: the copy stays
+	} {
+		orig := filepath.Join(tmp, c.id+".jpg")
+		if c.orig == "cache" {
+			orig = filepath.Join(dir, "cache", "convert", c.id+".jpg")
+		}
+		o := &mediaOut{row: msgRow{Chat: chat, ID: c.id, Out: true, State: stateSent, Kind: msgPhoto, Path: orig}}
+		if c.orig != "" {
+			o.original = orig
+		}
+		if c.orig == "here" || c.orig == "cache" {
+			write(orig)
+		}
+		from, copies := orig, []string{}
+		if c.ui {
+			from = write(filepath.Join(dir, "outbox", c.id, "p.jpg"))
+			o.row.Path, copies = from, append(copies, from)
+		}
+		if c.eng {
+			from = write(filepath.Join(outboxDir(dir), c.id+".jpg"))
+			copies = append(copies, from)
+		}
+		st.runOp(func(tx *storeTx) {
+			tx.insertMessage(msgRow{Chat: chat, ID: c.id, TS: 1, Out: true, State: stateSending, Kind: msgPhoto, Path: from})
+			s.dropSendFiles(tx, o, from)
+		})
+		done := make(chan struct{})
+		st.afterCommit(func() { close(done) })
+		<-done
+		row, _ := st.row(chat, c.id)
+		if want := map[bool]string{true: from, false: orig}[c.kept]; row.Path != want {
+			t.Errorf("%s: path %q, want %q", c.id, row.Path, want)
+		}
+		for _, p := range copies {
+			if exists(p) != c.kept {
+				t.Errorf("%s: %s is there: %v", c.id, p, !c.kept)
+			}
+		}
+		if c.ui && !c.kept && exists(filepath.Join(dir, "outbox", c.id)) {
+			t.Errorf("%s: the UI's directory is still there", c.id)
+		}
+		if (c.orig == "here" || c.orig == "cache") && !exists(orig) {
+			t.Errorf("%s: the original went", c.id)
+		}
+	}
+	if _, err := s.handleMediaSend(json.RawMessage(`{"chat":"` + chat + `","path":"/x","original":"rel"}`)); code(err) != "bad_request" {
+		t.Errorf("a relative original: %v", err)
+	}
 }
