@@ -16,6 +16,10 @@ import (
 // voicePoll is how often a growing WAV is read. Tests shorten it.
 var voicePoll = 100 * time.Millisecond
 
+// voiceChunk is the most of a WAV that pump reads and encodes at a time: a long recording that is complete when voice.send
+// finds it (the UI's, made while the engine was down) takes no more memory than one followed as it grew. Tests shorten it.
+var voiceChunk = 64 << 10
+
 // recording is a WAV being written by the UI, read, mixed down and encoded as it grows, so
 // that at the end only the tail is left to do.
 type recording struct {
@@ -23,7 +27,8 @@ type recording struct {
 	log        waLog.Logger
 	poll       time.Duration // voicePoll at the start: tests restore it while this may still run
 
-	off    int64 // bytes of the file read so far
+	off    int64  // bytes of the file read so far
+	buf    []byte // pump reads into it, voiceChunk long
 	stream wavStream
 	enc    *opusEncoder // made once the header has told the rate
 	wave   waveTracker
@@ -35,7 +40,7 @@ type recording struct {
 }
 
 func newRecording(chat, path string, log waLog.Logger) *recording {
-	return &recording{chat: chat, path: path, log: log, poll: voicePoll, stop: make(chan struct{}), done: make(chan struct{})}
+	return &recording{chat: chat, path: path, log: log, poll: voicePoll, buf: make([]byte, voiceChunk), stop: make(chan struct{}), done: make(chan struct{})}
 }
 
 func (r *recording) run() {
@@ -68,7 +73,7 @@ func (r *recording) drop() {
 	}
 }
 
-// pump reads what the file has grown by. A file that isn't there yet is not an error.
+// pump reads what the file has grown by, voiceChunk at a time, to its end. A file that isn't there yet is not an error.
 func (r *recording) pump() error {
 	f, err := os.Open(r.path)
 	if err != nil {
@@ -81,11 +86,25 @@ func (r *recording) pump() error {
 	if _, err := f.Seek(r.off, io.SeekStart); err != nil {
 		return err
 	}
-	b, err := io.ReadAll(f)
-	if err != nil {
-		return err
+	for {
+		n, err := f.Read(r.buf)
+		if n > 0 {
+			r.off += int64(n)
+			if ferr := r.feed(r.buf[:n]); ferr != nil {
+				return ferr
+			}
+		}
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
 	}
-	r.off += int64(len(b))
+}
+
+// feed mixes down and encodes b, the next bytes of the file, whatever the split.
+func (r *recording) feed(b []byte) error {
 	pcm, err := r.stream.Feed(b)
 	if err != nil {
 		return err
@@ -177,8 +196,7 @@ func (v *voiceRec) start(dir, chat, path string, log waLog.Logger) (string, erro
 
 // take removes the recording of path from the registry, for voice.send. With none running for it, a WAV that is there
 // is a complete one, recorded by the UI while the engine was down: a recording that isn't running is made for it, which
-// finish reads whole, so the same OGG and waveform come out as from one followed all along.
-// ponytail: the file is read at once, tens of MB for many minutes of audio; read it in chunks if that bites.
+// finish reads to its end, voiceChunk at a time, so the same OGG and waveform come out as from one followed all along.
 func (v *voiceRec) take(dir, path string, log waLog.Logger) (*recording, error) {
 	path, err := wavPath(dir, path)
 	if err != nil {

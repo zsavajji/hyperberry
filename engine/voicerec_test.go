@@ -162,6 +162,30 @@ func TestVoiceSendWithoutStart(t *testing.T) {
 	}
 }
 
+// A complete WAV is read and encoded voiceChunk at a time, whatever the split: the OGG, the length and the waveform are
+// those of the whole.
+func TestVoiceSendInChunks(t *testing.T) {
+	old := voiceChunk
+	voiceChunk = 4099 // not a multiple of a sample frame (4 bytes) or of an Opus frame: the splits fall anywhere
+	defer func() { voiceChunk = old }()
+	s, st, dir := voiceSim(t)
+	chat, path := simChats[2].jid, filepath.Join(dir, "rec-chunks.wav")
+	wav, mono := stereoWAV(3) // 576 KB: 140 chunks
+	os.WriteFile(path, wav, 0o644)
+	r, err := call(s.handleVoiceSend, `{"chat":%q,"path":%q}`, chat, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := r.(map[string]string)["id"]
+	want, _ := encodeOpus(mono, 48000)
+	if got, _ := os.ReadFile(oggPath(dir, id)); !bytes.Equal(got, want) {
+		t.Error("the OGG differs from encodeOpus on the whole")
+	}
+	if row, ok := st.row(chat, id); !ok || row.Duration != 3 || !bytes.Equal(row.Waveform, waveform(mono)) {
+		t.Errorf("row: %+v", row)
+	}
+}
+
 func TestVoiceSendIsQuick(t *testing.T) {
 	s, _, dir := voiceSim(t)
 	chat, path := simChats[2].jid, filepath.Join(dir, "rec-3.wav")
