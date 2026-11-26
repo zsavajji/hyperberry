@@ -75,6 +75,7 @@ void MessageCard::onPopulating()
     m_edit->setEnabled(flag("editable"));
     m_revoke->setEnabled(flag("revocable"));
     m_cancel->setEnabled(flag("out") && !deleted && m_msg.value("state").toInt() == 0);
+    m_retry->setEnabled(flag("out") && !deleted && m_msg.value("state").toInt() == 4);
     m_deleteMe->setEnabled(!readOnly);
 }
 
@@ -130,6 +131,8 @@ void MessageCard::makeActions()
                       SLOT(onRevoke()), "x");
     // A message of ours that is still sending, one the outbox holds or one the engine's queue does: taken back, it is never sent.
     m_cancel = action("Cancel sending", "file:///usr/share/icons/bb_action_delete.png", SLOT(onCancel()), "n");
+    // A message of ours that failed: sent again with its id, as the engine's msg.retry (docs/protocol.md).
+    m_retry = action("Retry", "asset:///images/retry.png", SLOT(onRetry()), "y");
     // "Delete for me" is a DeleteActionItem, which the system puts last.
     m_deleteMe = new DeleteActionItem();
     m_deleteMe->setTitle(Card::tr(kContext, "Delete for me"));
@@ -205,6 +208,7 @@ void MessageCard::onFave() { Card::call(m_list, "fave", m_msg); }
 void MessageCard::onEdit() { Card::call(m_list, "edit", m_msg); }
 void MessageCard::onRevoke() { Card::call(m_list, "deleteForEveryone", str("id")); }
 void MessageCard::onCancel() { Card::call(m_list, "cancelSending", str("id")); }
+void MessageCard::onRetry() { Card::call(m_list, "retrySending", str("id")); }
 void MessageCard::onDeleteMe() { Card::call(m_list, "deleteForMe", str("id")); }
 void MessageCard::onWho() { Card::call(m_list, "whoReacted", str("id")); }
 

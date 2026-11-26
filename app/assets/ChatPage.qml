@@ -44,6 +44,10 @@ Page {
             if (engine.failure.code == "in_flight") {
                 cancelFailed.show() // not_found and not_sending: the row has moved on, and shows it
             }
+        } else if (failedCmd == "msg.retry") {
+            if (engine.failure.code != "not_found" && engine.failure.code != "not_failed") {
+                retryFailed.show() // those two: the row has moved on, and shows it
+            }
         } else if (failedCmd == "poll.vote" || failedCmd == "poll.create") {
             page.reactBar() // its own failedCmd words these (ReactBar.qml)
         }
@@ -210,6 +214,10 @@ Page {
         SystemToast {
             id: cancelFailed
             body: qsTr("Not cancelled: it is already being sent")
+        },
+        SystemToast {
+            id: retryFailed
+            body: qsTr("Couldn't send it again")
         },
         // Delete for me: the card is already hidden, the request goes when the toast closes. Several
         // deletes while it shows join one batch (show() on a showing toast keeps it up), and Undo
@@ -768,6 +776,9 @@ Page {
                     }
                     function cancelSending(id) {
                         ctl.cancelSending(id)
+                    }
+                    function retrySending(id) {
+                        ctl.retrySending(id)
                     }
                     // The cards reach the shared emoji style (main.qml) through ListItem.view.
                     property variant emojiStyle: nav.emojiStyle

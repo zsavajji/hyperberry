@@ -77,6 +77,7 @@ private slots:
     void onEdit();
     void onRevoke();
     void onCancel();
+    void onRetry();
     void onDeleteMe();
     void onStar();
     void onFave();
@@ -202,6 +203,7 @@ private:
     bb::cascades::ActionItem *m_edit;
     bb::cascades::ActionItem *m_revoke;
     bb::cascades::ActionItem *m_cancel; // ours, still sending
+    bb::cascades::ActionItem *m_retry; // ours, failed
     bb::cascades::DeleteActionItem *m_deleteMe;
     QList<bb::cascades::AbstractShortcut *> m_keys; // the menu's letters, live only while it shows
 };

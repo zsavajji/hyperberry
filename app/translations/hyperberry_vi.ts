@@ -349,6 +349,10 @@
         <translation>Chưa hủy: đang được gửi</translation>
     </message>
     <message>
+        <source>Couldn't send it again</source>
+        <translation>Không thể gửi lại</translation>
+    </message>
+    <message>
         <location filename="../assets/ChatPage.qml" line="108" />
         <source>Message deleted</source>
         <translation>Đã xóa tin nhắn</translation>
@@ -1130,6 +1134,10 @@
     <message>
         <source>Cancel sending</source>
         <translation>Hủy gửi</translation>
+    </message>
+    <message>
+        <source>Retry</source>
+        <translation>Thử lại</translation>
     </message>
     <message>
         <source>Translate</source>

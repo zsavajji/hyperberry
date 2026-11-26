@@ -349,6 +349,10 @@
         <translation>Tidak dibatalkan: sedang dikirim</translation>
     </message>
     <message>
+        <source>Couldn't send it again</source>
+        <translation>Tidak bisa dikirim ulang</translation>
+    </message>
+    <message>
         <location filename="../assets/ChatPage.qml" line="108" />
         <source>Message deleted</source>
         <translation>Pesan dihapus</translation>
@@ -1130,6 +1134,10 @@
     <message>
         <source>Cancel sending</source>
         <translation>Batalkan pengiriman</translation>
+    </message>
+    <message>
+        <source>Retry</source>
+        <translation>Coba lagi</translation>
     </message>
     <message>
         <source>Translate</source>

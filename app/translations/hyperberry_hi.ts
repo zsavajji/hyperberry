@@ -350,6 +350,10 @@
         <translation>रद्द नहीं हुआ: यह पहले से भेजा जा रहा है</translation>
     </message>
     <message>
+        <source>Couldn't send it again</source>
+        <translation>फिर से नहीं भेजा जा सका</translation>
+    </message>
+    <message>
         <location filename="../assets/ChatPage.qml" line="108" />
         <source>Message deleted</source>
         <translation>मैसेज डिलीट किया गया</translation>
@@ -1132,6 +1136,10 @@
     <message>
         <source>Cancel sending</source>
         <translation>भेजना रद्द करें</translation>
+    </message>
+    <message>
+        <source>Retry</source>
+        <translation>फिर से भेजें</translation>
     </message>
     <message>
         <source>Translate</source>

@@ -92,6 +92,7 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
     , m_edit(0)
     , m_revoke(0)
     , m_cancel(0)
+    , m_retry(0)
     , m_deleteMe(0)
 {
     // The card's own node and its root: a list item is as wide as its content unless it fills.

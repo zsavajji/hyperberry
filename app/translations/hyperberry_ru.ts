@@ -351,6 +351,10 @@
         <translation>Не отменено: уже отправляется</translation>
     </message>
     <message>
+        <source>Couldn't send it again</source>
+        <translation>Не удалось отправить повторно</translation>
+    </message>
+    <message>
         <location filename="../assets/ChatPage.qml" line="108" />
         <source>Message deleted</source>
         <translation>Сообщение удалено</translation>
@@ -1134,6 +1138,10 @@
     <message>
         <source>Cancel sending</source>
         <translation>Отменить отправку</translation>
+    </message>
+    <message>
+        <source>Retry</source>
+        <translation>Повторить</translation>
     </message>
     <message>
         <source>Translate</source>

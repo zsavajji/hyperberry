@@ -350,6 +350,10 @@
         <translation>Nicht abgebrochen: wird bereits gesendet</translation>
     </message>
     <message>
+        <source>Couldn't send it again</source>
+        <translation>Konnte nicht erneut gesendet werden</translation>
+    </message>
+    <message>
         <location filename="../assets/ChatPage.qml" line="108" />
         <source>Message deleted</source>
         <translation>Nachricht gelöscht</translation>
@@ -1132,6 +1136,10 @@
     <message>
         <source>Cancel sending</source>
         <translation>Senden abbrechen</translation>
+    </message>
+    <message>
+        <source>Retry</source>
+        <translation>Erneut senden</translation>
     </message>
     <message>
         <source>Translate</source>

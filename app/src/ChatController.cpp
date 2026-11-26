@@ -412,6 +412,16 @@ void ChatController::cancelSending(const QString &id)
     m_engine->request("msg.cancel", args);
 }
 
+void ChatController::retrySending(const QString &id)
+{
+    if (!m_engine)
+        return;
+    QVariantMap args;
+    args["chat"] = m_jid;
+    args["id"] = id;
+    m_engine->request("msg.retry", args);
+}
+
 void ChatController::composing(const QString &text)
 {
     if (text.isEmpty()) {

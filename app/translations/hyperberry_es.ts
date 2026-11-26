@@ -350,6 +350,10 @@
         <translation>No cancelado: ya se está enviando</translation>
     </message>
     <message>
+        <source>Couldn't send it again</source>
+        <translation>No se pudo reenviar</translation>
+    </message>
+    <message>
         <location filename="../assets/ChatPage.qml" line="108" />
         <source>Message deleted</source>
         <translation>Mensaje eliminado</translation>
@@ -1132,6 +1136,10 @@
     <message>
         <source>Cancel sending</source>
         <translation>Cancelar envío</translation>
+    </message>
+    <message>
+        <source>Retry</source>
+        <translation>Reintentar</translation>
     </message>
     <message>
         <source>Translate</source>
