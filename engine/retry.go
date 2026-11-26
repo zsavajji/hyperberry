@@ -179,3 +179,23 @@ func (st *Store) queuedRows() []msgRow {
 	}
 	return <-got
 }
+
+// outboxDir is where the engine keeps the copies of the files its sends wait with.
+func outboxDir(dir string) string {
+	d, _ := filepath.Abs(filepath.Join(dir, "outbox-engine"))
+	return d
+}
+
+// keepOutgoing copies the file a media send waits with to outbox-engine/<id><ext> and points the row's path at the copy, so
+// the send doesn't depend on the original staying, and a restart's rebuild finds it. The row's path is the bubble's picture
+// once sent, so the copy stays; only msg.cancel removes it. It returns the path to send from: the copy, or the original when
+// the copy failed.
+func (s *Session) keepOutgoing(chat, id, path string) string {
+	dst := filepath.Join(outboxDir(s.srv.dir), id+filepath.Ext(path))
+	if err := copyFile(path, dst); err != nil {
+		s.log.Warnf("outbox copy of %s: %v", id, err)
+		return path
+	}
+	s.store.ops <- func(t *storeTx) { t.exec("UPDATE messages SET path = ? WHERE chat = ? AND id = ?", dst, chat, id) }
+	return dst
+}

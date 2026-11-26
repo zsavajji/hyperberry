@@ -13,7 +13,7 @@ import (
 const retryChat = "4915700000007@s.whatsapp.net"
 
 // Every kind of send, made while the connection is down as its handler writes the row, is rebuilt from that row alone: the
-// wire messages of the plain kinds equal the first ones, and a restart's
+// wire messages of the plain kinds equal the first ones, the files the rows name are the engine's own copies, and a restart's
 // flush (a session with an empty queue) sends them all again, failing the ones that can't be rebuilt.
 func TestResendEveryKind(t *testing.T) {
 	s, st := offlineSession(t)
@@ -104,7 +104,26 @@ func TestResendEveryKind(t *testing.T) {
 		t.Errorf("poll: %v, %v", m, err)
 	}
 
-	// The engine restarts: a session with nothing queued flushes the rows. All 12 are sent again (down: queued, in order).
+	// A media send that waited works from the engine's copy, which is the row's path; msg.cancel removes it.
+	for id, name := range map[string]string{"P1": "p.jpg", "V1": "v.mp4", "A1": "a.mp3", "D1": "d.pdf", "F1": "f.jpg"} {
+		row, _ := st.row(chat, id)
+		got, err := os.ReadFile(row.Path)
+		if row.Path != filepath.Join(outboxDir(s.srv.dir), id+filepath.Ext(name)) || err != nil || string(got) != "data of "+name {
+			t.Errorf("%s: path %q, %q, %v", id, row.Path, got, err)
+		}
+	}
+	d, _ := st.row(chat, "D1")
+	if _, err := s.handleCancel(json.RawMessage(`{"chat":"` + chat + `","id":"D1"}`)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(d.Path); !os.IsNotExist(err) {
+		t.Errorf("the cancelled send's copy is still there: %v", err)
+	}
+	if _, err := os.Stat(wavPath); !os.IsNotExist(err) {
+		t.Errorf("the WAV of the voice note is still there: %v", err)
+	}
+
+	// The engine restarts: a session with nothing queued flushes the rows. All 11 are sent again (down: queued, in order).
 	s2 := &Session{cli: s.cli, store: st, srv: st.srv, log: s.log}
 	var ids []string
 	for _, row := range st.queuedRows() {
@@ -113,7 +132,7 @@ func TestResendEveryKind(t *testing.T) {
 		}
 		ids = append(ids, row.ID)
 	}
-	if len(ids) != 12 || len(s2.queue.items) != 12 {
+	if len(ids) != 11 || len(s2.queue.items) != 11 {
 		t.Fatalf("%d rows read, %d queued: %v", len(ids), len(s2.queue.items), ids)
 	}
 	if n := rows(st, "SELECT count(*) FROM messages WHERE out = 1 AND state = ?", stateFailed); n != 0 {
@@ -144,8 +163,8 @@ func TestResendEveryKind(t *testing.T) {
 			t.Errorf("%s is still held", id)
 		}
 	}
-	if len(s3.queue.items) != 10 {
-		t.Errorf("%d queued, want the 10 that could be rebuilt", len(s3.queue.items))
+	if len(s3.queue.items) != 9 {
+		t.Errorf("%d queued, want the 9 that could be rebuilt", len(s3.queue.items))
 	}
 
 	// A busy id (a handler has it) is left to its handler.

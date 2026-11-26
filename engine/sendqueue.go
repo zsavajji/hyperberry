@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/polymorfa/hypermeow"
@@ -208,6 +209,9 @@ func (s *Session) handleCancel(req json.RawMessage) (any, error) {
 	}
 	if m.Kind == msgVoice {
 		os.Remove(oggPath(s.srv.dir, r.ID))
+	}
+	if filepath.Dir(m.Path) == outboxDir(s.srv.dir) { // the copy keepOutgoing made of a media send's file
+		os.Remove(m.Path)
 	}
 	return map[string]string{}, nil
 }

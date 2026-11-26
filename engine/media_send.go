@@ -190,7 +190,24 @@ func (s *Session) handleMediaSend(req json.RawMessage) (any, error) {
 	o := s.store.queueMedia(jid, r, id)
 	go func() {
 		s.nameNew(cli, jid, r.Chat, o.created)
-		s.sendOut(cli, r.Chat, id, func(c *whatsmeow.Client) error { return s.uploadMedia(c, jid, r.Path, o) })
+		// A send that has to wait works from its own copy of the file (keepOutgoing), before the first try or once the
+		// connection drops under one; a send that goes at once copies nothing.
+		path := r.Path
+		keep := func() {
+			if path == r.Path {
+				path = s.keepOutgoing(r.Chat, id, r.Path)
+			}
+		}
+		if !cli.IsConnected() {
+			keep()
+		}
+		s.sendOut(cli, r.Chat, id, func(c *whatsmeow.Client) error {
+			err := s.uploadMedia(c, jid, path, o)
+			if err != nil && !c.IsConnected() {
+				keep()
+			}
+			return err
+		})
 	}()
 	return map[string]string{"id": id}, nil
 }
