@@ -35,11 +35,12 @@ type groupRef struct {
 }
 
 type contactInfo struct {
-	Phone   string     `json:"phone"`
-	About   string     `json:"about"`
-	Groups  []groupRef `json:"groups"`
-	Blocked bool       `json:"blocked"`
-	Picture string     `json:"picture"` // as groupInfo's
+	Phone    string        `json:"phone"`
+	About    string        `json:"about"`
+	Groups   []groupRef    `json:"groups"`
+	Blocked  bool          `json:"blocked"`
+	Picture  string        `json:"picture"`            // as groupInfo's
+	Business *businessInfo `json:"business,omitempty"` // a WhatsApp Business account's (business.go)
 }
 
 func registerGroup(srv *Server, s *Session) {
@@ -209,6 +210,13 @@ func (s *Session) handleContactInfo(req json.RawMessage) (any, error) {
 	}
 	for _, i := range infos {
 		out.About = i.Status
+		if i.VerifiedName != nil { // a business: its profile too, a failure only logs
+			p, err := cli.GetBusinessProfile(ctx, ask)
+			if err != nil {
+				s.log.Warnf("contact.info: business profile: %v", err)
+			}
+			out.Business = businessFrom(i.VerifiedName, p)
+		}
 	}
 	// ponytail: every group's members on each open; cache them if it's slow with many groups.
 	groups, err := cli.GetJoinedGroups(ctx)

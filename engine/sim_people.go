@@ -89,6 +89,16 @@ func (s *Sim) handleContactInfo(req json.RawMessage) (any, error) {
 	if i == 0 {
 		out.About = "Out for pizza 🍕"
 	}
+	if i == 8 { // the plumber is a business: hours Monday to Friday, a split Saturday, open all Sunday
+		out.Business = &businessInfo{Name: "Idraulica Ferri", Category: "Home Improvement",
+			Description: "Pipes, boilers, emergencies.", Address: "Via Roma 12, Vicenza",
+			Email: "info@example.com", Websites: []string{"https://example.com"}}
+		for d := 1; d <= 5; d++ {
+			out.Business.Hours = append(out.Business.Hours, bizHour{Day: d, Mode: "specific_hours", Open: 8 * 60, Close: 18 * 60})
+		}
+		out.Business.Hours = append(out.Business.Hours, bizHour{6, "specific_hours", 9 * 60, 12 * 60},
+			bizHour{6, "specific_hours", 15 * 60, 19 * 60}, bizHour{0, "open_24h", 0, 0})
+	}
 	for _, c := range simChats {
 		if strings.HasSuffix(c.jid, "@g.us") && (i == 0 || i == 2 && c.name == "🎸 Band practice") {
 			out.Groups = append(out.Groups, groupRef{c.jid, c.name})
