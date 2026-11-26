@@ -408,6 +408,12 @@ func quotedStory(kind int, text string, thumb []byte) *waE2E.Message {
 	return &waE2E.Message{Conversation: proto.String(text)}
 }
 
+// storyReplyMessage is our text replying to the story id of poster, quoting quoted (quotedStory's).
+func storyReplyMessage(poster, id, text string, quoted *waE2E.Message) *waE2E.Message {
+	return &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: &text, ContextInfo: &waE2E.ContextInfo{
+		StanzaID: &id, Participant: &poster, RemoteJID: proto.String(types.StatusBroadcastJID.String()), QuotedMessage: quoted}}}
+}
+
 // handleStoryReply is story.reply: our text to the poster's 1:1 chat, quoting the story (the quote names
 // status@broadcast and the poster, as a reply to a status does). Our row goes in the chat at once, as any
 // message of ours, with the story's one-line preview as its quote.
@@ -439,9 +445,7 @@ func (s *Session) handleStoryReply(req json.RawMessage) (any, error) {
 		Kind: msgText, Text: r.Text, QuoteID: r.ID, QuotePreview: clip(preview(kind, text, 0), 80),
 		Extra: withStoryQuote("", r.Poster, thumb)})
 	s.nameNew(cli, jid, r.Poster, created)
-	msg := &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: &r.Text, ContextInfo: &waE2E.ContextInfo{
-		StanzaID: &r.ID, Participant: &r.Poster, RemoteJID: proto.String(types.StatusBroadcastJID.String()),
-		QuotedMessage: quotedStory(kind, text, thumb)}}}
+	msg := storyReplyMessage(r.Poster, r.ID, r.Text, quotedStory(kind, text, thumb))
 	if _, err := s.sendOut(cli, r.Poster, id, func(c *whatsmeow.Client) error { return s.sendMsg(c, jid, r.Poster, id, msg) }); err != nil {
 		return nil, err
 	}

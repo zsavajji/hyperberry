@@ -93,8 +93,8 @@ func TestUnreadIncoming(t *testing.T) {
 	}
 }
 
-// queuedTexts: our texts of msg.send still sending, oldest first; nothing else that is sending.
-func TestQueuedTexts(t *testing.T) {
+// queuedRows: our rows still sending, of every kind, oldest first; nothing else.
+func TestQueuedRows(t *testing.T) {
 	_, st, _ := newTestSim(t)
 	st.ops <- func(tx *storeTx) {
 		tx.ensureChat(tc, chatUser)
@@ -110,6 +110,7 @@ func TestQueuedTexts(t *testing.T) {
 			out("voice", 7, stateSending, msgVoice, ""),
 			out("forward", 8, stateSending, msgText, withKey("", "forwarded", "1")),
 			out("story", 9, stateSending, msgText, withStoryQuote("", tc, nil)),
+			out("photo", 4, stateSending, msgPhoto, ""),
 			{Chat: tc, ID: "deleted", TS: 11, Out: true, State: stateSending, Kind: msgText, Deleted: true},
 			{Chat: tc, ID: "theirs", TS: 12, Kind: msgText, Text: "hi"},
 		} {
@@ -117,10 +118,10 @@ func TestQueuedTexts(t *testing.T) {
 		}
 	}
 	var got []string
-	for _, m := range st.queuedTexts() {
+	for _, m := range st.queuedRows() {
 		got = append(got, m.ID)
 	}
-	if want := []string{"mentions", "tie", "late"}; strings.Join(got, ",") != strings.Join(want, ",") {
+	if want := []string{"photo", "voice", "forward", "story", "mentions", "tie", "late"}; strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Errorf("got %v, want %v", got, want)
 	}
 }

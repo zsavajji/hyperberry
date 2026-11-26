@@ -19,9 +19,9 @@ type queuedSend struct {
 }
 
 // sendQueue holds them in the order they were made, and says who is draining them.
-// ponytail: the queue lives in the engine's memory, so a message other than a text that is queued when the engine restarts
-// stays "sending" for good (a text of an earlier run is still sent from chats.db, by sendQueued); keep the queue in chats.db
-// if that matters. A send made while a drain runs goes at once, and may overtake the ones still queued.
+// The queue lives in the engine's memory, but the rows stay sending in chats.db, so at the next run's connect sendQueued
+// sends them again from their rows (retry.go). ponytail: a send made while a drain runs goes at once, and may overtake the
+// ones still queued.
 type sendQueue struct {
 	mu      sync.Mutex
 	items   []queuedSend
@@ -142,7 +142,7 @@ func (s *Session) sendOut(cli *whatsmeow.Client, chat, id string, attempt func(*
 	return false, err
 }
 
-// drainQueued runs at each connect: the texts an earlier run left sending (they are older), then the queue.
+// drainQueued runs at each connect: the rows an earlier run left sending, of every kind (they are older), then the queue.
 func (s *Session) drainQueued(cli *whatsmeow.Client) {
 	if !s.queue.start() {
 		return
