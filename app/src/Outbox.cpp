@@ -10,7 +10,6 @@
 #include <QFileInfo>
 #include <QFutureWatcher>
 #include <QRegExp>
-#include <QSet>
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QUuid>
@@ -38,16 +37,16 @@ Outbox::Outbox(EngineLink *engine, QObject *parent)
         if (!json.hasError() && doc.type() == QVariant::List)
             m_entries = doc.toList();
     }
-    // An app closed while it copied a file left a partial one in outbox/<id>/ and an entry that still has the original's path
-    // (args.original, which says the copy is done, is missing): copy it again, from a clean directory (copyMedia). One made
-    // before the copy was kept in args.original has its copy as the path: left alone.
+    // An entry made while the engine was down has args.original, the user's file, and its path is the copy in outbox/<id>/
+    // once the copy is done. An app closed while it copied left a partial file there and the entry with the original's
+    // path: copy it again, from a clean directory (copyMedia).
     QStringList ids;
     foreach (const QVariant &v, m_entries) {
         const QVariantMap entry = v.toMap();
         const QVariantMap a = entry["args"].toMap();
         const QString from = a["path"].toString();
         ids << entry["id"].toString();
-        if (entry["cmd"].toString() == "media.send" && a["original"].toString().isEmpty() && !from.isEmpty()
+        if (entry["cmd"].toString() == "media.send" && !a["original"].toString().isEmpty()
             && !from.startsWith(QDir::homePath() + "/outbox/"))
             startCopy(entry["id"].toString(), from);
     }
@@ -127,41 +126,15 @@ static bool copyMedia(const QString &from, const QString &to)
     return false;
 }
 
-// Run on a worker thread: the outbox/<id>/ directories that belong to no entry (the ids) and that no row of chats.db points
-// into are leftovers, of a send taken back while it copied or of a message deleted before the engine took its files with it:
-// they go. A directory touched since the app started (started) is one being made now, and stays. chats.db is read on a
-// connection of its own, read-only; if it can't be (not there before the first link), nothing is removed.
+// Run on a worker thread: the outbox/<id>/ directories that no entry owns (the ids) are leftovers, of a send taken back while it
+// copied or of an app closed after the engine's answer and before the copy was deleted: the engine keeps its own file from
+// its answer on, so no row of chats.db points into outbox/ and nothing else is checked. A directory touched since the app
+// started (started) is one being made now, and stays.
 static void sweepOrphans(QStringList entries, QDateTime started)
 {
     const QString root = QDir::homePath() + "/outbox/";
-    QStringList orphans;
     foreach (const QString &id, QDir(root).entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
-        if (!entries.contains(id) && QFileInfo(root + id).lastModified() < started.addSecs(-2))
-            orphans << id;
-    }
-    if (orphans.isEmpty())
-        return;
-    QSet<QString> used;
-    bool read = false;
-    {
-        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "outbox-sweep");
-        db.setDatabaseName(QDir::homePath() + "/chats.db");
-        db.setConnectOptions("QSQLITE_OPEN_READONLY");
-        if (db.open()) {
-            QSqlQuery q(db);
-            q.prepare("SELECT path FROM messages WHERE substr(path, 1, ?) = ?");
-            q.addBindValue(root.size());
-            q.addBindValue(root);
-            read = q.exec();
-            while (read && q.next())
-                used.insert(q.value(0).toString().mid(root.size()).section('/', 0, 0));
-        }
-    }
-    QSqlDatabase::removeDatabase("outbox-sweep");
-    if (!read)
-        return;
-    foreach (const QString &id, orphans) {
-        if (used.contains(id))
+        if (entries.contains(id) || QFileInfo(root + id).lastModified() >= started.addSecs(-2))
             continue;
         qDebug() << "outbox: removing the leftover" << (root + id);
         emptyDir(root + id);
@@ -192,13 +165,19 @@ QString Outbox::send(const QString &cmd, const QVariantMap &args)
     entry["chat"] = chatOf(cmd, a);
     entry["args"] = a;
     entry["ts"] = qlonglong(QDateTime::currentDateTime().toTime_t());
+    // A media.send made with the engine up goes with the user's own path: the engine keeps its own link or copy of the file
+    // when it takes the send. Made while it is down, the file is copied here, as the picked file may go and the cache's
+    // PNG-as-JPEG be overwritten while the message waits. The copy is made on a worker (a big video would freeze the UI):
+    // the entry is here at once, with the original's path and args.original, and onCopied switches it to the copy and lets it
+    // go to the engine, or keeps the original's path if the copy failed.
+    const bool copy = cmd == "media.send" && !m_engine->connected();
+    if (copy)
+        a["original"] = a["path"];
+    entry["args"] = a;
     m_entries << entry;
     save();
-    if (cmd == "media.send") {
-        // The copy is made on a worker (a big video would freeze the UI): the entry is here at once, with the original's
-        // path, and onCopied switches it to the copy and lets it go to the engine, or keeps the original if the copy failed.
+    if (copy)
         startCopy(id, a["path"].toString());
-    }
     emit changed(entry["chat"].toString());
     post(entry);
     return id;
@@ -267,19 +246,19 @@ void Outbox::onCopied()
         QVariantMap entry = m_entries[i].toMap();
         if (entry["id"].toString() != id)
             continue;
+        QVariantMap a = entry["args"].toMap();
         if (ok) {
-            QVariantMap a = entry["args"].toMap();
-            a["original"] = a["path"]; // the engine puts the row's path back to it once the message is sent, and removes the copy
-            a["path"] = to;
-            entry["args"] = a;
-            m_entries[i] = entry;
-            save();
-            emit changed(entry["chat"].toString());
+            a["path"] = to; // the engine puts the row's path back to args.original once the message is sent
         } else {
-            qWarning() << "outbox: could not copy" << entry["args"].toMap()["path"].toString();
+            qWarning() << "outbox: could not copy" << a["path"].toString();
             QDir().rmdir(QFileInfo(to).path());
+            a.remove("original"); // sent with the user's file, as one made with the engine up
         }
-        post(m_entries[i].toMap());
+        entry["args"] = a;
+        m_entries[i] = entry;
+        save();
+        emit changed(entry["chat"].toString());
+        post(entry);
         return;
     }
     if (ok) { // taken back while it copied
@@ -288,20 +267,20 @@ void Outbox::onCopied()
     }
 }
 
-void Outbox::remove(const QString &id, bool files)
+// The UI's copy of the file goes with the entry: when the engine has answered it keeps its own, and a send taken back has none.
+// A voice note's WAV goes only when taken back; once the engine has the note it deletes the WAV itself.
+void Outbox::remove(const QString &id, bool takenBack)
 {
     for (int i = 0; i < m_entries.size(); ++i) {
         const QVariantMap entry = m_entries[i].toMap();
         if (entry["id"].toString() != id)
             continue;
-        if (files) {
-            const QString path = entry["args"].toMap()["path"].toString();
-            if (entry["cmd"].toString() == "voice.send") {
-                QFile::remove(path);
-            } else if (path.startsWith(QDir::homePath() + "/outbox/")) {
-                QFile::remove(path);
-                QDir().rmdir(QFileInfo(path).path());
-            }
+        const QString path = entry["args"].toMap()["path"].toString();
+        if (path.startsWith(QDir::homePath() + "/outbox/")) {
+            QFile::remove(path);
+            QDir().rmdir(QFileInfo(path).path());
+        } else if (takenBack && entry["cmd"].toString() == "voice.send") {
+            QFile::remove(path);
         }
         m_entries.removeAt(i);
         save();

@@ -28,21 +28,22 @@ public:
     static void row(const QVariantMap &entry, int *kind, QString *text);
 
     // Keeps cmd with args, sends it when the engine is up, and returns the message's new id, which is also in the entry's
-    // args ("newId" for msg.forward and story.reply, else "id"). A media.send's file is copied to outbox/<id>/ under its own
-    // name (the engine names a document by it) on a worker thread: the picked file may go and the cache's PNG-as-JPEG is
-    // overwritten by the next of its name while the message waits. The entry has the original's path meanwhile; once the
-    // copy is done args.path is the copy and args.original the file it was copied from (the engine points the row's path
-    // back to it once it has sent the message, if it is still there, and removes the copy: engine/retry.go, dropSendFiles);
-    // a copy that failed leaves the original's path. An entry is not sent while it copies. An app closed in the middle of a
-    // copy left a partial file in outbox/<id>/ and an entry with no args.original: when the outbox is loaded (the
+    // args ("newId" for msg.forward and story.reply, else "id"). With the engine up a media.send goes with the user's own path:
+    // the engine keeps its own link or copy of the file when it takes the send. Made while the engine is down, the file is
+    // copied to outbox/<id>/ under its own name (the engine names a document by it) on a worker thread, as the picked file
+    // may go and the cache's PNG-as-JPEG is overwritten by the next of its name while the message waits. The entry has the
+    // original's path and args.original (the user's file) meanwhile, and no engine sends it; once the copy is done args.path
+    // is the copy, and a copy that failed leaves the original's path and drops args.original. The engine gets args.original
+    // with the copy as its path (the row's path goes back to the original once the message is sent). The copy goes with
+    // the entry, at the engine's answer: the engine has its own file by then. An app closed in the middle of a copy left a
+    // partial file in outbox/<id>/ and an entry with args.original and the original's path: when the outbox is loaded (the
     // constructor) each such entry is copying again, from a clean directory, on the same worker; with the original gone by
-    // then it keeps the original's path, which the engine fails and Retry/Cancel handle. Also then, on a worker, the
-    // outbox/<id>/ directories that no entry owns and no row of chats.db points into are removed.
+    // then it keeps the original's path, which the engine fails (copy_failed). Also then, on a worker, the outbox/<id>/
+    // directories that no entry owns are removed.
     Q_INVOKABLE QString send(const QString &cmd, const QVariantMap &args);
-    // Drops the entry. files: also the copy of its file and a voice note's WAV (a send taken back). Not when the engine took
-    // the message: its row points at them from then on (and the engine deletes the WAV itself; the copy it removes once the
-    // message is sent, when the original is still there).
-    void remove(const QString &id, bool files);
+    // Drops the entry and the copy of its file. takenBack: the send is cancelled, never made, so a voice note's WAV goes too
+    // (the engine deletes it itself once it has the note).
+    void remove(const QString &id, bool takenBack);
     bool has(const QString &id) const;
     // The entries going to chat, oldest first.
     QVariantList entries(const QString &chat) const;
