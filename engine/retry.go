@@ -283,6 +283,9 @@ func (s *Session) dropSendFiles(t *storeTx, o *mediaOut, from string) {
 		t.setFile(o.row.Chat, id, 2, o.original)
 		t.exec("UPDATE messages SET extra = NULLIF(json_remove(extra, '$.original'), '{}') WHERE chat = ? AND id = ? AND json_valid(extra)",
 			o.row.Chat, id) // the path is the original again: nothing is a copy
+		for _, c := range copies { // a forward of this message made while it waited carries the copy's path too
+			t.exec("UPDATE messages SET path = ? WHERE path = ?", o.original, c)
+		}
 		gone, restored = append(gone, copies...), true
 	}
 	t.after = append(t.after, func() {
