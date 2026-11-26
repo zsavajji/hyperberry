@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	"github.com/polymorfa/hypermeow"
 	"github.com/polymorfa/hypermeow/proto/waE2E"
@@ -34,7 +33,7 @@ func (s *Session) resendAttempt(row msgRow) (func(*whatsmeow.Client) error, erro
 				return nil, errors.New("its file is gone: " + row.Path)
 			}
 			o := s.mediaOf(row)
-			return func(c *whatsmeow.Client) error { return s.uploadMedia(c, jid, row.Path, o) }, nil
+			return func(c *whatsmeow.Client) error { return s.uploadMedia(c, jid, o) }, nil
 		case msgVoice:
 			ogg, err := os.ReadFile(oggPath(s.srv.dir, id))
 			if err != nil {
@@ -66,25 +65,12 @@ func (s *Session) resendAttempt(row msgRow) (func(*whatsmeow.Client) error, erro
 	return func(c *whatsmeow.Client) error { return s.sendMsg(c, jid, chat, id, msg) }, nil
 }
 
-// mediaOf is the upload of our media row, rebuilt: the mimetype by its file's extension, a video's poster read back from
-// the file the send kept (none: it goes without), and the original the row's path is a copy of, from its extra.
+// mediaOf is the upload of our media row, rebuilt: the mimetype by its file's extension, and a video's poster read back
+// from the file the send kept (none: it goes without).
 func (s *Session) mediaOf(row msgRow) *mediaOut {
 	_, mimeType := sendKind(row.Path)
 	poster, _ := os.ReadFile(posterPath(s.srv.dir, row.ID))
-	var x struct{ Original string }
-	json.Unmarshal([]byte(row.Extra), &x) // "" or not ours: no original
-	return &mediaOut{row: row, mime: mimeType, quote: s.quoteOf(row), poster: poster, original: x.Original}
-}
-
-// withOriginal sets the file a media row's path is a copy of in its extra ("original"), keeping what else is there, so a
-// send rebuilt after a restart (mediaOf) still knows it and dropSendFiles removes its copy. Its readers look for their own
-// keys by name, so it doesn't change what they see.
-func withOriginal(extra, original string) string {
-	b, err := json.Marshal(original)
-	if err != nil {
-		return extra
-	}
-	return withKey(extra, "original", string(b))
+	return &mediaOut{row: row, mime: mimeType, quote: s.quoteOf(row), poster: poster}
 }
 
 // resendMessage is the wire message of our row that goes as it is, with nothing to upload: a text (a reply, with
@@ -128,9 +114,12 @@ func (s *Session) quoteOf(row msgRow) msgRow {
 	return msgRow{}
 }
 
-// failRow marks our row failed, as sendOut does when an attempt fails.
-func (s *Session) failRow(chat, id string) {
-	s.store.ops <- func(t *storeTx) { t.sentAs(chat, id, 0, stateFailed) }
+// failRow marks our row failed because it can't be rebuilt, and lets go of its files: nothing will send it again.
+func (s *Session) failRow(row msgRow) {
+	s.store.ops <- func(t *storeTx) {
+		t.sentAs(row.Chat, row.ID, 0, stateFailed)
+		s.files().released(t, row, false)
+	}
 }
 
 // sendQueued sends the rows an earlier run left sending, of every kind, oldest first, each rebuilt from its row
@@ -161,8 +150,7 @@ func (s *Session) flushRow(cli *whatsmeow.Client, row msgRow) string {
 	attempt, err := s.resendAttempt(row)
 	if err != nil {
 		s.sending.Delete(row.ID)
-		s.failRow(row.Chat, row.ID)
-		os.Remove(posterPath(s.srv.dir, row.ID)) // nothing will send it again: a video's poster is of no use
+		s.failRow(row)
 		return "failed, can't be rebuilt: " + err.Error()
 	}
 	switch queued, err := s.sendOut(cli, row.Chat, row.ID, attempt); {
@@ -247,111 +235,4 @@ func (s *Session) handleRetry(req json.RawMessage) (any, error) {
 	}
 	go s.sendOut(cli, r.Chat, r.ID, attempt) // an upload takes minutes: not in the request's way
 	return reply, nil
-}
-
-// outboxDir is where the engine keeps the copies of the files its sends wait with.
-func outboxDir(dir string) string {
-	d, _ := filepath.Abs(filepath.Join(dir, "outbox-engine"))
-	return d
-}
-
-// posterPath is where a video's poster waits with the send, for a rebuild after a restart: the row keeps none. It goes when
-// the message is sent, cancelled, deleted (dropOwnFiles) or can't be rebuilt; a failed row keeps it for msg.retry.
-func posterPath(dir, id string) string { return filepath.Join(outboxDir(dir), id+".poster") }
-
-// dropSendFiles runs in the op that records a media send as sent, with from the file it sent: what it kept for a rebuild goes
-// (the video's poster), and so do the copies it made of the file, the engine's (keepOutgoing) and the UI outbox's
-// (outbox/<id>/), the row's path going back to the original. A gone original keeps the copies: they are the only file the
-// bubble can show. So does one under <data dir>/cache/ (the PNG converted to JPEG, say): the cache is cleared and its names
-// are reused, so it is as good as gone.
-// The original is in o as media.send gave it, or from the row's extra for a rebuild (mediaOf); a row made before extra kept it
-// has none after a restart, and keeps its copy.
-// ponytail: with two copies and no original both stay, though only the row's path is shown.
-func (s *Session) dropSendFiles(t *storeTx, o *mediaOut, from string) {
-	dir, id := s.srv.dir, o.row.ID
-	eng, ui := outboxDir(dir), uiOutboxDir(dir, id)
-	gone := []string{posterPath(dir, id)}
-	var copies []string
-	for _, c := range []string{from, o.row.Path} {
-		if d := filepath.Dir(c); (d == eng || d == ui) && c != o.original {
-			copies = append(copies, c)
-		}
-	}
-	cache := filepath.Join(filepath.Dir(eng), "cache") + string(filepath.Separator)
-	restored := false
-	if _, err := os.Stat(o.original); err == nil && len(copies) > 0 && !strings.HasPrefix(o.original, cache) {
-		t.setFile(o.row.Chat, id, 2, o.original)
-		t.exec("UPDATE messages SET extra = NULLIF(json_remove(extra, '$.original'), '{}') WHERE chat = ? AND id = ? AND json_valid(extra)",
-			o.row.Chat, id) // the path is the original again: nothing is a copy
-		for _, c := range copies { // a forward of this message made while it waited carries the copy's path too
-			t.exec("UPDATE messages SET path = ? WHERE path = ?", o.original, c)
-		}
-		gone, restored = append(gone, copies...), true
-	}
-	t.after = append(t.after, func() {
-		for _, p := range gone {
-			os.Remove(p)
-		}
-		if restored { // the UI outbox's directory, with its copy: after a restart the row's path was the engine's copy, not this
-			os.RemoveAll(ui)
-		}
-	})
-}
-
-// uiOutboxDir is where the UI outbox keeps the copy of the file of its media.send: <data dir>/outbox/<id>/.
-func uiOutboxDir(dir, id string) string {
-	return filepath.Join(filepath.Dir(outboxDir(dir)), "outbox", id)
-}
-
-// dropOwnFiles runs where our row m is deleted (deleteMessage, clearChat): once the transaction has committed, the files of
-// its send that are ours alone go. Those are its path when it lies in outbox-engine/, the UI outbox's outbox/<id>/ with its
-// copy (which the row's path need not point to: the engine's copy replaced it), a video's poster, and a voice note's OGG;
-// never a file elsewhere, which is the user's own photo. What another row has too (a forward of this message carries its
-// path) stays.
-func (t *storeTx) dropOwnFiles(m msgRow) {
-	if !m.Out || t.st == nil { // st is nil in tests of single writes
-		return
-	}
-	dir := t.st.srv.dir
-	held := func(prefix string) bool { // a row still points there
-		var n int
-		return t.tx.QueryRow("SELECT 1 FROM messages WHERE instr(path, ?) = 1 LIMIT 1", prefix).Scan(&n) == nil
-	}
-	gone := []string{posterPath(dir, m.ID)}
-	if m.Kind == msgVoice {
-		gone = append(gone, oggPath(dir, m.ID))
-	}
-	if m.Path != "" && filepath.Dir(m.Path) == outboxDir(dir) && !held(m.Path) {
-		gone = append(gone, m.Path)
-	}
-	ui := uiOutboxDir(dir, m.ID)
-	if _, err := os.Stat(ui); err != nil || held(ui+string(filepath.Separator)) { // held scans the table: only for a directory that is there
-		ui = ""
-	}
-	t.after = append(t.after, func() {
-		for _, p := range gone {
-			os.Remove(p)
-		}
-		if ui != "" {
-			os.RemoveAll(ui)
-		}
-	})
-}
-
-// keepOutgoing copies the file a media send waits with to outbox-engine/<id><ext> and points the row's path at the copy, so
-// the send doesn't depend on the original staying, and a restart's rebuild finds it. The row's path is the bubble's picture
-// until the send is over: then dropSendFiles puts the original back when it is still there, else the copy stays; msg.cancel
-// removes it. original is the file the send was first made from, kept in the row's extra with the new path (withOriginal).
-// It returns the path to send from: the copy, or the original when the copy failed.
-func (s *Session) keepOutgoing(chat, id, path, original string) string {
-	dst := filepath.Join(outboxDir(s.srv.dir), id+filepath.Ext(path))
-	if err := copyFile(path, dst); err != nil {
-		s.log.Warnf("outbox copy of %s: %v", id, err)
-		return path
-	}
-	s.store.ops <- func(t *storeTx) {
-		m, _ := t.messageByID(chat, id)
-		t.exec("UPDATE messages SET path = ?, extra = ? WHERE chat = ? AND id = ?", dst, withOriginal(m.Extra, original), chat, id)
-	}
-	return dst
 }

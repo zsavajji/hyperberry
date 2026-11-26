@@ -26,7 +26,7 @@ COALESCE(size, 0), COALESCE(path, ''), extra, COALESCE(sticker, '') FROM message
 }
 
 // deleteMessage is "delete for me": the row goes, and with it the files of a send of ours that are ours alone
-// (dropOwnFiles). When it was the chat's newest, the preview falls back to the next one; last_ts stays, so the chat keeps its
+// (sendFiles.dropped). When it was the chat's newest, the preview falls back to the next one; last_ts stays, so the chat keeps its
 // place in the list.
 func (t *storeTx) deleteMessage(chat, id string) {
 	m, had := t.messageByID(chat, id)
@@ -38,8 +38,8 @@ func (t *storeTx) deleteMessage(chat, id string) {
 	t.changed(chat, id)
 	t.exec("DELETE FROM reactions WHERE chat = ? AND msg = ?", chat, id)
 	t.exec("DELETE FROM poll_votes WHERE chat = ? AND msg = ?", chat, id)
-	if had {
-		t.dropOwnFiles(m)
+	if had && t.st != nil { // st is nil in tests of single writes
+		sendFiles{t.st.srv.dir}.dropped(t, m)
 	}
 	if !wasLast {
 		return
@@ -116,8 +116,10 @@ func (t *storeTx) clearChat(chat string, drop bool) {
 	t.exec("DELETE FROM messages WHERE chat = ?", chat)
 	t.exec("DELETE FROM reactions WHERE chat = ?", chat)
 	t.exec("DELETE FROM poll_votes WHERE chat = ?", chat)
-	for _, m := range ours {
-		t.dropOwnFiles(m) // the send files of our rows (the rows are gone: another chat's forward of one keeps its file)
+	if t.st != nil {
+		for _, m := range ours {
+			sendFiles{t.st.srv.dir}.dropped(t, m) // the send files of our rows (the rows are gone: another chat's forward of one keeps its file)
+		}
 	}
 	if drop {
 		if t.exec("DELETE FROM chats WHERE jid = ?", chat) > 0 {

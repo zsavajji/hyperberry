@@ -71,7 +71,7 @@ func sendKind(path string) (kind int, mimeType string) {
 type mediaSendReq struct {
 	Chat, Path, Quote, Caption string
 	ID                         string // the id the caller chose for the message, if it did (outID)
-	Original                   string // the file Path is a copy of, if it is one (the UI outbox's): see dropSendFiles
+	Original                   string // the file Path is a copy of, if it is one (the UI outbox's): extra.original records it, not Path
 	Thumb                      []byte
 	File                       bool // as a document whatever the extension: the staged bar's As file on a JPEG
 	Width, Height              int
@@ -103,24 +103,26 @@ type mediaOut struct {
 	mime    string
 	quote   msgRow
 	created bool // the chat was new
-	// original is the file the send was first made from, which the bubble shows once the copies of it go: media.send's
-	// original, else its path. A rebuild after a restart reads it back from the row's extra ("original"); empty for a row
-	// made before that was kept.
-	original string
 	// poster is a video's thumbnail as the message carries it: the UI draws one with a play mark, so the
 	// phones that get it show a video and not a grey box. Our own row keeps none (the UI marks a video by itself); the
 	// send keeps it in outbox-engine/<id>.poster (posterPath) until it is over, for a rebuild after a restart.
 	poster []byte
 }
 
+// kind is what the file goes as: by its extension, or a document when the caller says so (File).
+func (r mediaSendReq) kind() (kind int, mimeType string) {
+	kind, mimeType = sendKind(r.Path)
+	if r.File {
+		kind = msgDoc
+	}
+	return kind, mimeType
+}
+
 // queueMedia puts our row in as sending, and is the one place both accounts build it. A
 // photo's thumbnail and size are the UI's, and a photo's or a video's caption is its text; the
 // other kinds ignore them.
 func (st *Store) queueMedia(jid types.JID, r mediaSendReq, id string) *mediaOut {
-	kind, mimeType := sendKind(r.Path)
-	if r.File {
-		kind = msgDoc
-	}
+	kind, mimeType := r.kind()
 	o := &mediaOut{mime: mimeType, row: msgRow{Chat: r.Chat, ID: id, TS: time.Now().Unix(), Out: true,
 		State: stateSending, Kind: kind, Size: r.size, Path: r.Path, MediaState: 2}}
 	switch kind {
@@ -131,7 +133,7 @@ func (st *Store) queueMedia(jid types.JID, r mediaSendReq, id string) *mediaOut 
 	case msgDoc:
 		o.row.Text = filepath.Base(r.Path)
 	}
-	if r.Original != "" { // the UI outbox's copy: the row's extra keeps the file it is a copy of, for a rebuild after a restart
+	if r.Original != "" { // the file the row's path stands for, which it goes back to once the send is over (sendfiles.go)
 		o.row.Extra = withOriginal(o.row.Extra, r.Original)
 	}
 	o.quote, o.created = st.queueRow(jid, r.Chat, r.Quote, o.row)
@@ -178,8 +180,8 @@ func mediaMessage(o *mediaOut, up whatsmeow.UploadResponse, ci *waE2E.ContextInf
 		FileName: &r.Text, Title: &r.Text, ContextInfo: ci}}
 }
 
-// handleMediaSend is media.send: the row is in as sending before the reply; the upload and the
-// send run after it.
+// handleMediaSend is media.send: the file is kept and the row is in as sending before the reply; the upload and the
+// send follow it.
 func (s *Session) handleMediaSend(req json.RawMessage) (any, error) {
 	r, err := parseMediaSend(req)
 	if err != nil {
@@ -196,35 +198,24 @@ func (s *Session) handleMediaSend(req json.RawMessage) (any, error) {
 	if dup {
 		return map[string]string{"id": id}, nil
 	}
+	// The row's path is the kept file, and the file it was made from (the caller's original, else Path) its extra.original.
+	var poster []byte
+	if kind, _ := r.kind(); kind == msgVideo {
+		poster = r.Thumb
+	}
+	kept, err := s.files().keep(id, r.Path, poster)
+	if err != nil {
+		s.sending.Delete(id)
+		return nil, &Error{"copy_failed", err.Error()}
+	}
+	if r.Original == "" {
+		r.Original = r.Path
+	}
+	r.Path = kept
 	o := s.store.queueMedia(jid, r, id)
-	if o.original = r.Original; o.original == "" {
-		o.original = r.Path
-	}
-	if len(o.poster) > 0 {
-		if err := writeFile(posterPath(s.srv.dir, id), o.poster); err != nil {
-			s.log.Warnf("poster of %s: %v", id, err)
-		}
-	}
 	go func() {
 		s.nameNew(cli, jid, r.Chat, o.created)
-		// A send that has to wait works from its own copy of the file (keepOutgoing), before the first try or once the
-		// connection drops under one; a send that goes at once copies nothing.
-		path := r.Path
-		keep := func() {
-			if path == r.Path {
-				path = s.keepOutgoing(r.Chat, id, r.Path, o.original)
-			}
-		}
-		if !cli.IsConnected() {
-			keep()
-		}
-		s.sendOut(cli, r.Chat, id, func(c *whatsmeow.Client) error {
-			err := s.uploadMedia(c, jid, path, o)
-			if err != nil && !c.IsConnected() {
-				keep()
-			}
-			return err
-		})
+		s.sendOut(cli, r.Chat, id, func(c *whatsmeow.Client) error { return s.uploadMedia(c, jid, o) })
 	}()
 	return map[string]string{"id": id}, nil
 }
@@ -261,12 +252,12 @@ func (s *Session) uploadFile(ctx context.Context, cli *whatsmeow.Client, path st
 }
 
 // uploadMedia is one attempt at a media send: the upload, then the message, recorded as sent; sendOut handles a failure.
-func (s *Session) uploadMedia(cli *whatsmeow.Client, jid types.JID, path string, o *mediaOut) error {
+func (s *Session) uploadMedia(cli *whatsmeow.Client, jid types.JID, o *mediaOut) error {
 	chat, id := o.row.Chat, o.row.ID
 	ctx, cancel := context.WithTimeout(context.Background(), mediaTimeout)
 	defer cancel()
 	t0 := time.Now()
-	up, err := s.uploadFile(ctx, cli, path, uploadTypes[o.row.Kind])
+	up, err := s.uploadFile(ctx, cli, o.row.Path, uploadTypes[o.row.Kind])
 	if err == nil {
 		logTransfer(s.log, "media "+id+" sent", int64(up.FileLength), t0)
 		var ci *waE2E.ContextInfo
@@ -280,7 +271,7 @@ func (s *Session) uploadMedia(cli *whatsmeow.Client, jid types.JID, path string,
 			s.store.ops <- func(t *storeTx) {
 				t.sentAs(chat, id, resp.Timestamp.Unix(), stateSent)
 				t.exec("UPDATE messages SET media = ? WHERE chat = ? AND id = ?", string(info), chat, id)
-				s.dropSendFiles(t, o, path)
+				s.files().released(t, o.row, true)
 			}
 			return nil
 		}
