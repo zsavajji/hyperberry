@@ -256,8 +256,7 @@ func outboxDir(dir string) string {
 }
 
 // posterPath is where a video's poster waits with the send, for a rebuild after a restart: the row keeps none. It goes when
-// the message is sent, cancelled or can't be rebuilt; a failed row keeps it for msg.retry.
-// ponytail: a failed row that is deleted for me leaves it, as it leaves its copy.
+// the message is sent, cancelled, deleted (dropOwnFiles) or can't be rebuilt; a failed row keeps it for msg.retry.
 func posterPath(dir, id string) string { return filepath.Join(outboxDir(dir), id+".poster") }
 
 // dropSendFiles runs in the op that records a media send as sent, with from the file it sent: what it kept for a rebuild goes
@@ -299,6 +298,41 @@ func (s *Session) dropSendFiles(t *storeTx, o *mediaOut, from string) {
 // uiOutboxDir is where the UI outbox keeps the copy of the file of its media.send: <data dir>/outbox/<id>/.
 func uiOutboxDir(dir, id string) string {
 	return filepath.Join(filepath.Dir(outboxDir(dir)), "outbox", id)
+}
+
+// dropOwnFiles runs where our row m is deleted (deleteMessage, clearChat): once the transaction has committed, the files of
+// its send that are ours alone go. Those are its path when it lies in outbox-engine/, the UI outbox's outbox/<id>/ with its
+// copy (which the row's path need not point to: the engine's copy replaced it), a video's poster, and a voice note's OGG;
+// never a file elsewhere, which is the user's own photo. What another row has too (a forward of this message carries its
+// path) stays.
+func (t *storeTx) dropOwnFiles(m msgRow) {
+	if !m.Out || t.st == nil { // st is nil in tests of single writes
+		return
+	}
+	dir := t.st.srv.dir
+	held := func(prefix string) bool { // a row still points there
+		var n int
+		return t.tx.QueryRow("SELECT 1 FROM messages WHERE instr(path, ?) = 1 LIMIT 1", prefix).Scan(&n) == nil
+	}
+	gone := []string{posterPath(dir, m.ID)}
+	if m.Kind == msgVoice {
+		gone = append(gone, oggPath(dir, m.ID))
+	}
+	if m.Path != "" && filepath.Dir(m.Path) == outboxDir(dir) && !held(m.Path) {
+		gone = append(gone, m.Path)
+	}
+	ui := uiOutboxDir(dir, m.ID)
+	if _, err := os.Stat(ui); err != nil || held(ui+string(filepath.Separator)) { // held scans the table: only for a directory that is there
+		ui = ""
+	}
+	t.after = append(t.after, func() {
+		for _, p := range gone {
+			os.Remove(p)
+		}
+		if ui != "" {
+			os.RemoveAll(ui)
+		}
+	})
 }
 
 // keepOutgoing copies the file a media send waits with to outbox-engine/<id><ext> and points the row's path at the copy, so

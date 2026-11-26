@@ -25,9 +25,11 @@ COALESCE(size, 0), COALESCE(path, ''), extra, COALESCE(sticker, '') FROM message
 	return r, err == nil
 }
 
-// deleteMessage is "delete for me": the row goes. When it was the chat's newest, the preview
-// falls back to the next one; last_ts stays, so the chat keeps its place in the list.
+// deleteMessage is "delete for me": the row goes, and with it the files of a send of ours that are ours alone
+// (dropOwnFiles). When it was the chat's newest, the preview falls back to the next one; last_ts stays, so the chat keeps its
+// place in the list.
 func (t *storeTx) deleteMessage(chat, id string) {
+	m, had := t.messageByID(chat, id)
 	var newest string
 	wasLast := t.tx.QueryRow("SELECT id FROM messages WHERE chat = ? ORDER BY ts DESC LIMIT 1", chat).Scan(&newest) == nil && newest == id
 	if t.exec("DELETE FROM messages WHERE chat = ? AND id = ?", chat, id) == 0 {
@@ -36,6 +38,9 @@ func (t *storeTx) deleteMessage(chat, id string) {
 	t.changed(chat, id)
 	t.exec("DELETE FROM reactions WHERE chat = ? AND msg = ?", chat, id)
 	t.exec("DELETE FROM poll_votes WHERE chat = ? AND msg = ?", chat, id)
+	if had {
+		t.dropOwnFiles(m)
+	}
 	if !wasLast {
 		return
 	}
@@ -83,17 +88,20 @@ func (t *storeTx) rewritePreviews() {
 // notes', photos' and stickers' files once it has committed (not Downloads: those are the user's, as a browser's). A cleared chat keeps its row and last_ts, so its place in
 // the list, with no preview and nothing unread; a deleted one goes too.
 func (t *storeTx) clearChat(chat string, drop bool) {
-	rows, err := t.tx.Query("SELECT id, kind FROM messages WHERE chat = ?", chat)
+	rows, err := t.tx.Query("SELECT id, kind, out, COALESCE(path, '') FROM messages WHERE chat = ?", chat)
 	if err != nil {
 		t.log.Warnf("clear chat: %v", err)
 		return
 	}
 	var voice, photos, stickers []string
+	var ours []msgRow
 	for rows.Next() {
-		var id string
+		var id, path string
 		var kind int
-		if rows.Scan(&id, &kind) == nil {
+		var out bool
+		if rows.Scan(&id, &kind, &out, &path) == nil {
 			t.changed(chat, id)
+			ours = append(ours, msgRow{ID: id, Kind: kind, Out: out, Path: path})
 			switch kind {
 			case msgVoice:
 				voice = append(voice, id)
@@ -108,6 +116,9 @@ func (t *storeTx) clearChat(chat string, drop bool) {
 	t.exec("DELETE FROM messages WHERE chat = ?", chat)
 	t.exec("DELETE FROM reactions WHERE chat = ?", chat)
 	t.exec("DELETE FROM poll_votes WHERE chat = ?", chat)
+	for _, m := range ours {
+		t.dropOwnFiles(m) // the send files of our rows (the rows are gone: another chat's forward of one keeps its file)
+	}
 	if drop {
 		if t.exec("DELETE FROM chats WHERE jid = ?", chat) > 0 {
 			t.chats[chat] = true

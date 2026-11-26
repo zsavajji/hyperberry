@@ -119,9 +119,7 @@ func TestResendEveryKind(t *testing.T) {
 	if _, err := s.handleCancel(json.RawMessage(`{"chat":"` + chat + `","id":"D1"}`)); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := os.Stat(d.Path); !os.IsNotExist(err) {
-		t.Errorf("the cancelled send's copy is still there: %v", err)
-	}
+	waitGone(t, d.Path) // deleteMessage's, once its transaction has committed
 	if _, err := os.Stat(wavPath); !os.IsNotExist(err) {
 		t.Errorf("the WAV of the voice note is still there: %v", err)
 	}
@@ -477,5 +475,90 @@ func TestRebuiltSendDropsItsCopies(t *testing.T) {
 	settle(st)
 	if after, _ := st.row(chat, "G1"); after.Path != row.Path || !exists(row.Path) || !strings.Contains(after.Extra, gone) {
 		t.Errorf("original gone: path %q, extra %q, the copy %v", after.Path, after.Extra, exists(row.Path))
+	}
+}
+
+// Deleting one of our rows (for me, clear chat, delete chat, msg.cancel) takes the files of its send that are ours alone: the
+// copy in outbox-engine/, the UI outbox's outbox/<id>/ (whether or not the row's path is in it), the video's poster, a voice
+// note's OGG. A file elsewhere is the user's and stays, and so does one another row has too.
+func TestDeleteDropsSendFiles(t *testing.T) {
+	s, st := offlineSession(t)
+	chat, other, dir, tmp := retryChat, "4915700000008@s.whatsapp.net", s.srv.dir, t.TempDir()
+	write := func(p string) string {
+		os.MkdirAll(filepath.Dir(p), 0o755)
+		os.WriteFile(p, []byte("x"), 0o644)
+		return p
+	}
+	user := write(filepath.Join(tmp, "mine.jpg"))
+	ui := func(id string) string { return filepath.Join(dir, "outbox", id) }
+	type row struct {
+		id, path string
+		kind     int
+		out      bool
+	}
+	rowsOf := []row{
+		{"F1", filepath.Join(outboxDir(dir), "F1.mp4"), msgVideo, true},  // the engine's copy, the UI's too, a poster
+		{"F2", filepath.Join(ui("F2"), "p.jpg"), msgPhoto, true},         // the UI's copy
+		{"F3", user, msgVideo, true},                                     // the user's own file, and a poster
+		{"F4", "", msgVoice, true},                                       // an OGG
+		{"F5", filepath.Join(outboxDir(dir), "F5.jpg"), msgPhoto, true},  // a forward in another chat has it too
+		{"F6", filepath.Join(outboxDir(dir), "F6.jpg"), msgPhoto, false}, // not ours
+		{"F7", filepath.Join(ui("F8"), "x.jpg"), msgPhoto, true},         // another message's directory
+	}
+	ours := []string{rowsOf[0].path, ui("F1"), posterPath(dir, "F1"), ui("F2"), posterPath(dir, "F3"), oggPath(dir, "F4")} // all gone
+	kept := []string{user, rowsOf[4].path, rowsOf[5].path, rowsOf[6].path}
+	build := func() {
+		for _, r := range rowsOf {
+			if r.path != "" && r.path != user {
+				write(r.path)
+			}
+		}
+		write(filepath.Join(ui("F1"), "p.mp4"))
+		write(posterPath(dir, "F1"))
+		write(posterPath(dir, "F3"))
+		write(oggPath(dir, "F4"))
+		st.runOp(func(tx *storeTx) {
+			tx.ensureChat(chat, chatUser)
+			tx.ensureChat(other, chatUser)
+			for i, r := range rowsOf {
+				tx.insertMessage(msgRow{Chat: chat, ID: r.id, TS: int64(i + 1), Out: r.out, State: stateFailed, Kind: r.kind, Path: r.path})
+			}
+			tx.insertMessage(msgRow{Chat: other, ID: "FW5", TS: 1, Out: true, State: stateSent, Kind: msgPhoto, Path: rowsOf[4].path})
+		})
+	}
+	check := func(t *testing.T, how string) {
+		t.Helper()
+		settle(st)
+		for _, p := range ours {
+			if exists(p) {
+				t.Errorf("%s: %s is still there", how, p)
+			}
+		}
+		for _, p := range kept {
+			if !exists(p) {
+				t.Errorf("%s: %s went, and isn't ours alone", how, p)
+			}
+		}
+		if n := rows(st, "SELECT count(*) FROM messages WHERE chat = ?", chat); n != 0 {
+			t.Errorf("%s: %d rows left", how, n)
+		}
+	}
+
+	// Delete for me: the handler tells our other devices too, which fails offline and is only logged.
+	build()
+	var ids []string
+	for _, r := range rowsOf {
+		ids = append(ids, `"`+r.id+`"`)
+	}
+	if _, err := s.handleDelete(json.RawMessage(`{"chat":"` + chat + `","ids":[` + strings.Join(ids, ",") + `]}`)); err != nil {
+		t.Fatal(err)
+	}
+	check(t, "delete for me")
+
+	// Clear chat and delete chat.
+	for _, drop := range []bool{false, true} {
+		build()
+		st.runOp(func(tx *storeTx) { tx.clearChat(chat, drop) })
+		check(t, map[bool]string{false: "clear chat", true: "delete chat"}[drop])
 	}
 }

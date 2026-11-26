@@ -2,8 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"os"
-	"path/filepath"
 	"sync"
 
 	"github.com/polymorfa/hypermeow"
@@ -215,12 +213,5 @@ func (s *Session) handleCancel(req json.RawMessage) (any, error) {
 	if err := s.store.runOp(func(t *storeTx) { t.deleteMessage(r.Chat, r.ID) }); err != nil {
 		return nil, err
 	}
-	if m.Kind == msgVoice {
-		os.Remove(oggPath(s.srv.dir, r.ID))
-	}
-	if filepath.Dir(m.Path) == outboxDir(s.srv.dir) { // the copy keepOutgoing made of a media send's file
-		os.Remove(m.Path)
-	}
-	os.Remove(posterPath(s.srv.dir, r.ID)) // a video's poster
-	return map[string]string{}, nil
+	return map[string]string{}, nil // deleteMessage took its files: the copy, a video's poster, a voice note's OGG
 }
