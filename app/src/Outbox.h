@@ -42,6 +42,9 @@ public:
     // the message: its row points at them from then on (and the engine deletes the WAV itself; the copy it removes once the
     // message is sent, when the original is still there).
     void remove(const QString &id, bool files);
+    // Drops every entry with its files: the link ended (a logout, the device removed), and what waits belonged to that
+    // account.
+    void clear();
     bool has(const QString &id) const;
     // The entries going to chat, oldest first.
     QVariantList entries(const QString &chat) const;

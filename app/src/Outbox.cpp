@@ -268,6 +268,12 @@ void Outbox::remove(const QString &id, bool files)
     }
 }
 
+void Outbox::clear()
+{
+    while (!m_entries.isEmpty())
+        remove(m_entries.first().toMap()["id"].toString(), true);
+}
+
 bool Outbox::has(const QString &id) const
 {
     foreach (const QVariant &entry, m_entries) {

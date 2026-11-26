@@ -296,6 +296,8 @@ void EngineLink::setLink(const QVariantMap &link)
     const bool linked = link["state"].toString() == "ready";
     if (linked != m_linked) {
         m_linked = linked;
+        if (!linked)
+            m_outbox.clear(); // the sends waiting belonged to the account that is gone (the user, 2026-11-26)
         QSettings settings(QDir::homePath() + "/settings.ini", QSettings::IniFormat);
         settings.setValue("linked", linked);
         settings.sync();
