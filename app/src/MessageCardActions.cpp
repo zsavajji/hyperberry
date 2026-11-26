@@ -49,20 +49,23 @@ void MessageCard::onPopulating()
     setKeys(true);
     const bool deleted = flag("deleted");
     const bool readOnly = flag("readOnly");
-    m_reply->setEnabled(!deleted && !readOnly);
-    m_react->setEnabled(!deleted && !readOnly);
-    m_forward->setEnabled(flag("forwardable"));
+    // A bubble of the outbox has no row in the engine yet (it answers not_found to a reply, reaction, star, forward,
+    // translation or favourite of it): its menu keeps the actions that need none, Cancel sending, Copy and Delete for me.
+    const bool outbox = flag("outbox");
+    m_reply->setEnabled(!deleted && !readOnly && !outbox);
+    m_react->setEnabled(!deleted && !readOnly && !outbox);
+    m_forward->setEnabled(flag("forwardable") && !outbox);
     if (m_votes)
         m_votes->setEnabled(flag("poll") && !deleted);
     m_copy->setEnabled(!deleted && !str("text").isEmpty());
-    m_translate->setEnabled(flag("canTranslate"));
+    m_translate->setEnabled(flag("canTranslate") && !outbox);
     m_translate->setTitle(Card::tr(kContext, flag("translated") ? "Show original" : "Translate"));
     const bool starred = flag("starred");
     m_star->setTitle(Card::tr(kContext, starred ? "Unstar" : "Star"));
     m_star->setImageSource(Card::url(starred ? "asset:///images/unstar_action.png" : "asset:///images/star_action.png"));
-    m_star->setEnabled(!deleted);
+    m_star->setEnabled(!deleted && !outbox);
     // A sticker row (a name, not deleted) offers its favourite action; any other card's menu doesn't have it.
-    const bool sticker = !deleted && !str("sticker").isEmpty();
+    const bool sticker = !deleted && !outbox && !str("sticker").isEmpty();
     if (sticker != m_faveIn) {
         if (sticker)
             m_menu->insert(m_faveAt, m_fave);
@@ -72,7 +75,7 @@ void MessageCard::onPopulating()
     }
     m_fave->setTitle(Card::tr(kContext, flag("fave") ? "Remove from favourites" : "Add to favourites"));
     m_fave->setEnabled(sticker); // out of the menu, its letter stays off too
-    m_edit->setEnabled(flag("editable"));
+    m_edit->setEnabled(flag("editable") && !outbox); // state 0 isn't editable anyway
     m_revoke->setEnabled(flag("revocable"));
     m_cancel->setEnabled(flag("out") && !deleted && m_msg.value("state").toInt() == 0);
     m_retry->setEnabled(flag("out") && !deleted && m_msg.value("state").toInt() == 4);

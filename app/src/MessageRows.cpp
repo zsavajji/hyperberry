@@ -74,6 +74,7 @@ MessageModel::Msg MessageModel::read(const QVariantList &q)
     m.who = q.value(5).isNull() ? q.value(6).toString() : q.value(5).toString();
     m.data["readOnly"] = m_chat.endsWith("@newsletter"); // a channel: no reply, reaction, delete or vote (step 6.6g)
     m.data["album"] = QVariantList(); // MessageModel::albumData fills it for an album; never undefined in QML
+    m.data["outbox"] = false; // pending() says true: the engine has no such row yet, so its menu offers what needs none
     const QString text = q.value(8).toString();
     const bool deleted = q.value(11).toInt() != 0;
     const QLocale &locale = m_locale;
@@ -506,6 +507,7 @@ QList<MessageModel::Msg> MessageModel::pending(const QList<Msg> &db)
         v[4] = 0;
         Msg m = read(v);
         m.pending = true;
+        m.data["outbox"] = true;
         rows << m;
     }
     return rows;
