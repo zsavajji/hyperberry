@@ -261,6 +261,16 @@
         <source>Unfollow</source>
         <translation>Przestań obserwować</translation>
     </message>
+    <message>
+        <location filename="../assets/ChatList.qml"/>
+        <source>Delete this chat?</source>
+        <translation>Usunąć ten czat?</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChatList.qml"/>
+        <source>Delete</source>
+        <translation>Usuń</translation>
+    </message>
 </context>
 <context>
     <name>ChatListModel</name>
@@ -474,6 +484,11 @@
     <message>
         <source>Translate…</source>
         <translation>Tłumacz…</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChatRow.qml"/>
+        <source>Delete chat</source>
+        <translation>Usuń czat</translation>
     </message>
 </context>
 <context>
@@ -716,6 +731,46 @@
         <location filename="../assets/ContactInfoPage.qml" line="1" />
         <source>Video call</source>
         <translation>Połączenie wideo</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml"/>
+        <source>Business account</source>
+        <translation>Konto firmowe</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml"/>
+        <source>Uses WhatsApp Business</source>
+        <translation>Używa WhatsApp Business</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml"/>
+        <source>Open now</source>
+        <translation>Teraz otwarte</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml"/>
+        <source>Closed now</source>
+        <translation>Teraz zamknięte</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml"/>
+        <source>By appointment</source>
+        <translation>Po umówieniu</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml"/>
+        <source>Open 24 hours</source>
+        <translation>Otwarte całą dobę</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml"/>
+        <source>By appointment only</source>
+        <translation>Tylko po umówieniu</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml"/>
+        <source>Closed</source>
+        <translation>Zamknięte</translation>
     </message>
 </context>
 <context>

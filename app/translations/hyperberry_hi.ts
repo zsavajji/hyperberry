@@ -260,6 +260,16 @@
         <source>Unfollow</source>
         <translation>अनफ़ॉलो करें</translation>
     </message>
+    <message>
+        <location filename="../assets/ChatList.qml"/>
+        <source>Delete this chat?</source>
+        <translation>इस चैट को डिलीट करें?</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChatList.qml"/>
+        <source>Delete</source>
+        <translation>डिलीट करें</translation>
+    </message>
 </context>
 <context>
     <name>ChatListModel</name>
@@ -473,6 +483,11 @@
     <message>
         <source>Translate…</source>
         <translation>अनुवाद…</translation>
+    </message>
+    <message>
+        <location filename="../assets/ChatRow.qml"/>
+        <source>Delete chat</source>
+        <translation>चैट डिलीट करें</translation>
     </message>
 </context>
 <context>
@@ -714,6 +729,46 @@
         <location filename="../assets/ContactInfoPage.qml" line="1" />
         <source>Video call</source>
         <translation>वीडियो कॉल</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml"/>
+        <source>Business account</source>
+        <translation>बिज़नेस अकाउंट</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml"/>
+        <source>Uses WhatsApp Business</source>
+        <translation>WhatsApp Business का उपयोग करता है</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml"/>
+        <source>Open now</source>
+        <translation>अभी खुला है</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml"/>
+        <source>Closed now</source>
+        <translation>अभी बंद है</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml"/>
+        <source>By appointment</source>
+        <translation>अपॉइंटमेंट से</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml"/>
+        <source>Open 24 hours</source>
+        <translation>24 घंटे खुला</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml"/>
+        <source>By appointment only</source>
+        <translation>केवल अपॉइंटमेंट से</translation>
+    </message>
+    <message>
+        <location filename="../assets/ContactInfoPage.qml"/>
+        <source>Closed</source>
+        <translation>बंद</translation>
     </message>
 </context>
 <context>
