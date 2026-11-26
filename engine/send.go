@@ -58,16 +58,12 @@ func (s *Session) handleSend(req json.RawMessage) (any, error) {
 	if err := json.Unmarshal(req, &r); err != nil || strings.TrimSpace(r.Text) == "" {
 		return nil, &Error{"bad_request", "msg.send needs chat and non-empty text"}
 	}
-	cli, jid, err := s.linked(r.Chat)
-	if err != nil {
-		return nil, err
-	}
-	id, dup, err := s.outID(cli, r.Chat, r.ID)
+	cli, jid, id, dup, err := s.beginSend(r.Chat, r.ID)
 	if err != nil {
 		return nil, err
 	}
 	if dup {
-		return map[string]string{"id": id}, nil
+		return sendReply(cli, id), nil
 	}
 
 	// Our row keeps the text as typed ("@Anna Lee") and the mentions, so its bubble links them as a
@@ -76,31 +72,21 @@ func (s *Session) handleSend(req json.RawMessage) (any, error) {
 	if _, jids := mentionWire(r.Text, r.Mentions); len(jids) > 0 {
 		extra = withMentions("", r.Mentions)
 	}
-	q, created := s.store.queueOutgoing(jid, r.Chat, id, r.Text, r.Quote, extra, time.Now().Unix())
+	_, created := s.store.queueOutgoing(jid, r.Chat, id, r.Text, r.Quote, extra, time.Now().Unix())
 	s.nameNew(cli, jid, r.Chat, created)
-	// Down: the row stays sending and the queue sends it when the connection is back (sendqueue.go).
-	queued, err := s.sendOut(cli, r.Chat, id, func(c *whatsmeow.Client) error {
-		return s.sendMsg(c, jid, r.Chat, id, textMessage(c, r.Chat, r.Text, q, r.Mentions))
-	})
-	if err != nil {
-		return nil, err
-	}
-	if queued {
-		return map[string]string{"id": id, "queued": "true"}, nil
-	}
-	return map[string]string{"id": id}, nil
+	s.kick(r.Chat)
+	return sendReply(cli, id), nil
 }
 
-// sendMsg sends msg as our row id of chat and records it as sent, with the server's time, not the phone's: it drifts.
-func (s *Session) sendMsg(cli *whatsmeow.Client, jid types.JID, chat, id string, msg *waE2E.Message) error {
+// sendMsg sends msg as our row id, and returns the server's time, not the phone's: it drifts.
+func (s *Session) sendMsg(cli *whatsmeow.Client, jid types.JID, id string, msg *waE2E.Message) (sendDone, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
 	defer cancel()
 	resp, err := cli.SendMessage(ctx, jid, msg, whatsmeow.SendRequestExtra{ID: id})
 	if err != nil {
-		return err
+		return sendDone{}, err
 	}
-	s.store.ops <- func(t *storeTx) { t.sentAs(chat, id, resp.Timestamp.Unix(), stateSent) }
-	return nil
+	return sendDone{ts: resp.Timestamp.Unix()}, nil
 }
 
 // textMessage is the wire message of one of our texts: q is the message it quotes (empty for none).

@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
-
-	"github.com/polymorfa/hypermeow"
 )
 
 // WhatsApp's limits on a poll.
@@ -21,7 +19,7 @@ const (
 
 type pollReq struct {
 	Chat, Question string
-	ID             string // the id the caller chose for the message, if it did (outID)
+	ID             string // the id the caller chose for the message, if it did (beginSend)
 	Options        []string
 	Multiple       bool
 }
@@ -68,9 +66,12 @@ func (s *Session) handlePollCreate(req json.RawMessage) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	cli, jid, err := s.linked(r.Chat)
+	cli, jid, id, dup, err := s.beginSend(r.Chat, r.ID)
 	if err != nil {
 		return nil, err
+	}
+	if dup {
+		return sendReply(cli, id), nil
 	}
 	if k := chatKind(jid); k != chatUser && k != chatGroup {
 		return nil, &Error{"bad_chat", "polls go to people and groups"}
@@ -79,19 +80,8 @@ func (s *Session) handlePollCreate(req json.RawMessage) (any, error) {
 	if r.Multiple {
 		max = 0 // any number, as BuildPollCreation and the rows have it
 	}
-	id, dup, err := s.outID(cli, r.Chat, r.ID)
-	if err != nil {
-		return nil, err
-	}
-	if dup {
-		return map[string]string{"id": id}, nil
-	}
 	_, created := s.store.queueRow(jid, r.Chat, "", msgRow{Chat: r.Chat, ID: id, TS: time.Now().Unix(), Out: true, State: stateSending, Kind: msgPoll, Text: r.Question, Extra: pollExtra(r.Options, max)})
 	s.nameNew(cli, jid, r.Chat, created)
-	// hypermeow stores the poll's secret as it sends, which is what lets us vote on it.
-	msg := cli.BuildPollCreation(r.Question, r.Options, max)
-	if _, err := s.sendOut(cli, r.Chat, id, func(c *whatsmeow.Client) error { return s.sendMsg(c, jid, r.Chat, id, msg) }); err != nil {
-		return nil, err
-	}
-	return map[string]string{"id": id}, nil
+	s.kick(r.Chat) // its worker builds the poll (resendMessage); hypermeow stores the secret as it sends, which is what lets us vote on it
+	return sendReply(cli, id), nil
 }

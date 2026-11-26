@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/polymorfa/hypermeow"
 	"github.com/polymorfa/hypermeow/proto/waE2E"
 	"google.golang.org/protobuf/proto"
 )
@@ -74,7 +73,7 @@ func forwardContent(m msgRow) (*waE2E.Message, int, error) {
 	return msg, score, nil
 }
 
-// forwardReq is msg.forward: ID is the message to forward, NewID the id the caller chose for the copy, if it did (outID).
+// forwardReq is msg.forward: ID is the message to forward, NewID the id the caller chose for the copy, if it did (beginSend).
 type forwardReq struct {
 	Chat, ID, To string
 	NewID        string `json:"newId"`
@@ -112,26 +111,19 @@ func (s *Session) handleForward(req json.RawMessage) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	cli, jid, err := s.linked(r.To)
-	if err != nil {
-		return nil, err
-	}
-	id, dup, err := s.outID(cli, r.To, r.NewID)
+	cli, jid, id, dup, err := s.beginSend(r.To, r.NewID)
 	if err != nil {
 		return nil, err
 	}
 	if dup {
-		return map[string]string{"id": id}, nil
+		return sendReply(cli, id), nil
 	}
-	msg, row, err := s.store.forwardCopy(r, id, time.Now().Unix())
+	_, row, err := s.store.forwardCopy(r, id, time.Now().Unix())
 	if err != nil {
-		s.sending.Delete(id)
 		return nil, err
 	}
 	_, created := s.store.queueRow(jid, r.To, "", row)
 	s.nameNew(cli, jid, r.To, created)
-	if _, err := s.sendOut(cli, r.To, id, func(c *whatsmeow.Client) error { return s.sendMsg(c, jid, r.To, id, msg) }); err != nil {
-		return nil, err
-	}
-	return map[string]string{"id": id}, nil
+	s.kick(r.To)
+	return sendReply(cli, id), nil
 }

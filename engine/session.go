@@ -53,18 +53,8 @@ type Session struct {
 	mc      atomic.Pointer[meowcaller.Client] // meowcaller on the current client
 	// cancels holds the cancel of each media.get in flight, chat + "/" + id -> *context.CancelFunc, for media.cancel.
 	cancels sync.Map
-	// sending holds the id of each message of ours being sent or queued right now, by its handler, sendQueued or queueSend,
-	// so none takes another's and msg.cancel leaves it be. queue is the sends waiting for the connection (sendqueue.go).
-	sending sync.Map
-	queue   sendQueue
-	// drainTimer starts the queue's drain offlineWait after a connect, if the offline backlog's end (OfflineSyncCompleted)
-	// hasn't started it first. Under mu.
-	drainTimer *time.Timer
+	out     outgoing // who is sending what (outgoing.go)
 }
-
-// offlineWait is how long after a connect the sends that waited go without the offline backlog's end: the receipts that came
-// while we were away must be applied first, since one may say a message of ours had in fact gone.
-var offlineWait = 10 * time.Second
 
 // syncCap ends "syncing" if the phone sends no recent-chats history: an account with no chats.
 // ponytail: a guess, untested until the real link.
@@ -373,7 +363,7 @@ func (s *Session) reset() error {
 	s.cli.Disconnect()
 	s.calls.drop()
 	s.store.clear()
-	s.queue.drop()
+	s.out.shut()
 	s.syncing = false
 	s.cli = s.newClient(s.container.NewDevice())
 	s.stopQR, s.qr, s.code, s.conn = nil, "", "", "offline"
@@ -410,17 +400,14 @@ func (s *Session) onEvent(cli *whatsmeow.Client, evt any) {
 				}
 			}()
 			// What was sent while it was down goes once the backlog is in: a receipt in it may say a message had gone (the
-			// poll that a second copy would give a new secret). OfflineSyncCompleted starts it, else this timer.
-			if s.drainTimer != nil {
-				s.drainTimer.Stop()
-			}
-			s.drainTimer = time.AfterFunc(offlineWait, func() { s.drainQueued(cli) })
+			// poll that a second copy would give a new secret). OfflineSyncCompleted opens the gate, else this timer.
+			s.out.connected(func() { s.openGate(cli) })
 		}
 		s.srv.Emit("conn", map[string]any{"state": s.conn})
 		s.photos.connected()
 	case *events.OfflineSyncCompleted:
-		if s.drainTimer != nil && s.drainTimer.Stop() { // not started yet
-			go s.drainQueued(cli)
+		if s.out.backlogIn() {
+			go s.openGate(cli) // off this goroutine: openGate takes s.mu
 		}
 	case *events.Picture:
 		s.photos.changed(cli, e.JID)
@@ -441,14 +428,17 @@ func (s *Session) onEvent(cli *whatsmeow.Client, evt any) {
 			s.calls.drop()
 		}
 		time.AfterFunc(callDropGrace, grace)
+		s.out.shut()
 		s.conn = "connecting" // hypermeow reconnects by itself
 		s.srv.Emit("conn", map[string]any{"state": s.conn})
 	case *events.StreamReplaced:
 		s.calls.drop()
+		s.out.shut()
 		s.conn = "offline" // another engine took this session over
 		s.srv.Emit("conn", map[string]any{"state": s.conn, "reason": "replaced"})
 	case *events.LoggedOut:
 		s.log.Warnf("logged out: %v", e.Reason)
+		s.out.shut()
 		// Off this goroutine: reset disconnects the very client delivering the event.
 		go func() {
 			s.mu.Lock()

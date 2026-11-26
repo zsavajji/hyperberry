@@ -93,8 +93,8 @@ func TestUnreadIncoming(t *testing.T) {
 	}
 }
 
-// queuedRows: our rows still sending, of every kind, oldest first; nothing else.
-func TestQueuedRows(t *testing.T) {
+// oldestSending: our rows still sending, of every kind, oldest first, one chat at a time; nothing else.
+func TestOldestSending(t *testing.T) {
 	_, st, _ := newTestSim(t)
 	st.ops <- func(tx *storeTx) {
 		tx.ensureChat(tc, chatUser)
@@ -117,11 +117,18 @@ func TestQueuedRows(t *testing.T) {
 			tx.insertMessage(m)
 		}
 	}
+	if chats := st.sendingChats(); len(chats) != 1 || chats[0] != tc {
+		t.Errorf("sending chats %v, want just %s", chats, tc)
+	}
 	var got []string
-	for _, m := range st.queuedRows() {
+	for m, ok := st.oldestSending(tc); ok; m, ok = st.oldestSending(tc) {
 		got = append(got, m.ID)
+		st.runOp(func(tx *storeTx) { tx.setState(tc, m.ID, stateSent) })
 	}
 	if want := []string{"photo", "voice", "forward", "story", "mentions", "tie", "late"}; strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Errorf("got %v, want %v", got, want)
+	}
+	if chats := st.sendingChats(); len(chats) != 0 {
+		t.Errorf("sending chats %v after them all went", chats)
 	}
 }

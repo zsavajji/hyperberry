@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/polymorfa/hypermeow"
@@ -15,9 +16,9 @@ import (
 
 const retryChat = "4915700000007@s.whatsapp.net"
 
-// Every kind of send, made while the connection is down as its handler writes the row, is rebuilt from that row alone: the
-// wire messages of the plain kinds equal the first ones, the files the rows name are the engine's own copies, and a restart's
-// flush (a session with an empty queue) sends them all again, failing the ones that can't be rebuilt.
+// Every kind of send, as its handler writes the row, is rebuilt from that row alone: the wire messages of the plain kinds
+// equal the first ones, the files the rows name are the engine's own, and the workers of a gate opening send them all,
+// failing the ones that can't be rebuilt.
 func TestResendEveryKind(t *testing.T) {
 	s, st := offlineSession(t)
 	dir := t.TempDir()
@@ -63,13 +64,12 @@ func TestResendEveryKind(t *testing.T) {
 			t.Fatalf("%s: %v", cmd, err)
 		}
 	}
-	waitQueued(t, s, 12)
 	for _, id := range []string{"T1", "M1", "P1", "V1", "A1", "D1", "F1", "VN1", "ST1", "PO1", "FW1", "SR1"} {
 		row, ok := st.row(chat, id)
 		if !ok || row.State != stateSending {
 			t.Fatalf("%s: %+v", id, row)
 		}
-		if attempt, err := s.resendAttempt(row); err != nil || attempt == nil {
+		if attempt, err := s.buildAttempt(row); err != nil || attempt == nil {
 			t.Errorf("%s can't be rebuilt: %v", id, err)
 		}
 	}
@@ -124,59 +124,52 @@ func TestResendEveryKind(t *testing.T) {
 		t.Errorf("the WAV of the voice note is still there: %v", err)
 	}
 
-	// The engine restarts: a session with nothing queued flushes the rows. All 11 are sent again (down: queued, in order).
-	s2 := &Session{cli: s.cli, store: st, srv: st.srv, log: s.log}
-	var ids []string
-	for _, row := range st.queuedRows() {
-		if r := s2.flushRow(cli, row); !strings.HasPrefix(r, "down again") {
-			t.Errorf("%s: %q", row.ID, r)
+	// The gate opens: the worker sends all 11 rows (the chat's worker, oldest first), each rebuilt from its row.
+	var sent []string
+	var mu sync.Mutex
+	real := s.buildAttempt
+	s.out.build = func(row msgRow) (attempt, error) {
+		if _, err := real(row); err != nil { // the row's own rebuild; only the wire is a fake
+			return nil, err
 		}
-		ids = append(ids, row.ID)
+		return func(*whatsmeow.Client) (sendDone, error) {
+			mu.Lock()
+			sent = append(sent, row.ID)
+			mu.Unlock()
+			return sendDone{ts: 5}, nil
+		}, nil
 	}
-	if len(ids) != 11 || len(s2.queue.items) != 11 {
-		t.Fatalf("%d rows read, %d queued: %v", len(ids), len(s2.queue.items), ids)
+	s.openGate(s.client())
+	idle(t, s)
+	if len(sent) != 11 || rows(st, "SELECT count(*) FROM messages WHERE out = 1 AND state = ?", stateSent) != 11+1 { // and SRC
+		t.Fatalf("%d sent: %v", len(sent), sent)
 	}
 	if n := rows(st, "SELECT count(*) FROM messages WHERE out = 1 AND state = ?", stateFailed); n != 0 {
 		t.Errorf("%d failed", n)
 	}
 
-	// What can't be rebuilt fails: a file that is gone, a recording that is gone, a kind we don't send. A sending row nobody
-	// holds (not in s3's memory) is the flush's.
+	// What can't be rebuilt fails: a file that is gone, a recording that is gone, a kind we don't send. The others go again.
 	p, _ := st.row(chat, "P1")
 	os.Remove(p.Path)
 	os.Remove(oggPath(s.srv.dir, "VN1"))
 	st.runOp(func(tx *storeTx) {
+		tx.exec("UPDATE messages SET state = ? WHERE out = 1 AND id != 'SRC'", stateSending)
 		tx.insertMessage(msgRow{Chat: chat, ID: "LOC", TS: 99, Out: true, State: stateSending, Kind: msgLocation, Text: "here"})
 	})
-	s3 := &Session{cli: s.cli, store: st, srv: st.srv, log: s.log}
-	for _, row := range st.queuedRows() {
-		r := s3.flushRow(cli, row)
-		failed := row.ID == "P1" || row.ID == "VN1" || row.ID == "LOC"
-		if failed != strings.HasPrefix(r, "failed, can't be rebuilt") {
-			t.Errorf("%s: %q", row.ID, r)
-		}
-	}
+	sent = nil
+	s.openGate(s.client())
+	idle(t, s)
 	for _, id := range []string{"P1", "VN1", "LOC"} {
 		if row, _ := st.row(chat, id); row.State != stateFailed {
 			t.Errorf("%s is %d, want failed", id, row.State)
 		}
-		if _, held := s3.sending.Load(id); held {
-			t.Errorf("%s is still held", id)
-		}
 	}
-	if len(s3.queue.items) != 9 {
-		t.Errorf("%d queued, want the 9 that could be rebuilt", len(s3.queue.items))
-	}
-
-	// A busy id (a handler has it) is left to its handler.
-	s3.sending.Store("T1", true)
-	row, _ := st.row(chat, "T1")
-	if r := s3.flushRow(cli, row); r != "" {
-		t.Errorf("a held row: %q", r)
+	if len(sent) != 9 { // the 12 sending, less the three that fail
+		t.Errorf("%d sent again, want the 9 that could be rebuilt: %v", len(sent), sent)
 	}
 }
 
-// msg.retry: a failed row of ours goes back to sending and is sent again; the others are refused.
+// msg.retry: a failed row of ours goes back to sending, its chat's worker sends it again, and the others are refused.
 func TestRetry(t *testing.T) {
 	s, st := offlineSession(t)
 	chat := retryChat
@@ -211,16 +204,27 @@ func TestRetry(t *testing.T) {
 	if err != nil || r.(map[string]string)["id"] != "BAD" || r.(map[string]string)["queued"] != "true" {
 		t.Fatalf("retry of a failed text with no connection: %v, %v", r, err)
 	}
-	waitQueued(t, s, 1)
 	if b, _ := st.row(chat, "BAD"); b.State != stateSending || b.Text != "failed text" {
 		t.Errorf("the row after retry: %+v", b)
-	}
-	if _, held := s.sending.Load("BAD"); !held {
-		t.Error("its id isn't held")
 	}
 	if _, err := retry("BAD"); code(err) != "not_failed" { // it is sending now
 		t.Errorf("a second retry: %v", err)
 	}
+	var tries []string
+	fakeSends(s, func(row msgRow) error { tries = append(tries, row.ID); return nil })
+	s.openGate(s.client()) // it waited for the gate, as any send
+	eventually(t, st, 1, "SELECT count(*) FROM messages WHERE chat = ? AND id = 'BAD' AND state = ?", chat, stateSent)
+	idle(t, s)
+	if strings.Join(tries, " ") != "BAD" {
+		t.Errorf("sent %v: only the retried row was to go", tries)
+	}
+	// With the gate open, a retry goes at once.
+	st.runOp(func(tx *storeTx) { tx.exec("UPDATE messages SET state = ? WHERE id = 'BAD'", stateFailed) })
+	if r, err := retry("BAD"); err != nil || r.(map[string]string)["queued"] != "true" {
+		t.Fatalf("the second retry: %v, %v", r, err)
+	}
+	eventually(t, st, 1, "SELECT count(*) FROM messages WHERE chat = ? AND id = 'BAD' AND state = ?", chat, stateSent)
+	idle(t, s)
 }
 
 // A video's poster (the UI's thumbnail, which the row doesn't keep) waits in outbox-engine/<id>.poster, and a rebuild from
@@ -240,7 +244,6 @@ func TestVideoPosterKept(t *testing.T) {
 	if _, err := s.handleMediaSend(json.RawMessage(`{"chat":"` + chat + `","id":"P1","path":"` + mp4 + `","file":true,"thumb":"Bw=="}`)); err != nil {
 		t.Fatal(err)
 	}
-	waitQueued(t, s, 4)
 	if _, err := os.Stat(posterPath(s.srv.dir, "P1")); err == nil {
 		t.Error("a document kept a poster")
 	}
@@ -255,19 +258,20 @@ func TestVideoPosterKept(t *testing.T) {
 	}
 
 	// Sent: the op that records it takes the poster.
-	st.runOp(func(tx *storeTx) { s.files().released(tx, o.row, true) })
+	st.runOp(func(tx *storeTx) { tx.setState(chat, "V1", stateSent); s.files().released(tx, o.row, true) })
 	waitGone(t, posterPath(s.srv.dir, "V1"))
 	// Cancelled.
 	if _, err := s.handleCancel(json.RawMessage(`{"chat":"` + chat + `","id":"V2"}`)); err != nil {
 		t.Fatal(err)
 	}
 	waitGone(t, posterPath(s.srv.dir, "V2"))
-	// Unable to be rebuilt (its file is gone): a restart's flush fails the row and drops the poster.
+	// Unable to be rebuilt (its file is gone): the worker fails the row and drops the poster.
 	row, _ = st.row(chat, "V4")
 	os.Remove(row.Path)
-	s2 := &Session{cli: s.cli, store: st, srv: st.srv, log: s.log}
-	if r := s2.flushRow(s.client(), row); !strings.HasPrefix(r, "failed, can't be rebuilt") {
-		t.Errorf("flush: %q", r)
+	s.openGate(s.client())
+	idle(t, s)
+	if row, _ = st.row(chat, "V4"); row.State != stateFailed {
+		t.Errorf("V4 is %d, want failed", row.State)
 	}
 	waitGone(t, posterPath(s.srv.dir, "V4"))
 }

@@ -213,9 +213,6 @@ func TestStoryReply(t *testing.T) {
 	if _, err := s.handleStoryReply(json.RawMessage(`{"poster":"` + k + `","id":"S1","text":"nice one"}`)); err != nil {
 		t.Fatal("a send with no connection is refused: ", err)
 	}
-	if n := len(s.queue.items); n != 1 {
-		t.Errorf("%d sends queued, want 1", n)
-	}
 	var text, quote, preview string
 	var state int
 	st.db.QueryRow("SELECT text, quote_id, quote_preview, state FROM messages WHERE chat = ? AND out = 1", k).Scan(&text, &quote, &preview, &state)
@@ -232,8 +229,8 @@ func TestStoryReply(t *testing.T) {
 	}
 }
 
-// Posting: what the request refuses, and that a post which can't be sent for want of a connection (none here) waits in
-// the queue, its row and its copy of the file kept, and says nothing yet: the storyop event comes with the outcome.
+// Posting: what the request refuses, and that a post which can't be sent for want of a connection (none here) waits as a
+// pending story, its row and its copy of the file kept, and says nothing yet: the storyop event comes with the outcome.
 func TestStoryPost(t *testing.T) {
 	st, cli := historyFixture(t)
 	s := &Session{cli: cli, store: st, srv: st.srv, log: waLog.Noop}
@@ -267,7 +264,6 @@ func TestStoryPost(t *testing.T) {
 	id := res.(map[string]string)["id"]
 	copyPath := filepath.Join(st.srv.dir, "stories", id+".jpg")
 	// ...and kept, copy and all, while the send waits for the connection.
-	waitQueued(t, s, 1)
 	if n("id = '"+id+"'") != 1 {
 		t.Error("a post waiting for the connection took the row out")
 	}
@@ -280,7 +276,6 @@ func TestStoryPost(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	waitQueued(t, s, 2)
 	if n("id = ?", res.(map[string]string)["id"]) != 1 {
 		t.Error("a text story waiting for the connection is gone")
 	}
@@ -301,8 +296,9 @@ func TestStoryPost(t *testing.T) {
 	}
 }
 
-// A story posted while the connection is down is pending in the table, with its audience, until it is posted; the next
-// run's connect posts it again from its row, or takes it out when it can't be rebuilt, and a posted one is pending no more.
+// A story posted while the connection is down is pending in the table, with its audience, until it is posted; the gate's
+// worker posts it again from its row, or takes it out when it can't be rebuilt, and a posted one is pending no more. A video's
+// poster waits in outbox-engine/ meanwhile.
 func TestPendingStories(t *testing.T) {
 	st, cli := historyFixture(t)
 	s := &Session{cli: cli, store: st, srv: st.srv, log: waLog.Noop}
@@ -318,7 +314,6 @@ func TestPendingStories(t *testing.T) {
 		t.Fatal(err)
 	}
 	tid, pid := text.(map[string]string)["id"], photo.(map[string]string)["id"]
-	waitQueued(t, s, 2)
 	extra := func(id string) (e string) {
 		st.db.QueryRow("SELECT COALESCE(extra, '') FROM stories WHERE id = ?", id).Scan(&e)
 		return e
@@ -329,40 +324,56 @@ func TestPendingStories(t *testing.T) {
 	if e := extra(pid); e != `{"pending":true}` {
 		t.Errorf("the photo story's extra: %s", e)
 	}
-
-	// The engine restarts: both are read, and posted again from their rows (down: queued, the rows stay).
-	s2 := &Session{cli: cli, store: st, srv: st.srv, log: waLog.Noop}
 	pending := st.pendingStories(time.Now().Unix())
 	if len(pending) != 2 || pending[0].Kind != msgText || pending[1].Kind != msgPhoto || pending[1].Width != 4 {
 		t.Fatalf("pending: %+v", pending)
 	}
-	for _, row := range pending {
-		s2.postAgain(cli, row)
-	}
-	if len(s2.queue.items) != 2 || rows(st, "SELECT count(*) FROM stories WHERE poster = ?", ownStory) != 2 {
-		t.Errorf("%d queued, rows %d", len(s2.queue.items), rows(st, "SELECT count(*) FROM stories"))
+
+	// The gate opens with no connection: the oldest is tried, finds it down and stays, and the worker ends.
+	s.openGate(cli)
+	idle(t, s)
+	if len(st.pendingStories(time.Now().Unix())) != 2 || rows(st, "SELECT count(*) FROM stories WHERE poster = ?", ownStory) != 2 {
+		t.Errorf("%d pending, rows %d: a post that found the connection down must stay", len(st.pendingStories(time.Now().Unix())),
+			rows(st, "SELECT count(*) FROM stories"))
 	}
 
 	// One whose copy is gone can't be posted: it goes, as a post that failed does.
+	st.runOp(func(tx *storeTx) { tx.storyPosted(tid) })
 	os.Remove(pending[1].Path)
-	s3 := &Session{cli: cli, store: st, srv: st.srv, log: waLog.Noop}
-	s3.postAgain(cli, pending[1])
-	st.runOp(func(*storeTx) {})
-	if rows(st, "SELECT count(*) FROM stories WHERE id = ?", pid) != 0 || len(s3.queue.items) != 0 {
-		t.Error("a story with no file is still there or queued")
-	}
-	if _, held := s3.sending.Load(pid); held {
-		t.Error("its id is still held")
+	s.openGate(cli) // the worker of an earlier opening is gone: this one starts another
+	idle(t, s)
+	if rows(st, "SELECT count(*) FROM stories WHERE id = ?", pid) != 0 {
+		t.Error("a story with no file is still there")
 	}
 
 	// Posted: pending no more, the colours stay.
-	st.runOp(func(tx *storeTx) { tx.storyPosted(tid) })
 	if e := extra(tid); e != `{"bg":4279312947,"fg":4294967295}` {
 		t.Errorf("a posted story's extra: %s", e)
 	}
 	if n := len(st.pendingStories(time.Now().Unix())); n != 0 {
 		t.Errorf("%d still pending", n)
 	}
+}
+
+// A video story's poster is kept for the worker, which sends it with the post and removes it.
+func TestStoryVideoPoster(t *testing.T) {
+	st, cli := historyFixture(t)
+	s := &Session{cli: cli, store: st, srv: st.srv, log: waLog.Noop}
+	mp4 := filepath.Join(t.TempDir(), "v.mp4")
+	os.WriteFile(mp4, []byte("video"), 0o644)
+	res, err := s.handleStoryPost(json.RawMessage(`{"path":"` + mp4 + `","thumb":"Bw=="}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := res.(map[string]string)["id"]
+	pending := st.pendingStories(time.Now().Unix())
+	if got, _ := os.ReadFile(posterPath(s.srv.dir, id)); string(got) != "\x07" || len(pending) != 1 || string(s.mediaOf(pending[0]).poster) != "\x07" {
+		t.Errorf("poster %q, pending %d", got, len(pending))
+	}
+	os.Remove(pending[0].Path) // it can't be posted: the poster goes with the story
+	s.openGate(cli)
+	idle(t, s)
+	waitGone(t, posterPath(s.srv.dir, id))
 }
 
 func TestCopyFile(t *testing.T) {

@@ -70,7 +70,7 @@ func sendKind(path string) (kind int, mimeType string) {
 // Caption goes with a photo or a video only; the UI sends the other kinds' as a text message.
 type mediaSendReq struct {
 	Chat, Path, Quote, Caption string
-	ID                         string // the id the caller chose for the message, if it did (outID)
+	ID                         string // the id the caller chose for the message, if it did (beginSend)
 	Original                   string // the file Path is a copy of, if it is one (the UI outbox's): extra.original records it, not Path
 	Thumb                      []byte
 	File                       bool // as a document whatever the extension: the staged bar's As file on a JPEG
@@ -181,22 +181,18 @@ func mediaMessage(o *mediaOut, up whatsmeow.UploadResponse, ci *waE2E.ContextInf
 }
 
 // handleMediaSend is media.send: the file is kept and the row is in as sending before the reply; the upload and the
-// send follow it.
+// send follow it, in the chat's worker (outgoing.go).
 func (s *Session) handleMediaSend(req json.RawMessage) (any, error) {
 	r, err := parseMediaSend(req)
 	if err != nil {
 		return nil, err
 	}
-	cli, jid, err := s.linked(r.Chat)
-	if err != nil {
-		return nil, err
-	}
-	id, dup, err := s.outID(cli, r.Chat, r.ID)
+	cli, jid, id, dup, err := s.beginSend(r.Chat, r.ID)
 	if err != nil {
 		return nil, err
 	}
 	if dup {
-		return map[string]string{"id": id}, nil
+		return sendReply(cli, id), nil
 	}
 	// The row's path is the kept file, and the file it was made from (the caller's original, else Path) its extra.original.
 	var poster []byte
@@ -205,7 +201,6 @@ func (s *Session) handleMediaSend(req json.RawMessage) (any, error) {
 	}
 	kept, err := s.files().keep(id, r.Path, poster)
 	if err != nil {
-		s.sending.Delete(id)
 		return nil, &Error{"copy_failed", err.Error()}
 	}
 	if r.Original == "" {
@@ -215,9 +210,9 @@ func (s *Session) handleMediaSend(req json.RawMessage) (any, error) {
 	o := s.store.queueMedia(jid, r, id)
 	go func() {
 		s.nameNew(cli, jid, r.Chat, o.created)
-		s.sendOut(cli, r.Chat, id, func(c *whatsmeow.Client) error { return s.uploadMedia(c, jid, o) })
+		s.kick(r.Chat)
 	}()
-	return map[string]string{"id": id}, nil
+	return sendReply(cli, id), nil
 }
 
 // uploadTemp makes the file the upload encrypts into, under <data dir>/cache/upload/, and the
@@ -251,8 +246,8 @@ func (s *Session) uploadFile(ctx context.Context, cli *whatsmeow.Client, path st
 	return cli.UploadReader(ctx, f, tmp, typ)
 }
 
-// uploadMedia is one attempt at a media send: the upload, then the message, recorded as sent; sendOut handles a failure.
-func (s *Session) uploadMedia(cli *whatsmeow.Client, jid types.JID, o *mediaOut) error {
+// uploadMedia is one attempt at a media send: the upload, then the message. It returns the server's time and the upload.
+func (s *Session) uploadMedia(cli *whatsmeow.Client, jid types.JID, o *mediaOut) (sendDone, error) {
 	chat, id := o.row.Chat, o.row.ID
 	ctx, cancel := context.WithTimeout(context.Background(), mediaTimeout)
 	defer cancel()
@@ -268,14 +263,8 @@ func (s *Session) uploadMedia(cli *whatsmeow.Client, jid types.JID, o *mediaOut)
 		if resp, err = cli.SendMessage(ctx, jid, mediaMessage(o, up, ci), whatsmeow.SendRequestExtra{ID: id}); err == nil {
 			// The upload, as a received file's: a caption edit sends the message again (editContent).
 			info, _ := json.Marshal(mediaInfo{up.DirectPath, up.MediaKey, up.FileEncSHA256, up.FileSHA256, up.FileLength, o.mime})
-			s.store.ops <- func(t *storeTx) {
-				t.sentAs(chat, id, resp.Timestamp.Unix(), stateSent)
-				t.exec("UPDATE messages SET media = ? WHERE chat = ? AND id = ?", string(info), chat, id)
-				s.files().released(t, o.row, true)
-			}
-			return nil
+			return sendDone{resp.Timestamp.Unix(), string(info)}, nil
 		}
 	}
-	s.log.Warnf("media %s: %v", id, err)
-	return err
+	return sendDone{}, err
 }

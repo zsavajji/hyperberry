@@ -67,32 +67,27 @@ func (s *Session) handleVoiceSend(req json.RawMessage) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	cli, jid, err := s.linked(r.Chat)
-	if err != nil {
-		return nil, err
-	}
-	id, dup, err := s.outID(cli, r.Chat, r.ID)
+	cli, jid, id, dup, err := s.beginSend(r.Chat, r.ID)
 	if err != nil {
 		return nil, err
 	}
 	if dup { // its WAV went with the first one
-		return map[string]string{"id": id}, nil
+		return sendReply(cli, id), nil
 	}
 	n, err := s.store.queueVoice(&s.rec, s.srv.dir, jid, r.Chat, r.Path, r.Quote, id)
 	if err != nil {
-		s.sending.Delete(id)
 		return nil, err
 	}
 	go func() {
 		s.stopRecording(r.Chat)
 		s.nameNew(cli, jid, r.Chat, n.created)
-		s.sendOut(cli, r.Chat, id, func(c *whatsmeow.Client) error { return s.uploadVoice(c, jid, r.Chat, id, n) })
+		s.kick(r.Chat)
 	}()
-	return map[string]string{"id": id}, nil
+	return sendReply(cli, id), nil
 }
 
-// uploadVoice is one attempt at a voice note's send: the upload, then the message, recorded as sent.
-func (s *Session) uploadVoice(cli *whatsmeow.Client, jid types.JID, chat, id string, n *voiceNote) error {
+// uploadVoice is one attempt at a voice note's send: the upload, then the message. It returns the server's time and the upload.
+func (s *Session) uploadVoice(cli *whatsmeow.Client, jid types.JID, chat, id string, n *voiceNote) (sendDone, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
 	defer cancel()
 	up, err := cli.Upload(ctx, n.ogg, whatsmeow.MediaAudio)
@@ -108,15 +103,10 @@ func (s *Session) uploadVoice(cli *whatsmeow.Client, jid types.JID, chat, id str
 		if resp, err = cli.SendMessage(ctx, jid, &waE2E.Message{AudioMessage: am}, whatsmeow.SendRequestExtra{ID: id}); err == nil {
 			// The upload, as uploadMedia keeps a file's: a forward sends it again (forward.go).
 			info, _ := json.Marshal(mediaInfo{up.DirectPath, up.MediaKey, up.FileEncSHA256, up.FileSHA256, up.FileLength, mime})
-			s.store.ops <- func(t *storeTx) {
-				t.sentAs(chat, id, resp.Timestamp.Unix(), stateSent)
-				t.exec("UPDATE messages SET media = ? WHERE chat = ? AND id = ?", string(info), chat, id)
-			}
-			return nil
+			return sendDone{resp.Timestamp.Unix(), string(info)}, nil
 		}
 	}
-	s.log.Warnf("voice note %s: %v", id, err)
-	return err
+	return sendDone{}, err
 }
 
 func (s *Session) handleVoiceCancel(req json.RawMessage) (any, error) {

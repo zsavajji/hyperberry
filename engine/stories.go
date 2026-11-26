@@ -421,35 +421,28 @@ func storyReplyMessage(poster, id, text string, quoted *waE2E.Message) *waE2E.Me
 func (s *Session) handleStoryReply(req json.RawMessage) (any, error) {
 	var r struct {
 		Poster, ID, Text string
-		NewID            string `json:"newId"` // the id the caller chose for the reply, if it did (outID)
+		NewID            string `json:"newId"` // the id the caller chose for the reply, if it did (beginSend)
 	}
 	if err := json.Unmarshal(req, &r); err != nil || r.Poster == "" || r.ID == "" || strings.TrimSpace(r.Text) == "" {
 		return nil, &Error{"bad_request", "story.reply needs poster, id and non-empty text"}
 	}
-	cli, jid, err := s.linked(r.Poster)
+	cli, jid, id, dup, err := s.beginSend(r.Poster, r.NewID)
 	if err != nil {
 		return nil, err
+	}
+	if dup {
+		return sendReply(cli, id), nil
 	}
 	kind, text, thumb, ok := s.store.storyQuote(r.Poster, r.ID)
 	if !ok {
 		return nil, &Error{"not_found", "no such story"}
 	}
-	id, dup, err := s.outID(cli, r.Poster, r.NewID)
-	if err != nil {
-		return nil, err
-	}
-	if dup {
-		return map[string]string{"id": id}, nil
-	}
 	_, created := s.store.queueRow(jid, r.Poster, "", msgRow{Chat: r.Poster, ID: id, TS: time.Now().Unix(), Out: true, State: stateSending,
 		Kind: msgText, Text: r.Text, QuoteID: r.ID, QuotePreview: clip(preview(kind, text, 0), 80),
 		Extra: withStoryQuote("", r.Poster, thumb)})
 	s.nameNew(cli, jid, r.Poster, created)
-	msg := storyReplyMessage(r.Poster, r.ID, r.Text, quotedStory(kind, text, thumb))
-	if _, err := s.sendOut(cli, r.Poster, id, func(c *whatsmeow.Client) error { return s.sendMsg(c, jid, r.Poster, id, msg) }); err != nil {
-		return nil, err
-	}
-	return map[string]string{"id": id}, nil
+	s.kick(r.Poster)
+	return sendReply(cli, id), nil
 }
 
 // handleStoryReact is story.react: an emoji on a story, sent to the poster as a reaction to their status, through
@@ -561,8 +554,8 @@ func copyFile(src, dst string) error {
 
 // handleStoryPost is story.post. Like media.send it answers at once, with the id: our story is in the table
 // (born seen, with its own copy of the file) before the upload starts, and the upload and the send run after
-// the reply, since requests are handled one at a time and a video takes minutes. The outcome comes as a
-// storyop event; a failure takes the story out again.
+// the reply, in the stories' worker (outgoing.go), since requests are handled one at a time and a video takes minutes. The
+// outcome comes as a storyop event; a failure takes the story out again.
 // (verify on the real link): that the contacts' phones show it. hypermeow picks the recipients from the
 // contact list and the status privacy settings.
 func (s *Session) handleStoryPost(req json.RawMessage) (any, error) {
@@ -580,15 +573,13 @@ func (s *Session) handleStoryPost(req json.RawMessage) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	var recips []types.JID
-	if len(r.Audience) > 0 {
-		if recips, err = statusRecipients(context.Background(), cli, r.Audience); err != nil {
+	if len(r.Audience) > 0 { // checked here, resolved again when it is posted
+		if _, err = statusRecipients(context.Background(), cli, r.Audience); err != nil {
 			return nil, err
 		}
 	}
 	id := cli.GenerateMessageID()
 	row := msgRow{Chat: ownStory, ID: id, TS: time.Now().Unix(), MediaState: 2}
-	var o *mediaOut
 	if r.Path != "" {
 		fi, err := os.Stat(r.Path)
 		switch {
@@ -606,12 +597,10 @@ func (s *Session) handleStoryPost(req json.RawMessage) (any, error) {
 		if err := copyFile(r.Path, row.Path); err != nil {
 			return nil, err
 		}
-		o = &mediaOut{row: row, mime: mimeType}
 		if kind == msgPhoto {
 			row.Thumb, row.Width, row.Height = r.Thumb, r.Width, r.Height
-			o.row = row
-		} else {
-			o.poster = r.Thumb // goes in the message only: our own tile marks a video itself
+		} else if len(r.Thumb) > 0 { // goes in the message only: our own tile marks a video itself
+			writeFile(posterPath(s.srv.dir, id), r.Thumb)
 		}
 	} else {
 		row.Kind, row.Text, row.MediaState = msgText, strings.TrimSpace(r.Text), 0
@@ -623,45 +612,60 @@ func (s *Session) handleStoryPost(req json.RawMessage) (any, error) {
 			row.Extra = string(b)
 		}
 	}
-	// Pending until posted, with who gets it: a restart's connect posts it again (sendQueuedStories).
+	// Pending until posted, with who gets it: the worker posts it from its row, as it does after a restart.
 	row.Extra = withKey(row.Extra, "pending", "true")
 	if b, err := json.Marshal(r.Audience); err == nil && len(r.Audience) > 0 {
 		row.Extra = withKey(row.Extra, "audience", string(b))
 	}
 	s.store.runOp(func(t *storeTx) { t.insertStory(row, true) })
-	go s.sendStory(cli, o, row, r, bg, fg, recips)
+	s.kick(ownStory)
 	return map[string]string{"id": id}, nil
 }
 
-// sendStory uploads a photo or video story and sends the story to status@broadcast, then says how it went. With the
-// connection down, before or after the try, it waits in the queue (sendqueue.go) and says nothing yet.
-func (s *Session) sendStory(cli *whatsmeow.Client, o *mediaOut, row msgRow, r storyPostReq, bg, fg uint32, recips []types.JID) {
-	again := func(c *whatsmeow.Client) { s.sendStory(c, o, row, r, bg, fg, recips) }
-	if s.holdIfDown(cli, row.ID, again) {
-		return
+// postStory posts our pending story, rebuilt from its row (the photo or video from its own copy in data/stories, with a
+// video's poster from the file the post kept; the colours and font and the audience from extra): it uploads, sends it to
+// status@broadcast, and says how it went. One that can't be rebuilt, or whose audience can't be resolved, is taken out as a
+// post that failed is. down says the connection was gone: the story stays pending, for the next gate opening.
+func (s *Session) postStory(cli *whatsmeow.Client, row msgRow) (down bool) {
+	var x struct {
+		Bg, Fg   uint32
+		Font     int
+		Audience []string
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), mediaTimeout)
-	defer cancel()
-	var msg *waE2E.Message
+	json.Unmarshal([]byte(row.Extra), &x)
+	var recips []types.JID
 	var err error
-	if o != nil {
-		var up whatsmeow.UploadResponse
-		t0 := time.Now()
-		if up, err = s.uploadFile(ctx, cli, row.Path, uploadTypes[row.Kind]); err == nil {
-			logTransfer(s.log, "story "+row.ID+" sent", int64(up.FileLength), t0)
-			msg = mediaMessage(o, up, nil)
+	if row.Kind != msgText {
+		if fi, serr := os.Stat(row.Path); serr != nil || !fi.Mode().IsRegular() {
+			err = errors.New("its file is gone")
 		}
-	} else {
-		msg = &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: &row.Text, BackgroundArgb: proto.Uint32(bg),
-			TextArgb: proto.Uint32(fg), Font: waE2E.ExtendedTextMessage_FontType(r.Font).Enum()}}
+	}
+	if err == nil && len(x.Audience) > 0 {
+		recips, err = statusRecipients(context.Background(), cli, x.Audience)
 	}
 	if err == nil {
-		_, err = cli.SendMessage(ctx, types.StatusBroadcastJID, msg, whatsmeow.SendRequestExtra{ID: row.ID, StatusRecipients: recips})
+		ctx, cancel := context.WithTimeout(context.Background(), mediaTimeout)
+		defer cancel()
+		var msg *waE2E.Message
+		if row.Kind == msgText {
+			msg = &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{Text: &row.Text, BackgroundArgb: proto.Uint32(x.Bg),
+				TextArgb: proto.Uint32(x.Fg), Font: waE2E.ExtendedTextMessage_FontType(x.Font).Enum()}}
+		} else {
+			var up whatsmeow.UploadResponse
+			t0 := time.Now()
+			if up, err = s.uploadFile(ctx, cli, row.Path, uploadTypes[row.Kind]); err == nil {
+				logTransfer(s.log, "story "+row.ID+" sent", int64(up.FileLength), t0)
+				msg = mediaMessage(s.mediaOf(row), up, nil)
+			}
+		}
+		if err == nil {
+			_, err = cli.SendMessage(ctx, types.StatusBroadcastJID, msg, whatsmeow.SendRequestExtra{ID: row.ID, StatusRecipients: recips})
+		}
+		if err != nil && !cli.IsConnected() {
+			return true
+		}
 	}
-	if err != nil && s.holdIfDown(cli, row.ID, again) {
-		return
-	}
-	s.sending.Delete(row.ID)
+	os.Remove(posterPath(s.srv.dir, row.ID))
 	if err != nil {
 		s.log.Warnf("story %s: post: %v", row.ID, err)
 		s.store.ops <- func(t *storeTx) { t.deleteStory(ownStory, row.ID) }
@@ -669,6 +673,7 @@ func (s *Session) sendStory(cli *whatsmeow.Client, o *mediaOut, row msgRow, r st
 		s.store.ops <- func(t *storeTx) { t.storyPosted(row.ID) }
 	}
 	s.srv.Emit("storyop", map[string]any{"cmd": "post", "id": row.ID, "ok": err == nil})
+	return false
 }
 
 // storyPosted ends a story of ours being pending: its extra keeps the colours and font alone.
@@ -676,8 +681,7 @@ func (t *storeTx) storyPosted(id string) {
 	t.exec("UPDATE stories SET extra = NULLIF(json_remove(extra, '$.pending', '$.audience'), '{}') WHERE poster = ? AND id = ?", ownStory, id)
 }
 
-// pendingStories reads the stories of ours not posted yet, oldest first: the ones an earlier run left, since this run's are
-// in s.sending while they wait. A story over its 24 hours is the sweep's.
+// pendingStories reads the stories of ours not posted yet, oldest first. A story over its 24 hours is the sweep's.
 func (st *Store) pendingStories(now int64) []msgRow {
 	var out []msgRow
 	st.runOp(func(t *storeTx) {
@@ -698,51 +702,6 @@ FROM stories WHERE poster = ? AND json_extract(extra, '$.pending') = 1 AND ts > 
 		}
 	})
 	return out
-}
-
-// sendQueuedStories posts the stories an earlier run left pending, at each connect, after the rows of chats: rebuilt from the
-// row (the photo or video from its own copy in data/stories, the colours and font and the audience from extra) and sent as
-// sendStory does, so the connection dropping queues it again. One that can't be rebuilt, or whose audience can't be
-// resolved, is taken out as a post that failed is. ponytail: a video goes without its poster, as a retry of a message does.
-func (s *Session) sendQueuedStories(cli *whatsmeow.Client) {
-	for _, row := range s.store.pendingStories(time.Now().Unix()) {
-		if !cli.IsConnected() {
-			return
-		}
-		if _, busy := s.sending.LoadOrStore(row.ID, true); !busy {
-			s.postAgain(cli, row)
-		}
-	}
-}
-
-func (s *Session) postAgain(cli *whatsmeow.Client, row msgRow) {
-	var x struct {
-		Bg, Fg   uint32
-		Font     int
-		Audience []string
-	}
-	json.Unmarshal([]byte(row.Extra), &x)
-	var o *mediaOut
-	var recips []types.JID
-	var err error
-	if row.Kind != msgText {
-		if fi, serr := os.Stat(row.Path); serr != nil || !fi.Mode().IsRegular() {
-			err = errors.New("its file is gone")
-		}
-		_, mimeType := sendKind(row.Path)
-		o = &mediaOut{row: row, mime: mimeType}
-	}
-	if err == nil && len(x.Audience) > 0 {
-		recips, err = statusRecipients(context.Background(), cli, x.Audience)
-	}
-	if err != nil {
-		s.log.Warnf("story %s: can't be posted again: %v", row.ID, err)
-		s.sending.Delete(row.ID)
-		s.store.ops <- func(t *storeTx) { t.deleteStory(ownStory, row.ID) }
-		s.srv.Emit("storyop", map[string]any{"cmd": "post", "id": row.ID, "ok": false})
-		return
-	}
-	s.sendStory(cli, o, row, storyPostReq{Font: x.Font}, x.Bg, x.Fg, recips)
 }
 
 // handleStoryDelete is story.delete: one of our own stories, taken back from everyone who got it. It answers at
