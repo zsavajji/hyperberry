@@ -174,3 +174,50 @@ func TestResendEveryKind(t *testing.T) {
 		t.Errorf("a held row: %q", r)
 	}
 }
+
+// msg.retry: a failed row of ours goes back to sending and is sent again; the others are refused.
+func TestRetry(t *testing.T) {
+	s, st := offlineSession(t)
+	chat := retryChat
+	st.runOp(func(tx *storeTx) {
+		tx.ensureChat(chat, chatUser)
+		for _, m := range []msgRow{
+			{Chat: chat, ID: "BAD", TS: 1, Out: true, State: stateFailed, Kind: msgText, Text: "failed text"},
+			{Chat: chat, ID: "GONE", TS: 2, Out: true, State: stateFailed, Kind: msgPhoto, Path: "/nonexistent/p.jpg"},
+			{Chat: chat, ID: "SENT", TS: 3, Out: true, State: stateSent, Kind: msgText, Text: "sent"},
+			{Chat: chat, ID: "THEIRS", TS: 4, State: stateFailed, Kind: msgText, Text: "theirs"},
+		} {
+			tx.insertMessage(m)
+		}
+		tx.setLast(chat, 2, "x", true, stateFailed)
+	})
+	retry := func(id string) (any, error) {
+		return s.handleRetry(json.RawMessage(`{"chat":"` + chat + `","id":"` + id + `"}`))
+	}
+	for id, want := range map[string]string{"NOPE": "not_found", "SENT": "not_failed", "THEIRS": "not_failed", "GONE": "cannot_retry"} {
+		if _, err := retry(id); code(err) != want {
+			t.Errorf("retry %s: %v, want %s", id, err, want)
+		}
+	}
+	if _, err := s.handleRetry(json.RawMessage(`{"chat":"` + chat + `"}`)); code(err) != "bad_request" {
+		t.Errorf("no id: %v", err)
+	}
+	if g, _ := st.row(chat, "GONE"); g.State != stateFailed {
+		t.Errorf("an unrebuildable row is %d, want it left failed", g.State)
+	}
+
+	r, err := retry("BAD")
+	if err != nil || r.(map[string]string)["id"] != "BAD" || r.(map[string]string)["queued"] != "true" {
+		t.Fatalf("retry of a failed text with no connection: %v, %v", r, err)
+	}
+	waitQueued(t, s, 1)
+	if b, _ := st.row(chat, "BAD"); b.State != stateSending || b.Text != "failed text" {
+		t.Errorf("the row after retry: %+v", b)
+	}
+	if _, held := s.sending.Load("BAD"); !held {
+		t.Error("its id isn't held")
+	}
+	if _, err := retry("BAD"); code(err) != "not_failed" { // it is sending now
+		t.Errorf("a second retry: %v", err)
+	}
+}

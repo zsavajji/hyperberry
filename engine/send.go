@@ -34,6 +34,7 @@ func registerSend(srv *Server, s *Session) {
 	srv.Handle("msg.send", s.handleSend)
 	srv.Handle("msg.delete", s.handleDelete)
 	srv.Handle("msg.cancel", s.handleCancel)
+	srv.Handle("msg.retry", s.handleRetry)
 	srv.Handle("msg.edit", s.handleEdit)
 	srv.Handle("msg.forward", s.handleForward)
 	srv.Handle("msg.resend", s.handleResend)

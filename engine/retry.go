@@ -180,6 +180,53 @@ func (st *Store) queuedRows() []msgRow {
 	return <-got
 }
 
+// resend puts our failed row back to sending; false when it isn't one.
+func (t *storeTx) resend(chat, id string) bool {
+	if t.exec("UPDATE messages SET state = ? WHERE chat = ? AND id = ? AND out = 1 AND state = ?", stateSending, chat, id, stateFailed) == 0 {
+		return false
+	}
+	t.changed(chat, id)
+	t.syncLast(chat, id)
+	return true
+}
+
+// handleRetry is msg.retry: one of our failed rows goes back to sending and is sent again with its id, as the queue does at a
+// connect. The reply is {id}, and queued "true" while WhatsApp is unreachable; the outcome is the row's state, as for a send.
+// not_found; not_failed (not ours, or not failed: nothing to do); cannot_retry (it can't be rebuilt: it stays failed).
+func (s *Session) handleRetry(req json.RawMessage) (any, error) {
+	var r struct{ Chat, ID string }
+	if err := json.Unmarshal(req, &r); err != nil || r.Chat == "" || r.ID == "" {
+		return nil, &Error{"bad_request", "msg.retry needs chat and id"}
+	}
+	cli, _, err := s.linked(r.Chat)
+	if err != nil {
+		return nil, err
+	}
+	m, ok := s.store.row(r.Chat, r.ID)
+	switch {
+	case !ok:
+		return nil, &Error{"not_found", "no such message"}
+	case !m.Out || m.State != stateFailed || m.Deleted:
+		return nil, &Error{"not_failed", "only a message of ours that failed can be sent again"}
+	}
+	attempt, err := s.resendAttempt(m)
+	if err != nil {
+		return nil, &Error{"cannot_retry", err.Error()}
+	}
+	s.sending.Store(r.ID, true) // before the row is sending again: the queue's flush leaves it be
+	var back bool
+	if err := s.store.runOp(func(t *storeTx) { back = t.resend(r.Chat, r.ID) }); err != nil || !back {
+		s.sending.Delete(r.ID)
+		return nil, &Error{"not_failed", "only a message of ours that failed can be sent again"}
+	}
+	reply := map[string]string{"id": r.ID}
+	if !cli.IsConnected() {
+		reply["queued"] = "true"
+	}
+	go s.sendOut(cli, r.Chat, r.ID, attempt) // an upload takes minutes: not in the request's way
+	return reply, nil
+}
+
 // outboxDir is where the engine keeps the copies of the files its sends wait with.
 func outboxDir(dir string) string {
 	d, _ := filepath.Abs(filepath.Join(dir, "outbox-engine"))
