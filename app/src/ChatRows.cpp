@@ -4,6 +4,7 @@
 #include <bb/cascades/ActionSet>
 #include <bb/cascades/Container>
 #include <bb/cascades/ContextMenuHandler>
+#include <bb/cascades/DeleteActionItem>
 #include <bb/cascades/DockLayout>
 #include <bb/cascades/FontWeight>
 #include <bb/cascades/Header>
@@ -85,6 +86,7 @@ ChatRow::ChatRow(ListView *list)
     , m_translateItem(0)
     , m_archiveItem(0)
     , m_openItem(0)
+    , m_deleteItem(0)
 {
     // The row's own node and its root: a list item is as wide as its content unless it fills.
     setHorizontalAlignment(HorizontalAlignment::Fill);
@@ -358,6 +360,11 @@ void ChatRow::makeActions()
     m_muteItem = action(SLOT(onMute()));
     m_translateItem = action(SLOT(onTranslate()));
     m_archiveItem = action(SLOT(onArchive()));
+    // Delete chat, asked first by the list (the user, 2026-11-26): the system puts it last.
+    m_deleteItem = new DeleteActionItem();
+    m_deleteItem->setTitle(Card::tr(kContext, "Delete chat"));
+    connect(m_deleteItem, SIGNAL(triggered()), this, SLOT(onDelete()));
+    m_menu->add(m_deleteItem);
 }
 
 // "Mute…" is UTF-8 in the source, as the .ts has it: main.cpp sets UTF-8 as the codec for tr.
@@ -386,6 +393,7 @@ void ChatRow::onPopulating()
     else
         setItem(m_archiveItem, archived ? "Unarchive" : "Archive",
                 "file:///usr/share/icons/bb_action_archive.png");
+    m_deleteItem->setEnabled(!channels); // a channel goes by Unfollow
 }
 
 void ChatRow::onCall() { Card::call(m_list, m_calls ? "callBack" : "call", m_chat); }
@@ -394,4 +402,5 @@ void ChatRow::onPin() { Card::call(m_list, "togglePin", m_chat); }
 void ChatRow::onMute() { Card::call(m_list, "toggleMute", m_chat); }
 void ChatRow::onTranslate() { Card::call(m_list, "pickTranslate", m_chat); }
 void ChatRow::onArchive() { Card::call(m_list, "toggleArchive", m_chat); }
+void ChatRow::onDelete() { Card::call(m_list, "deleteChat", m_chat); }
 void ChatRow::onOpenChat() { Card::call(m_list, "openChat", m_chat); }

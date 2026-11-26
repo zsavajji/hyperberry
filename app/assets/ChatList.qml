@@ -78,6 +78,11 @@ ListView {
             muteDialog.show()
         }
     }
+    function deleteChat(chat) {
+        deleteDialog.jid = chat.jid
+        deleteDialog.body = chat.name
+        deleteDialog.show()
+    }
     function pickTranslate(chat) {
         translateDialog.pick(chat.jid, chat.translate)
     }
@@ -104,6 +109,19 @@ ListView {
             onFinished: {
                 if (value == SystemUiResult.ConfirmButtonSelection) {
                     engine.request("channel.unfollow", {"chat": jid})
+                }
+            }
+        },
+        // As the contact page's Delete chat: gone here, and on the main phone (chat.delete).
+        SystemDialog {
+            id: deleteDialog
+            property string jid
+            title: qsTr("Delete this chat?")
+            confirmButton.label: qsTr("Delete")
+            cancelButton.label: qsTr("Cancel")
+            onFinished: {
+                if (value == SystemUiResult.ConfirmButtonSelection) {
+                    engine.request("chat.delete", {"chat": jid})
                 }
             }
         },

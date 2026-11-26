@@ -14,6 +14,7 @@ namespace cascades {
 class ActionItem;
 class ActionSet;
 class Container;
+class DeleteActionItem;
 class ImageView;
 class Label;
 class ListView;
@@ -72,6 +73,7 @@ private slots:
     void onMute();
     void onTranslate();
     void onArchive();
+    void onDelete();
     void onOpenChat();
 
 private:
@@ -118,6 +120,7 @@ private:
     bb::cascades::ActionItem *m_translateItem;
     bb::cascades::ActionItem *m_archiveItem;
     bb::cascades::ActionItem *m_openItem;
+    bb::cascades::DeleteActionItem *m_deleteItem;
 };
 
 #endif
