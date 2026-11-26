@@ -31,7 +31,10 @@ public:
     // args.path is the copy and args.original the file it was copied from (the engine points the row's path back to it
     // once it has sent the message, if it is still there, and removes the copy: engine/retry.go, dropSendFiles), and
     // copied(id) says so; a copy that failed leaves the original's path. EngineLink doesn't send an entry that is copying.
-    // ponytail: an app closed in the middle of a copy leaves its partial file in outbox/<id>/.
+    // An app closed in the middle of a copy left a partial file in outbox/<id>/ and an entry with no args.original: when the
+    // outbox is loaded (the constructor) each such entry is copying again, from a clean directory, on the same worker; with the
+    // original gone by then it keeps the original's path, which the engine fails and Retry/Cancel handle. Also then, on a
+    // worker, the outbox/<id>/ directories that no entry owns and no row of chats.db points into are removed.
     QString add(const QString &cmd, const QVariantMap &args);
     // Whether the copy of the entry's file is still running.
     bool copying(const QString &id) const { return m_copying.contains(id); }
@@ -57,6 +60,8 @@ private slots:
 
 private:
     void save() const;
+    // Copies the file from to outbox/<id>/ on a worker; onCopied ends it.
+    void startCopy(const QString &id, const QString &from);
 
     QVariantList m_entries;
     QHash<QString, QString> m_copying; // the entries whose file is being copied, and the copy's path

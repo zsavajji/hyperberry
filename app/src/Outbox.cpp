@@ -10,6 +10,7 @@
 #include <QFileInfo>
 #include <QFutureWatcher>
 #include <QRegExp>
+#include <QSet>
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QUuid>
@@ -19,17 +20,33 @@
 using namespace bb::data;
 
 static QString outboxFile() { return QDir::homePath() + "/outbox.json"; }
+static void sweepOrphans(QStringList entries, QDateTime started);
 
 Outbox::Outbox(QObject *parent)
     : QObject(parent)
 {
+    const QDateTime started = QDateTime::currentDateTime();
     QFile file(outboxFile());
-    if (!file.open(QIODevice::ReadOnly))
-        return;
-    JsonDataAccess json;
-    const QVariant doc = json.loadFromBuffer(file.readAll());
-    if (!json.hasError() && doc.type() == QVariant::List)
-        m_entries = doc.toList();
+    if (file.open(QIODevice::ReadOnly)) {
+        JsonDataAccess json;
+        const QVariant doc = json.loadFromBuffer(file.readAll());
+        if (!json.hasError() && doc.type() == QVariant::List)
+            m_entries = doc.toList();
+    }
+    // An app closed while it copied a file left a partial one in outbox/<id>/ and an entry that still has the original's path
+    // (args.original, which says the copy is done, is missing): copy it again, from a clean directory (copyMedia). One made
+    // before the copy was kept in args.original has its copy as the path: left alone.
+    QStringList ids;
+    foreach (const QVariant &v, m_entries) {
+        const QVariantMap entry = v.toMap();
+        const QVariantMap a = entry["args"].toMap();
+        const QString from = a["path"].toString();
+        ids << entry["id"].toString();
+        if (entry["cmd"].toString() == "media.send" && a["original"].toString().isEmpty() && !from.isEmpty()
+            && !from.startsWith(QDir::homePath() + "/outbox/"))
+            startCopy(entry["id"].toString(), from);
+    }
+    QtConcurrent::run(sweepOrphans, ids, started);
 }
 
 bool Outbox::takes(const QString &cmd)
@@ -90,14 +107,67 @@ void Outbox::row(const QVariantMap &entry, int *kind, QString *text)
     }
 }
 
-// Run on a worker thread: the file goes to its new name whole or not at all, so a partial copy never looks done.
+// Removes the files of a directory (not the directory).
+static void emptyDir(const QString &path)
+{
+    QDir dir(path);
+    foreach (const QString &name, dir.entryList(QDir::Files | QDir::Hidden))
+        dir.remove(name);
+}
+
+// Run on a worker thread: the file goes to its new name whole or not at all, so a partial copy never looks done. What the
+// copy's directory holds goes first: the partial file of an app that was closed in the middle of the copy (a new send's
+// directory is empty or not there).
 static bool copyMedia(const QString &from, const QString &to)
 {
+    emptyDir(QFileInfo(to).path());
     const QString part = to + ".part";
     if (QDir().mkpath(QFileInfo(to).path()) && QFile::copy(from, part) && QFile::rename(part, to))
         return true;
     QFile::remove(part);
     return false;
+}
+
+// Run on a worker thread: the outbox/<id>/ directories that belong to no entry (the ids) and that no row of chats.db points
+// into are leftovers, of a send taken back while it copied or of a message deleted before the engine took its files with it:
+// they go. A directory touched since the app started (started) is one being made now, and stays. chats.db is read on a
+// connection of its own, read-only; if it can't be (not there before the first link), nothing is removed.
+static void sweepOrphans(QStringList entries, QDateTime started)
+{
+    const QString root = QDir::homePath() + "/outbox/";
+    QStringList orphans;
+    foreach (const QString &id, QDir(root).entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
+        if (!entries.contains(id) && QFileInfo(root + id).lastModified() < started.addSecs(-2))
+            orphans << id;
+    }
+    if (orphans.isEmpty())
+        return;
+    QSet<QString> used;
+    bool read = false;
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "outbox-sweep");
+        db.setDatabaseName(QDir::homePath() + "/chats.db");
+        db.setConnectOptions("QSQLITE_OPEN_READONLY");
+        if (db.open()) {
+            QSqlQuery q(db);
+            q.prepare("SELECT path FROM messages WHERE substr(path, 1, ?) = ?");
+            q.addBindValue(root.size());
+            q.addBindValue(root);
+            read = q.exec();
+            while (read && q.next())
+                used.insert(q.value(0).toString().mid(root.size()).section('/', 0, 0));
+        }
+    }
+    QSqlDatabase::removeDatabase("outbox-sweep");
+    if (!read)
+        return;
+    foreach (const QString &id, orphans) {
+        if (used.contains(id))
+            continue;
+        qDebug() << "outbox: removing the leftover" << (root + id);
+        emptyDir(root + id);
+        QDir().rmdir(root + id);
+    }
 }
 
 // The engine's own ids look so (WhatsApp Web's too): "3EB0" and 16 hex digits.
@@ -128,16 +198,20 @@ QString Outbox::add(const QString &cmd, const QVariantMap &args)
     if (cmd == "media.send") {
         // The copy is made on a worker (a big video would freeze the UI): the entry is here at once, with the original's
         // path, and onCopied switches it to the copy and lets it go to the engine, or keeps the original if the copy failed.
-        const QString from = a["path"].toString();
-        const QString to = QDir::homePath() + "/outbox/" + id + "/" + QFileInfo(from).fileName();
-        m_copying.insert(id, to);
-        QFutureWatcher<bool> *watcher = new QFutureWatcher<bool>(this);
-        watcher->setProperty("id", id);
-        connect(watcher, SIGNAL(finished()), this, SLOT(onCopied()));
-        watcher->setFuture(QtConcurrent::run(copyMedia, from, to));
+        startCopy(id, a["path"].toString());
     }
     emit changed(entry["chat"].toString());
     return id;
+}
+
+void Outbox::startCopy(const QString &id, const QString &from)
+{
+    const QString to = QDir::homePath() + "/outbox/" + id + "/" + QFileInfo(from).fileName();
+    m_copying.insert(id, to);
+    QFutureWatcher<bool> *watcher = new QFutureWatcher<bool>(this);
+    watcher->setProperty("id", id);
+    connect(watcher, SIGNAL(finished()), this, SLOT(onCopied()));
+    watcher->setFuture(QtConcurrent::run(copyMedia, from, to));
 }
 
 void Outbox::onCopied()
