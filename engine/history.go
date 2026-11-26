@@ -109,6 +109,11 @@ func (st *Store) message(ctx context.Context, t *storeTx, cli *whatsmeow.Client,
 	if e.Info.Category == "peer" {
 		return
 	}
+	// A message to one of the sender's broadcast lists goes in the sender's chat, as the phone shows it;
+	// ours to our own lists keep the list's chat.
+	if chat.Server == types.BroadcastServer && !e.Info.IsFromMe {
+		chat = e.Info.Sender
+	}
 	alt := e.Info.SenderAlt
 	if e.Info.IsFromMe {
 		alt = e.Info.RecipientAlt
