@@ -215,5 +215,6 @@ func (s *Session) handleCancel(req json.RawMessage) (any, error) {
 	if filepath.Dir(m.Path) == outboxDir(s.srv.dir) { // the copy keepOutgoing made of a media send's file
 		os.Remove(m.Path)
 	}
+	os.Remove(posterPath(s.srv.dir, r.ID)) // a video's poster
 	return map[string]string{}, nil
 }

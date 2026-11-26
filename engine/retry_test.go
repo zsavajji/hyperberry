@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/polymorfa/hypermeow"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -220,4 +221,53 @@ func TestRetry(t *testing.T) {
 	if _, err := retry("BAD"); code(err) != "not_failed" { // it is sending now
 		t.Errorf("a second retry: %v", err)
 	}
+}
+
+// A video's poster (the UI's thumbnail, which the row doesn't keep) waits in outbox-engine/<id>.poster, and a rebuild from
+// the row carries it; it goes with the send being sent, cancelled, or unable to be rebuilt.
+func TestVideoPosterKept(t *testing.T) {
+	s, st := offlineSession(t)
+	chat := retryChat
+	mp4 := filepath.Join(t.TempDir(), "v.mp4")
+	os.WriteFile(mp4, []byte("video"), 0o644)
+	st.runOp(func(tx *storeTx) { tx.ensureChat(chat, chatUser) })
+	for _, id := range []string{"V1", "V2", "V4"} {
+		body := `{"chat":"` + chat + `","id":"` + id + `","path":"` + mp4 + `","thumb":"Bw=="}`
+		if _, err := s.handleMediaSend(json.RawMessage(body)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := s.handleMediaSend(json.RawMessage(`{"chat":"` + chat + `","id":"P1","path":"` + mp4 + `","file":true,"thumb":"Bw=="}`)); err != nil {
+		t.Fatal(err)
+	}
+	waitQueued(t, s, 4)
+	if _, err := os.Stat(posterPath(s.srv.dir, "P1")); err == nil {
+		t.Error("a document kept a poster")
+	}
+	row, _ := st.row(chat, "V1")
+	o := s.mediaOf(row)
+	if got, _ := os.ReadFile(posterPath(s.srv.dir, "V1")); string(got) != "\x07" || string(o.poster) != "\x07" ||
+		string(mediaMessage(o, whatsmeow.UploadResponse{}, nil).GetVideoMessage().GetJPEGThumbnail()) != "\x07" {
+		t.Errorf("the poster: file %q, rebuilt %q", got, o.poster)
+	}
+	if row.Thumb != nil {
+		t.Errorf("the row keeps a thumb: %v", row.Thumb)
+	}
+
+	// Sent: the op that records it takes the poster.
+	st.runOp(func(tx *storeTx) { s.dropSendFiles(tx, o) })
+	waitGone(t, posterPath(s.srv.dir, "V1"))
+	// Cancelled.
+	if _, err := s.handleCancel(json.RawMessage(`{"chat":"` + chat + `","id":"V2"}`)); err != nil {
+		t.Fatal(err)
+	}
+	waitGone(t, posterPath(s.srv.dir, "V2"))
+	// Unable to be rebuilt (its file is gone): a restart's flush fails the row and drops the poster.
+	row, _ = st.row(chat, "V4")
+	os.Remove(row.Path)
+	s2 := &Session{cli: s.cli, store: st, srv: st.srv, log: s.log}
+	if r := s2.flushRow(s.client(), row); !strings.HasPrefix(r, "failed, can't be rebuilt") {
+		t.Errorf("flush: %q", r)
+	}
+	waitGone(t, posterPath(s.srv.dir, "V4"))
 }

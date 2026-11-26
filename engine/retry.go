@@ -19,7 +19,7 @@ import (
 
 // resendAttempt is the attempt sendOut makes to send our row. An error says it can't be rebuilt: its file is gone, it is a
 // kind we don't send, a sticker has no source; the caller fails the row.
-// ponytail: a video goes without its poster (the UI's thumbnail, which the row doesn't keep), and a poll with a new secret.
+// ponytail: a poll goes with a new secret.
 func (s *Session) resendAttempt(row msgRow) (func(*whatsmeow.Client) error, error) {
 	jid, err := types.ParseJID(row.Chat)
 	if err != nil || jid.IsEmpty() {
@@ -32,8 +32,7 @@ func (s *Session) resendAttempt(row msgRow) (func(*whatsmeow.Client) error, erro
 			if fi, err := os.Stat(row.Path); err != nil || !fi.Mode().IsRegular() {
 				return nil, errors.New("its file is gone: " + row.Path)
 			}
-			_, mimeType := sendKind(row.Path)
-			o := &mediaOut{row: row, mime: mimeType, quote: s.quoteOf(row)}
+			o := s.mediaOf(row)
 			return func(c *whatsmeow.Client) error { return s.uploadMedia(c, jid, row.Path, o) }, nil
 		case msgVoice:
 			ogg, err := os.ReadFile(oggPath(s.srv.dir, id))
@@ -64,6 +63,14 @@ func (s *Session) resendAttempt(row msgRow) (func(*whatsmeow.Client) error, erro
 		return nil, err
 	}
 	return func(c *whatsmeow.Client) error { return s.sendMsg(c, jid, chat, id, msg) }, nil
+}
+
+// mediaOf is the upload of our media row, rebuilt: the mimetype by its file's extension, and a video's poster read back from
+// the file the send kept (none: it goes without).
+func (s *Session) mediaOf(row msgRow) *mediaOut {
+	_, mimeType := sendKind(row.Path)
+	poster, _ := os.ReadFile(posterPath(s.srv.dir, row.ID))
+	return &mediaOut{row: row, mime: mimeType, quote: s.quoteOf(row), poster: poster}
 }
 
 // resendMessage is the wire message of our row that goes as it is, with nothing to upload: a text (a reply, with
@@ -141,6 +148,7 @@ func (s *Session) flushRow(cli *whatsmeow.Client, row msgRow) string {
 	if err != nil {
 		s.sending.Delete(row.ID)
 		s.failRow(row.Chat, row.ID)
+		os.Remove(posterPath(s.srv.dir, row.ID)) // nothing will send it again: a video's poster is of no use
 		return "failed, can't be rebuilt: " + err.Error()
 	}
 	switch queued, err := s.sendOut(cli, row.Chat, row.ID, attempt); {
@@ -231,6 +239,17 @@ func (s *Session) handleRetry(req json.RawMessage) (any, error) {
 func outboxDir(dir string) string {
 	d, _ := filepath.Abs(filepath.Join(dir, "outbox-engine"))
 	return d
+}
+
+// posterPath is where a video's poster waits with the send, for a rebuild after a restart: the row keeps none. It goes when
+// the message is sent, cancelled or can't be rebuilt; a failed row keeps it for msg.retry.
+// ponytail: a failed row that is deleted for me leaves it, as it leaves its copy.
+func posterPath(dir, id string) string { return filepath.Join(outboxDir(dir), id+".poster") }
+
+// dropSendFiles runs in the op that records a media send as sent: what it kept for a rebuild goes.
+func (s *Session) dropSendFiles(t *storeTx, o *mediaOut) {
+	id := o.row.ID
+	t.after = append(t.after, func() { os.Remove(posterPath(s.srv.dir, id)) })
 }
 
 // keepOutgoing copies the file a media send waits with to outbox-engine/<id><ext> and points the row's path at the copy, so

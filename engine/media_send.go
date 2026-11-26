@@ -103,7 +103,8 @@ type mediaOut struct {
 	quote   msgRow
 	created bool // the chat was new
 	// poster is a video's thumbnail as the message carries it: the UI draws one with a play mark, so the
-	// phones that get it show a video and not a grey box. Our own row keeps none (the UI marks a video by itself).
+	// phones that get it show a video and not a grey box. Our own row keeps none (the UI marks a video by itself); the
+	// send keeps it in outbox-engine/<id>.poster (posterPath) until it is over, for a rebuild after a restart.
 	poster []byte
 }
 
@@ -188,6 +189,11 @@ func (s *Session) handleMediaSend(req json.RawMessage) (any, error) {
 		return map[string]string{"id": id}, nil
 	}
 	o := s.store.queueMedia(jid, r, id)
+	if len(o.poster) > 0 {
+		if err := writeFile(posterPath(s.srv.dir, id), o.poster); err != nil {
+			s.log.Warnf("poster of %s: %v", id, err)
+		}
+	}
 	go func() {
 		s.nameNew(cli, jid, r.Chat, o.created)
 		// A send that has to wait works from its own copy of the file (keepOutgoing), before the first try or once the
@@ -263,6 +269,7 @@ func (s *Session) uploadMedia(cli *whatsmeow.Client, jid types.JID, path string,
 			s.store.ops <- func(t *storeTx) {
 				t.sentAs(chat, id, resp.Timestamp.Unix(), stateSent)
 				t.exec("UPDATE messages SET media = ? WHERE chat = ? AND id = ?", string(info), chat, id)
+				s.dropSendFiles(t, o)
 			}
 			return nil
 		}
