@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/polymorfa/hypermeow"
+	"github.com/polymorfa/hypermeow/types"
+	"github.com/polymorfa/hypermeow/types/events"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -343,5 +345,56 @@ func TestSentSendDropsItsCopies(t *testing.T) {
 	}
 	if _, err := s.handleMediaSend(json.RawMessage(`{"chat":"` + chat + `","path":"/x","original":"rel"}`)); code(err) != "bad_request" {
 		t.Errorf("a relative original: %v", err)
+	}
+}
+
+// A delivery or read receipt for one of our rows that is still sending, or failed, says the message went: the row moves to
+// delivered or read, and isSending (which every attempt asks right before sending) turns false, so nothing sends it again.
+func TestReceiptMovesUnsentRows(t *testing.T) {
+	st, cli := historyFixture(t)
+	chat := retryChat
+	jid, _ := types.ParseJID(chat)
+	st.runOp(func(tx *storeTx) {
+		tx.ensureChat(chat, chatUser)
+		for i, m := range []msgRow{
+			{ID: "SND", Out: true, State: stateSending, Kind: msgText, Text: "sending"},
+			{ID: "FLD", Out: true, State: stateFailed, Kind: msgText, Text: "failed"},
+			{ID: "FLD2", Out: true, State: stateFailed, Kind: msgText, Text: "failed, read"},
+			{ID: "FLD3", Out: true, State: stateFailed, Kind: msgText, Text: "failed, sent on the phone"},
+			{ID: "CAN", Out: true, State: stateSending, Kind: msgText, Text: "cancelled"},
+			{ID: "REV", Out: true, State: stateSending, Kind: msgText, Text: "revoked", Deleted: true},
+			{ID: "THEIRS", State: stateSending, Kind: msgText, Text: "theirs"},
+		} {
+			m.Chat, m.TS = chat, int64(10+i)
+			tx.insertMessage(m)
+		}
+	})
+	for _, id := range []string{"SND", "CAN"} {
+		if !st.isSending(chat, id) {
+			t.Errorf("%s is not sending", id)
+		}
+	}
+	for _, id := range []string{"FLD", "REV", "THEIRS", "GONE"} {
+		if st.isSending(chat, id) {
+			t.Errorf("%s is sending", id)
+		}
+	}
+	feed := func(typ types.ReceiptType, ids ...string) {
+		st.handle(cli, &events.Receipt{MessageSource: types.MessageSource{Chat: jid, Sender: jid}, MessageIDs: ids, Type: typ})
+		st.runOp(func(*storeTx) {})
+	}
+	feed(types.ReceiptTypeDelivered, "SND", "FLD")
+	feed(types.ReceiptTypeRead, "FLD2")
+	st.runOp(func(tx *storeTx) { tx.setState(chat, "FLD3", stateSent) }) // the phone's history says sent: not enough
+	st.runOp(func(tx *storeTx) { tx.deleteMessage(chat, "CAN") })       // msg.cancel
+	for id, want := range map[string]int{"SND": stateDelivered, "FLD": stateDelivered, "FLD2": stateRead, "FLD3": stateFailed} {
+		if row, _ := st.row(chat, id); row.State != want {
+			t.Errorf("%s is %d, want %d", id, row.State, want)
+		}
+	}
+	for _, id := range []string{"SND", "CAN"} {
+		if st.isSending(chat, id) {
+			t.Errorf("%s is still to be sent: a receipt moved it, or it was cancelled", id)
+		}
 	}
 }

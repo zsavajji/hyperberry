@@ -177,6 +177,13 @@ func (st *Store) row(chat, id string) (msgRow, bool) {
 	return g.r, g.ok
 }
 
+// isSending says whether our row is still to be sent: a receipt hasn't moved it on, msg.cancel hasn't taken it back, it
+// isn't failed or revoked. Every attempt asks right before sending (sendOut).
+func (st *Store) isSending(chat, id string) bool {
+	m, ok := st.row(chat, id)
+	return ok && m.Out && m.State == stateSending && !m.Deleted
+}
+
 type voiceReq struct{ Chat, ID string }
 
 func parseVoice(req json.RawMessage) (voiceReq, error) {

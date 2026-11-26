@@ -123,7 +123,8 @@ func (s *Session) holdIfDown(cli *whatsmeow.Client, id string, send func(*whatsm
 
 // sendOut makes one attempt at sending our row id of chat: attempt sends it and records it as sent, or says why it didn't.
 // A connection that is down before the try, or after its error, queues it instead (queued), the row staying sending; any
-// other error fails the row and comes back.
+// other error fails the row and comes back. Right before the try the row is read again: one that a receipt moved on, or
+// that msg.cancel took back, is not sent.
 func (s *Session) sendOut(cli *whatsmeow.Client, chat, id string, attempt func(*whatsmeow.Client) error) (queued bool, err error) {
 	again := func(c *whatsmeow.Client) {
 		if _, err := s.sendOut(c, chat, id, attempt); err != nil {
@@ -132,6 +133,11 @@ func (s *Session) sendOut(cli *whatsmeow.Client, chat, id string, attempt func(*
 	}
 	if s.holdIfDown(cli, id, again) {
 		return true, nil
+	}
+	if !s.store.isSending(chat, id) { // a receipt says it went after all (a resent poll would split the votes), or msg.cancel took it
+		s.log.Infof("send %s %s: no longer ours and sending, left alone", chat, id)
+		s.sending.Delete(id)
+		return false, nil
 	}
 	if err = attempt(cli); err != nil && s.holdIfDown(cli, id, again) {
 		return true, nil

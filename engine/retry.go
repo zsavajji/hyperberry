@@ -141,7 +141,7 @@ func (s *Session) flushRow(cli *whatsmeow.Client, row msgRow) string {
 	if _, busy := s.sending.LoadOrStore(row.ID, true); busy {
 		return ""
 	}
-	if m, ok := s.store.row(row.Chat, row.ID); !ok || m.State != stateSending { // msg.cancel took it since the read
+	if !s.store.isSending(row.Chat, row.ID) { // msg.cancel took it since the read, or a receipt moved it
 		s.sending.Delete(row.ID)
 		return ""
 	}

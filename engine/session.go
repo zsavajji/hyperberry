@@ -57,7 +57,14 @@ type Session struct {
 	// so none takes another's and msg.cancel leaves it be. queue is the sends waiting for the connection (sendqueue.go).
 	sending sync.Map
 	queue   sendQueue
+	// drainTimer starts the queue's drain offlineWait after a connect, if the offline backlog's end (OfflineSyncCompleted)
+	// hasn't started it first. Under mu.
+	drainTimer *time.Timer
 }
+
+// offlineWait is how long after a connect the sends that waited go without the offline backlog's end: the receipts that came
+// while we were away must be applied first, since one may say a message of ours had in fact gone.
+var offlineWait = 10 * time.Second
 
 // syncCap ends "syncing" if the phone sends no recent-chats history: an account with no chats.
 // ponytail: a guess, untested until the real link.
@@ -402,10 +409,19 @@ func (s *Session) onEvent(cli *whatsmeow.Client, evt any) {
 					s.log.Warnf("presence after connecting: %v", err)
 				}
 			}()
-			go s.drainQueued(cli) // what was sent while it was down
+			// What was sent while it was down goes once the backlog is in: a receipt in it may say a message had gone (the
+			// poll that a second copy would give a new secret). OfflineSyncCompleted starts it, else this timer.
+			if s.drainTimer != nil {
+				s.drainTimer.Stop()
+			}
+			s.drainTimer = time.AfterFunc(offlineWait, func() { s.drainQueued(cli) })
 		}
 		s.srv.Emit("conn", map[string]any{"state": s.conn})
 		s.photos.connected()
+	case *events.OfflineSyncCompleted:
+		if s.drainTimer != nil && s.drainTimer.Stop() { // not started yet
+			go s.drainQueued(cli)
+		}
 	case *events.Picture:
 		s.photos.changed(cli, e.JID)
 	case *events.Disconnected:

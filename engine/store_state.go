@@ -133,11 +133,12 @@ func (t *storeTx) clearChat(chat string, drop bool) {
 	}
 }
 
-// setState only raises the state of one of our messages: receipts arrive out of order, and a
-// failed (4) message stays failed.
+// setState only raises the state of one of our messages: receipts arrive out of order. A failed (4) message stays failed,
+// unless a receipt says it arrived (delivered, read): a copy had gone after all, say under a connection that dropped, and
+// the ticks must say so, and nothing may send it again (isSending).
 func (t *storeTx) setState(chat, id string, state int) {
-	if t.exec("UPDATE messages SET state = ? WHERE chat = ? AND id = ? AND out = 1 AND state < ? AND state != ?",
-		state, chat, id, state, stateFailed) > 0 {
+	if t.exec(`UPDATE messages SET state = ?1 WHERE chat = ?2 AND id = ?3 AND out = 1 AND state != ?1
+AND (state < ?1 OR (state = ?4 AND ?1 > ?5))`, state, chat, id, stateFailed, stateSent) > 0 {
 		t.changed(chat, id)
 		t.syncLast(chat, id)
 	}
