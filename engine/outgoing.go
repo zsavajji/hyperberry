@@ -109,7 +109,11 @@ func (s *Session) work(chat string) {
 		o.mu.Lock()
 		delete(o.inflight, chat)
 		if down {
-			o.up = false // the next connect opens it, and next ends this worker meanwhile
+			// The worker ends; the gate is the connection events' alone: closing it here could undo a reconnect's opening
+			// that came during the attempt, and the rows would wait for the next one. A kick or the next opening starts it.
+			delete(o.workers, chat)
+			o.mu.Unlock()
+			return
 		}
 		o.mu.Unlock()
 	}

@@ -171,7 +171,8 @@ func TestWorkerStopsWhenDownAndResumes(t *testing.T) {
 	if strings.Join(tries, " ") != "A1" || rows(st, "SELECT count(*) FROM messages WHERE chat = ? AND state = ?", chat, stateSending) != 2 {
 		t.Fatalf("tries %v, sending %d: want A1 tried once, both sending", tries, rows(st, "SELECT count(*) FROM messages WHERE chat = ? AND state = ?", chat, stateSending))
 	}
-	s.kick(chat) // the gate went shut with the connection
+	s.out.shut() // events.Disconnected: the gate goes shut with the connection, not with the attempt
+	s.kick(chat)
 	time.Sleep(50 * time.Millisecond)
 	if len(tries) != 1 {
 		t.Errorf("a worker ran after the connection went: %v", tries)
