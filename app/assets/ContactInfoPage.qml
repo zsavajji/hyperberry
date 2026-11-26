@@ -18,6 +18,10 @@ Page {
     // From info, not a method call: a binding isn't re-read when a method's result changes.
     property int groupCount: loaded ? info.groups.length : 0
     property bool muted: false
+    // A WhatsApp Business account: contact.info's business block (engine/business.go).
+    property bool business: loaded && !!info.business
+    property bool hasHours: business && info.business.hours.length > 0
+    property bool weekShown: false
     // The chat exists in chats.db. A person from a group, or the picker, may have none yet: then
     // there is nothing to mute, export, clear or delete.
     property bool hasChat: false
@@ -236,6 +240,66 @@ Page {
         exportedToast.body = qsTr("Saved to Downloads: %1").arg(path.substring(path.lastIndexOf("/") + 1))
         exportedToast.show()
     }
+    // ponytail: hours read in the phone's time zone, not the business's; a business abroad shows the wrong "open now".
+    function hoursOf(d) {
+        var out = []
+        var h = info.business.hours
+        for (var i = 0; i < h.length; i++) {
+            if (h[i].day == d) {
+                out.push(h[i])
+            }
+        }
+        return out
+    }
+    function clock(min) {
+        return Qt.formatTime(new Date(2000, 0, 1, Math.floor(min / 60), min % 60))
+    }
+    // A day's hours as the phone writes them: "Open 24 hours", "09:00 – 12:00, 15:00 – 19:00", "Closed".
+    function dayText(d) {
+        var h = hoursOf(d)
+        var spans = []
+        for (var i = 0; i < h.length; i++) {
+            if (h[i].mode == "open_24h") {
+                return qsTr("Open 24 hours")
+            }
+            if (h[i].mode == "appointment_only") {
+                return qsTr("By appointment only")
+            }
+            spans.push(clock(h[i].open) + " – " + clock(h[i].close))
+        }
+        return spans.length ? spans.join(", ") : qsTr("Closed")
+    }
+    // "Open now" at this minute (today's hours, or last night's that run past midnight), "By appointment" or "Closed now".
+    function status() {
+        var now = new Date()
+        var m = now.getHours() * 60 + now.getMinutes()
+        var today = hoursOf(now.getDay())
+        for (var i = 0; i < today.length; i++) {
+            var h = today[i]
+            if (h.mode == "appointment_only") {
+                return qsTr("By appointment")
+            }
+            if (h.mode == "open_24h" || (h.close > h.open ? m >= h.open && m < h.close : m >= h.open)) {
+                return qsTr("Open now")
+            }
+        }
+        var night = hoursOf((now.getDay() + 6) % 7)
+        for (var j = 0; j < night.length; j++) {
+            if (night[j].mode == "specific_hours" && night[j].close <= night[j].open && m < night[j].close) {
+                return qsTr("Open now")
+            }
+        }
+        return qsTr("Closed now")
+    }
+    // The week from Monday, day names and hours as two columns of lines.
+    function weekText(names) {
+        var out = []
+        for (var i = 1; i <= 7; i++) {
+            var d = i % 7
+            out.push(names ? Qt.formatDate(new Date(2026, 10, 22 + d), "dddd") : dayText(d)) // 22 November 2026 is a Sunday
+        }
+        return out.join("\n")
+    }
     function fill() {
         groupsBox.removeAll()
         if (info && info.groups) {
@@ -314,6 +378,17 @@ Page {
                         textStyle.fontSize: FontSize.PercentageValue
                         textStyle.fontSizeValue: nav.bodySize * 1.3
                     }
+                    // A business's verified name, when it isn't the name above (the phone shows it so).
+                    Label {
+                        visible: page.business && !!page.info.business.name && page.info.business.name != page.chat.name
+                        horizontalAlignment: HorizontalAlignment.Center
+                        text: page.business ? "~" + page.info.business.name : ""
+                        textFormat: TextFormat.Plain
+                        textStyle.base: nav.emojiStyle
+                        textStyle.fontSize: FontSize.PercentageValue
+                        textStyle.fontSizeValue: nav.bodySize
+                        textStyle.color: ui.palette.secondaryTextOnPlain
+                    }
                     // In the primary colour, as a link: a tap saves the number in the phone's contacts.
                     // The Classic's trackpad reaches the number too: it takes the focus, dimmed, and a click (Enter) saves it (the user, 2026-11-20).
                     Label {
@@ -353,6 +428,113 @@ Page {
                     textStyle.textAlign: TextAlign.Center
                     textStyle.color: ui.palette.secondaryTextOnPlain
                     text: qsTr("Couldn't load the contact's info. Check the connection and try again.")
+                }
+                Header {
+                    visible: page.business
+                    title: qsTr("Business account")
+                    subtitle: qsTr("Uses WhatsApp Business")
+                }
+                // Padding, not margins: margins only space siblings, never from the container's edge.
+                Container {
+                    visible: page.business
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    topPadding: zoom * ui.du(1.5)
+                    leftPadding: zoom * ui.du(1.5)
+                    rightPadding: zoom * ui.du(1.5)
+                    bottomPadding: zoom * ui.du(1.5)
+                    // Open now or closed, and today's hours; a tap (or the trackpad's click) shows the week.
+                    Container {
+                        id: hoursRow
+                        visible: page.hasHours
+                        horizontalAlignment: HorizontalAlignment.Fill
+                        focusPolicy: FocusPolicy.KeyAndTouch
+                        opacity: hoursRow.focused ? 0.6 : 1
+                        layout: StackLayout {
+                            orientation: LayoutOrientation.LeftToRight
+                        }
+                        gestureHandlers: TapHandler {
+                            onTapped: page.weekShown = !page.weekShown
+                        }
+                        keyListeners: KeyListener {
+                            onKeyReleased: {
+                                if (event.key == 13 || event.key == 10) { // Enter: the trackpad's click
+                                    page.weekShown = !page.weekShown
+                                }
+                            }
+                        }
+                        Label {
+                            layoutProperties: StackLayoutProperties {
+                                spaceQuota: 1
+                            }
+                            text: page.hasHours ? page.status() : ""
+                            textStyle.fontSize: FontSize.PercentageValue
+                            textStyle.fontSizeValue: nav.bodySize
+                            textStyle.color: text == qsTr("Open now") ? Color.create("#1eaa61")
+                                : text == qsTr("Closed now") ? Color.create("#e0453a") : ui.palette.secondaryTextOnPlain
+                        }
+                        Label {
+                            text: page.hasHours ? page.dayText(new Date().getDay()) + (page.weekShown ? " ▴" : " ▾") : ""
+                            textStyle.fontSize: FontSize.PercentageValue
+                            textStyle.fontSizeValue: nav.bodySize
+                        }
+                    }
+                    Container {
+                        visible: page.hasHours && page.weekShown
+                        horizontalAlignment: HorizontalAlignment.Fill
+                        layout: StackLayout {
+                            orientation: LayoutOrientation.LeftToRight
+                        }
+                        Label {
+                            layoutProperties: StackLayoutProperties {
+                                spaceQuota: 1
+                            }
+                            multiline: true
+                            text: page.hasHours ? page.weekText(true) : ""
+                            textStyle.fontSize: FontSize.PercentageValue
+                            textStyle.fontSizeValue: nav.bodySize
+                            textStyle.color: ui.palette.secondaryTextOnPlain
+                        }
+                        Label {
+                            multiline: true
+                            text: page.hasHours ? page.weekText(false) : ""
+                            textStyle.textAlign: TextAlign.Right
+                            textStyle.fontSize: FontSize.PercentageValue
+                            textStyle.fontSizeValue: nav.bodySize
+                            textStyle.color: ui.palette.secondaryTextOnPlain
+                        }
+                    }
+                    // Category, description, address, email and websites, each on its own lines; links active.
+                    Label {
+                        visible: page.business && !!page.info.business.category
+                        horizontalAlignment: HorizontalAlignment.Fill
+                        multiline: true
+                        text: page.business ? page.info.business.category : ""
+                        textFormat: TextFormat.Plain
+                        textStyle.fontSize: FontSize.PercentageValue
+                        textStyle.fontSizeValue: nav.bodySize
+                    }
+                    Label {
+                        visible: page.business && !!page.info.business.description
+                        horizontalAlignment: HorizontalAlignment.Fill
+                        multiline: true
+                        text: page.business ? page.info.business.description : ""
+                        content.flags: TextContentFlag.ActiveText
+                        textFormat: TextFormat.Plain
+                        textStyle.base: nav.emojiStyle
+                        textStyle.fontSize: FontSize.PercentageValue
+                        textStyle.fontSizeValue: nav.bodySize
+                    }
+                    Label {
+                        visible: page.business && !!(page.info.business.address || page.info.business.email || page.info.business.websites.length)
+                        horizontalAlignment: HorizontalAlignment.Fill
+                        multiline: true
+                        text: page.business ? [page.info.business.address, page.info.business.email].concat(page.info.business.websites)
+                            .filter(function (x) { return !!x }).join("\n") : ""
+                        content.flags: TextContentFlag.ActiveText
+                        textFormat: TextFormat.Plain
+                        textStyle.fontSize: FontSize.PercentageValue
+                        textStyle.fontSizeValue: nav.bodySize
+                    }
                 }
                 Header {
                     visible: page.loaded && !!page.info.about
