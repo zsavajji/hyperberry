@@ -41,6 +41,7 @@ EngineLink::EngineLink(QObject *parent)
     // One loss can fire both; lost() copes.
     connect(&m_socket, SIGNAL(disconnected()), this, SLOT(lost()));
     connect(&m_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(lost()));
+    connect(&m_outbox, SIGNAL(copied(QString)), this, SLOT(onOutboxCopied(QString)));
 }
 
 // The socket is a member: its destructor aborts a live connection and emits disconnected(),
@@ -221,9 +222,11 @@ void EngineLink::readLines()
                     // What was made while the engine was down goes now, in order, after the hello. An entry stays in the
                     // outbox until the engine answers it: the app can be closed before, and the message's id makes the
                     // send again harmless.
+                    // One whose file is still being copied waits for that (onOutboxCopied).
                     foreach (const QVariant &entry, m_outbox.all()) {
                         const QVariantMap e = entry.toMap();
-                        m_sent.insert(post(e["cmd"].toString(), e["args"].toMap()), e["id"].toString());
+                        if (!m_outbox.copying(e["id"].toString()))
+                            m_sent.insert(post(e["cmd"].toString(), e["args"].toMap()), e["id"].toString());
                     }
                     qDebug() << "engine: connected, link" << m_link["state"].toString()
                              << ", conn" << m_conn;
@@ -343,6 +346,20 @@ void EngineLink::lost()
     // the linking page during a restart.
     startEngine();
     m_retry.start(m_retryDelay);
+}
+
+// The file of an outbox entry has been copied: with the engine up it goes now, as the hello's flush would have sent it.
+void EngineLink::onOutboxCopied(const QString &id)
+{
+    if (!m_connected)
+        return;
+    foreach (const QVariant &entry, m_outbox.all()) {
+        const QVariantMap e = entry.toMap();
+        if (e["id"].toString() == id) {
+            m_sent.insert(post(e["cmd"].toString(), e["args"].toMap()), id);
+            return;
+        }
+    }
 }
 
 void EngineLink::fail(const QString &cmd, const QString &code, const QString &message)

@@ -8,10 +8,12 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QFutureWatcher>
 #include <QRegExp>
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QUuid>
+#include <QtConcurrentRun>
 #include <cstdio>
 
 using namespace bb::data;
@@ -88,6 +90,16 @@ void Outbox::row(const QVariantMap &entry, int *kind, QString *text)
     }
 }
 
+// Run on a worker thread: the file goes to its new name whole or not at all, so a partial copy never looks done.
+static bool copyMedia(const QString &from, const QString &to)
+{
+    const QString part = to + ".part";
+    if (QDir().mkpath(QFileInfo(to).path()) && QFile::copy(from, part) && QFile::rename(part, to))
+        return true;
+    QFile::remove(part);
+    return false;
+}
+
 // The engine's own ids look so (WhatsApp Web's too): "3EB0" and 16 hex digits.
 static QString newId()
 {
@@ -105,16 +117,6 @@ QString Outbox::add(const QString &cmd, const QVariantMap &args)
     const QString id = newId();
     QVariantMap a = args;
     a[cmd == "msg.forward" || cmd == "story.reply" ? "newId" : "id"] = id;
-    if (cmd == "media.send") {
-        const QString from = a["path"].toString();
-        const QString dir = QDir::homePath() + "/outbox/" + id + "/";
-        const QString to = dir + QFileInfo(from).fileName();
-        if (QDir().mkpath(dir) && QFile::copy(from, to)) {
-            a["path"] = to;
-            a["original"] = from; // the engine puts the row's path back to it once the message is sent, and removes the copy
-        } else
-            qWarning() << "outbox: could not copy" << from;
-    }
     QVariantMap entry;
     entry["id"] = id;
     entry["cmd"] = cmd;
@@ -123,8 +125,51 @@ QString Outbox::add(const QString &cmd, const QVariantMap &args)
     entry["ts"] = qlonglong(QDateTime::currentDateTime().toTime_t());
     m_entries << entry;
     save();
+    if (cmd == "media.send") {
+        // The copy is made on a worker (a big video would freeze the UI): the entry is here at once, with the original's
+        // path, and onCopied switches it to the copy and lets it go to the engine, or keeps the original if the copy failed.
+        const QString from = a["path"].toString();
+        const QString to = QDir::homePath() + "/outbox/" + id + "/" + QFileInfo(from).fileName();
+        m_copying.insert(id, to);
+        QFutureWatcher<bool> *watcher = new QFutureWatcher<bool>(this);
+        watcher->setProperty("id", id);
+        connect(watcher, SIGNAL(finished()), this, SLOT(onCopied()));
+        watcher->setFuture(QtConcurrent::run(copyMedia, from, to));
+    }
     emit changed(entry["chat"].toString());
     return id;
+}
+
+void Outbox::onCopied()
+{
+    QFutureWatcher<bool> *watcher = static_cast<QFutureWatcher<bool> *>(sender());
+    watcher->deleteLater();
+    const QString id = watcher->property("id").toString();
+    const QString to = m_copying.take(id);
+    const bool ok = watcher->result();
+    for (int i = 0; i < m_entries.size(); ++i) {
+        QVariantMap entry = m_entries[i].toMap();
+        if (entry["id"].toString() != id)
+            continue;
+        if (ok) {
+            QVariantMap a = entry["args"].toMap();
+            a["original"] = a["path"]; // the engine puts the row's path back to it once the message is sent, and removes the copy
+            a["path"] = to;
+            entry["args"] = a;
+            m_entries[i] = entry;
+            save();
+            emit changed(entry["chat"].toString());
+        } else {
+            qWarning() << "outbox: could not copy" << entry["args"].toMap()["path"].toString();
+            QDir().rmdir(QFileInfo(to).path());
+        }
+        emit copied(id);
+        return;
+    }
+    if (ok) { // taken back while it copied
+        QFile::remove(to);
+        QDir().rmdir(QFileInfo(to).path());
+    }
 }
 
 void Outbox::remove(const QString &id, bool files)

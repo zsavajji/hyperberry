@@ -125,6 +125,7 @@ private slots:
     void invokeFinished();
     void onFullscreen();
     void onNotFullscreen();
+    void onOutboxCopied(const QString &id);
 
 private:
     void startEngine();

@@ -1,6 +1,7 @@
 #ifndef OUTBOX_H
 #define OUTBOX_H
 
+#include <QHash>
 #include <QObject>
 #include <QString>
 #include <QVariantList>
@@ -25,11 +26,15 @@ public:
 
     // Keeps cmd with args and returns the message's new id, which is also in the entry's args ("newId" for msg.forward and
     // story.reply, else "id"). A media.send's file is copied to outbox/<id>/ under its own name (the engine names a
-    // document by it): the picked file may go and the cache's PNG-as-JPEG is overwritten by the next of its name while the
-    // message waits. args.original is the file it was copied from: once the engine has sent the message it points the row's
-    // path back to it, if it is still there, and removes the copy (engine/retry.go, dropSendFiles).
-    // ponytail: a big video is copied on the UI thread; a hard link or a worker if that stalls.
+    // document by it) on a worker thread: the picked file may go and the cache's PNG-as-JPEG is overwritten by the next of
+    // its name while the message waits. The entry has the original's path meanwhile (copying(id)); once the copy is done
+    // args.path is the copy and args.original the file it was copied from (the engine points the row's path back to it
+    // once it has sent the message, if it is still there, and removes the copy: engine/retry.go, dropSendFiles), and
+    // copied(id) says so; a copy that failed leaves the original's path. EngineLink doesn't send an entry that is copying.
+    // ponytail: an app closed in the middle of a copy leaves its partial file in outbox/<id>/.
     QString add(const QString &cmd, const QVariantMap &args);
+    // Whether the copy of the entry's file is still running.
+    bool copying(const QString &id) const { return m_copying.contains(id); }
     // Drops the entry. files: also the copy of its file and a voice note's WAV (a send taken back). Not when the engine took
     // the message: its row points at them from then on (and the engine deletes the WAV itself; the copy it removes once the
     // message is sent, when the original is still there).
@@ -44,11 +49,17 @@ public:
 signals:
     // The entries going to this chat changed.
     void changed(const QString &chat);
+    // The copy of the entry's file ended, made or not: it can go to the engine.
+    void copied(const QString &id);
+
+private slots:
+    void onCopied();
 
 private:
     void save() const;
 
     QVariantList m_entries;
+    QHash<QString, QString> m_copying; // the entries whose file is being copied, and the copy's path
 };
 
 #endif
