@@ -339,7 +339,16 @@ func (st *Store) queueRow(jid types.JID, chat, quote string, row msgRow) (msgRow
 		t.insertMessage(row)
 		t.setLast(chat, row.TS, chatPreview(row), true, stateSending)
 	}
-	return <-quoted, <-made
+	q, isNew := <-quoted, <-made
+	// The reply is what tells the UI to drop its outbox entry and read the row, so the row has to be in chats.db by then:
+	// wait for the commit (the batch holds it up to batchTime), as protocol.md says of msg.send.
+	committed := make(chan struct{})
+	st.afterCommit(func() { close(committed) })
+	select {
+	case <-committed:
+	case <-st.done:
+	}
+	return q, isNew
 }
 
 // receipt moves the ticks of our messages, or clears unread when our other devices read a chat. A story's
