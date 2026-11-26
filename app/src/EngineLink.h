@@ -1,8 +1,6 @@
 #ifndef ENGINELINK_H
 #define ENGINELINK_H
 
-#include "Outbox.h"
-
 #include <bb/system/InvokeManager>
 #include <QAbstractSocket>
 #include <QElapsedTimer>
@@ -71,16 +69,12 @@ public:
 
 
     // Sends a request (docs/protocol.md "Requests"); a failure shows in failure. Returns the
-    // request id, "" when the engine isn't connected. A send that makes a message of ours (Outbox::takes) made while the engine
-    // is down goes to the outbox instead, to be sent once it is back: nothing fails, and the message's id comes back, which
-    // is also what replied() and failed() give for it then.
+    // request id, "" when the engine isn't connected. The sends that make a message of ours go through Outbox.
     Q_INVOKABLE QString request(const QString &cmd, const QVariantMap &args);
     // request() for something the user didn't ask for (a sticker fetched as its row is drawn): a
     // failure, and an engine that's down, are logged but never put in failure, so no page shows them.
     // Returns the request id, "" when the engine isn't connected (then nothing was sent).
     QString requestQuiet(const QString &cmd, const QVariantMap &args);
-    // The sends made while the engine is down, kept on disk; the models show them as messages still sending.
-    Outbox *outbox() { return &m_outbox; }
 
 signals:
     void connectedChanged();
@@ -125,7 +119,6 @@ private slots:
     void invokeFinished();
     void onFullscreen();
     void onNotFullscreen();
-    void onOutboxCopied(const QString &id);
 
 private:
     void startEngine();
@@ -149,8 +142,6 @@ private:
     QString m_helloId;
     QHash<QString, QString> m_pending;
     QSet<QString> m_quiet; // the ids in m_pending that requestQuiet sent
-    Outbox m_outbox;
-    QHash<QString, QString> m_sent; // the requests that sent an outbox entry at the hello, and their entries' ids
     bool m_connected;
     QVariantMap m_link;
     QString m_conn;

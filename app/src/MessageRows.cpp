@@ -424,9 +424,9 @@ static QString stickerFile(const QString &hash)
 QList<MessageModel::Msg> MessageModel::pending(const QList<Msg> &db)
 {
     QList<Msg> rows;
-    if (!m_engine)
+    if (!m_outbox)
         return rows;
-    const QVariantList entries = m_engine->outbox()->entries(m_chat);
+    const QVariantList entries = m_outbox->entries(m_chat);
     if (entries.isEmpty())
         return rows;
     tick();

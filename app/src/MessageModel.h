@@ -17,6 +17,7 @@
 #include <QVariantMap>
 
 class EngineLink;
+class Outbox;
 
 // One chat's messages (PLAN.md §7, step 3.1), read-only from chats.db. The model is flat
 // ([i]) and newest first: the newest day's messages newest to oldest, then that day's header,
@@ -33,7 +34,7 @@ class EngineLink;
 // last member's time and state, since the card shows when it ended.
 // The newest 50 load at once, older pages as the list nears its top; the loaded set always
 // holds whole days, so a page never lands inside a loaded day. After them come the chat's outbox
-// (Outbox.h, the sends made while the engine was down) as our rows still sending, state 0, last
+// (Outbox.h, the sends not yet answered by the engine) as our rows still sending, state 0, last
 // whatever their time, each until chats.db has a row with its id.
 class MessageModel : public bb::cascades::DataModel
 {
@@ -48,7 +49,7 @@ class MessageModel : public bb::cascades::DataModel
     // title bar says so meanwhile.
     Q_PROPERTY(bool translating READ translating NOTIFY translatingChanged)
 public:
-    MessageModel(EngineLink *engine, const QString &chat, bool group, QObject *parent = 0);
+    MessageModel(EngineLink *engine, Outbox *outbox, const QString &chat, bool group, QObject *parent = 0);
 
     int childCount(const QVariantList &indexPath);
     bool hasChildren(const QVariantList &indexPath);
@@ -148,6 +149,7 @@ private:
     void wantTranslation(const Msg &m);
 
     QPointer<EngineLink> m_engine;
+    QPointer<Outbox> m_outbox;
     QString m_chat;
     bool m_group;
     bool m_atStart; // the oldest message is loaded

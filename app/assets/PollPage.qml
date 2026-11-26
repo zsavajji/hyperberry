@@ -139,7 +139,7 @@ Page {
             tooFew.show()
             return
         }
-        if (!engine.request("poll.create", {"chat": page.jid, "question": question.text.trim(), "options": list, "multiple": several.checked})) {
+        if (!outbox.send("poll.create", {"chat": page.jid, "question": question.text.trim(), "options": list, "multiple": several.checked})) {
             offline.show()
             return
         }

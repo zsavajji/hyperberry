@@ -3,6 +3,7 @@
 #include "EngineLink.h"
 #include "colors.h"
 #include "MessageModel.h"
+#include "Outbox.h"
 #include "Waveform.h"
 
 #include <bb/cascades/Application>
@@ -79,6 +80,16 @@ void ChatController::setLink(QObject *link)
     m_engine = qobject_cast<EngineLink *>(link);
 }
 
+QObject *ChatController::outgoing() const
+{
+    return m_outbox;
+}
+
+void ChatController::setOutgoing(QObject *outbox)
+{
+    m_outbox = qobject_cast<Outbox *>(outbox);
+}
+
 bb::cascades::DataModel *ChatController::messages() const
 {
     return m_messages;
@@ -141,12 +152,12 @@ void ChatController::onReplied(const QString &id, const QString &cmd, const QVar
 
 void ChatController::open(const QVariantMap &chat)
 {
-    if (m_messages || !m_engine)
+    if (m_messages || !m_engine || !m_outbox)
         return;
     m_jid = chat["jid"].toString();
     m_name = chat["name"].toString();
     m_group = chat["kind"].toInt() == 1;
-    m_messages = new MessageModel(m_engine, m_jid, m_group, this);
+    m_messages = new MessageModel(m_engine, m_outbox, m_jid, m_group, this);
     emit messagesChanged();
     connect(m_engine, SIGNAL(typing(QString, QString, bool, bool)), this,
             SLOT(onTyping(QString, QString, bool, bool)));
@@ -221,9 +232,9 @@ void ChatController::nearTop(const QVariantList &firstVisible)
 
 bool ChatController::send(const QString &text, const QVariantList &mentions)
 {
-    // An engine that is down (starting, restarting) takes a plain text later, as WhatsApp does (EngineLink::request keeps it
-    // in the outbox); an edit needs it now.
-    if (!m_engine || (!m_engine->connected() && !m_editId.isEmpty()))
+    // A plain text goes through the outbox, engine up or down, as WhatsApp keeps a message until it can send it; an edit
+    // needs the engine now.
+    if (!m_engine || !m_outbox || (!m_engine->connected() && !m_editId.isEmpty()))
         return false;
     setComposing(false);
     QVariantMap args;
@@ -235,13 +246,16 @@ bool ChatController::send(const QString &text, const QVariantList &mentions)
         args["id"] = m_editId;
     if (!mentions.isEmpty())
         args["mentions"] = mentions;
-    m_engine->request(m_editId.isEmpty() ? "msg.send" : "msg.edit", args);
+    if (m_editId.isEmpty())
+        m_outbox->send("msg.send", args);
+    else
+        m_engine->request("msg.edit", args);
     cancelReply();
     return true;
 }
 
 // The UI's recorder writes the WAV; the engine's voice.start only has it follow the file as it grows. So a note recorded
-// while the engine is down is recorded all the same, and voice.send, which takes a complete WAV, goes to the outbox.
+// while the engine is down is recorded all the same, and voice.send, which takes a complete WAV, goes through the outbox.
 QString ChatController::startVoice()
 {
     if (!m_engine)
@@ -262,14 +276,14 @@ QString ChatController::startVoice()
 
 void ChatController::sendVoice()
 {
-    if (m_voicePath.isEmpty() || !m_engine)
+    if (m_voicePath.isEmpty() || !m_engine || !m_outbox)
         return;
     QVariantMap args;
     args["chat"] = m_jid;
     args["path"] = m_voicePath;
     if (!m_quoteId.isEmpty())
         args["quote"] = m_quoteId;
-    m_engine->request("voice.send", args);
+    m_outbox->send("voice.send", args);
     m_voicePath.clear();
     keepAwake(false);
     cancelReply();
@@ -368,11 +382,11 @@ void ChatController::commitDelete()
 {
     if (m_pending.isEmpty())
         return;
-    if (m_engine) {
+    if (m_engine && m_outbox) {
         QVariantList ids;
         foreach (const QString &id, m_pending) {
-            if (m_engine->outbox()->has(id))
-                m_engine->outbox()->remove(id, true); // never sent, and not to be: nothing to delete
+            if (m_outbox->has(id))
+                m_outbox->remove(id, true); // never sent, and not to be: nothing to delete
             else
                 ids << id;
         }
@@ -400,10 +414,10 @@ bool ChatController::deleteForEveryone(const QString &id)
 
 void ChatController::cancelSending(const QString &id)
 {
-    if (!m_engine)
+    if (!m_engine || !m_outbox)
         return;
-    if (m_engine->outbox()->has(id)) {
-        m_engine->outbox()->remove(id, true);
+    if (m_outbox->has(id)) {
+        m_outbox->remove(id, true);
         return;
     }
     QVariantMap args;

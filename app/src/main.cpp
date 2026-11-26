@@ -40,6 +40,7 @@
 #include "MediaOpener.h"
 #include "MessageCards.h"
 #include "OpenRequests.h"
+#include "Outbox.h"
 #include "Profile.h"
 #include "Proximity.h"
 #include "QrImage.h"
@@ -158,12 +159,13 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     // again whenever the link drops. First of all, before the models and the QML: the engine comes up
     // while they load (it went last, and connected 1.2 s after the scene was set; Q10, 0.1.1.307).
     engine.start();
+    Outbox outbox(&engine, &app);
     ContactBook book(&engine, &app);
-    ChatListModel chats(&engine, ChatListModel::Chats, &app);
-    ChatListModel archivedChats(&engine, ChatListModel::Archived, &app);
-    ChatListModel channelChats(&engine, ChatListModel::Channels, &app);
+    ChatListModel chats(&engine, &outbox, ChatListModel::Chats, &app);
+    ChatListModel archivedChats(&engine, &outbox, ChatListModel::Archived, &app);
+    ChatListModel channelChats(&engine, &outbox, ChatListModel::Channels, &app);
     CallsModel callList(&engine, &app);
-    StoriesModel storyList(&engine, &app);
+    StoriesModel storyList(&engine, &outbox, &app);
     CallAudio callAudio(&engine, &app);
     CallVideo callVideo(&engine, &app);
     Proximity proximity(&app);
@@ -203,6 +205,7 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     if (!loaded(document, "main.qml"))
         return 1;
     document->setContextProperty("engine", &engine);
+    document->setContextProperty("outbox", &outbox);
     document->setContextProperty("chats", &chats);
     document->setContextProperty("archivedChats", &archivedChats);
     document->setContextProperty("channelChats", &channelChats);

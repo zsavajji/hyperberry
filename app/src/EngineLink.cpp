@@ -41,7 +41,6 @@ EngineLink::EngineLink(QObject *parent)
     // One loss can fire both; lost() copes.
     connect(&m_socket, SIGNAL(disconnected()), this, SLOT(lost()));
     connect(&m_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(lost()));
-    connect(&m_outbox, SIGNAL(copied(QString)), this, SLOT(onOutboxCopied(QString)));
 }
 
 // The socket is a member: its destructor aborts a live connection and emits disconnected(),
@@ -219,15 +218,6 @@ void EngineLink::readLines()
                     prefs["libreKey"] = file.value("libreKey").toString();
                     prefs["cacheMB"] = qBound(64, file.value("cacheLimit", 64).toInt(), 512);
                     request("prefs.set", prefs);
-                    // What was made while the engine was down goes now, in order, after the hello. An entry stays in the
-                    // outbox until the engine answers it: the app can be closed before, and the message's id makes the
-                    // send again harmless.
-                    // One whose file is still being copied waits for that (onOutboxCopied).
-                    foreach (const QVariant &entry, m_outbox.all()) {
-                        const QVariantMap e = entry.toMap();
-                        if (!m_outbox.copying(e["id"].toString()))
-                            m_sent.insert(post(e["cmd"].toString(), e["args"].toMap()), e["id"].toString());
-                    }
                     qDebug() << "engine: connected, link" << m_link["state"].toString()
                              << ", conn" << m_conn;
                 } else {
@@ -240,20 +230,15 @@ void EngineLink::readLines()
             } else {
                 const QString cmd = m_pending.take(id);
                 const bool quiet = m_quiet.remove(id);
-                // An outbox entry's send is answered, whichever way, and its callers know it by the message's id (request()).
-                const QString entry = m_sent.take(id);
-                if (!entry.isEmpty())
-                    m_outbox.remove(entry, false);
-                const QString asked = entry.isEmpty() ? id : entry;
                 if (!ok)
-                    emit failed(asked, cmd, error["code"].toString());
+                    emit failed(id, cmd, error["code"].toString());
                 if (!ok && quiet)
                     qWarning() << "engine:" << cmd << "failed:" << error["code"].toString()
                                << error["message"].toString();
                 else if (!ok)
                     fail(cmd, error["code"].toString(), error["message"].toString());
                 else
-                    emit replied(asked, cmd, map["result"]);
+                    emit replied(id, cmd, map["result"]);
             }
         } else if (map.contains("ev")) {
             const QString ev = map["ev"].toString();
@@ -296,8 +281,6 @@ void EngineLink::setLink(const QVariantMap &link)
     const bool linked = link["state"].toString() == "ready";
     if (linked != m_linked) {
         m_linked = linked;
-        if (!linked)
-            m_outbox.clear(); // the sends waiting belonged to the account that is gone (the user, 2026-11-26)
         QSettings settings(QDir::homePath() + "/settings.ini", QSettings::IniFormat);
         settings.setValue("linked", linked);
         settings.sync();
@@ -335,33 +318,16 @@ void EngineLink::lost()
     const QHash<QString, QString> pending = m_pending;
     m_pending.clear();
     for (QHash<QString, QString>::const_iterator it = pending.begin(); it != pending.end(); ++it) {
-        if (m_sent.contains(it.key())) // an outbox entry's: it stays there and goes at the next hello
-            continue;
         emit failed(it.key(), it.value(), "no_engine");
         if (!m_quiet.contains(it.key()))
             fail(it.value(), "no_engine", tr("The engine isn't running."));
     }
     m_quiet.clear();
-    m_sent.clear();
     setConn("offline");
     // The m_link stays as it was: the next hello replaces it, so the UI doesn't flash back to
     // the linking page during a restart.
     startEngine();
     m_retry.start(m_retryDelay);
-}
-
-// The file of an outbox entry has been copied: with the engine up it goes now, as the hello's flush would have sent it.
-void EngineLink::onOutboxCopied(const QString &id)
-{
-    if (!m_connected)
-        return;
-    foreach (const QVariant &entry, m_outbox.all()) {
-        const QVariantMap e = entry.toMap();
-        if (e["id"].toString() == id) {
-            m_sent.insert(post(e["cmd"].toString(), e["args"].toMap()), id);
-            return;
-        }
-    }
 }
 
 void EngineLink::fail(const QString &cmd, const QString &code, const QString &message)
@@ -381,8 +347,6 @@ QString EngineLink::request(const QString &cmd, const QVariantMap &args)
         emit failureChanged();
     }
     if (!m_connected) {
-        if (Outbox::takes(cmd))
-            return m_outbox.add(cmd, args);
         fail(cmd, "no_engine", tr("The engine isn't running."));
         return QString();
     }

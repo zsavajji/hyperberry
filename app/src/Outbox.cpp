@@ -22,9 +22,14 @@ using namespace bb::data;
 static QString outboxFile() { return QDir::homePath() + "/outbox.json"; }
 static void sweepOrphans(QStringList entries, QDateTime started);
 
-Outbox::Outbox(QObject *parent)
+Outbox::Outbox(EngineLink *engine, QObject *parent)
     : QObject(parent)
+    , m_engine(engine)
 {
+    connect(engine, SIGNAL(connectedChanged()), this, SLOT(flush()));
+    connect(engine, SIGNAL(replied(QString, QString, QVariant)), this, SLOT(onReplied(QString, QString, QVariant)));
+    connect(engine, SIGNAL(failed(QString, QString, QString)), this, SLOT(onFailed(QString, QString, QString)));
+    connect(engine, SIGNAL(linkedChanged()), this, SLOT(onLinked()));
     const QDateTime started = QDateTime::currentDateTime();
     QFile file(outboxFile());
     if (file.open(QIODevice::ReadOnly)) {
@@ -47,12 +52,6 @@ Outbox::Outbox(QObject *parent)
             startCopy(entry["id"].toString(), from);
     }
     QtConcurrent::run(sweepOrphans, ids, started);
-}
-
-bool Outbox::takes(const QString &cmd)
-{
-    return cmd == "msg.send" || cmd == "media.send" || cmd == "voice.send" || cmd == "sticker.send"
-           || cmd == "poll.create" || cmd == "msg.forward" || cmd == "story.reply";
 }
 
 // By the extension, as the engine's sendKind says (engine/media_send.go): photo 1, video 2, audio file 8, document 4;
@@ -182,7 +181,7 @@ static QString chatOf(const QString &cmd, const QVariantMap &args)
     return args[cmd == "msg.forward" ? "to" : cmd == "story.reply" ? "poster" : "chat"].toString();
 }
 
-QString Outbox::add(const QString &cmd, const QVariantMap &args)
+QString Outbox::send(const QString &cmd, const QVariantMap &args)
 {
     const QString id = newId();
     QVariantMap a = args;
@@ -201,7 +200,50 @@ QString Outbox::add(const QString &cmd, const QVariantMap &args)
         startCopy(id, a["path"].toString());
     }
     emit changed(entry["chat"].toString());
+    post(entry);
     return id;
+}
+
+// An entry that waits for its file isn't sent: onCopied does it.
+void Outbox::post(const QVariantMap &entry)
+{
+    const QString id = entry["id"].toString();
+    if (!m_engine->connected() || m_copying.contains(id))
+        return;
+    m_sent.insert(m_engine->request(entry["cmd"].toString(), entry["args"].toMap()), id);
+}
+
+// The engine is up: what waited goes now, oldest first, after the hello. An entry stays until the engine answers: the app
+// can be closed before, and the message's id makes the send again harmless.
+void Outbox::flush()
+{
+    foreach (const QVariant &entry, m_entries)
+        post(entry.toMap());
+}
+
+// An answer takes the entry off: the engine has the message, or has refused it for a reason that won't change, and its row
+// or failure shows as for any send. "no_engine" is the link dropping under the request: the entry stays for the next hello.
+void Outbox::onReplied(const QString &req, const QString &cmd, const QVariant &result)
+{
+    const QString id = m_sent.take(req);
+    if (id.isEmpty())
+        return;
+    remove(id, false);
+    emit replied(id, cmd, result);
+}
+
+void Outbox::onFailed(const QString &req, const QString &, const QString &code)
+{
+    const QString id = m_sent.take(req);
+    if (!id.isEmpty() && code != "no_engine")
+        remove(id, false);
+}
+
+// The link ended (a logout, the device removed): what waits belonged to that account (the user, 2026-11-26).
+void Outbox::onLinked()
+{
+    while (!m_engine->linked() && !m_entries.isEmpty())
+        remove(m_entries.first().toMap()["id"].toString(), true);
 }
 
 void Outbox::startCopy(const QString &id, const QString &from)
@@ -237,7 +279,7 @@ void Outbox::onCopied()
             qWarning() << "outbox: could not copy" << entry["args"].toMap()["path"].toString();
             QDir().rmdir(QFileInfo(to).path());
         }
-        emit copied(id);
+        post(m_entries[i].toMap());
         return;
     }
     if (ok) { // taken back while it copied
@@ -266,12 +308,6 @@ void Outbox::remove(const QString &id, bool files)
         emit changed(entry["chat"].toString());
         return;
     }
-}
-
-void Outbox::clear()
-{
-    while (!m_entries.isEmpty())
-        remove(m_entries.first().toMap()["id"].toString(), true);
 }
 
 bool Outbox::has(const QString &id) const

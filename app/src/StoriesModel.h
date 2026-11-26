@@ -15,6 +15,7 @@
 #include <QVariantMap>
 
 class EngineLink;
+class Outbox;
 
 // The Stories tab: one row per poster with a story under 24 h old (docs/protocol.md, `stories`), the
 // ones with something unseen first, then by the newest story. A flat list of maps: poster, name,
@@ -39,7 +40,7 @@ class StoriesModel : public bb::cascades::DataModel
     // (the Active Frame's Stories row, Cover.qml).
     Q_PROPERTY(QString unseenNames READ unseenNames NOTIFY unseenChanged)
 public:
-    explicit StoriesModel(EngineLink *engine, QObject *parent = 0);
+    StoriesModel(EngineLink *engine, Outbox *outbox, QObject *parent = 0);
 
     int childCount(const QVariantList &indexPath);
     bool hasChildren(const QVariantList &indexPath);
@@ -109,6 +110,7 @@ private:
     // The name to show: the chat's, else the one that came with the row, else "+number", else "Unknown".
     QString personName(const QString &chatName, const QString &ownName, const QString &key) const;
     EngineLink *m_engine;
+    Outbox *m_outbox;
     void ask(const QString &cmd, const QString &poster, const QString &id, QVariantMap args);
     // The requests in flight: their id -> the cmd, the poster and the story.
     QHash<QString, QStringList> m_pending;

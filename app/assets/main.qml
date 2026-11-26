@@ -430,7 +430,7 @@ TabbedPane {
 
             // SharePage's pick for a forward: the engine sends the message, and the chat opens as after a share.
             function forwardTo(chat, fwd) {
-                engine.request("msg.forward", {"chat": fwd.chat, "id": fwd.id, "to": chat.jid})
+                outbox.send("msg.forward", {"chat": fwd.chat, "id": fwd.id, "to": chat.jid})
                 root.activeTab = chatsTab
                 backToList()
                 at(0).openChat(chat)

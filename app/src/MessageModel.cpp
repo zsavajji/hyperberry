@@ -33,9 +33,10 @@ bool MessageModel::lessThan(const Msg &a, const Msg &b)
     return a.ts < b.ts || (a.ts == b.ts && a.rowid < b.rowid);
 }
 
-MessageModel::MessageModel(EngineLink *engine, const QString &chat, bool group, QObject *parent)
+MessageModel::MessageModel(EngineLink *engine, Outbox *outbox, const QString &chat, bool group, QObject *parent)
     : DataModel(parent)
     , m_engine(engine)
+    , m_outbox(outbox)
     , m_chat(chat)
     , m_group(group)
     , m_atStart(false)
@@ -50,7 +51,7 @@ MessageModel::MessageModel(EngineLink *engine, const QString &chat, bool group, 
             SLOT(onMsgs(QString, QStringList)));
     connect(engine, SIGNAL(connectedChanged()), this, SLOT(onConnected()));
     connect(engine, SIGNAL(chatsChanged(QStringList)), this, SLOT(onChats(QStringList)));
-    connect(engine->outbox(), SIGNAL(changed(QString)), this, SLOT(onOutbox(QString)));
+    connect(outbox, SIGNAL(changed(QString)), this, SLOT(onOutbox(QString)));
     connect(engine, SIGNAL(replied(QString, QString, QVariant)), this, SLOT(onReplied(QString, QString, QVariant)));
     connect(engine, SIGNAL(failed(QString, QString, QString)), this, SLOT(onFailed(QString, QString, QString)));
     m_retry.setSingleShot(true);
@@ -281,11 +282,11 @@ void MessageModel::onChats(const QStringList &jids)
 // must not vanish meanwhile. A taken-back send has no row, and goes.
 void MessageModel::onOutbox(const QString &chat)
 {
-    if (chat != m_chat || m_loading || !m_engine)
+    if (chat != m_chat || m_loading || !m_outbox)
         return;
     QStringList gone;
     foreach (const Msg &m, m_all) {
-        if (m.pending && !m_engine->outbox()->has(m.id))
+        if (m.pending && !m_outbox->has(m.id))
             gone << m.id;
     }
     if (gone.isEmpty())

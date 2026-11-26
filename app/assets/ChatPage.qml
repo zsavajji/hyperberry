@@ -78,6 +78,7 @@ Page {
         ChatController {
             id: ctl
             link: engine
+            outgoing: outbox
         },
         // A received photo, video, audio file or document (step 6.1): MediaOpener fetches the file
         // and hands it to the system; a photo opens in our viewer instead (nav.showPhoto).
@@ -418,7 +419,7 @@ Page {
         if (picture && text) {
             args.caption = text
         }
-        if (!engine.request("media.send", args)) {
+        if (!outbox.send("media.send", args)) {
             return false
         }
         if (!picture && text) {
@@ -614,7 +615,7 @@ Page {
         if (ctl.quoteId()) {
             args.quote = ctl.quoteId()
         }
-        if (!engine.request("sticker.send", args)) {
+        if (!outbox.send("sticker.send", args)) {
             notSent.show()
             return
         }

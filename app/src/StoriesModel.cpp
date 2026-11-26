@@ -1,6 +1,7 @@
 #include "StoriesModel.h"
 
 #include "EngineLink.h"
+#include "Outbox.h"
 #include "colors.h"
 #include "dates.h"
 
@@ -138,9 +139,10 @@ static bool before(const QVariantMap &a, const QVariantMap &b)
     return a["ts"].toUInt() > b["ts"].toUInt();
 }
 
-StoriesModel::StoriesModel(EngineLink *engine, QObject *parent)
+StoriesModel::StoriesModel(EngineLink *engine, Outbox *outbox, QObject *parent)
     : DataModel(parent)
     , m_engine(engine)
+    , m_outbox(outbox)
     , m_active(false)
     , m_unseen(0)
     , m_region(bb::system::LocaleType::Region)
@@ -156,6 +158,7 @@ StoriesModel::StoriesModel(EngineLink *engine, QObject *parent)
     connect(engine, SIGNAL(connectedChanged()), this, SLOT(reloadSoon()));
     connect(engine, SIGNAL(storyViewsChanged()), this, SIGNAL(viewsChanged()));
     connect(engine, SIGNAL(replied(QString, QString, QVariant)), this, SLOT(onReplied(QString, QString, QVariant)));
+    connect(outbox, SIGNAL(replied(QString, QString, QVariant)), this, SLOT(onReplied(QString, QString, QVariant)));
     connect(engine, SIGNAL(failureChanged()), this, SLOT(onFailure()));
     connect(engine, SIGNAL(storyOp(QString, QString, bool)), this, SLOT(onStoryOp(QString, QString, bool)));
     reloadSoon();
@@ -553,7 +556,9 @@ void StoriesModel::reply(const QString &poster, const QString &id, const QString
 {
     QVariantMap args;
     args["text"] = text;
-    ask("story.reply", poster, id, args);
+    args["poster"] = poster;
+    args["id"] = id;
+    m_pending.insert(m_outbox->send("story.reply", args), QStringList() << "story.reply" << poster << id);
 }
 
 void StoriesModel::react(const QString &poster, const QString &id, const QString &emoji)

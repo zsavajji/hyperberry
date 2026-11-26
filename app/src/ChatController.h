@@ -14,6 +14,7 @@
 #include <QVariantMap>
 
 class EngineLink;
+class Outbox;
 class MessageModel;
 
 // One open chat page (PLAN.md §7, step 3.1), made by QML in the page's attachedObjects so it
@@ -26,6 +27,8 @@ class ChatController : public QObject
     // The EngineLink (a QObject so QML can pass the context property). Not named engine: in
     // `engine: engine` QML would read the controller's own property, not the context's.
     Q_PROPERTY(QObject *link READ link WRITE setLink)
+    // The outbox the page's sends go through (not named outbox: the context property of that name would read it).
+    Q_PROPERTY(QObject *outgoing READ outgoing WRITE setOutgoing)
     Q_PROPERTY(bb::cascades::DataModel *messages READ messages NOTIFY messagesChanged)
     // The title bar's status line: "typing…", "online", "last seen …", a group's "N participants" or "".
     Q_PROPERTY(QString status READ status NOTIFY statusChanged)
@@ -44,6 +47,8 @@ public:
 
     QObject *link() const;
     void setLink(QObject *link);
+    QObject *outgoing() const;
+    void setOutgoing(QObject *outbox);
     bb::cascades::DataModel *messages() const;
     QString status() const;
     QString replyName() const;
@@ -54,9 +59,9 @@ public:
     // chat is a ChatListModel row (jid, kind). Once; later calls do nothing.
     Q_INVOKABLE void open(const QVariantMap &chat);
     Q_INVOKABLE void nearTop(const QVariantList &firstVisible);
-    // False for an edit while the engine isn't connected: nothing was sent, so QML keeps the text. A plain send
-    // while it is down goes to the outbox (EngineLink::request). mentions are the {jid, name} of the people the text's
-    // "@name"s name (msg.send's, docs/protocol.md).
+    // False for an edit while the engine isn't connected: nothing was sent, so QML keeps the text. A plain send goes
+    // through the outbox, engine up or down. mentions are the {jid, name} of the people the text's "@name"s name
+    // (msg.send's, docs/protocol.md).
     Q_INVOKABLE bool send(const QString &text, const QVariantList &mentions = QVariantList());
     // Called on every change of the composer's text; sends our typing on and off.
     Q_INVOKABLE void composing(const QString &text);
@@ -139,6 +144,7 @@ private:
     void setComposing(bool on);
 
     QPointer<EngineLink> m_engine;
+    QPointer<Outbox> m_outbox;
     MessageModel *m_messages;
     QString m_jid;
     QString m_name;

@@ -151,9 +151,10 @@ static bool nameMatches(const QString &filter, const QString &name)
     return false;
 }
 
-ChatListModel::ChatListModel(EngineLink *engine, Mode mode, QObject *parent)
+ChatListModel::ChatListModel(EngineLink *engine, Outbox *outbox, Mode mode, QObject *parent)
     : DataModel(parent)
     , m_engine(engine)
+    , m_outbox(outbox)
     , m_mode(mode)
     , m_dbName(mode == Archived ? "chats-archived" : mode == Channels ? "chats-channels" : kDb)
     , m_unreadTotal(0)
@@ -176,8 +177,8 @@ ChatListModel::ChatListModel(EngineLink *engine, Mode mode, QObject *parent)
     connect(engine, SIGNAL(chatsChanged(QStringList)), this, SLOT(reloadSoon()));
     // Events sent while the link was down are lost; the database has what they said.
     connect(engine, SIGNAL(connectedChanged()), this, SLOT(reloadSoon()));
-    // A send made while the engine is down is the chat's last line, and one the engine took is read from chats.db.
-    connect(engine->outbox(), SIGNAL(changed(QString)), this, SLOT(onOutbox()));
+    // A send waiting in the outbox is the chat's last line, and one the engine took is read from chats.db.
+    connect(outbox, SIGNAL(changed(QString)), this, SLOT(onOutbox()));
     // Nobody sees the frame while the app is fullscreen: it's computed when the app leaves it.
     if (m_mode == Chats)
         connect(engine, SIGNAL(fullscreenChanged()), this, SLOT(updateFrame()));
@@ -516,20 +517,19 @@ static bool listedBefore(const QVariantMap &a, const QVariantMap &b)
     return a["ts"].toLongLong() > b["ts"].toLongLong();
 }
 
-// A chat with sends waiting in the outbox (made while the engine was down) shows the newest as its last line, ours and still
+// A chat with sends in the outbox (made while the engine was down, or not yet answered) shows the newest as its last line, ours and still
 // sending, and its time when that is newer than the chat's; the list sorts by it. Done here, on the UI thread, over what the
 // reader read, so a send changes the list without a read of chats.db.
 // ponytail: a chat that isn't in chats.db yet (a new chat) isn't listed until the engine makes it.
 ChatListRead ChatListModel::withOutbox(const ChatListRead &read)
 {
-    Outbox *outbox = m_engine->outbox();
-    if (!read.ok || outbox->isEmpty())
+    if (!read.ok || m_outbox->isEmpty())
         return read;
     QList<QVariantMap> rows;
     bool found = false;
     foreach (const Group &g, read.groups) {
         foreach (QVariantMap row, g.rows) {
-            const QVariantList sends = outbox->entries(row["jid"].toString());
+            const QVariantList sends = m_outbox->entries(row["jid"].toString());
             if (!sends.isEmpty()) {
                 const QVariantMap send = sends.last().toMap();
                 int kind;

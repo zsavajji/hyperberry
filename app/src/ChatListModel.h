@@ -18,6 +18,7 @@
 #include <QVariantMap>
 
 class EngineLink;
+class Outbox;
 class QThread;
 
 // A group of the list: a header and its chats.
@@ -100,7 +101,7 @@ class ChatListModel : public bb::cascades::DataModel
 public:
     // Which chats a list shows: the chat list, the Archived page or the Channels page (step 6.6g). Only the chat list does frame work.
     enum Mode { Chats, Archived, Channels };
-    explicit ChatListModel(EngineLink *engine, Mode mode = Chats, QObject *parent = 0);
+    ChatListModel(EngineLink *engine, Outbox *outbox, Mode mode = Chats, QObject *parent = 0);
     ~ChatListModel();
 
     int childCount(const QVariantList &indexPath);
@@ -142,6 +143,7 @@ private:
     void show(const ChatListRead &read);
     typedef ChatListGroup Group;
     EngineLink *m_engine;
+    Outbox *m_outbox;
     Mode m_mode;
     QString m_dbName;
     QList<Group> m_groups;
