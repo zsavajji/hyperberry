@@ -623,6 +623,11 @@ func (s *Session) handleStoryPost(req json.RawMessage) (any, error) {
 			row.Extra = string(b)
 		}
 	}
+	// Pending until posted, with who gets it: a restart's connect posts it again (sendQueuedStories).
+	row.Extra = withKey(row.Extra, "pending", "true")
+	if b, err := json.Marshal(r.Audience); err == nil && len(r.Audience) > 0 {
+		row.Extra = withKey(row.Extra, "audience", string(b))
+	}
 	s.store.runOp(func(t *storeTx) { t.insertStory(row, true) })
 	go s.sendStory(cli, o, row, r, bg, fg, recips)
 	return map[string]string{"id": id}, nil
@@ -660,8 +665,84 @@ func (s *Session) sendStory(cli *whatsmeow.Client, o *mediaOut, row msgRow, r st
 	if err != nil {
 		s.log.Warnf("story %s: post: %v", row.ID, err)
 		s.store.ops <- func(t *storeTx) { t.deleteStory(ownStory, row.ID) }
+	} else {
+		s.store.ops <- func(t *storeTx) { t.storyPosted(row.ID) }
 	}
 	s.srv.Emit("storyop", map[string]any{"cmd": "post", "id": row.ID, "ok": err == nil})
+}
+
+// storyPosted ends a story of ours being pending: its extra keeps the colours and font alone.
+func (t *storeTx) storyPosted(id string) {
+	t.exec("UPDATE stories SET extra = NULLIF(json_remove(extra, '$.pending', '$.audience'), '{}') WHERE poster = ? AND id = ?", ownStory, id)
+}
+
+// pendingStories reads the stories of ours not posted yet, oldest first: the ones an earlier run left, since this run's are
+// in s.sending while they wait. A story over its 24 hours is the sweep's.
+func (st *Store) pendingStories(now int64) []msgRow {
+	var out []msgRow
+	st.runOp(func(t *storeTx) {
+		rows, err := t.tx.Query(`SELECT id, ts, kind, COALESCE(text, ''), thumb, COALESCE(width, 0), COALESCE(height, 0), COALESCE(path, ''), extra
+FROM stories WHERE poster = ? AND json_extract(extra, '$.pending') = 1 AND ts > ? ORDER BY ts, rowid`, ownStory, now-storyLife)
+		if err != nil {
+			t.log.Warnf("pending stories: %v", err)
+			return
+		}
+		defer rows.Close()
+		for rows.Next() {
+			r := msgRow{Chat: ownStory}
+			var extra sql.NullString
+			if rows.Scan(&r.ID, &r.TS, &r.Kind, &r.Text, &r.Thumb, &r.Width, &r.Height, &r.Path, &extra) == nil {
+				r.Extra = extra.String
+				out = append(out, r)
+			}
+		}
+	})
+	return out
+}
+
+// sendQueuedStories posts the stories an earlier run left pending, at each connect, after the rows of chats: rebuilt from the
+// row (the photo or video from its own copy in data/stories, the colours and font and the audience from extra) and sent as
+// sendStory does, so the connection dropping queues it again. One that can't be rebuilt, or whose audience can't be
+// resolved, is taken out as a post that failed is. ponytail: a video goes without its poster, as a retry of a message does.
+func (s *Session) sendQueuedStories(cli *whatsmeow.Client) {
+	for _, row := range s.store.pendingStories(time.Now().Unix()) {
+		if !cli.IsConnected() {
+			return
+		}
+		if _, busy := s.sending.LoadOrStore(row.ID, true); !busy {
+			s.postAgain(cli, row)
+		}
+	}
+}
+
+func (s *Session) postAgain(cli *whatsmeow.Client, row msgRow) {
+	var x struct {
+		Bg, Fg   uint32
+		Font     int
+		Audience []string
+	}
+	json.Unmarshal([]byte(row.Extra), &x)
+	var o *mediaOut
+	var recips []types.JID
+	var err error
+	if row.Kind != msgText {
+		if fi, serr := os.Stat(row.Path); serr != nil || !fi.Mode().IsRegular() {
+			err = errors.New("its file is gone")
+		}
+		_, mimeType := sendKind(row.Path)
+		o = &mediaOut{row: row, mime: mimeType}
+	}
+	if err == nil && len(x.Audience) > 0 {
+		recips, err = statusRecipients(context.Background(), cli, x.Audience)
+	}
+	if err != nil {
+		s.log.Warnf("story %s: can't be posted again: %v", row.ID, err)
+		s.sending.Delete(row.ID)
+		s.store.ops <- func(t *storeTx) { t.deleteStory(ownStory, row.ID) }
+		s.srv.Emit("storyop", map[string]any{"cmd": "post", "id": row.ID, "ok": false})
+		return
+	}
+	s.sendStory(cli, o, row, storyPostReq{Font: x.Font}, x.Bg, x.Fg, recips)
 }
 
 // handleStoryDelete is story.delete: one of our own stories, taken back from everyone who got it. It answers at

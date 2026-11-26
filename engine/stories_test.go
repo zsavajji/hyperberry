@@ -301,6 +301,70 @@ func TestStoryPost(t *testing.T) {
 	}
 }
 
+// A story posted while the connection is down is pending in the table, with its audience, until it is posted; the next
+// run's connect posts it again from its row, or takes it out when it can't be rebuilt, and a posted one is pending no more.
+func TestPendingStories(t *testing.T) {
+	st, cli := historyFixture(t)
+	s := &Session{cli: cli, store: st, srv: st.srv, log: waLog.Noop}
+	jpg := filepath.Join(t.TempDir(), "a.jpg")
+	os.WriteFile(jpg, []byte("not really a jpeg"), 0o644)
+	who := "4915700000007@s.whatsapp.net"
+	text, err := s.handleStoryPost(json.RawMessage(`{"text":"hello","bg":"#112233","audience":["` + who + `"]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	photo, err := s.handleStoryPost(json.RawMessage(`{"path":"` + jpg + `","caption":"hi","width":4,"height":3}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	tid, pid := text.(map[string]string)["id"], photo.(map[string]string)["id"]
+	waitQueued(t, s, 2)
+	extra := func(id string) (e string) {
+		st.db.QueryRow("SELECT COALESCE(extra, '') FROM stories WHERE id = ?", id).Scan(&e)
+		return e
+	}
+	if e := extra(tid); !strings.Contains(e, `"pending":true`) || !strings.Contains(e, `"audience":["`+who+`"]`) || !strings.Contains(e, `"bg":4279312947`) {
+		t.Errorf("the text story's extra: %s", e)
+	}
+	if e := extra(pid); e != `{"pending":true}` {
+		t.Errorf("the photo story's extra: %s", e)
+	}
+
+	// The engine restarts: both are read, and posted again from their rows (down: queued, the rows stay).
+	s2 := &Session{cli: cli, store: st, srv: st.srv, log: waLog.Noop}
+	pending := st.pendingStories(time.Now().Unix())
+	if len(pending) != 2 || pending[0].Kind != msgText || pending[1].Kind != msgPhoto || pending[1].Width != 4 {
+		t.Fatalf("pending: %+v", pending)
+	}
+	for _, row := range pending {
+		s2.postAgain(cli, row)
+	}
+	if len(s2.queue.items) != 2 || rows(st, "SELECT count(*) FROM stories WHERE poster = ?", ownStory) != 2 {
+		t.Errorf("%d queued, rows %d", len(s2.queue.items), rows(st, "SELECT count(*) FROM stories"))
+	}
+
+	// One whose copy is gone can't be posted: it goes, as a post that failed does.
+	os.Remove(pending[1].Path)
+	s3 := &Session{cli: cli, store: st, srv: st.srv, log: waLog.Noop}
+	s3.postAgain(cli, pending[1])
+	st.runOp(func(*storeTx) {})
+	if rows(st, "SELECT count(*) FROM stories WHERE id = ?", pid) != 0 || len(s3.queue.items) != 0 {
+		t.Error("a story with no file is still there or queued")
+	}
+	if _, held := s3.sending.Load(pid); held {
+		t.Error("its id is still held")
+	}
+
+	// Posted: pending no more, the colours stay.
+	st.runOp(func(tx *storeTx) { tx.storyPosted(tid) })
+	if e := extra(tid); e != `{"bg":4279312947,"fg":4294967295}` {
+		t.Errorf("a posted story's extra: %s", e)
+	}
+	if n := len(st.pendingStories(time.Now().Unix())); n != 0 {
+		t.Errorf("%d still pending", n)
+	}
+}
+
 func TestCopyFile(t *testing.T) {
 	dir := t.TempDir()
 	src, dst := filepath.Join(dir, "a.bin"), filepath.Join(dir, "sub", "b.bin")

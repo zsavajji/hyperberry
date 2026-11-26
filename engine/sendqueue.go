@@ -143,12 +143,14 @@ func (s *Session) sendOut(cli *whatsmeow.Client, chat, id string, attempt func(*
 	return false, err
 }
 
-// drainQueued runs at each connect: the rows an earlier run left sending, of every kind (they are older), then the queue.
+// drainQueued runs at each connect: the rows an earlier run left sending, of every kind, and the stories it left pending
+// (they are older), then the queue.
 func (s *Session) drainQueued(cli *whatsmeow.Client) {
 	if !s.queue.start() {
 		return
 	}
 	s.sendQueued(cli)
+	s.sendQueuedStories(cli)
 	s.queue.drain(cli, cli.IsConnected)
 }
 
