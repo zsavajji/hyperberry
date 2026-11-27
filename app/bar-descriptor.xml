@@ -4,7 +4,7 @@
          data/ (session.db holds the link, chats.db the only copy of the history). -->
     <id>com.zsavajji.hyperberry</id>
     <name>HyperBerry</name>
-    <versionNumber>1.0.6</versionNumber>
+    <versionNumber>1.0.7</versionNumber>
     <!-- Overwritten at packaging by -buildIdFile (scripts/build-app.sh): the installer keeps
          the old app when Package-Version (versionNumber.buildId) didn't change. -->
     <buildId>1</buildId>
