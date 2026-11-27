@@ -42,6 +42,33 @@ int main()
             assert(ouv[r * 5 + cw * 2] == 0xAA);
         }
     }
+    // Sizes with whole NEON blocks and edges, against the plain definition.
+    const int sizes[][2] = { { 16, 8 }, { 34, 18 }, { 64, 48 }, { 90, 70 } };
+    for (int s = 0; s < 4; s++) {
+        const int w = sizes[s][0], h = sizes[s][1], ss = w + 6, ds = (w > h ? w : h) + 10;
+        static unsigned char sy[100 * 100], suv[100 * 50], oy[100 * 100], ouv[100 * 50];
+        for (int i = 0; i < ss * h; i++) sy[i] = (unsigned char)(i * 37 + i / 251);
+        for (int i = 0; i < ss * h / 2; i++) suv[i] = (unsigned char)(i * 53 + i / 241);
+        for (int turns = 0; turns < 4; turns++) {
+            memset(oy, 0xAA, sizeof oy);
+            memset(ouv, 0xAA, sizeof ouv);
+            rotateNv12(sy, suv, w, h, ss, turns, oy, ds, ouv, ds);
+            for (int plane = 0; plane < 2; plane++) {
+                const int sz = plane + 1, pw = plane ? w / 2 : w, ph = plane ? h / 2 : h;
+                const int dw = turns & 1 ? ph : pw, dh = turns & 1 ? pw : ph;
+                const unsigned char *src = plane ? suv : sy, *out = plane ? ouv : oy;
+                for (int r = 0; r < dh; r++) {
+                    for (int c = 0; c < dw; c++) {
+                        const int x = turns == 0 ? c : turns == 1 ? r : turns == 2 ? pw - 1 - c : pw - 1 - r;
+                        const int y = turns == 0 ? r : turns == 1 ? ph - 1 - c : turns == 2 ? ph - 1 - r : c;
+                        assert(!memcmp(out + r * ds + c * sz, src + y * ss + x * sz, sz));
+                    }
+                    assert(out[r * ds + dw * sz] == 0xAA);
+                }
+                assert(out[dh * ds] == 0xAA);
+            }
+        }
+    }
     // The crop a fill shows: a portrait picture in a square view, a landscape one, no view yet.
     int x, yy, cw, ch;
     centreCrop(212, 320, 720, 720, &x, &yy, &cw, &ch);
