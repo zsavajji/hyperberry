@@ -5,8 +5,8 @@ import hyperberry 1.0
 
 // The story viewer (docs/plan/stories.md): a Page pushed on the Stories tab's pane, full screen on black, so it
 // slides in from the right as Android's does and the system's Back (the Classic's key, the swipe) pops it. Top to bottom: one progress segment per story of the poster, then Back, their
-// picture, name and the story's time; the story fills the rest. A tap on the left third goes back one story, a
-// tap anywhere else forward; after the last the sheet closes. A photo or text story lasts 5 s, a video its own
+// picture, name and the story's time; the story fills the rest. A tap on the left third goes back one story (on a poster's first, to the poster before, done), a
+// tap anywhere else forward; after the last the next poster's stories (queue) start, and after the last of those the page closes. A photo or text story lasts 5 s, a video its own
 // length. Showing a story marks it seen and sends the read receipt (storyList.markSeen). A story whose file isn't
 // here is fetched (storyList.fetch) while its thumbnail shows; the next video is fetched ahead. A photo shows its
 // thumbnail until its sharp picture is made (storyList.prepare, on a worker thread, for the shown story and the next).
@@ -26,6 +26,10 @@ Page {
     property bool closing: false
     // The tile's row: poster (the key), name, initials, color, photo.
     property variant poster: ({})
+    // The tile rows of the posters still to come (storyList.after).
+    property variant queue: []
+    // The posters gone through since the page opened, the last one nearest: back from a first story goes there.
+    property variant done: []
     // The poster's stories (StoriesModel.storyOf's maps); replaced whole when one changes.
     property variant items: []
     property int index: -1
@@ -118,7 +122,21 @@ Page {
     }
     function show(i) {
         if (i >= sheet.items.length) {
-            sheet.close()
+            var rest = sheet.queue
+            if (rest.length == 0) {
+                sheet.close()
+                return
+            }
+            sheet.done = sheet.done.concat([sheet.poster])
+            sheet.queue = rest.slice(1)
+            sheet.start(rest[0])
+            return
+        }
+        if (i < 0 && sheet.done.length > 0) {
+            var gone = sheet.done
+            sheet.queue = [sheet.poster].concat(sheet.queue)
+            sheet.done = gone.slice(0, -1)
+            sheet.start(gone[gone.length - 1])
             return
         }
         i = Math.max(i, 0)
@@ -207,6 +225,11 @@ Page {
     }
     // A tap on the story: the left third back, the rest forward.
     function tapped(x) {
+        // With the field focused a tap only leaves it: the story's Containers take no focus, so Cascades doesn't.
+        if (reply.focused) {
+            reply.loseFocus()
+            return
+        }
         if (new Date().getTime() - sheet.lostAt < 500) {
             return
         }
@@ -478,6 +501,10 @@ Page {
                 // As tall as the caption, at most four lines: a ScrollView alone takes all the room it's given.
                 ScrollView {
                     horizontalAlignment: HorizontalAlignment.Fill
+                    // Never focused: it took the focus at the push, and when the next story had no caption Cascades
+                    // handed it on to the Reply field, which holds the story (the Q20's slog2, 2026-11-27).
+                    focusPolicy: FocusPolicy.None
+                    navigation.focusPolicy: NavigationFocusPolicy.NotFocusable
                     preferredHeight: capFrame.layoutFrame.height > 0 ? Math.min(capFrame.layoutFrame.height, fourLines.layoutFrame.height) : fourLines.layoutFrame.height
                     Label {
                         horizontalAlignment: HorizontalAlignment.Fill

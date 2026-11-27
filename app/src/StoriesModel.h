@@ -63,6 +63,9 @@ public:
     // A poster as the tile row has them (poster, own, name, initials, color, photo), for opening their stories from a chat; {} when
     // none of their stories is left.
     Q_INVOKABLE QVariantMap posterOf(const QString &poster);
+    // The tile rows the viewer goes on to after poster's, in the grid's order: others' below it, muted as it is, and
+    // only unseen ones when it had something unseen. None after ours. Empty too when the list isn't loaded.
+    Q_INVOKABLE QVariantList after(const QString &poster) const;
     // Who viewed our story id, newest first, one map each: jid (the viewer's key), name, initials, color, photo
     // ("" when none) and time (the clock alone when it was today, else the day and the clock).
     Q_INVOKABLE QVariantList viewersOf(const QString &id);

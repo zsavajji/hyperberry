@@ -442,6 +442,20 @@ QVariantList StoriesModel::storiesOf(const QString &poster)
     return list;
 }
 
+QVariantList StoriesModel::after(const QString &poster) const
+{
+    QVariantList list;
+    QVariantMap from;
+    foreach (const QVariantMap &row, m_rows) {
+        if (row.value("poster").toString() == poster)
+            from = row;
+        else if (!from.isEmpty() && !from.value("own").toBool() && row.value("muted") == from.value("muted")
+                 && (from.value("unseen").toInt() == 0 || row.value("unseen").toInt() > 0))
+            list.append(row);
+    }
+    return list;
+}
+
 QVariantList StoriesModel::viewersOf(const QString &id)
 {
     QVariantList list;

@@ -29,6 +29,8 @@ Page {
         var v = viewerDef.createObject()
         v.finished.connect(page.viewed)
         storiesNav.push(v)
+        // Taken now: seeing stories sorts the grid anew. A quote's story (id) is that poster's alone.
+        v.queue = id ? [] : storyList.after(row.poster)
         v.start(row, id)
     }
     function viewed() {
