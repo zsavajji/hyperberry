@@ -19,8 +19,8 @@ func readMemMB(log waLog.Logger) int {
 		log.Warnf("rlimit DATA: %v", err)
 		return 0
 	}
-	inf := int64(syscall.RLIM_INFINITY) // a variable: the constant is negative, the field unsigned
-	infinity := uint64(inf)
+	// The mask: the constant is -1 on Linux (the tests) and unsigned on go-qnx.
+	infinity := uint64(syscall.RLIM_INFINITY & (1<<64 - 1))
 	show := func(v uint64) string {
 		if v == infinity {
 			return "inf"

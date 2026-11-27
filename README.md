@@ -84,7 +84,7 @@ an Active Frame, the action bar, keyboard shortcuts.
 HyperBerry ships as one `.bar` with two processes:
 
 - **`hyperberryd`, the engine**, written in Go and cross-compiled for BB10 (QNX on ARMv7) with
-  [go-qnx](https://github.com/XIAZY/go-qnx). It speaks WhatsApp's protocol through
+  [go-qnx](https://github.com/zsavajji/go-qnx). It speaks WhatsApp's protocol through
   [hypermeow](https://github.com/polymorfa/hypermeow), a fork of whatsmeow, and handles calls through
   [meowcaller](https://github.com/purpshell/meowcaller). It runs as a BB10 headless service, so the
   connection outlives the UI. It stores messages in SQLite and posts Hub notifications.
