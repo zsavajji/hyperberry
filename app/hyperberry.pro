@@ -13,6 +13,13 @@ QMAKE_LFLAGS += -Wl,-rpath-link,$${QNX_DIR}/$${QNX_CPUDIR}/usr/lib/qt4/lib
 # definitions.
 QMAKE_LFLAGS += -Wl,-Bsymbolic
 QMAKE_CXXFLAGS += -Wno-psabi
+# NEON (every BB10 CPU has it): libwebp decodes 1.3-2.4x faster and Nv12Rotate.h turns video frames 2-3.5x faster. And the
+# spec's -fstack-protector-all becomes plain -fstack-protector (functions with local buffers keep their guard): 6-14% more
+# on libwebp. Measured on the Q20, 2026-11-27.
+QMAKE_CFLAGS += -mfpu=neon
+QMAKE_CXXFLAGS += -mfpu=neon
+QMAKE_CFLAGS -= -fstack-protector-all
+QMAKE_CXXFLAGS -= -fstack-protector-all
 # gcc 4.8.3 and C++11, as Tengram (the user, 2026-11-20). The spec's qcc -Vgcc_ntoarmv7le takes the NDK's default, gcc 4.6.3, whose
 # C++11 is partial. 4.8.3 ships in the same NDK with GNU libstdc++ only, and Qt and Cascades are built against Dinkumware
 # (libcpp.so.4): so C++ is compiled by 4.8.3's _cpp variant (Dinkumware's headers) and linked against 4.6.3's Dinkumware
@@ -48,9 +55,8 @@ INCLUDEPATH += $$PWD/../lib/omxil
 # the files of its makefile.unix's DEC_OBJS, DSP_DEC_OBJS and UTILS_DEC_OBJS, and the demuxer with
 # the animation decoder (an animated sticker shows its first frame). The sources include "src/..."
 # (lib/libwebp) and <webp/decode.h> (lib/libwebp/src). Threads stay off (no WEBP_USE_THREAD): a
-# sticker is one small frame. qcc passes -mcpu=cortex-a9 and no -mfpu=neon, so __ARM_NEON__ is unset
-# and libwebp's NEON, SSE and MIPS files compile to empty stubs: the plain C code decodes.
-# ponytail: add -mfpu=neon to QMAKE_CFLAGS if a sticker takes long to draw; untried.
+# sticker is one small frame. With -mfpu=neon (above) __ARM_NEON__ is set and libwebp's NEON files
+# decode; its SSE and MIPS files compile to empty stubs.
 WEBP_DIR = $$PWD/../lib/libwebp
 WEBP_DEC = alpha_dec buffer_dec frame_dec idec_dec io_dec quant_dec tree_dec vp8_dec vp8l_dec webp_dec
 WEBP_DSP = alpha_processing alpha_processing_mips_dsp_r2 alpha_processing_neon alpha_processing_sse2 \
