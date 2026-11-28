@@ -86,6 +86,8 @@ func (s *Session) sendMsg(cli *whatsmeow.Client, jid types.JID, id string, msg *
 	if err != nil {
 		return sendDone{}, err
 	}
+	// Where a send's time went (the user, 2026-11-28: "sending is a bit slow"): the device list, the encryption, the server's ack.
+	s.log.Infof("send %s: %+v", id, resp.DebugTimings)
 	return sendDone{ts: resp.Timestamp.Unix()}, nil
 }
 
@@ -341,9 +343,14 @@ func (st *Store) queueRow(jid types.JID, chat, quote string, row msgRow) (msgRow
 	}
 	q, isNew := <-quoted, <-made
 	// The reply is what tells the UI to drop its outbox entry and read the row, so the row has to be in chats.db by then:
-	// wait for the commit (the batch holds it up to batchTime), as protocol.md says of msg.send.
+	// wait for the commit, as protocol.md says of msg.send. The batch ends here instead of holding it up to batchTime: the
+	// user waits for this bubble, and the row's events came 50 ms after Enter, onto the card the page was about to slide in
+	// (the user, 2026-11-28: Tengram is faster at the same slide; its engine writes a sent row at once, mark_dirty(true)).
 	committed := make(chan struct{})
-	st.afterCommit(func() { close(committed) })
+	st.ops <- func(t *storeTx) {
+		t.now = true
+		t.after = append(t.after, func() { close(committed) })
+	}
 	select {
 	case <-committed:
 	case <-st.done:

@@ -88,8 +88,8 @@ func (st *Store) batch(first func(*storeTx)) {
 	timer := time.NewTimer(batchTime)
 	defer timer.Stop()
 fill:
-	// A clear ends its batch, so its wipe runs before anything written after it (a re-link's seed).
-	for n := 1; n < batchOps && !st.quit && !t.wipe; n++ {
+	// A clear ends its batch, so its wipe runs before anything written after it (a re-link's seed). So does a send of ours.
+	for n := 1; n < batchOps && !st.quit && !t.wipe && !t.now; n++ {
 		select {
 		case op := <-st.ops:
 			t.run(op)
@@ -415,6 +415,7 @@ type storeTx struct {
 	chats map[string]bool
 	msgs  map[string]map[string]bool // chat -> ids
 	wipe  bool                       // clear ran: wipe after the commit
+	now   bool                       // a send of ours is in: commit without waiting out batchTime (queueRow)
 	after []func()                   // afterCommit's
 	// A story was added, changed or dropped (stories.go): emit "stories" after the commit.
 	stories bool
