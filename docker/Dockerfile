@@ -1,7 +1,7 @@
 # Build image for HyperBerry: bb10-cxx20 (clang 19 for QNX 6.6/ARMv7, the C compiler cgo needs)
-# plus go-qnx (Go 1.27.4 with GOOS=qnx GOARCH=arm), from the fork zsavajji/go-qnx. Pinned by
-# digest, as go-qnx's README says: its go1.27.4 has Google's version string but not Google's bytes.
-FROM ghcr.io/zsavajji/go-qnx:1.27.4@sha256:19f06aa6606912a3fd89c1e4eca226292a9fb1071ec57d2d09b5b3ee8529b094 AS go
+# plus go-qnx (Go 1.27.4-2 with GOOS=qnx GOARCH=arm: 1.27.4 and NEON for AES-GCM, AES-CBC decryption,
+# ChaCha20-Poly1305 and SHA-256), from the fork zsavajji/go-qnx. Pinned by digest, as go-qnx's README says.
+FROM ghcr.io/zsavajji/go-qnx:1.27.4-2@sha256:5bb16380c2ffca17e3b13b9c1f1a3ed656046b74fdc5e9525b757937b03a7cb8 AS go
 # 19.1.7-6: NEON by default, temp_directory_path() falls back to /var/tmp (the user's ask, 2026-11-27).
 FROM bb10-cxx20:19.1.7-6-build
 COPY --from=go /usr/local/go /usr/local/go

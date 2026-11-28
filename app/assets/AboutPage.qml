@@ -142,8 +142,8 @@ Page {
                     url: "https://github.com/mautrix/go-util"
                 }
                 LinkRow {
-                    text: "Go 1.27.2 for QNX (go-qnx) · BSD 3-Clause"
-                    url: "https://github.com/XIAZY/go-qnx"
+                    text: "Go 1.27.4 for QNX (go-qnx) · BSD 3-Clause"
+                    url: "https://github.com/zsavajji/go-qnx"
                 }
                 LinkRow {
                     text: "Go x/crypto, x/net, x/sys (go-sys-qnx) · BSD 3-Clause"
