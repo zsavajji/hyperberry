@@ -383,11 +383,15 @@ Page {
             return
         }
         var editing = ctl.editing
+        // Before the send: the outbox puts the row in at once, inside it (it came with the engine's event before, after
+        // this function), and a flag set after it stayed up for the next row, whoever's.
+        page.followOwn = !editing // an edit adds no row to follow
         // A staged file and a plain text go through the outbox, which keeps them whatever the engine does; only an edit
         // needs the engine now, and then the text stays in the composer.
         if (staged != "") {
             page.sendStaged(text)
         } else if (!ctl.send(composer.text, mentionBar.take(composer.text))) {
+            page.followOwn = false
             notSent.show()
             return
         }
@@ -395,7 +399,6 @@ Page {
         page.picking = false // sent, the emoji picker closes (the user's ask, 2026-11-17)
         page.unstage()
         ctl.cancelReply()
-        page.followOwn = !editing // an edit adds no row to follow
     }
     // A photo's or a video's caption rides in the message; the other kinds' text follows as a message.
     function sendStaged(text) {
@@ -623,9 +626,9 @@ Page {
         if (ctl.quoteId()) {
             args.quote = ctl.quoteId()
         }
+        page.followOwn = true // before the send, as send()'s
         outbox.send("sticker.send", args)
         ctl.cancelReply()
-        page.followOwn = true
         page.picking = false
         nav.pop()
     }
