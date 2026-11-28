@@ -251,10 +251,8 @@ func (s *Session) uploadMedia(cli *whatsmeow.Client, jid types.JID, o *mediaOut)
 	chat, id := o.row.Chat, o.row.ID
 	ctx, cancel := context.WithTimeout(context.Background(), mediaTimeout)
 	defer cancel()
-	t0 := time.Now()
 	up, err := s.uploadFile(ctx, cli, o.row.Path, uploadTypes[o.row.Kind])
 	if err == nil {
-		logTransfer(s.log, "media "+id+" sent", int64(up.FileLength), t0)
 		var ci *waE2E.ContextInfo
 		if o.quote.ID != "" {
 			ci = quoteInfo(cli, chat, o.quote)

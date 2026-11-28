@@ -118,7 +118,6 @@ void MapChooser::onChosen(bb::system::SystemUiResult::Type result)
 
 void MapChooser::open(const QString &target, const QString &uri)
 {
-    qDebug() << "map: OPEN" << target << uri;
     InvokeRequest request;
     request.setAction("bb.action.OPEN");
     request.setTarget(target);

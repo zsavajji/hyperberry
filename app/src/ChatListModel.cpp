@@ -11,7 +11,6 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
-#include <QElapsedTimer>
 #include <QHash>
 #include <QLocale>
 #include <QMetaType>
@@ -380,7 +379,6 @@ void ChatListModel::reload()
     }
     m_reading = true;
     m_again = false;
-    m_readTimer.start();
     ChatListRequest request;
     // Channels have their own list: WhatsApp keeps them apart too.
     request.where = m_mode == Channels ? QString("kind = 3")
@@ -399,8 +397,6 @@ ChatListReader::ChatListReader(const QString &connectionName)
 void ChatListReader::read(const ChatListRequest &request)
 {
     ChatListRead out;
-    QElapsedTimer timer;
-    timer.start();
     // The connection is its own and is made here, on first use, because it belongs to the thread that makes it.
     if (!QSqlDatabase::contains(m_dbName)) {
         QSqlDatabase added = QSqlDatabase::addDatabase("QSQLITE", m_dbName);
@@ -421,27 +417,13 @@ void ChatListReader::read(const ChatListRequest &request)
     }
     const RowClock &clock = request.clock;
 
-    // Where a reload's time goes (Tengram on the Classic, 2026-11-24: a cold start read 500 chats twice on the UI
-    // thread, 293 and 278 ms): the query, SQLite's fetching of the rows (next()), and building them.
-    const qint64 execNs = timer.nsecsElapsed();
-    qint64 fetchNs = 0;
-    QElapsedTimer step;
-    for (;;) {
-        step.start();
-        const bool more = q.next();
-        fetchNs += step.nsecsElapsed();
-        if (!more)
-            break;
+    while (q.next()) {
         QVariantMap row = baseRow(q, clock.now);
         if (!nameMatches(request.filter, row["name"].toString()))
             continue;
         row["ts"] = q.value(3); // null for a chat with no message
         addRow(&out, clock.place(&row, q.value(3), row["pinned"].toBool()), row);
     }
-    const qint64 builtNs = timer.nsecsElapsed();
-    out.queryMs = int(execNs / 1000000);
-    out.fetchMs = int(fetchNs / 1000000);
-    out.rowsMs = int((builtNs - execNs - fetchNs) / 1000000);
     out.ok = true;
     emit done(out);
 }
@@ -449,8 +431,6 @@ void ChatListReader::read(const ChatListRequest &request)
 // On the UI thread: swaps the rows in and tells the list.
 void ChatListModel::onRead(const ChatListRead &read)
 {
-    QElapsedTimer timer;
-    timer.start();
     m_reading = false;
     const bool shownEmpty = empty();
     m_loaded = true;
@@ -458,20 +438,8 @@ void ChatListModel::onRead(const ChatListRead &read)
         m_raw = read;
         show(withOutbox(read));
         if (m_mode == Chats) {
-            // Once per run: with "ui: main" and the Hub tap's line it times a cold start.
-            static bool first = true;
-            if (first) {
-                first = false;
-                qDebug() << "chat list: first draw," << read.chats << "chats";
-            }
             updateFrame();
         }
-        // The read is off the UI thread: only "list" (the emits and the frame, here) is on it, and the rest of the
-        // total is the answer's wait for the UI thread, which at a cold start is busy loading main.qml.
-        const int total = int(m_readTimer.elapsed());
-        if (total > 50)
-            qDebug("chat list: reload, %d chats in %d ms (off the UI thread: query %d, fetch %d, rows %d; on it: list %d)",
-                   read.chats, total, read.queryMs, read.fetchMs, read.rowsMs, int(timer.elapsed()));
     }
     // Not read (chats.db is not there yet): the next event reloads anyway.
     if (shownEmpty != empty())

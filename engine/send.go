@@ -86,8 +86,6 @@ func (s *Session) sendMsg(cli *whatsmeow.Client, jid types.JID, id string, msg *
 	if err != nil {
 		return sendDone{}, err
 	}
-	// Where a send's time went (the user, 2026-11-28: "sending is a bit slow"): the device list, the encryption, the server's ack.
-	s.log.Infof("send %s: %+v", id, resp.DebugTimings)
 	return sendDone{ts: resp.Timestamp.Unix()}, nil
 }
 

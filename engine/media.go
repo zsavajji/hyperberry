@@ -136,11 +136,10 @@ type thumbInfo struct {
 // liveVideoThumb swaps a video that just arrived's inline thumbnail (about 100 px, from WhatsApp's own phone) for the
 // premade larger one when the sender gave it (the user, 2026-11-12: "use a premade one if available"; the video itself is
 // never decoded here). It waits for a tap's rules (mobile data off), as a photo does. Anything that fails leaves the
-// inline thumbnail, and the log says which case it was: no premade one, the download, or something that is not a JPEG.
+// inline thumbnail, and the log says why when the download fails or is not a JPEG.
 func (st *Store) liveVideoThumb(cli *whatsmeow.Client, row msgRow) {
 	var ti thumbInfo
 	if json.Unmarshal([]byte(row.Extra), &ti) != nil || ti.Path == "" {
-		st.log.Infof("video %s: no premade thumbnail, the inline one (%d bytes) stays", row.ID, len(row.Thumb))
 		return
 	}
 	var info mediaInfo
@@ -158,7 +157,6 @@ func (st *Store) liveVideoThumb(cli *whatsmeow.Client, row msgRow) {
 		st.log.Warnf("video %s: premade thumbnail is not a JPEG (%d bytes)", row.ID, len(data))
 		return
 	}
-	st.log.Infof("video %s: premade thumbnail, %d bytes for the inline %d", row.ID, len(data), len(row.Thumb))
 	st.ops <- func(t *storeTx) { t.setThumb(row.Chat, row.ID, data) }
 }
 

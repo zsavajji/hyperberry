@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/polymorfa/hypermeow"
-	waLog "github.com/polymorfa/hypermeow/util/log"
 )
 
 // Photos, videos, audio files and documents (step 6.1): media.get downloads one when it isn't
@@ -95,11 +94,6 @@ func memUsage() string {
 	var ms runtime.MemStats
 	runtime.ReadMemStats(&ms)
 	return fmt.Sprintf("heap %d MB, from the OS %d MB", ms.HeapAlloc>>20, ms.Sys>>20)
-}
-
-// logTransfer says what a download or an upload (who: "media <id>") moved and what it cost.
-func logTransfer(log waLog.Logger, who string, n int64, since time.Time) {
-	log.Infof("%s: %d bytes in %v, %s", who, n, time.Since(since).Round(time.Millisecond), memUsage())
 }
 
 // downloadTo has get write a download into the temporary file tmp, and once it is whole (synced
@@ -209,7 +203,6 @@ func (st *Store) fetchMedia(dir string, row msgRow, get func(f *os.File) (string
 	}
 	// The name of a video or audio file depends on the mimetype, a document's on what is taken
 	// in Downloads: so the file is named after the download, from its own <id>.tmp.
-	t0 := time.Now()
 	tmp := filepath.Join(filepath.Dir(mediaTarget(dir, row, "")), row.ID+".tmp")
 	path, err := downloadTo(tmp, get, func(mimeType string) string { return mediaTarget(dir, row, mimeType) })
 	if errors.Is(err, context.Canceled) {
@@ -218,8 +211,6 @@ func (st *Store) fetchMedia(dir string, row msgRow, get func(f *os.File) (string
 	state := 2
 	if err != nil {
 		state, path = 3, ""
-	} else if fi, serr := os.Stat(path); serr == nil {
-		logTransfer(st.log, "media "+row.ID, fi.Size(), t0)
 	}
 	st.ops <- func(t *storeTx) { t.setFile(row.Chat, row.ID, state, path) }
 	return path, err

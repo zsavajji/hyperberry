@@ -208,14 +208,11 @@ func (st *Store) fetchStory(dir string, row msgRow, get func(f *os.File) (string
 	if p := mediaHere(dir, cur); p != "" {
 		return p, nil
 	}
-	t0 := time.Now()
 	tmp := filepath.Join(dir, "stories", row.ID+".tmp")
 	path, err := downloadTo(tmp, get, func(mimeType string) string { return storyTarget(dir, row, mimeType) })
 	state := 2
 	if err != nil {
 		state, path = 3, ""
-	} else if fi, serr := os.Stat(path); serr == nil {
-		logTransfer(st.log, "story "+row.ID, fi.Size(), t0)
 	}
 	st.ops <- func(t *storeTx) {
 		if !t.setStoryFile(row.Chat, row.ID, state, path) && path != "" {
@@ -652,9 +649,7 @@ func (s *Session) postStory(cli *whatsmeow.Client, row msgRow) (down bool) {
 				TextArgb: proto.Uint32(x.Fg), Font: waE2E.ExtendedTextMessage_FontType(x.Font).Enum()}}
 		} else {
 			var up whatsmeow.UploadResponse
-			t0 := time.Now()
 			if up, err = s.uploadFile(ctx, cli, row.Path, uploadTypes[row.Kind]); err == nil {
-				logTransfer(s.log, "story "+row.ID+" sent", int64(up.FileLength), t0)
 				msg = mediaMessage(s.mediaOf(row), up, nil)
 			}
 		}

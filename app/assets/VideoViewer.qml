@@ -105,14 +105,10 @@ Page {
     // is not an end (it was, in 0.1.0.290, and the dot stopped under the finger).
     function scrub(event, width) {
         if (event.isDown() || event.isMove()) {
-            if (event.isDown()) {
-                console.log("video scrub: down at " + Math.round(event.windowX) + " of " + Math.round(width))
-            }
             page.scrubbing = true
             page.at = Math.max(0, Math.min(1, (event.windowX - page.side - page.dot / 2) / (width - page.dot)))
             stale.start()
         } else {
-            console.log("video scrub: " + (event.isCancel() ? "cancel" : "up") + " at " + Math.round(page.at * 1000) / 1000)
             page.release()
         }
     }
@@ -256,7 +252,6 @@ Page {
                         onLayoutFrameChanged: line.w = layoutFrame.width
                     }
                     onTouch: page.scrub(event, line.w)
-                    onTouchExit: console.log("video scrub: the finger left the bar")
                     Container {
                         horizontalAlignment: HorizontalAlignment.Fill
                         verticalAlignment: VerticalAlignment.Center

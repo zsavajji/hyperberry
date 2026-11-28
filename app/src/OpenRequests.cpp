@@ -18,7 +18,6 @@ OpenRequests::OpenRequests(InvokeManager *manager, QObject *parent)
 void OpenRequests::invoked(const InvokeRequest &request)
 {
     if (request.action() == "bb.action.SHARE") {
-        qDebug() << "shared:" << request.mimeType() << request.uri() << request.data().left(200);
         // ponytail: one file; a multi-file share (filelist) isn't offered by the descriptor.
         const QString path = request.uri().scheme() == "file" ? request.uri().toLocalFile() : QString();
         const QString text = path.isEmpty() ? QString::fromUtf8(request.data()) : QString();
@@ -28,9 +27,6 @@ void OpenRequests::invoked(const InvokeRequest &request)
     }
     if (request.action() != "bb.action.OPEN" && request.action() != "bb.action.VIEW")
         return;
-    // Logged whole: where the Hub puts the item id is for the Q10 to show.
-    qDebug() << "invoked:" << request.action() << request.mimeType() << request.uri()
-             << request.data();
     const QString scheme = request.uri().scheme();
     if (scheme == "http" || scheme == "https" || scheme == "whatsapp") {
         emit link(request.uri().toString());

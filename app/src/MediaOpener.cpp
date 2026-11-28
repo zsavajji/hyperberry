@@ -213,10 +213,9 @@ void MediaOpener::onInvoked()
 
 // Seen on the phone (2026-11-17): a copy saved comes back as reason "SaveDone" with its path; the original saved over
 // as reason "save" with [{"uri": "file://…"}], the same file now edited. Success is any reason but "cancel" or "closed"
-// with data that names an existing file. Every answer is logged.
+// with data that names an existing file.
 void MediaOpener::onCardDone(const CardDoneMessage &done)
 {
-    qDebug() << "media: card done, reason" << done.reason() << "dataType" << done.dataType() << "data" << done.data();
     if (!m_editing)
         return;
     m_editing = false;

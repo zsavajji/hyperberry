@@ -9,7 +9,6 @@
 #include <bb/utility/i18n/Formatting>
 #include <QDateTime>
 #include <QDebug>
-#include <QElapsedTimer>
 #include <QTimer>
 #include <QHash>
 #include <QLocale>
@@ -66,12 +65,9 @@ MessageModel::MessageModel(EngineLink *engine, Outbox *outbox, const QString &ch
 // runs the slide by itself, so this doesn't stop it.
 void MessageModel::loadFirst()
 {
-    QElapsedTimer took;
-    took.start();
     loadPage();
     m_loading = false;
     emit loadingChanged();
-    qDebug() << "chat: first page," << m_all.size() << "messages in" << took.elapsed() << "ms";
 }
 
 int MessageModel::childCount(const QVariantList &indexPath)

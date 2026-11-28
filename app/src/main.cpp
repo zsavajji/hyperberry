@@ -100,10 +100,7 @@ static void startLog()
     qDebug("UI started, pid %d", int(getpid()));
 }
 
-// Milliseconds since the system started this process, -1 when it won't say. With "ui: main" and "ui: scene
-// set" it times a cold start: on the Q10 main comes 1.2 s in and the application is made by 1.6 s, the
-// system's share (103 libraries, 97 of them Cascades' own), and the scene is set at 2.2 s (0.1.1.310; 3.2 s
-// before the speed work of 2026-11-13).
+// Milliseconds since the system started this process, -1 when it won't say.
 static int sinceLaunch()
 {
     procfs_info info;
@@ -137,10 +134,8 @@ static bool loaded(QmlDocument *document, const char *name)
 
 Q_DECL_EXPORT int main(int argc, char **argv)
 {
-    const int atMain = sinceLaunch();
     Application app(argc, argv);
     startLog();
-    qDebug("ui: main %d ms after launch, the application made at %d ms", atMain, sinceLaunch());
     // The sources are UTF-8; Qt 4 reads tr() and C-string literals as Latin-1 unless told, and
     // "typing…" showed as "typingà|" (Q10, 2026-10-31).
     QTextCodec::setCodecForTr(QTextCodec::codecForName("UTF-8"));
@@ -241,13 +236,12 @@ Q_DECL_EXPORT int main(int argc, char **argv)
         return 1;
     app.setScene(root);
     const int sceneAt = sinceLaunch();
-    qDebug("ui: scene set at %d ms", sceneAt);
     // The address book's first read makes the phone's contacts service work at a higher priority than the UI thread:
     // on a start that is already slow it stalled the UI over a second (Tengram, the Classic, 2026-11-24: the plain
     // executable's scene at 5.8 to 7.2 s against 4.0 to 4.8; HyperBerry's own have not been taken). Such a start
     // reads the book once things have settled.
     // ponytail: SlowStartMs is from Tengram's two starts through the launcher, and no slow one has been seen yet: set it
-    // again from ui.log's "scene set" lines if a "stalled" line follows a start it let through.
+    // again from measured starts (sceneAt; its line is gone from ui.log) if a "stalled" line follows a start it let through.
     const bool slow = sceneAt > SlowStartMs;
     if (slow)
         qDebug("ui: a slow start, the contact book waits %d s", SlowBookWaitMs / 1000);

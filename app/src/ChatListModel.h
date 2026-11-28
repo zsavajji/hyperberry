@@ -5,7 +5,6 @@
 #include <bb/system/LocaleHandler>
 #include <bb/utility/i18n/RelativeDateFormatter>
 #include <QDate>
-#include <QElapsedTimer>
 #include <QHash>
 #include <QList>
 #include <QLocale>
@@ -57,13 +56,12 @@ struct ChatListRequest
 // Its answer. ok is false when chats.db could not be read (the engine hasn't made it yet).
 struct ChatListRead
 {
-    ChatListRead() : ok(false), chats(0), queryMs(0), fetchMs(0), rowsMs(0) {}
+    ChatListRead() : ok(false), chats(0) {}
     bool ok;
     QList<ChatListGroup> groups;
     QHash<QString, int> groupAt;              // new group index, by title (Moves::groups)
     QHash<QString, QPair<int, int> > itemAt;  // new [g, i], by jid (Moves::items)
     int chats;
-    int queryMs, fetchMs, rowsMs;
 };
 Q_DECLARE_METATYPE(ChatListRequest)
 Q_DECLARE_METATYPE(ChatListRead)
@@ -158,7 +156,6 @@ private:
     bool m_reading;          // a read is out
     bool m_again;            // something changed while it was out: read again when it is back
     bool m_loaded;           // the first answer has come: before it an empty list is not "no chats"
-    QElapsedTimer m_readTimer;
 };
 
 #endif
