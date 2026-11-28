@@ -32,8 +32,9 @@ LinkPreview::LinkPreview(ListView *list)
     , m_ui(list->ui())
     , m_invoker(0)
 {
-    setTopMargin(Card::du(m_ui, 0.5));
-    setBottomMargin(0);
+    // Over the text, as a quote is (the user, 2026-11-28: it was under the text, after the time and ticks at its end).
+    setTopMargin(0);
+    setBottomMargin(Card::du(m_ui, 0.5));
     setHorizontalAlignment(HorizontalAlignment::Fill);
 
     // Filled too, as the card is: a control is as wide as its content unless it fills.

@@ -30,7 +30,7 @@ void MessageCard::place(Control *part, Control *a, Control *b, Control *c, Contr
 
 // The bubbles this message needs and the card hasn't made yet, each built only for the rows that
 // need it, as MessageItem.qml's ControlDelegates were (step 8.6 removed it): a bubble in every card would weigh down every
-// row (4.1). In the column: voice, media, album, [label, text], link preview, [invite], poll. An
+// row (4.1). In the column: voice, media, album, link preview, [label, text], [invite], poll. An
 // album's media is "", so MediaBubble isn't made for it.
 void MessageCard::makeBubbles()
 {
@@ -53,7 +53,7 @@ void MessageCard::makeBubbles()
     }
     if (!str("linkTitle").isEmpty() && !deleted && !m_link) {
         m_link = new LinkPreview(m_list);
-        place(m_link, m_join, m_poll);
+        place(m_link, m_label, m_words);
     }
     if (flag("poll") && !deleted && !m_poll) {
         m_poll = new PollBubble(m_list);
