@@ -353,6 +353,27 @@ void MessageModel::reload()
     merge(asked, fresh, false);
 }
 
+// Whether two readings of a row draw the same card: every value the same. An Image can't be compared, so a row with a
+// picture (its thumbnail, a link's, a quoted story's) never is the same; the others' empty Images are skipped, and a voice
+// note's wave, which waveData tells of.
+static bool sameCard(const QVariantMap &a, const QVariantMap &b)
+{
+    if (a.size() != b.size() || a.value("hasThumb").toBool() || a.value("hasLinkThumb").toBool()
+        || a.value("hasQuoteThumb").toBool())
+        return false;
+    QVariantMap::const_iterator i = a.constBegin(), j = b.constBegin();
+    for (; i != a.constEnd(); ++i, ++j) {
+        const QString &key = i.key();
+        if (key != j.key())
+            return false;
+        if (key == "thumb" || key == "linkThumb" || key == "quoteThumb" || key == "wave")
+            continue;
+        if (i.value() != j.value())
+            return false;
+    }
+    return true;
+}
+
 // Puts rows into m_all and tells the list. asked: the ids that were read again; fresh: the
 // rows that came back. A loaded asked id that isn't in fresh is gone.
 void MessageModel::merge(const QStringList &asked, const QList<Msg> &fresh, bool older)
@@ -374,8 +395,14 @@ void MessageModel::merge(const QStringList &asked, const QList<Msg> &fresh, bool
         if (!was.contains(m.id))
             all.append(m);
         else if (back.contains(m.id)) {
-            all.append(back.value(m.id));
-            updated.insert(m.id);
+            // Only a row that changed fills its card again: one read again as it was (a msgs event that names it for a
+            // column no card shows) cost a card's whole filling, and the list made cards for rows off the screen (the
+            // Q20, 1.0.8.433 to 434: a chat of 23 messages made 16 cards and filled 23, then 8 and 8, 283 ms to 146).
+            const Msg &now = back[m.id];
+            all.append(now);
+            if (now.kind != m.kind || now.service != m.service || now.ts != m.ts || now.who != m.who
+                || !sameCard(now.data, m.data))
+                updated.insert(m.id);
         }
     }
     const Msg *first = oldest();
