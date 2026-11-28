@@ -250,6 +250,8 @@ MessageCard::MessageCard(ListView *list, bool rich, bool picture)
     // The new message's slide (ChatPage's added and slideIn): the card of the row the list's slideId names tells the page how
     // tall it came out, which is how far the list slides.
     m_laidHeight = 0;
+    m_styleGen = 0;
+    m_timeTint = m_tickTint = -1;
     LayoutUpdateHandler *laid = new LayoutUpdateHandler(this);
     connect(laid, SIGNAL(layoutFrameChanged(QRectF)), this, SLOT(onLaidOut(QRectF)));
 }
@@ -311,10 +313,17 @@ void MessageCard::paintBackground()
     const QString found = Card::foundId(m_list);
     const bool match = !found.isEmpty() && found == str("id");
     const QString own = flag("out") ? Card::ownColor(m_list) : Card::theirColor(m_list);
+    // Set only when what decides it changed: a filling with the same colour as the last set it three times over.
+    const bool shown = m_pressed || match || str("media") != "sticker";
+    const QString key = (m_pressed ? "p" + Card::pressColor(m_list) : match ? QString("m")
+                         : own.isEmpty() ? "t" + QString::number(m_styleGen) : own) + (shown ? "1" : "0");
+    if (key == m_bgKey)
+        return;
+    m_bgKey = key;
     const Color c = m_pressed ? Card::color(Card::pressColor(m_list))
                   : match ? Card::color("#331bd862")
                   : !own.isEmpty() ? Card::color(own) : m_ui->palette()->plain();
-    m_bg->setVisible(m_pressed || match || str("media") != "sticker");
+    m_bg->setVisible(shown);
     m_bg->setFilterColor(c);
     m_tailL->setFilterColor(c);
     m_tailR->setFilterColor(c);
@@ -350,6 +359,7 @@ void MessageCard::restyle()
     if (m_styled && scale == m_scale && body == m_body && small == m_small && plain == m_plain)
         return;
     m_styled = true;
+    ++m_styleGen; // what follows the style (the background, the time's and the ticks' colours) is set again
     m_scale = scale;
     m_body = body;
     m_small = small;
@@ -644,7 +654,11 @@ void MessageCard::fillFoot()
 {
     const bool out = flag("out");
     const int state = m_msg.value("state").toInt();
-    m_time->setText(timeLead() + str("time"));
+    const QString timeText = timeLead() + str("time");
+    if (timeText != m_timeText) {
+        m_timeText = timeText;
+        m_time->setText(timeText);
+    }
     // Where the time goes: on a picture with no caption, at the text's end, under a voice note's
     // waveform, or else (a sticker, a file) beside the column's first line.
     // Top-aligned boxes put the time's baseline above the first line's: 7 px under a name or quote
@@ -663,9 +677,13 @@ void MessageCard::fillFoot()
         m_timeTop = top;
         m_timeBox->setTopPadding(top);
     }
-    // White on the picture's dark chip.
-    const Color quiet = onPicture ? Color::White : Card::quiet(m_list, m_ui);
-    m_time->textStyle()->setColor(quiet);
+    // White on the picture's dark chip. Set when the picture, the theme or the style changed, as the ticks' below.
+    const bool bright = Card::bright(m_list);
+    const int tint = (onPicture ? 1 : 0) | (bright ? 2 : 0) | (m_styleGen << 3);
+    if (tint != m_timeTint) {
+        m_timeTint = tint;
+        m_time->textStyle()->setColor(onPicture ? Color::White : Card::quiet(m_list, m_ui));
+    }
 
     const bool ticked = out && state < 4;
     m_ticks->setVisible(ticked);
@@ -681,8 +699,12 @@ void MessageCard::fillFoot()
         }
         // Read: a green that stands out on our green card (the user, 2026-11-20: the accent was faint there):
         // #007a33 on Bright's #d9fdd2 (4.9:1), #3df07f on Dark's #1D5C43 (5.2:1) and on a picture's dark chip.
-        const Color read = Color::fromARGB(Card::bright(m_list) && !onPicture ? 0xff007a33 : 0xff3df07f);
-        m_ticks->setFilterColor(state == 3 ? read : quiet);
+        const int tickTint = tint | (state == 3 ? 4 : 0);
+        if (tickTint != m_tickTint) {
+            m_tickTint = tickTint;
+            m_ticks->setFilterColor(state == 3 ? Color::fromARGB(bright && !onPicture ? 0xff007a33 : 0xff3df07f)
+                                    : onPicture ? Color::White : Card::quiet(m_list, m_ui));
+        }
     }
     if (m_bang)
         m_bang->setVisible(out && state == 4);

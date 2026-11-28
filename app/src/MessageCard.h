@@ -124,6 +124,12 @@ private:
     float m_timeTop; // m_timeBox's top padding as last set, -1 for none
     float m_colMax; // m_col's maxWidth as last set, -1 for none
     int m_tick; // the picture m_ticks has: -1 none yet, 0 the clock, 1 one tick, 2 two
+    // What a filling set last, so the next one sets only what changed (a recycled card's row is mostly as the last one's):
+    // restyle()'s count, the background's inputs (paintBackground), the time's text and the time's and ticks' colours'
+    // inputs (fillFoot), -1 for none yet.
+    int m_styleGen;
+    QString m_bgKey, m_timeText;
+    int m_timeTint, m_tickTint;
 
     // Swipe to reply: where the finger went down, and whether this touch is a swipe (1), not one (-1)
     // or not yet known (0). m_slide holds translationX's implicit animation off while the finger drives it.
