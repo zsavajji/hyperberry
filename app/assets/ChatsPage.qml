@@ -267,7 +267,14 @@ Page {
                 emojiStyle: nav.emojiStyle
                 bodySize: nav.bodySize
                 smallSize: nav.smallSize
-                onChatTapped: page.openChat(chat)
+                // A search ends at its result (the user, 2026-11-28): the field closes and empties, so Back from the chat
+                // finds the whole list. Before the chat opens: the field going after it would take the composer's focus.
+                onChatTapped: {
+                    if (page.searching) {
+                        page.closeSearch()
+                    }
+                    page.openChat(chat)
+                }
             }
             // The wait for a new link's chats is on the linking page (main.qml), so an empty list
             // here is an account with no chats, and shows nothing (the user's, 2026-11-01).
